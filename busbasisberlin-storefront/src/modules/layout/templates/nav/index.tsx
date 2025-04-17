@@ -1,60 +1,79 @@
 import { Suspense } from "react"
-
 import { listRegions } from "@lib/data/regions"
 import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CartButton from "@modules/layout/components/cart-button"
-import SideMenu from "@modules/layout/components/side-menu"
+import TransparentHeader from "@modules/layout/components/transparent-header"
+import MobileMenu from "@modules/layout/components/mobile-menu"
+import { mainNavItems } from "@modules/layout/config/navigation"
 
 export default async function Nav() {
   const regions = await listRegions().then((regions: StoreRegion[]) => regions)
 
   return (
-    <div className="sticky top-0 inset-x-0 z-50 group">
-      <header className="relative h-16 mx-auto border-b duration-200 bg-white border-ui-border-base">
-        <nav className="content-container txt-xsmall-plus text-ui-fg-subtle flex items-center justify-between w-full h-full text-small-regular">
-          <div className="flex-1 basis-0 h-full flex items-center">
-            <div className="h-full">
-              <SideMenu regions={regions} />
-            </div>
-          </div>
-
-          <div className="flex items-center h-full">
-            <LocalizedClientLink
-              href="/"
-              className="txt-compact-xlarge-plus hover:text-ui-fg-base uppercase"
-              data-testid="nav-store-link"
-            >
-              Medusa Store
-            </LocalizedClientLink>
-          </div>
-
-          <div className="flex items-center gap-x-6 h-full flex-1 basis-0 justify-end">
-            <div className="hidden small:flex items-center gap-x-6 h-full">
+    <>
+      <TransparentHeader />
+      <div className="fixed top-0 inset-x-0 z-50 group">
+        <header className="relative h-16 mx-auto transition-all duration-300">
+          <nav className="content-container txt-xsmall-plus text-white flex items-center justify-between w-full h-full text-small-regular">
+            {/* Logo */}
+            <div className="flex items-center h-full">
               <LocalizedClientLink
-                className="hover:text-ui-fg-base"
-                href="/account"
-                data-testid="nav-account-link"
+                href="/"
+                className="txt-compact-xlarge-plus hover:text-white/80 uppercase"
+                data-testid="nav-store-link"
               >
-                Account
+                BusBasis Berlin
               </LocalizedClientLink>
             </div>
-            <Suspense
-              fallback={
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              {mainNavItems.map((item) => (
                 <LocalizedClientLink
-                  className="hover:text-ui-fg-base flex gap-2"
-                  href="/cart"
-                  data-testid="nav-cart-link"
+                  key={item.href}
+                  href={item.href}
+                  className="hover:text-white/80 transition-colors duration-200"
                 >
-                  Cart (0)
+                  {item.label}
                 </LocalizedClientLink>
-              }
-            >
-              <CartButton />
-            </Suspense>
-          </div>
-        </nav>
-      </header>
-    </div>
+              ))}
+            </div>
+
+            {/* Right Section - Account, Cart, & Mobile Menu */}
+            <div className="flex items-center gap-x-6 h-full">
+              {/* Account Link - Hidden on Mobile */}
+              <div className="hidden md:flex items-center gap-x-6 h-full">
+                <LocalizedClientLink
+                  className="hover:text-white/80"
+                  href="/account"
+                  data-testid="nav-account-link"
+                >
+                  Account
+                </LocalizedClientLink>
+              </div>
+
+              {/* Cart Button */}
+              <Suspense
+                fallback={
+                  <LocalizedClientLink
+                    className="hover:text-white/80 flex gap-2"
+                    href="/cart"
+                    data-testid="nav-cart-link"
+                  >
+                    Cart (0)
+                  </LocalizedClientLink>
+                }
+              >
+                <CartButton />
+              </Suspense>
+
+              {/* Mobile Menu */}
+              <MobileMenu />
+            </div>
+          </nav>
+        </header>
+      </div>
+    </>
   )
 }

@@ -2,7 +2,12 @@
 
 ## PROJECT OVERVIEW
 
-- explain the project in a few sentences
+- We're building a full-stack e-commerce using Medusa.js and Next.js
+- We're using the Medusa-starter-template
+- We're using the Tailwind CSS framework
+- We're using the Stripe payment processor
+- We're using the PostgreSQL database  
+
 
 ## PERSONALITY
 
@@ -11,7 +16,13 @@
 
 ## TECH STACK
 
-- choose a tech stack with super popular languages
+- Medusa.js
+- Next.js
+- Tailwind CSS
+- Stripe
+- PostgreSQL
+
+
 
 ### ERROR FIXING PROCESS - optional
 
