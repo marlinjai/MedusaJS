@@ -1,6 +1,64 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 20 20 20;
+  --foreground: 255 255 255;
+  
+  --muted: 30 30 30;
+  --muted-foreground: 161 161 170;
+
+  --border: 39 39 42;
+  --input: 39 39 42;
+
+  --primary: 255 255 255;
+  --primary-foreground: 20 20 20;
+
+  --secondary: 30 30 30;
+  --secondary-foreground: 250 250 250;
+
+  --accent: 39 39 42;
+  --accent-foreground: 250 250 250;
+
+  --destructive: 239 68 68;
+  --destructive-foreground: 250 250 250;
+
+  --card: 24 24 27;
+  --card-foreground: 250 250 250;
+
+  --popover: 20 20 20;
+  --popover-foreground: 250 250 250;
+
+  --ring: 39 39 42;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar for dark mode */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--muted));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--border));
+}
 
 @layer utilities {
   /* Chrome, Safari and Opera */
@@ -35,9 +93,9 @@
   select:-webkit-autofill,
   select:-webkit-autofill:hover,
   select:-webkit-autofill:focus {
-    border: 1px solid #212121;
-    -webkit-text-fill-color: #212121;
-    -webkit-box-shadow: 0 0 0px 1000px #fff inset;
+    border: 1px solid #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    -webkit-box-shadow: 0 0 0px 1000px #000000 inset;
     transition: background-color 5000s ease-in-out 0s;
   }
 
@@ -55,7 +113,7 @@
   }
 
   .contrast-btn {
-    @apply px-4 py-2 border border-black rounded-full hover:bg-black hover:text-white transition-colors duration-200 ease-in;
+    @apply px-4 py-2 border border-white rounded-full hover:bg-white hover:text-black transition-colors duration-200 ease-in;
   }
 
   .text-xsmall-regular {

@@ -4,7 +4,7 @@ import { Heading } from "@medusajs/ui"
 
 const Hero = () => {
   return (
-    <div className="relative h-[90vh] w-full overflow-hidden">
+    <div className="relative h-[90vh] w-full overflow-hidden -mt-24">
       {/* Video Background */}
       <video 
         autoPlay 

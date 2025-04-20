@@ -33,7 +33,7 @@ export default async function Nav() {
                 <LocalizedClientLink
                   key={item.href}
                   href={item.href}
-                  className="hover:text-white/80 transition-colors duration-200"
+                  className="hover:text-white/80 transition-colors duration-200 text-neutral-400 text-sm md:text-base max-w-sm"
                 >
                   {item.label}
                 </LocalizedClientLink>

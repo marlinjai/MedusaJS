@@ -1,6 +1,6 @@
 export const mainNavItems = [
   { href: "/store", label: "Shop" },
-  { href: "/services", label: "Services" },
+  { href: "/#services", label: "Services" },
   { href: "/about", label: "Über uns" },
   { href: "/contact", label: "Kontakt" },
   { href: "/blog", label: "Blog" },

@@ -27,7 +27,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   return (
     <>
       <Nav />
-      <main className="relative">
+      <main className="relative pt-24">
         {customer && cart && (
           <CartMismatchBanner customer={customer} cart={cart} />
         )}
