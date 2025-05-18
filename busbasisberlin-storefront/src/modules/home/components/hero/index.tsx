@@ -30,7 +30,17 @@ const Hero = () => {
 
       {/* Content Overlay */}
       <div className="relative z-10 h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto">
+        {/* Title Background with Feathered Edges */}
+        <div className="absolute inset-x-48 -inset-y-36">
+          <div className="absolute inset-0 bg-black/90" 
+               style={{
+                 mask: 'radial-gradient(ellipse at center, black, transparent 50%)',
+                 WebkitMask: 'radial-gradient(ellipse at center, black, transparent 50%)'
+               }}
+          />
+        </div>
+        
+        <div className="relative max-w-3xl mx-auto">
           <Heading
             level="h1"
             className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 [text-shadow:_2px_2px_10px_rgb(0_0_0_/_40%)]"
@@ -46,7 +56,7 @@ const Hero = () => {
         </div>
 
         {/* Optional: Add a CTA button */}
-        <button className="mt-8 px-8 py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-lg font-medium rounded-full transition-all duration-300 backdrop-blur-sm">
+        <button className="mt-8 px-8 py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-lg font-medium rounded-full transition-all z-30 duration-300">
           Finde Teile
         </button>
       </div>
@@ -56,6 +66,16 @@ const Hero = () => {
         onClick={scrollToServices}
         className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 group cursor-pointer"
       >
+        {/* Blur Background for Scroll Indicator */}
+        <div className="absolute -inset-4">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[30px] rounded-full"
+               style={{
+                 mask: 'radial-gradient(circle at center, black 40%, transparent 100%)',
+                 WebkitMask: 'radial-gradient(circle at center, black 40%, transparent 100%)'
+               }}
+          />
+        </div>
+        
         {/* Rotating Text Container */}
         <div className="relative w-32 h-32">
           {/* Rotating Text */}
@@ -77,13 +97,13 @@ const Hero = () => {
           
           {/* Arrow Container - Grouped with text rotation */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-[bounce_4s_cubic-bezier(0.25,0.1,0.25,1)_infinite] group-hover:animate-none transition-all duration-600">
+            <div className="animate-[bounce_4s_cubic-bezier(0.25,0.1,0.25,1)_infinite] transition-all duration-600">
               <svg 
                 className="w-6 h-6 text-white transition-transform duration-300 group-hover:scale-105" 
                 fill="none" 
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
-                strokeWidth="2" 
+                strokeWidth="2"
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
               >

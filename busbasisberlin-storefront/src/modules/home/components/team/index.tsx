@@ -7,14 +7,14 @@ import { FaLinkedinIn } from "react-icons/fa";
 const teamMembers = [
   {
     name: "Hendrik",
-    role: "Geschäftsführer & Fahrzeugexperte",
+    role: "Logistik & Lager",
     image: "/images/team/hendrik.jpg",
     linkedin: "#",
   },
   {
-    name: "gerd",
-    role: "Technischer Leiter",
-    image: "/images/team/gerd.jpg",
+    name: "Conny",
+    role: "Büro und Management",
+    image: "/images/team/conny.jpg",
     linkedin: "#",
   },
   {
@@ -25,16 +25,17 @@ const teamMembers = [
   },
   {
     name: "Udo",
-    role: "Restaurationsexperte",
+    role: "Karrosserie & Fahrzeugbau",
     image: "/images/team/udo.jpg",
     linkedin: "#",
   },
   {
-    name: "Conny",
-    role: "Büro und Management",
-    image: "/images/team/conny.jpg",
+    name: "Robert",
+    role: "Karroserie",
+    image: "/images/team/Robert.jpg",
     linkedin: "#",
   },
+  
 ];
 
 const TeamMemberCard = ({ member, index }: { member: any; index: number }) => {
