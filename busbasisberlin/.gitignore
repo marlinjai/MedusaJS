@@ -24,6 +24,3 @@ build
 !.yarn/versions
 
 .medusa
-
-# From anywhere in the repo, reference the root with /
-/data/*
