@@ -13,7 +13,7 @@ const supplier = model.define("supplier", {
   salutation: model.text().nullable(),
   first_name: model.text().nullable(),
   last_name: model.text().nullable(),
-  company: model.text().nullable(),
+  company: model.text(),
   company_addition: model.text().nullable(),
   contact: model.text().nullable(),
   street: model.text().nullable(),
