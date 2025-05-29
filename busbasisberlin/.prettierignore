@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.medusa/
+*.d.ts
+coverage/
+.next/
+.cache/
+build/
+package-lock.json
+yarn.lock 

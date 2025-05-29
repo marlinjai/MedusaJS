@@ -1,0 +1,35 @@
+{
+  "name": "busbasisberlin-monorepo",
+  "version": "1.0.0",
+  "description": "BusBasisBerlin MedusaJS E-commerce Monorepo",
+  "private": true,
+  "workspaces": [
+    "busbasisberlin",
+    "busbasisberlin-storefront"
+  ],
+  "scripts": {
+    "format": "npm run format:backend && npm run format:frontend",
+    "format:backend": "cd busbasisberlin && npx prettier --write \"src/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "format:frontend": "cd busbasisberlin-storefront && npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\" \"*.{ts,tsx,js,jsx,json}\"",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd busbasisberlin && npx eslint \"src/**/*.{ts,js}\" \"*.{ts,js}\" --fix || true",
+    "lint:frontend": "cd busbasisberlin-storefront && npx eslint \"src/**/*.{ts,tsx,js,jsx}\" \"*.{ts,tsx,js,jsx}\" --fix || true",
+    "format:all": "npm run format && npm run lint",
+    "dev:backend": "cd busbasisberlin && npm run dev",
+    "dev:frontend": "cd busbasisberlin-storefront && npm run dev",
+    "build:backend": "cd busbasisberlin && npm run build",
+    "build:frontend": "cd busbasisberlin-storefront && npm run build"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  },
+  "keywords": [
+    "medusajs",
+    "ecommerce",
+    "nextjs",
+    "typescript",
+    "monorepo"
+  ],
+  "author": "BusBasisBerlin",
+  "license": "MIT"
+}

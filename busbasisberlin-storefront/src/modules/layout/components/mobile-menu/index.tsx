@@ -37,12 +37,12 @@ export default function MobileMenu() {
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
     >
-      <div 
+      <div
         className="fixed inset-0 w-full h-full min-h-screen bg-black/90 backdrop-blur-sm"
         style={{ zIndex: 99999 }}
         onClick={() => setIsOpen(false)}
       >
-        <div 
+        <div
           className="relative flex flex-col items-center justify-center min-h-screen w-full"
           onClick={(e) => e.stopPropagation()}
         >
@@ -112,4 +112,4 @@ export default function MobileMenu() {
       {mounted && createPortal(menuContent, document.body)}
     </>
   )
-} 
+}

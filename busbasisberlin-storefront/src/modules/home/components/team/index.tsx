@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { motion } from "framer-motion";
-import Image from "next/image";
-import { FaLinkedinIn } from "react-icons/fa";
+import { motion } from "framer-motion"
+import Image from "next/image"
+import { FaLinkedinIn } from "react-icons/fa"
 
 const teamMembers = [
   {
@@ -35,8 +35,7 @@ const teamMembers = [
     image: "/images/team/Robert.jpg",
     linkedin: "#",
   },
-  
-];
+]
 
 const TeamMemberCard = ({ member, index }: { member: any; index: number }) => {
   return (
@@ -49,10 +48,10 @@ const TeamMemberCard = ({ member, index }: { member: any; index: number }) => {
       <div className="relative w-48 h-48 mx-auto overflow-hidden rounded-full">
         {/* Decorative circle background */}
         <div className="absolute inset-0 bg-[#141414] group-hover:scale-110 transition-transform duration-500" />
-        
+
         {/* Crack effect overlay */}
         <div className="absolute inset-0 bg-[url('/images/crack-overlay.png')] opacity-30 mix-blend-overlay" />
-        
+
         {/* Profile image */}
         <div className="relative h-[140%] transform group-hover:scale-105 transition-transform duration-500">
           <Image
@@ -63,7 +62,7 @@ const TeamMemberCard = ({ member, index }: { member: any; index: number }) => {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         </div>
-        
+
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
@@ -73,14 +72,12 @@ const TeamMemberCard = ({ member, index }: { member: any; index: number }) => {
         <p className="text-sm text-neutral-400">{member.role}</p>
       </div>
     </motion.div>
-  );
-};
+  )
+}
 
 export default function Team() {
   return (
     <section className="py-24 px-4 md:px-8 relative overflow-hidden">
- 
-      
       <div className="max-w-6xl mx-auto relative">
         <div className="text-center mb-16">
           <motion.h2
@@ -96,7 +93,8 @@ export default function Team() {
             transition={{ delay: 0.2 }}
             className="text-neutral-400 max-w-2xl mx-auto"
           >
-            Erfahrene Spezialisten mit Leidenschaft für Mercedes-Transporter und individuelle Fahrzeugumbauten
+            Erfahrene Spezialisten mit Leidenschaft für Mercedes-Transporter und
+            individuelle Fahrzeugumbauten
           </motion.p>
         </div>
 
@@ -112,7 +110,7 @@ export default function Team() {
           <div className="md:col-span-2">
             <TeamMemberCard member={teamMembers[2]} index={2} />
           </div>
-          
+
           {/* Second row - 2 members centered */}
           <div className="md:col-start-2 md:col-span-2">
             <TeamMemberCard member={teamMembers[3]} index={3} />
@@ -123,5 +121,5 @@ export default function Team() {
         </div>
       </div>
     </section>
-  );
-} 
+  )
+}

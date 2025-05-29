@@ -1,6 +1,6 @@
-import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { loadEnv, defineConfig } from '@medusajs/framework/utils';
 
-loadEnv(process.env.NODE_ENV || 'development', process.cwd())
+loadEnv(process.env.NODE_ENV || 'development', process.cwd());
 
 module.exports = defineConfig({
   projectConfig: {
@@ -9,18 +9,18 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
       authCors: process.env.AUTH_CORS!,
-      jwtSecret: process.env.JWT_SECRET || "supersecret",
-      cookieSecret: process.env.COOKIE_SECRET || "supersecret",
-    }
+      jwtSecret: process.env.JWT_SECRET || 'supersecret',
+      cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
+    },
   },
   modules: [
     {
-      resolve: "@medusajs/medusa/file",
+      resolve: '@medusajs/medusa/file',
       options: {
         providers: [
           {
-            resolve: "@medusajs/medusa/file-s3",
-            id: "s3",
+            resolve: '@medusajs/medusa/file-s3',
+            id: 's3',
             options: {
               file_url: process.env.S3_FILE_URL,
               access_key_id: process.env.S3_ACCESS_KEY_ID,
@@ -37,10 +37,10 @@ module.exports = defineConfig({
       },
     },
     {
-      resolve: "./src/modules/supplier",
+      resolve: './src/modules/supplier',
     },
     {
-      resolve: "./src/modules/blog",
+      resolve: './src/modules/blog',
     },
   ],
-})
+});

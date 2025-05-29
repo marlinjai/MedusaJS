@@ -4,7 +4,7 @@ export const mainNavItems = [
   { href: "/about", label: "Über uns" },
   { href: "/contact", label: "Kontakt" },
   { href: "/blog", label: "Blog" },
-] as const 
+] as const
 
 export const footerNavItems = [
   { href: "/privacy", label: "Datenschutz" },
@@ -12,4 +12,3 @@ export const footerNavItems = [
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Kontakt" },
 ] as const
-

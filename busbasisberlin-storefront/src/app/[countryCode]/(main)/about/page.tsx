@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import { Timeline } from "@modules/common/components/ui/timeline";
+import Image from "next/image"
+import { Timeline } from "@modules/common/components/ui/timeline"
 
 export default function AboutPage() {
   const timelineData = [
@@ -10,7 +10,8 @@ export default function AboutPage() {
       content: (
         <div>
           <p className="text-neutral-300 text-xs md:text-sm font-normal mb-8">
-            Expanding our online presence with a state-of-the-art e-commerce platform to serve customers across Europe.
+            Expanding our online presence with a state-of-the-art e-commerce
+            platform to serve customers across Europe.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <Image
@@ -36,7 +37,8 @@ export default function AboutPage() {
       content: (
         <div>
           <p className="text-neutral-300 text-xs md:text-sm font-normal mb-8">
-            Modernized our inventory management system and expanded our warehouse capacity to serve more customers efficiently.
+            Modernized our inventory management system and expanded our
+            warehouse capacity to serve more customers efficiently.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <Image
@@ -79,7 +81,7 @@ export default function AboutPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-          <Image
+            <Image
               src="/images/about/Werkstattarbeiten_II.jpg"
               alt="Modern workshop facility"
               width={500}
@@ -97,7 +99,7 @@ export default function AboutPage() {
         </div>
       ),
     },
-  ];
+  ]
 
   return (
     <div className="min-h-screen w-full">
@@ -105,5 +107,5 @@ export default function AboutPage() {
         <Timeline data={timelineData} />
       </div>
     </div>
-  );
+  )
 }

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.medusa/
+*.js
+*.d.ts
+coverage/
+.next/
+.cache/
+build/ 
