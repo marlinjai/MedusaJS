@@ -50,7 +50,6 @@ export const PUT = async (req: MedusaRequest, res: MedusaResponse) => {
     console.log('Supplier ID:', id);
     console.log('Request body:', JSON.stringify(updateData, null, 2));
     console.log('Data types check:');
-    console.log('- delivery_time type:', typeof updateData.delivery_time, 'value:', updateData.delivery_time);
     console.log('- status type:', typeof updateData.status, 'value:', updateData.status);
     console.log('===========================');
 
@@ -64,15 +63,6 @@ export const PUT = async (req: MedusaRequest, res: MedusaResponse) => {
 
     // Clean up the data - convert empty strings to null for nullable fields
     const cleanedData = { ...updateData };
-
-    // Handle numeric fields
-    if (
-      cleanedData.delivery_time === null ||
-      cleanedData.delivery_time === undefined ||
-      (typeof cleanedData.delivery_time === 'string' && cleanedData.delivery_time === '')
-    ) {
-      cleanedData.delivery_time = 0;
-    }
 
     // Handle nullable text fields - convert empty strings to null
     const nullableFields = [

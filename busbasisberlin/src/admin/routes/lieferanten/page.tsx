@@ -93,10 +93,6 @@ const SuppliersPage = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingSupplier(null);
-    // Remove pointer events after modal closes to prevent unwanted clicks
-    setTimeout(() => {
-      document.body.style.pointerEvents = '';
-    }, 500);
   };
 
   const handleOpenModal = (supplier?: Supplier) => {
