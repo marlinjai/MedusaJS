@@ -2,9 +2,9 @@
  * service.ts
  * Service for managing suppliers
  */
-import { MedusaService } from "@medusajs/framework/utils"
-import supplier, { Supplier } from "./models/supplier"
+import { MedusaService } from '@medusajs/framework/utils';
 
+import supplier, { Supplier } from './models/supplier';
 
 /**
  * SupplierService extends the MedusaService factory,
@@ -19,7 +19,7 @@ class SupplierService extends MedusaService({
    * @return array of created suppliers
    */
   async importFromCsv(csvData: any[]): Promise<Supplier[]> {
-    const createdSuppliers: Supplier[] = []     
+    const createdSuppliers: Supplier[] = [];
 
     for (const row of csvData) {
       // Map CSV columns to supplier fields
@@ -46,7 +46,7 @@ class SupplierService extends MedusaService({
         vat_id: row.UstID || null,
         status: row.Status || 'active',
         active: row.Aktiv === 'Y',
-        language: row.Sprache === 'Deutsch' ? 'de' : (row.Sprache === 'Englisch' ? 'en' : 'de'),
+        language: row.Sprache === 'Deutsch' ? 'de' : row.Sprache === 'Englisch' ? 'en' : 'de',
         delivery_time: row.Lieferzeit || 0,
         contact_salutation: row['Anrede-Ansprechpartner'] || null,
         contact_first_name: row['Vorname-Ansprechpartner'] || null,
@@ -62,18 +62,18 @@ class SupplierService extends MedusaService({
         account_holder: row.Inhaber || null,
         iban: row.IBAN || null,
         bic: row.BIC || null,
-      }
+      };
 
       try {
-        const supplier = await this.createSuppliers(supplierData as any)
-        createdSuppliers.push(supplier)
+        const supplier = await this.createSuppliers(supplierData as any);
+        createdSuppliers.push(supplier);
       } catch (error) {
-        console.error(`Error importing supplier: ${error.message}`)
+        console.error(`Error importing supplier: ${error.message}`);
       }
     }
 
-    return createdSuppliers
+    return createdSuppliers;
   }
 }
 
-export default SupplierService 
+export default SupplierService;
