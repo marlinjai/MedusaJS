@@ -22,8 +22,8 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     if (is_active !== undefined) filters.is_active = is_active === 'true';
     if (is_featured !== undefined) filters.is_featured = is_featured === 'true';
 
-    // Use the auto-generated listAndCountServices method
-    const [services, count] = await serviceService.listAndCountServices(filters, {
+    // Use the auto-generated listServices method
+    const services = await serviceService.listServices(filters, {
       take: parseInt(limit as string),
       skip: parseInt(offset as string),
       order: { created_at: 'desc' },
@@ -31,7 +31,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 
     res.json({
       services,
-      count,
+      count: services.length,
       offset: parseInt(offset as string),
       limit: parseInt(limit as string),
     });
@@ -59,11 +59,15 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       });
     }
 
-    // Use the auto-generated createServices method
-    const service = await serviceService.createServices(serviceData as any);
+    // Use the auto-generated createServices method, ensuring data is in an array
+    const createdServices = await serviceService.createServices([serviceData as any]);
+
+    if (!createdServices || createdServices.length === 0) {
+      return res.status(500).json({ error: 'Failed to create service' });
+    }
 
     res.status(201).json({
-      service,
+      service: createdServices[0],
     });
   } catch (error) {
     console.error('Error creating service:', error);

@@ -55,7 +55,11 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTable
       </Table.Header>
       <Table.Body>
         {suppliers.map(supplier => (
-          <Table.Row key={supplier.id} className="group">
+          <Table.Row
+            key={supplier.id}
+            className="group cursor-pointer hover:bg-ui-bg-subtle transition-colors"
+            onClick={() => onEdit(supplier)}
+          >
             {/* Company Information */}
             <Table.Cell>
               <div className="flex flex-col gap-y-1">
@@ -210,23 +214,26 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTable
 
             {/* Actions */}
             <Table.Cell>
-              <DropdownMenu>
-                <DropdownMenu.Trigger asChild>
-                  <IconButton size="small" variant="transparent">
-                    <EllipsisHorizontal />
-                  </IconButton>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item onClick={() => onEdit(supplier)}>
-                    <PencilSquare className="text-ui-fg-subtle" />
-                    Bearbeiten
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item className="text-ui-fg-error" onClick={() => handleDelete(supplier)}>
-                    <Trash className="text-ui-fg-error" />
-                    Löschen
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu>
+              <div onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenu.Trigger asChild>
+                    <IconButton variant="transparent" size="small">
+                      <EllipsisHorizontal />
+                    </IconButton>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Item onClick={() => onEdit(supplier)}>
+                      <PencilSquare />
+                      Bearbeiten
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item variant="danger" onClick={() => handleDelete(supplier)}>
+                      <Trash />
+                      Löschen
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu>
+              </div>
             </Table.Cell>
           </Table.Row>
         ))}

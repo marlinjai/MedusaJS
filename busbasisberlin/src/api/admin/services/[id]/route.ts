@@ -49,10 +49,17 @@ export const PUT = async (req: MedusaRequest, res: MedusaResponse) => {
     // Add the ID to the service data
     const updateData = { ...serviceData, id };
 
-    const service = await serviceService.updateServices(updateData);
+    const updatedServices = await serviceService.updateServices([updateData]);
+
+    if (!updatedServices || updatedServices.length === 0) {
+      return res.status(404).json({
+        error: 'Service not found',
+        message: `Service with ID ${id} does not exist`,
+      });
+    }
 
     res.json({
-      service,
+      service: updatedServices[0],
     });
   } catch (error) {
     console.error('Error updating service:', error);

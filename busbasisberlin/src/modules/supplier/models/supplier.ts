@@ -16,7 +16,7 @@ const supplier = model.define('supplier', {
   postal_code: model.text().nullable(),
   city: model.text().nullable(),
   country: model.text().nullable(),
-  phone_mobile: model.text().nullable(),
+  phone: model.text().nullable(),
   phone_direct: model.text().nullable(),
   email: model.text().nullable(),
   website: model.text().nullable(),

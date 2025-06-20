@@ -73,7 +73,11 @@ const ServiceTable = ({ services, onEdit, onDelete, isLoading }: ServiceTablePro
       </Table.Header>
       <Table.Body>
         {services.map(service => (
-          <Table.Row key={service.id} className="group">
+          <Table.Row
+            key={service.id}
+            className="group cursor-pointer hover:bg-ui-bg-subtle transition-colors"
+            onClick={() => onEdit(service)}
+          >
             {/* Service Information */}
             <Table.Cell>
               <div className="flex flex-col gap-y-1">
@@ -174,24 +178,26 @@ const ServiceTable = ({ services, onEdit, onDelete, isLoading }: ServiceTablePro
 
             {/* Actions */}
             <Table.Cell>
-              <DropdownMenu>
-                <DropdownMenu.Trigger asChild>
-                  <IconButton variant="transparent" size="small">
-                    <EllipsisHorizontal />
-                  </IconButton>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item onClick={() => onEdit(service)}>
-                    <PencilSquare />
-                    Bearbeiten
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator />
-                  <DropdownMenu.Item variant="danger" onClick={() => handleDelete(service)}>
-                    <Trash />
-                    Löschen
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu>
+              <div onClick={e => e.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenu.Trigger asChild>
+                    <IconButton variant="transparent" size="small">
+                      <EllipsisHorizontal />
+                    </IconButton>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content>
+                    <DropdownMenu.Item onClick={() => onEdit(service)}>
+                      <PencilSquare />
+                      Bearbeiten
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item variant="danger" onClick={() => handleDelete(service)}>
+                      <Trash />
+                      Löschen
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu>
+              </div>
             </Table.Cell>
           </Table.Row>
         ))}

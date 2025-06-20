@@ -77,10 +77,14 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     }
 
     // Use the auto-generated createSuppliers method
-    const supplier = await supplierService.createSuppliers(supplierData as any);
+    const createdSuppliers = await supplierService.createSuppliers([supplierData as any]);
+
+    if (!createdSuppliers || createdSuppliers.length === 0) {
+      return res.status(500).json({ error: 'Supplier creation failed' });
+    }
 
     res.status(201).json({
-      supplier,
+      supplier: createdSuppliers[0],
     });
   } catch (error) {
     console.error('Error creating supplier:', error);

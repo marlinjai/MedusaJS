@@ -3,74 +3,26 @@ import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { HandTruck, Plus } from '@medusajs/icons';
 import { Button, Container, toast } from '@medusajs/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import type { Supplier } from '../../../modules/supplier/models/supplier';
-import SupplierModal from './components/SupplierModal';
 import SupplierTable from './components/SupplierTable';
 
 const SuppliersPage = () => {
   const queryClient = useQueryClient();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const navigate = useNavigate();
 
   // Fetch suppliers
   const { data, isLoading } = useQuery({
     queryKey: ['admin-suppliers'],
     queryFn: async () => {
       const res = await fetch('/admin/suppliers', { credentials: 'include' });
-
       if (!res.ok) throw new Error('Failed to fetch suppliers');
-
-      return (await res.json()).suppliers as Supplier[];
+      const { suppliers } = await res.json();
+      return suppliers as Supplier[];
     },
   });
   const suppliers = data || [];
-
-  // Create supplier
-  const createSupplier = useMutation({
-    mutationFn: async (values: Partial<Supplier>) => {
-      const res = await fetch('/admin/suppliers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) throw new Error('Fehler beim Erstellen');
-
-      return res.json();
-    },
-    onSuccess: () => {
-      handleCloseModal();
-      queryClient.invalidateQueries({ queryKey: ['admin-suppliers'] });
-      toast.success('Lieferant erfolgreich erstellt');
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  // Edit supplier
-  const updateSupplier = useMutation({
-    mutationFn: async (values: Partial<Supplier>) => {
-      if (!editingSupplier) throw new Error('Kein Lieferant ausgewählt');
-      const res = await fetch(`/admin/suppliers/${editingSupplier.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) throw new Error('Fehler beim Bearbeiten');
-
-      return res.json();
-    },
-    onSuccess: () => {
-      handleCloseModal();
-      queryClient.invalidateQueries({ queryKey: ['admin-suppliers'] });
-      toast.success('Lieferant erfolgreich aktualisiert');
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
 
   // Delete supplier
   const deleteSupplier = useMutation({
@@ -79,7 +31,6 @@ const SuppliersPage = () => {
         method: 'DELETE',
         credentials: 'include',
       });
-
       if (!res.ok) throw new Error('Fehler beim Löschen');
     },
     onSuccess: () => {
@@ -89,33 +40,9 @@ const SuppliersPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Modal handlers
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setEditingSupplier(null);
-  };
-
-  const handleOpenModal = (supplier?: Supplier) => {
-    if (supplier) {
-      setEditingSupplier(supplier);
-    } else {
-      setEditingSupplier(null);
-    }
-    setModalOpen(true);
-  };
-
-  // Form submission handler
-  const handleSubmit = (data: Partial<Supplier>) => {
-    if (editingSupplier) {
-      updateSupplier.mutate(data);
-    } else {
-      createSupplier.mutate(data);
-    }
-  };
-
   // Handlers
-  const handleCreate = () => handleOpenModal();
-  const handleEdit = (supplier: Supplier) => handleOpenModal(supplier);
+  const handleCreate = () => navigate('/lieferanten/new');
+  const handleEdit = (supplier: Supplier) => navigate(`/lieferanten/${supplier.id}`);
   const handleDelete = (id: string) => {
     deleteSupplier.mutate(id);
   };
@@ -140,15 +67,6 @@ const SuppliersPage = () => {
           <SupplierTable suppliers={suppliers} onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading} />
         </div>
       </div>
-
-      {/* Modal */}
-      <SupplierModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        supplier={editingSupplier}
-        onSubmit={handleSubmit}
-        isSubmitting={createSupplier.isPending || updateSupplier.isPending}
-      />
     </Container>
   );
 };
