@@ -22,15 +22,18 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     if (is_active !== undefined) filters.is_active = is_active === 'true';
     if (is_featured !== undefined) filters.is_featured = is_featured === 'true';
 
-    const services = await serviceService.listServices({
-      where: filters,
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string),
+    // Use the auto-generated listAndCountServices method
+    const [services, count] = await serviceService.listAndCountServices(filters, {
+      take: parseInt(limit as string),
+      skip: parseInt(offset as string),
+      order: { created_at: 'desc' },
     });
 
     res.json({
       services,
-      count: services.length,
+      count,
+      offset: parseInt(offset as string),
+      limit: parseInt(limit as string),
     });
   } catch (error) {
     console.error('Error listing services:', error);
@@ -56,15 +59,8 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       });
     }
 
-    // Generate handle if not provided
-    if (!serviceData.handle) {
-      serviceData.handle = serviceData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-    }
-
-    const service = await serviceService.createServices(serviceData);
+    // Use the auto-generated createServices method
+    const service = await serviceService.createServices(serviceData as any);
 
     res.status(201).json({
       service,

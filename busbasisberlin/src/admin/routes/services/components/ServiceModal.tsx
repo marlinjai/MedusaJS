@@ -31,11 +31,6 @@ const ServiceModal = ({ open, onOpenChange, service, onSubmit, isSubmitting }: S
     requirements: '',
     notes: '',
     status: 'active',
-    handle: '',
-    meta_title: '',
-    meta_description: '',
-    thumbnail: '',
-    images: null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,11 +57,6 @@ const ServiceModal = ({ open, onOpenChange, service, onSubmit, isSubmitting }: S
         requirements: '',
         notes: '',
         status: 'active',
-        handle: '',
-        meta_title: '',
-        meta_description: '',
-        thumbnail: '',
-        images: null,
       });
     }
     setErrors({});
@@ -380,76 +370,6 @@ const ServiceModal = ({ open, onOpenChange, service, onSubmit, isSubmitting }: S
                       rows={3}
                       value={formData.notes || ''}
                       onChange={(e: { target: { value: any } }) => handleInputChange('notes', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* SEO */}
-              <div>
-                <h2 className="text-base font-semibold mb-4">SEO & URL</h2>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="handle">URL-Handle</Label>
-                    <Input
-                      id="handle"
-                      placeholder="motorwartung"
-                      value={formData.handle || ''}
-                      onChange={(e: { target: { value: any } }) => handleInputChange('handle', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="meta_title">Meta-Titel</Label>
-                    <Input
-                      id="meta_title"
-                      placeholder="SEO-Titel für Suchmaschinen"
-                      value={formData.meta_title || ''}
-                      onChange={(e: { target: { value: any } }) => handleInputChange('meta_title', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="meta_description">Meta-Beschreibung</Label>
-                    <Textarea
-                      id="meta_description"
-                      placeholder="SEO-Beschreibung für Suchmaschinen"
-                      rows={2}
-                      value={formData.meta_description || ''}
-                      onChange={(e: { target: { value: any } }) =>
-                        handleInputChange('meta_description', e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Media */}
-              <div>
-                <h2 className="text-base font-semibold mb-4">Medien</h2>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="thumbnail">Thumbnail-URL</Label>
-                    <Input
-                      id="thumbnail"
-                      placeholder="https://example.com/thumbnail.jpg"
-                      value={formData.thumbnail || ''}
-                      onChange={(e: { target: { value: any } }) => handleInputChange('thumbnail', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="images">Bilder (JSON)</Label>
-                    <Textarea
-                      id="images"
-                      placeholder='["https://example.com/image1.jpg", "https://example.com/image2.jpg"]'
-                      rows={3}
-                      value={formData.images ? JSON.stringify(formData.images) : ''}
-                      onChange={(e: { target: { value: any } }) => {
-                        try {
-                          const value = e.target.value ? JSON.parse(e.target.value) : null;
-                          handleInputChange('images', value);
-                        } catch {
-                          // Invalid JSON, keep as string
-                        }
-                      }}
                     />
                   </div>
                 </div>

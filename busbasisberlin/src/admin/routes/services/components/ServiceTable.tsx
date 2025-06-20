@@ -85,11 +85,6 @@ const ServiceTable = ({ services, onEdit, onDelete, isLoading }: ServiceTablePro
                     {service.short_description}
                   </Text>
                 )}
-                {service.handle && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    🔗 {service.handle}
-                  </Text>
-                )}
                 {service.is_featured && (
                   <Text size="xsmall" className="text-ui-fg-muted">
                     ⭐ Empfohlen

@@ -18,12 +18,11 @@ class ServiceService extends MedusaService({
    * @return array of active services
    */
   async getActiveServices(): Promise<Service[]> {
-    return await this.listServices({
-      where: {
-        is_active: true,
-        status: 'active',
-      },
+    const [services] = await this.listAndCountServices({
+      is_active: true,
+      status: 'active',
     });
+    return services;
   }
 
   /**
@@ -31,13 +30,12 @@ class ServiceService extends MedusaService({
    * @return array of featured services
    */
   async getFeaturedServices(): Promise<Service[]> {
-    return await this.listServices({
-      where: {
-        is_active: true,
-        is_featured: true,
-        status: 'active',
-      },
+    const [services] = await this.listAndCountServices({
+      is_active: true,
+      is_featured: true,
+      status: 'active',
     });
+    return services;
   }
 
   /**
@@ -46,13 +44,12 @@ class ServiceService extends MedusaService({
    * @return array of services in category
    */
   async getServicesByCategory(category: string): Promise<Service[]> {
-    return await this.listServices({
-      where: {
-        category,
-        is_active: true,
-        status: 'active',
-      },
+    const [services] = await this.listAndCountServices({
+      category,
+      is_active: true,
+      status: 'active',
     });
+    return services;
   }
 
   /**

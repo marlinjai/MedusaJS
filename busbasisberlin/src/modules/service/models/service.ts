@@ -38,15 +38,6 @@ const service = model.define('service', {
 
   // Status
   status: model.text().default('active'), // active, inactive, draft
-
-  // SEO and display
-  handle: model.text().nullable(), // URL slug
-  meta_title: model.text().nullable(),
-  meta_description: model.text().nullable(),
-
-  // Images and media
-  thumbnail: model.text().nullable(), // URL to thumbnail image
-  images: model.json().nullable(), // Array of image URLs
 });
 
 export type Service = InferTypeOf<typeof service>;
