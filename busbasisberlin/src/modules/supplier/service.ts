@@ -4,6 +4,7 @@
  */
 import { MedusaService } from '@medusajs/framework/utils';
 
+import productSupplier, { ProductSupplier } from './models/product-supplier';
 import supplier, { Supplier } from './models/supplier';
 
 /**
@@ -12,6 +13,7 @@ import supplier, { Supplier } from './models/supplier';
  */
 class SupplierService extends MedusaService({
   supplier,
+  productSupplier,
 }) {
   /**
    * Import suppliers from CSV data
@@ -73,6 +75,96 @@ class SupplierService extends MedusaService({
     }
 
     return createdSuppliers;
+  }
+
+  /**
+   * Get suppliers for a specific product
+   * @param productId - product ID
+   * @return array of suppliers with their relationship data
+   */
+  async getSuppliersForProduct(productId: string): Promise<ProductSupplier[]> {
+    return await this.listProductSuppliers({
+      product_id: productId,
+      is_active: true,
+    });
+  }
+
+  /**
+   * Get products for a specific supplier
+   * @param supplierId - supplier ID
+   * @return array of product-supplier relationships
+   */
+  async getProductsForSupplier(supplierId: string): Promise<ProductSupplier[]> {
+    return await this.listProductSuppliers({
+      supplier_id: supplierId,
+      is_active: true,
+    });
+  }
+
+  /**
+   * Link a product to a supplier
+   * @param productId - product ID
+   * @param supplierId - supplier ID
+   * @param data - additional relationship data
+   * @return created product-supplier relationship
+   */
+  async linkProductToSupplier(
+    productId: string,
+    supplierId: string,
+    data: Partial<ProductSupplier> = {},
+  ): Promise<ProductSupplier> {
+    const relationshipData = {
+      product_id: productId,
+      supplier_id: supplierId,
+      ...data,
+    };
+
+    const relationships = await this.createProductSuppliers(relationshipData as any);
+    return relationships[0];
+  }
+
+  /**
+   * Unlink a product from a supplier
+   * @param productId - product ID
+   * @param supplierId - supplier ID
+   */
+  async unlinkProductFromSupplier(productId: string, supplierId: string): Promise<void> {
+    const relationships = await this.listProductSuppliers({
+      product_id: productId,
+      supplier_id: supplierId,
+    });
+
+    if (relationships.length > 0) {
+      await this.deleteProductSuppliers(relationships[0].id);
+    }
+  }
+
+  /**
+   * Set primary supplier for a product
+   * @param productId - product ID
+   * @param supplierId - supplier ID to set as primary
+   */
+  async setPrimarySupplier(productId: string, supplierId: string): Promise<void> {
+    // First, unset all primary suppliers for this product
+    const existingRelationships = await this.listProductSuppliers({
+      product_id: productId,
+    });
+
+    for (const relationship of existingRelationships) {
+      await this.updateProductSuppliers({
+        id: relationship.id,
+        is_primary: false,
+      });
+    }
+
+    // Then set the specified supplier as primary
+    const targetRelationship = existingRelationships.find(r => r.supplier_id === supplierId);
+    if (targetRelationship) {
+      await this.updateProductSuppliers({
+        id: targetRelationship.id,
+        is_primary: true,
+      });
+    }
   }
 }
 

@@ -10,7 +10,7 @@ interface SupplierFormProps {
   isSubmitting: boolean;
 }
 
-const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierFormProps) => {
+const SupplierForm = ({ formId, initialData, onSubmit }: SupplierFormProps) => {
   const [formData, setFormData] = useState<Partial<Supplier>>({
     company: '',
     company_addition: '',

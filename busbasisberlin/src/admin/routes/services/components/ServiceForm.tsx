@@ -10,7 +10,7 @@ interface ServiceFormProps {
   isSubmitting: boolean;
 }
 
-const ServiceForm = ({ formId, initialData, onSubmit, isSubmitting }: ServiceFormProps) => {
+const ServiceForm = ({ formId, initialData, onSubmit }: ServiceFormProps) => {
   const [formData, setFormData] = useState<Partial<Service>>({
     title: '',
     description: '',

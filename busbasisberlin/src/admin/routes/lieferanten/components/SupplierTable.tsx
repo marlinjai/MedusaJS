@@ -88,9 +88,9 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTable
             <Table.Cell>
               <div className="flex flex-col gap-y-1">
                 {supplier.email && <Text size="small">📧 {supplier.email}</Text>}
-                {supplier.phone_mobile && (
+                {supplier.phone && (
                   <Text size="xsmall" className="text-ui-fg-subtle">
-                    📱 {supplier.phone_mobile}
+                    📱 {supplier.phone}
                   </Text>
                 )}
                 {supplier.phone_direct && (
@@ -103,7 +103,7 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTable
                     🌐 {supplier.website}
                   </Text>
                 )}
-                {!supplier.email && !supplier.phone_mobile && !supplier.phone_direct && (
+                {!supplier.email && !supplier.phone && !supplier.phone_direct && (
                   <Text size="small" className="text-ui-fg-muted">
                     -
                   </Text>
