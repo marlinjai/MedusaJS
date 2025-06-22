@@ -61,20 +61,3 @@ const NewServicePage = () => {
 };
 
 export default NewServicePage;
-
-// We are overriding the form inside the ServiceForm to submit it from the header.
-// A hidden submit button is added and triggered from the header button.
-const originalOnSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  const form = e.target as HTMLFormElement;
-  const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-  if (submitButton) {
-    submitButton.click();
-  }
-};
-
-const ServiceFormWithExternalSubmit = (props: any) => (
-  <form id="service-form" onSubmit={originalOnSubmit}>
-    <ServiceForm {...props} />
-  </form>
-);

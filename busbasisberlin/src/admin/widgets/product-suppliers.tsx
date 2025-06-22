@@ -316,7 +316,6 @@ const ProductSuppliersWidget = ({ data: product }: { data: { id: string } }) => 
 const EditRelationshipForm = ({
   relationship,
   onSave,
-  isSaving,
 }: {
   relationship: ProductSupplier;
   onSave: (data: Partial<ProductSupplier>) => void;
