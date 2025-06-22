@@ -61,8 +61,17 @@
           "nullable": true,
           "mappedType": "text"
         },
-        "lead_time": {
-          "name": "lead_time",
+        "supplier_product_name": {
+          "name": "supplier_product_name",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "supplier_vat_rate": {
+          "name": "supplier_vat_rate",
           "type": "integer",
           "unsigned": false,
           "autoincrement": false,
@@ -70,8 +79,8 @@
           "nullable": true,
           "mappedType": "integer"
         },
-        "minimum_order_quantity": {
-          "name": "minimum_order_quantity",
+        "supplier_price_gross": {
+          "name": "supplier_price_gross",
           "type": "integer",
           "unsigned": false,
           "autoincrement": false,
@@ -79,8 +88,18 @@
           "nullable": true,
           "mappedType": "integer"
         },
-        "maximum_order_quantity": {
-          "name": "maximum_order_quantity",
+        "supplier_currency": {
+          "name": "supplier_currency",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "default": "'EUR'",
+          "mappedType": "text"
+        },
+        "supplier_lead_time": {
+          "name": "supplier_lead_time",
           "type": "integer",
           "unsigned": false,
           "autoincrement": false,
@@ -88,14 +107,80 @@
           "nullable": true,
           "mappedType": "integer"
         },
-        "stock_quantity": {
-          "name": "stock_quantity",
+        "supplier_delivery_time": {
+          "name": "supplier_delivery_time",
           "type": "integer",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
           "mappedType": "integer"
+        },
+        "supplier_min_order_qty": {
+          "name": "supplier_min_order_qty",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
+        },
+        "supplier_order_interval": {
+          "name": "supplier_order_interval",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
+        },
+        "supplier_stock": {
+          "name": "supplier_stock",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
+        },
+        "supplier_comment": {
+          "name": "supplier_comment",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "supplier_merge_stock": {
+          "name": "supplier_merge_stock",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "false",
+          "mappedType": "boolean"
+        },
+        "is_dropshipping": {
+          "name": "is_dropshipping",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "false",
+          "mappedType": "boolean"
+        },
+        "use_supplier_lead_time": {
+          "name": "use_supplier_lead_time",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "false",
+          "mappedType": "boolean"
         },
         "notes": {
           "name": "notes",
@@ -233,6 +318,33 @@
           "nullable": true,
           "mappedType": "text"
         },
+        "salutation": {
+          "name": "salutation",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
         "company": {
           "name": "company",
           "type": "text",
@@ -244,6 +356,15 @@
         },
         "company_addition": {
           "name": "company_addition",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "contact": {
+          "name": "contact",
           "type": "text",
           "unsigned": false,
           "autoincrement": false,
@@ -305,6 +426,15 @@
           "nullable": true,
           "mappedType": "text"
         },
+        "fax": {
+          "name": "fax",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
         "email": {
           "name": "email",
           "type": "text",
@@ -350,6 +480,35 @@
           "nullable": true,
           "default": "'active'",
           "mappedType": "text"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "true",
+          "mappedType": "boolean"
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "default": "'Deutsch'",
+          "mappedType": "text"
+        },
+        "lead_time": {
+          "name": "lead_time",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
         },
         "contact_salutation": {
           "name": "contact_salutation",

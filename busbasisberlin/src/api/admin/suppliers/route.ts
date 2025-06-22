@@ -9,48 +9,19 @@ import { SUPPLIER_MODULE } from '../../../modules/supplier';
 import { Supplier } from '../../../modules/supplier/models/supplier';
 import SupplierModuleService from '../../../modules/supplier/service';
 
-// GET /admin/suppliers - List all suppliers using listAndCountSuppliers
+// GET /admin/suppliers - List all suppliers using listSuppliers
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const supplierService: SupplierModuleService = req.scope.resolve(SUPPLIER_MODULE);
 
   try {
-    // Parse query parameters for pagination and filtering
-    const { limit = 10, offset = 0, search, status, active } = req.query;
-
-    // Build filters object for the service
-    const filters: any = {};
-
-    if (search) {
-      // Use $or operator for searching across multiple fields
-      filters.$or = [
-        { company: { $ilike: `%${search}%` } },
-        { supplier_number: { $ilike: `%${search}%` } },
-        { email: { $ilike: `%${search}%` } },
-        { first_name: { $ilike: `%${search}%` } },
-        { last_name: { $ilike: `%${search}%` } },
-      ];
-    }
-
-    if (status) {
-      filters.status = status;
-    }
-
-    if (active !== undefined) {
-      filters.active = active === 'true';
-    }
-
-    // Use the auto-generated listAndCountSuppliers method
-    const [suppliers, count] = await supplierService.listAndCountSuppliers(filters, {
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string),
-      order: { created_at: 'desc' },
-    });
+    // Use the simple listSuppliers method without complex filters
+    const suppliers = await supplierService.listSuppliers();
 
     res.json({
       suppliers,
-      count,
-      offset: parseInt(offset as string),
-      limit: parseInt(limit as string),
+      count: suppliers.length,
+      offset: 0,
+      limit: suppliers.length,
     });
   } catch (error) {
     console.error('Error fetching suppliers:', error);
