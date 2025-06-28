@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label, Text, Textarea } from '@medusajs/ui';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import LabelSelect from './LabelSelect';
 
 // --- Zod Schema (Complete) ---
 const phoneSchema = z.object({
@@ -80,6 +81,11 @@ interface SupplierFormProps {
   isSubmitting: boolean;
 }
 
+// Predefined label options
+const PHONE_LABELS = ['Mobil', 'Festnetz', 'Primär', 'Sekundär'];
+const EMAIL_LABELS = ['Primär', 'Sekundär', 'Rechnung', 'Support'];
+const ADDRESS_LABELS = ['Hauptsitz', 'Lager 1', 'Lager 2', 'Büro', 'Werkstatt'];
+
 // Separate component for contact to avoid hooks violations
 const ContactForm = ({
   contactIndex,
@@ -157,7 +163,14 @@ const ContactForm = ({
             <Controller
               control={control}
               name={`contacts.${contactIndex}.phones.${pIdx}.label`}
-              render={({ field }) => <Input placeholder="Label" {...field} />}
+              render={({ field }) => (
+                <LabelSelect
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  options={PHONE_LABELS}
+                  placeholder="Label wählen"
+                />
+              )}
             />
             {phoneArray.fields.length > 1 && (
               <Button type="button" size="small" variant="danger" onClick={() => phoneArray.remove(pIdx)}>
@@ -189,7 +202,14 @@ const ContactForm = ({
             <Controller
               control={control}
               name={`contacts.${contactIndex}.emails.${eIdx}.label`}
-              render={({ field }) => <Input placeholder="Label" {...field} />}
+              render={({ field }) => (
+                <LabelSelect
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  options={EMAIL_LABELS}
+                  placeholder="Label wählen"
+                />
+              )}
             />
             {emailArray.fields.length > 1 && (
               <Button type="button" size="small" variant="danger" onClick={() => emailArray.remove(eIdx)}>
@@ -525,7 +545,14 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.label`}
-                      render={({ field }) => <Input placeholder="z.B. Hauptsitz, Lager" {...field} />}
+                      render={({ field }) => (
+                        <LabelSelect
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          options={ADDRESS_LABELS}
+                          placeholder="Label wählen"
+                        />
+                      )}
                     />
                   </div>
                   <div className="flex items-center">
