@@ -16,7 +16,7 @@ interface CreateSupplierData {
   status?: string;
   is_active?: boolean;
   language?: string;
-  lead_time?: number;
+  lead_time?: number | null;
   bank_name?: string;
   bank_code?: string;
   account_number?: string;

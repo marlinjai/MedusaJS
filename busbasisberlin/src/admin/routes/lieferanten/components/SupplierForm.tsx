@@ -359,7 +359,7 @@ const ContactForm = ({
   );
 };
 
-const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierFormProps) => {
+const SupplierForm = ({ formId, initialData, onSubmit }: SupplierFormProps) => {
   // Complete default values matching the schema
   const defaultValues: SupplierFormValues = {
     company: '',
