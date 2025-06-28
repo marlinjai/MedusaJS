@@ -2,7 +2,6 @@ import { ExecArgs } from '@medusajs/framework/types';
 import { parse } from 'csv-parse/sync';
 import * as fs from 'fs';
 import { resolve } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import SupplierService from '../modules/supplier/service';
 
 export default async function importSuppliers({ container }: ExecArgs) {
@@ -16,15 +15,11 @@ export default async function importSuppliers({ container }: ExecArgs) {
 
   let fileContent;
   try {
-    // Try UTF-8 first, then fallback to latin1
+    // Use UTF-8 encoding to properly handle umlauts
     fileContent = fs.readFileSync(filePath, { encoding: 'utf8' });
   } catch (error) {
-    try {
-      fileContent = fs.readFileSync(filePath, { encoding: 'latin1' });
-    } catch (error2) {
-      logger.error(`Error reading the CSV file: ${error2.message}`);
-      return;
-    }
+    logger.error(`Error reading the CSV file: ${error.message}`);
+    return;
   }
 
   const records = parse(fileContent, {
@@ -52,9 +47,14 @@ export default async function importSuppliers({ container }: ExecArgs) {
   let skippedCount = 0;
 
   for (const record of records) {
-    // Handle both possible encodings of the column name
-    const internalKey = record['Interner Schlüssel'] || record['Interner SchlÃ¼ssel'] || uuidv4();
+    const internalKey = record['Interner Schlüssel'];
     const supplierNumber = record.Lieferantennummer || null;
+
+    // Only skip if internal key is truly missing
+    if (!internalKey) {
+      logger.warn(`Skipping record without Interner Schlüssel: ${JSON.stringify(record)}`);
+      continue;
+    }
 
     // Check if supplier already exists by supplier number or internal key
     if ((supplierNumber && existingSupplierNumbers.has(supplierNumber)) || existingInternalKeys.has(internalKey)) {
@@ -64,7 +64,7 @@ export default async function importSuppliers({ container }: ExecArgs) {
     }
 
     try {
-      // Map CSV data to supplier model with fallbacks
+      // Map CSV data to supplier model - EXACT column mapping
       const supplierData = {
         supplier_number: supplierNumber,
         customer_number: record['Eigene Kd-Nr'] || null,
@@ -72,20 +72,36 @@ export default async function importSuppliers({ container }: ExecArgs) {
         salutation: record.Anrede || null,
         first_name: record.Vorname || null,
         last_name: record.Nachname || null,
-        company: record.Firma || `Supplier ${internalKey}`, // Generate company name if missing
-        email: record.Email || null,
-        phone: record.Telefon || null,
-        mobile: record.Mobil || null,
-        fax: record.Fax || null,
-        website: record.Website || null,
-        street: record.Straße || record.StraÃe || null, // Handle encoding
-        house_number: record.Hausnummer || null,
+        company: record.Firma || `Supplier ${internalKey}`,
+        company_addition: record.Firmenzusatz || null,
+        contact: record.Kontakt || null,
+        street: record.Strasse || null,
         postal_code: record.PLZ || null,
         city: record.Ort || null,
-        country: record.Land || null,
-        tax_number: record.Steuernummer || null,
-        vat_number: record.UStIdNr || null,
-        bank_name: record.Bank || null,
+        country: record['Land / ISO (2-stellig)'] || null,
+        phone: record['Tel Zentrale'] || null,
+        phone_direct: record['Tel Durchwahl'] || null,
+        fax: record.Fax || null,
+        email: record.Email || null,
+        website: record.WWW || null,
+        note: record.Anmerkung || null,
+        vat_id: record.UstID || null,
+        status: record.Status || 'active',
+        is_active: record.Aktiv === 'Y',
+        language: record.Sprache || 'Deutsch',
+        lead_time: record.Lieferzeit ? parseInt(record.Lieferzeit, 10) : null,
+        contact_salutation: record['Anrede-Ansprechpartner'] || null,
+        contact_first_name: record['Vorname-Ansprechpartner'] || null,
+        contact_last_name: record['Name-Ansprechpartner'] || null,
+        contact_phone: record['Tel-Ansprechpartner'] || null,
+        contact_mobile: record['Mobil-Ansprechpartner'] || null,
+        contact_fax: record['Fax-Ansprechpartner'] || null,
+        contact_email: record['Email-Ansprechpartner'] || null,
+        contact_department: record['Abteilung-Ansprechpartner'] || null,
+        bank_name: record.BankName || null,
+        bank_code: record.BLZ || null,
+        account_number: record.KontoNr || null,
+        account_holder: record.Inhaber || null,
         iban: record.IBAN || null,
         bic: record.BIC || null,
       };

@@ -1,5 +1,6 @@
 import { EllipsisHorizontal, PencilSquare, Trash } from '@medusajs/icons';
-import { Container, DropdownMenu, IconButton, Table, Text, usePrompt } from '@medusajs/ui';
+import { Container, DropdownMenu, IconButton, Table, Text } from '@medusajs/ui';
+import { useQuery } from '@tanstack/react-query';
 import type { Supplier } from '../../../../modules/supplier/models/supplier';
 
 interface SupplierTableProps {
@@ -9,20 +10,20 @@ interface SupplierTableProps {
   isLoading: boolean;
 }
 
+// Custom hook to fetch supplier details with contacts and addresses
+const useSupplierDetails = (supplierId: string) => {
+  return useQuery({
+    queryKey: ['supplier-details', supplierId],
+    queryFn: async () => {
+      const res = await fetch(`/admin/suppliers/${supplierId}/details`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch supplier details');
+      return res.json();
+    },
+    enabled: !!supplierId,
+  });
+};
+
 const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTableProps) => {
-  const prompt = usePrompt();
-
-  const handleDelete = async (supplier: Supplier) => {
-    const shouldDelete = await prompt({
-      title: 'Lieferant löschen',
-      description: `Sind Sie sicher, dass Sie den Lieferanten "${supplier.company}" löschen möchten?`,
-    });
-
-    if (shouldDelete) {
-      onDelete(supplier.id);
-    }
-  };
-
   if (isLoading) {
     return (
       <Container className="flex items-center justify-center py-16">
@@ -45,7 +46,6 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTable
       <Table.Header>
         <Table.Row>
           <Table.HeaderCell>Firma</Table.HeaderCell>
-          <Table.HeaderCell>Hauptkontakt</Table.HeaderCell>
           <Table.HeaderCell>Kontaktperson</Table.HeaderCell>
           <Table.HeaderCell>Adresse</Table.HeaderCell>
           <Table.HeaderCell>Nummern</Table.HeaderCell>
@@ -54,167 +54,164 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTable
         </Table.Row>
       </Table.Header>
       <Table.Body>
-        {suppliers.map(supplier => (
-          <Table.Row
-            key={supplier.id}
-            className="group cursor-pointer hover:bg-ui-bg-subtle transition-colors"
-            onClick={() => onEdit(supplier)}
-          >
-            {/* Company Information */}
-            <Table.Cell>
-              <div className="flex flex-col gap-y-1">
-                <Text size="small" weight="plus">
-                  🏢 {supplier.company}
-                </Text>
-                {supplier.company_addition && (
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    {supplier.company_addition}
-                  </Text>
-                )}
-                {supplier.vat_id && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    🆔 USt-ID: {supplier.vat_id}
-                  </Text>
-                )}
-                {supplier.internal_key && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    🔑 {supplier.internal_key}
-                  </Text>
-                )}
-              </div>
-            </Table.Cell>
+        {suppliers.map(supplier => {
+          // Fetch details for each supplier
+          const { data: supplierDetails } = useSupplierDetails(supplier.id);
 
-            {/* Main Contact Information */}
-            <Table.Cell>
-              <div className="flex flex-col gap-y-1">
-                {supplier.email && <Text size="small">📧 {supplier.email}</Text>}
-                {supplier.phone && (
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    📱 {supplier.phone}
+          return (
+            <Table.Row
+              key={supplier.id}
+              className="group cursor-pointer hover:bg-ui-bg-subtle transition-colors"
+              onClick={() => onEdit(supplier)}
+            >
+              {/* Company Information */}
+              <Table.Cell>
+                <div className="flex flex-col gap-y-1">
+                  <Text size="small" weight="plus">
+                    🏢 {supplier.company}
                   </Text>
-                )}
-                {supplier.phone_direct && (
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    📞 {supplier.phone_direct}
-                  </Text>
-                )}
-                {supplier.website && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    🌐 {supplier.website}
-                  </Text>
-                )}
-                {!supplier.email && !supplier.phone && !supplier.phone_direct && (
-                  <Text size="small" className="text-ui-fg-muted">
-                    -
-                  </Text>
-                )}
-              </div>
-            </Table.Cell>
+                  {supplier.company_addition && (
+                    <Text size="xsmall" className="text-ui-fg-subtle">
+                      {supplier.company_addition}
+                    </Text>
+                  )}
+                  {supplier.vat_id && (
+                    <Text size="xsmall" className="text-ui-fg-muted">
+                      🆔 USt-ID: {supplier.vat_id}
+                    </Text>
+                  )}
+                  {supplier.internal_key && (
+                    <Text size="xsmall" className="text-ui-fg-muted">
+                      🔑 {supplier.internal_key}
+                    </Text>
+                  )}
+                </div>
+              </Table.Cell>
 
-            {/* Additional Contact Person */}
-            <Table.Cell>
-              <div className="flex flex-col gap-y-1">
-                {(supplier.contact_first_name || supplier.contact_last_name) && (
-                  <Text size="small">
-                    👤 {supplier.contact_salutation ? `${supplier.contact_salutation} ` : ''}
-                    {supplier.contact_first_name} {supplier.contact_last_name}
-                  </Text>
-                )}
-                {supplier.contact_department && (
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    🏢 {supplier.contact_department}
-                  </Text>
-                )}
-                {supplier.contact_email && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    📧 {supplier.contact_email}
-                  </Text>
-                )}
-                {supplier.contact_phone && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    📞 {supplier.contact_phone}
-                  </Text>
-                )}
-                {!supplier.contact_first_name && !supplier.contact_last_name && !supplier.contact_email && (
-                  <Text size="small" className="text-ui-fg-muted">
-                    -
-                  </Text>
-                )}
-              </div>
-            </Table.Cell>
+              {/* Contact Person Details */}
+              <Table.Cell>
+                <div className="flex flex-col gap-y-1">
+                  {supplierDetails?.supplier?.contacts && supplierDetails.supplier.contacts.length > 0 ? (
+                    (() => {
+                      const contact = supplierDetails.supplier.contacts[0];
+                      return (
+                        <div>
+                          <Text size="small">
+                            👤 {contact.salutation ? `${contact.salutation} ` : ''}
+                            {contact.first_name} {contact.last_name}
+                          </Text>
+                          {contact.department && (
+                            <Text size="xsmall" className="text-ui-fg-subtle">
+                              🏢 {contact.department}
+                            </Text>
+                          )}
+                          {/* Show first email */}
+                          {contact.emails && contact.emails.length > 0 && contact.emails[0].email && (
+                            <Text size="xsmall" className="text-ui-fg-muted">
+                              📧 {contact.emails[0].email}{' '}
+                              {contact.emails[0].label ? `(${contact.emails[0].label})` : ''}
+                            </Text>
+                          )}
+                          {/* Show first phone */}
+                          {contact.phones && contact.phones.length > 0 && contact.phones[0].number && (
+                            <Text size="xsmall" className="text-ui-fg-muted">
+                              📞 {contact.phones[0].number}{' '}
+                              {contact.phones[0].label ? `(${contact.phones[0].label})` : ''}
+                            </Text>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : supplierDetails === undefined ? (
+                    <Text size="small" className="text-ui-fg-muted">
+                      Lädt...
+                    </Text>
+                  ) : (
+                    <Text size="small" className="text-ui-fg-muted">
+                      -
+                    </Text>
+                  )}
+                </div>
+              </Table.Cell>
 
-            {/* Address */}
-            <Table.Cell>
-              <div className="flex flex-col gap-y-1">
-                {supplier.street && <Text size="small">📍 {supplier.street}</Text>}
-                {(supplier.postal_code || supplier.city) && (
-                  <Text size="small" className="text-ui-fg-subtle">
-                    {supplier.postal_code} {supplier.city}
-                  </Text>
-                )}
-                {supplier.country && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    🌍 {supplier.country}
-                  </Text>
-                )}
-                {!supplier.street && !supplier.postal_code && !supplier.city && (
-                  <Text size="small" className="text-ui-fg-muted">
-                    -
-                  </Text>
-                )}
-              </div>
-            </Table.Cell>
+              {/* Address */}
+              <Table.Cell>
+                <div className="flex flex-col gap-y-1">
+                  {supplierDetails?.supplier?.addresses && supplierDetails.supplier.addresses.length > 0 ? (
+                    (() => {
+                      const address = supplierDetails.supplier.addresses[0];
+                      return (
+                        <div>
+                          {address.street && <Text size="small">📍 {address.street}</Text>}
+                          {(address.postal_code || address.city) && (
+                            <Text size="small" className="text-ui-fg-subtle">
+                              {address.postal_code} {address.city}
+                            </Text>
+                          )}
+                          {address.country_name && (
+                            <Text size="xsmall" className="text-ui-fg-muted">
+                              🌍 {address.country_name}
+                            </Text>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : supplierDetails === undefined ? (
+                    <Text size="small" className="text-ui-fg-muted">
+                      Lädt...
+                    </Text>
+                  ) : (
+                    <Text size="small" className="text-ui-fg-muted">
+                      -
+                    </Text>
+                  )}
+                </div>
+              </Table.Cell>
 
-            {/* Numbers */}
-            <Table.Cell>
-              <div className="flex flex-col gap-y-1">
-                {supplier.supplier_number && (
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    📦 Lief.: {supplier.supplier_number}
-                  </Text>
-                )}
-                {supplier.customer_number && (
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    👤 Kund.: {supplier.customer_number}
-                  </Text>
-                )}
-                {!supplier.supplier_number && !supplier.customer_number && (
-                  <Text size="small" className="text-ui-fg-muted">
-                    -
-                  </Text>
-                )}
-              </div>
-            </Table.Cell>
+              {/* Numbers */}
+              <Table.Cell>
+                <div className="flex flex-col gap-y-1">
+                  {supplier.supplier_number && (
+                    <Text size="xsmall" className="text-ui-fg-subtle">
+                      📦 Lief.: {supplier.supplier_number}
+                    </Text>
+                  )}
+                  {supplier.customer_number && (
+                    <Text size="xsmall" className="text-ui-fg-subtle">
+                      👤 Kund.: {supplier.customer_number}
+                    </Text>
+                  )}
+                  {!supplier.supplier_number && !supplier.customer_number && (
+                    <Text size="small" className="text-ui-fg-muted">
+                      -
+                    </Text>
+                  )}
+                </div>
+              </Table.Cell>
 
-            {/* Bank Information */}
-            <Table.Cell>
-              <div className="flex flex-col gap-y-1">
-                {supplier.bank_name && (
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    🏦 {supplier.bank_name}
-                  </Text>
-                )}
-                {supplier.iban && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    💳 {supplier.iban.substring(0, 8)}...
-                  </Text>
-                )}
-                {supplier.account_holder && (
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    👤 {supplier.account_holder}
-                  </Text>
-                )}
-                {!supplier.bank_name && !supplier.iban && !supplier.account_holder && (
-                  <Text size="small" className="text-ui-fg-muted">
-                    -
-                  </Text>
-                )}
-              </div>
-            </Table.Cell>
+              {/* Bank Information */}
+              <Table.Cell>
+                <div className="flex flex-col gap-y-1">
+                  {supplier.bank_name && (
+                    <Text size="xsmall" className="text-ui-fg-subtle">
+                      🏦 {supplier.bank_name}
+                    </Text>
+                  )}
+                  {supplier.iban && (
+                    <Text size="xsmall" className="text-ui-fg-muted">
+                      💳 {supplier.iban.substring(0, 8)}...
+                    </Text>
+                  )}
+                  {!supplier.bank_name && !supplier.iban && (
+                    <Text size="small" className="text-ui-fg-muted">
+                      -
+                    </Text>
+                  )}
+                </div>
+              </Table.Cell>
 
-            {/* Actions */}
-            <Table.Cell>
-              <div onClick={(e) => e.stopPropagation()}>
+              {/* Actions */}
+              <Table.Cell>
                 <DropdownMenu>
                   <DropdownMenu.Trigger asChild>
                     <IconButton variant="transparent" size="small">
@@ -227,16 +224,16 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, isLoading }: SupplierTable
                       Bearbeiten
                     </DropdownMenu.Item>
                     <DropdownMenu.Separator />
-                    <DropdownMenu.Item variant="danger" onClick={() => handleDelete(supplier)}>
+                    <DropdownMenu.Item onClick={() => onDelete(supplier.id)} className="text-ui-fg-error">
                       <Trash />
                       Löschen
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
                 </DropdownMenu>
-              </div>
-            </Table.Cell>
-          </Table.Row>
-        ))}
+              </Table.Cell>
+            </Table.Row>
+          );
+        })}
       </Table.Body>
     </Table>
   );

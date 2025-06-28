@@ -25,6 +25,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "import:suppliers": "medusa exec ./src/scripts/import-suppliers.ts",
+    "update:suppliers": "medusa exec ./src/scripts/update-suppliers.ts",
     "import:images": "medusa exec ./src/scripts/upload-images.ts"
   },
   "dependencies": {

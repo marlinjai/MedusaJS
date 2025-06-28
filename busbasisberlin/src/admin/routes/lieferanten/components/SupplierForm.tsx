@@ -1,441 +1,655 @@
-import { Input, Label, Text, Textarea } from '@medusajs/ui';
-import { useEffect, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Input, Label, Text, Textarea } from '@medusajs/ui';
+import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-import type { Supplier } from '../../../../modules/supplier/models/supplier';
+// --- Zod Schema (Complete) ---
+const phoneSchema = z.object({
+  number: z.string().optional(),
+  label: z.string().optional(),
+});
+
+const emailSchema = z.object({
+  email: z.string().optional(),
+  label: z.string().optional(),
+});
+
+const contactSchema = z.object({
+  salutation: z.string().optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  department: z.string().optional(),
+  phones: z.array(phoneSchema).default([]),
+  emails: z.array(emailSchema).default([]),
+});
+
+const addressSchema = z.object({
+  label: z.string().optional(),
+  street: z.string().optional(),
+  street_number: z.string().optional(),
+  postal_code: z.string().optional(),
+  city: z.string().optional(),
+  country_name: z.string().optional(),
+  state: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  is_default: z.boolean().default(false),
+});
+
+const supplierSchema = z.object({
+  // Required fields
+  company: z.string().min(1, 'Firmenname ist erforderlich'),
+
+  // Basic identification
+  company_addition: z.string().optional(),
+  supplier_number: z.string().optional(),
+  customer_number: z.string().optional(),
+  internal_key: z.string().optional(),
+
+  // Business details
+  vat_id: z.string().optional(),
+  status: z.string().optional(),
+  is_active: z.boolean().default(true),
+  language: z.string().optional(),
+  lead_time: z.number().optional(),
+
+  // Web & notes
+  website: z.string().optional(),
+  note: z.string().optional(),
+
+  // Bank details
+  bank_name: z.string().optional(),
+  bank_code: z.string().optional(),
+  account_number: z.string().optional(),
+  account_holder: z.string().optional(),
+  iban: z.string().optional(),
+  bic: z.string().optional(),
+
+  // Related data
+  contacts: z.array(contactSchema).default([]),
+  addresses: z.array(addressSchema).default([]),
+});
+
+type SupplierFormValues = z.infer<typeof supplierSchema>;
 
 interface SupplierFormProps {
   formId: string;
-  initialData?: Partial<Supplier> | null;
-  onSubmit: (data: Partial<Supplier>) => void;
+  initialData?: Partial<SupplierFormValues>;
+  supplierId?: string;
+  onSubmit: (data: SupplierFormValues) => void;
   isSubmitting: boolean;
 }
 
-const SupplierForm = ({ formId, initialData, onSubmit }: SupplierFormProps) => {
-  const [formData, setFormData] = useState<Partial<Supplier>>({
+// Separate component for contact to avoid hooks violations
+const ContactForm = ({
+  contactIndex,
+  control,
+  removeContact,
+}: {
+  contactIndex: number;
+  control: any;
+  removeContact: (index: number) => void;
+}) => {
+  // These hooks are now called at the top level of this component
+  const phoneArray = useFieldArray({ control, name: `contacts.${contactIndex}.phones` });
+  const emailArray = useFieldArray({ control, name: `contacts.${contactIndex}.emails` });
+
+  return (
+    <div className="border rounded-md p-4 mb-4 bg-ui-bg-subtle">
+      <div className="flex items-center justify-between mb-2">
+        <Text className="font-semibold">Kontakt {contactIndex + 1}</Text>
+        <Button type="button" size="small" variant="danger" onClick={() => removeContact(contactIndex)}>
+          Entfernen
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-4 mb-2">
+        <div>
+          <Label>Anrede</Label>
+          <Controller
+            control={control}
+            name={`contacts.${contactIndex}.salutation`}
+            render={({ field }) => (
+              <select {...field} className="w-full px-3 py-2 border border-ui-border-base rounded-md bg-ui-bg-field">
+                <option value="">Anrede wählen</option>
+                <option value="Herr">Herr</option>
+                <option value="Frau">Frau</option>
+                <option value="Divers">Divers</option>
+              </select>
+            )}
+          />
+        </div>
+        <div>
+          <Label>Abteilung</Label>
+          <Controller
+            control={control}
+            name={`contacts.${contactIndex}.department`}
+            render={({ field }) => <Input placeholder="Abteilung" {...field} />}
+          />
+        </div>
+        <div>
+          <Label>Vorname</Label>
+          <Controller
+            control={control}
+            name={`contacts.${contactIndex}.first_name`}
+            render={({ field }) => <Input placeholder="Vorname" {...field} />}
+          />
+        </div>
+        <div>
+          <Label>Nachname</Label>
+          <Controller
+            control={control}
+            name={`contacts.${contactIndex}.last_name`}
+            render={({ field }) => <Input placeholder="Nachname" {...field} />}
+          />
+        </div>
+      </div>
+
+      {/* Phone Numbers */}
+      <div className="mb-2">
+        <Text className="font-semibold mb-1">Telefonnummern</Text>
+        {phoneArray.fields.map((phone, pIdx) => (
+          <div key={phone.id} className="flex gap-2 mb-1">
+            <Controller
+              control={control}
+              name={`contacts.${contactIndex}.phones.${pIdx}.number`}
+              render={({ field }) => <Input placeholder="Nummer" {...field} />}
+            />
+            <Controller
+              control={control}
+              name={`contacts.${contactIndex}.phones.${pIdx}.label`}
+              render={({ field }) => <Input placeholder="Label" {...field} />}
+            />
+            {phoneArray.fields.length > 1 && (
+              <Button type="button" size="small" variant="danger" onClick={() => phoneArray.remove(pIdx)}>
+                Entfernen
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button
+          type="button"
+          size="small"
+          variant="secondary"
+          onClick={() => phoneArray.append({ number: '', label: '' })}
+        >
+          Telefonnummer hinzufügen
+        </Button>
+      </div>
+
+      {/* Emails */}
+      <div className="mb-2">
+        <Text className="font-semibold mb-1">E-Mail-Adressen</Text>
+        {emailArray.fields.map((email, eIdx) => (
+          <div key={email.id} className="flex gap-2 mb-1">
+            <Controller
+              control={control}
+              name={`contacts.${contactIndex}.emails.${eIdx}.email`}
+              render={({ field }) => <Input placeholder="E-Mail" {...field} />}
+            />
+            <Controller
+              control={control}
+              name={`contacts.${contactIndex}.emails.${eIdx}.label`}
+              render={({ field }) => <Input placeholder="Label" {...field} />}
+            />
+            {emailArray.fields.length > 1 && (
+              <Button type="button" size="small" variant="danger" onClick={() => emailArray.remove(eIdx)}>
+                Entfernen
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button
+          type="button"
+          size="small"
+          variant="secondary"
+          onClick={() => emailArray.append({ email: '', label: '' })}
+        >
+          E-Mail-Adresse hinzufügen
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierFormProps) => {
+  // Complete default values matching the schema
+  const defaultValues: SupplierFormValues = {
     company: '',
     company_addition: '',
     supplier_number: '',
     customer_number: '',
     internal_key: '',
-    email: '',
-    phone: '',
-    phone_direct: '',
-    website: '',
-    street: '',
-    postal_code: '',
-    city: '',
-    country: '',
     vat_id: '',
     status: 'active',
-    contact_salutation: '',
-    contact_first_name: '',
-    contact_last_name: '',
-    contact_phone: '',
-    contact_mobile: '',
-    contact_fax: '',
-    contact_email: '',
-    contact_department: '',
+    is_active: true,
+    language: 'Deutsch',
+    lead_time: undefined,
+    website: '',
+    note: '',
     bank_name: '',
     bank_code: '',
     account_number: '',
     account_holder: '',
     iban: '',
     bic: '',
-    note: '',
+    contacts: [],
+    addresses: [],
+  };
+
+  const form = useForm<SupplierFormValues>({
+    resolver: zodResolver(supplierSchema),
+    defaultValues: initialData ? { ...defaultValues, ...initialData } : defaultValues,
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = form;
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    }
-  }, [initialData]);
+  // Contacts and addresses arrays
+  const {
+    fields: contactFields,
+    append: appendContact,
+    remove: removeContact,
+  } = useFieldArray({ control, name: 'contacts' });
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.company?.trim()) {
-      newErrors.company = 'Firmenname ist erforderlich';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    onSubmit(formData);
-  };
+  const {
+    fields: addressFields,
+    append: appendAddress,
+    remove: removeAddress,
+  } = useFieldArray({ control, name: 'addresses' });
 
   return (
-    <form id={formId} onSubmit={handleSubmit}>
-      <div className="p-6 space-y-8">
-        {/* Basic Information */}
-        <div>
-          <h2 className="text-base font-semibold mb-4">Grundinformationen</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="company">
-                Firmenname <span className="text-ui-fg-error">*</span>
-              </Label>
-              <Input
-                id="company"
-                placeholder="Firmenname eingeben"
-                value={formData.company || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('company', e.target.value)}
-                className={errors.company ? 'border-ui-error' : ''}
-              />
-              {errors.company && <Text className="text-ui-fg-error text-xs mt-1">{errors.company}</Text>}
-            </div>
-            <div>
-              <Label htmlFor="company_addition">Firmenzusatz</Label>
-              <Input
-                id="company_addition"
-                placeholder="Firmenzusatz"
-                value={formData.company_addition || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('company_addition', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="vat_id">USt-ID</Label>
-              <Input
-                id="vat_id"
-                placeholder="USt-ID"
-                value={formData.vat_id || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('vat_id', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="supplier_number">Lieferantennummer</Label>
-              <Input
-                id="supplier_number"
-                placeholder="Lieferantennummer"
-                value={formData.supplier_number || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('supplier_number', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="customer_number">Kundennummer</Label>
-              <Input
-                id="customer_number"
-                placeholder="Kundennummer"
-                value={formData.customer_number || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('customer_number', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="internal_key">Interner Schlüssel</Label>
-              <Input
-                id="internal_key"
-                placeholder="Interner Schlüssel"
-                value={formData.internal_key || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('internal_key', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                placeholder="https://example.com"
-                value={formData.website || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('website', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Contact Information */}
-        <div>
-          <h2 className="text-base font-semibold mb-4">Kontaktinformationen</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="email">E-Mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="E-Mail Adresse"
-                value={formData.email || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('email', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Telefon (Mobil)</Label>
-              <Input
-                id="phone"
-                placeholder="Mobilnummer"
-                value={formData.phone || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('phone', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone_direct">Telefon (Durchwahl)</Label>
-              <Input
-                id="phone_direct"
-                placeholder="Durchwahl"
-                value={formData.phone_direct || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('phone_direct', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Contact Person */}
-        <div>
-          <h2 className="text-base font-semibold mb-4">Zusätzliche Kontaktperson</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="contact_salutation">Anrede</Label>
-              <select
-                id="contact_salutation"
-                value={formData.contact_salutation || 'none'}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  handleInputChange('contact_salutation', e.target.value === 'none' ? '' : e.target.value)
-                }
-                className="w-full px-3 py-2 border border-ui-border-base rounded-md bg-ui-bg-subtle hover:bg-ui-bg-field-hover focus:outline-none focus:ring-2 focus:ring-ui-border-interactive focus:border-ui-border-interactive"
-              >
-                <option value="none">Keine Anrede</option>
-                <option value="Herr">Herr</option>
-                <option value="Frau">Frau</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="contact_department">Abteilung</Label>
-              <Input
-                id="contact_department"
-                placeholder="Abteilung"
-                value={formData.contact_department || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('contact_department', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="contact_first_name">Vorname</Label>
-              <Input
-                id="contact_first_name"
-                placeholder="Vorname"
-                value={formData.contact_first_name || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('contact_first_name', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="contact_last_name">Nachname</Label>
-              <Input
-                id="contact_last_name"
-                placeholder="Nachname"
-                value={formData.contact_last_name || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('contact_last_name', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="contact_email">E-Mail</Label>
-              <Input
-                id="contact_email"
-                type="email"
-                placeholder="E-Mail Adresse"
-                value={formData.contact_email || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('contact_email', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="contact_phone">Telefon</Label>
-              <Input
-                id="contact_phone"
-                placeholder="Telefonnummer"
-                value={formData.contact_phone || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('contact_phone', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="contact_mobile">Mobil</Label>
-              <Input
-                id="contact_mobile"
-                placeholder="Mobilnummer"
-                value={formData.contact_mobile || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('contact_mobile', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="contact_fax">Fax</Label>
-              <Input
-                id="contact_fax"
-                placeholder="Faxnummer"
-                value={formData.contact_fax || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('contact_fax', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Address */}
-        <div>
-          <h2 className="text-base font-semibold mb-4">Adresse</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label htmlFor="street">Straße</Label>
-              <Input
-                id="street"
-                placeholder="Straße und Hausnummer"
-                value={formData.street || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('street', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="postal_code">PLZ</Label>
-              <Input
-                id="postal_code"
-                placeholder="Postleitzahl"
-                value={formData.postal_code || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('postal_code', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="city">Stadt</Label>
-              <Input
-                id="city"
-                placeholder="Stadt"
-                value={formData.city || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('city', e.target.value)}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label htmlFor="country">Land</Label>
-              <Input
-                id="country"
-                placeholder="Land"
-                value={formData.country || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('country', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Bank Information */}
-        <div>
-          <h2 className="text-base font-semibold mb-4">Bankdaten</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="bank_name">Bankname</Label>
-              <Input
-                id="bank_name"
-                placeholder="Name der Bank"
-                value={formData.bank_name || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('bank_name', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="bank_code">Bankleitzahl</Label>
-              <Input
-                id="bank_code"
-                placeholder="Bankleitzahl"
-                value={formData.bank_code || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('bank_code', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="account_number">Kontonummer</Label>
-              <Input
-                id="account_number"
-                placeholder="Kontonummer"
-                value={formData.account_number || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('account_number', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="account_holder">Kontoinhaber</Label>
-              <Input
-                id="account_holder"
-                placeholder="Kontoinhaber"
-                value={formData.account_holder || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleInputChange('account_holder', e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="iban">IBAN</Label>
-              <Input
-                id="iban"
-                placeholder="IBAN"
-                value={formData.iban || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('iban', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="bic">BIC</Label>
-              <Input
-                id="bic"
-                placeholder="BIC/SWIFT"
-                value={formData.bic || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('bic', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Settings */}
-        <div>
-          <h2 className="text-base font-semibold mb-4">Einstellungen</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <select
-                id="status"
-                value={formData.status || 'active'}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-ui-border-base rounded-md bg-ui-bg-subtle hover:bg-ui-bg-field-hover focus:outline-none focus:ring-2 focus:ring-ui-border-interactive focus:border-ui-border-interactive"
-              >
-                <option value="active">Aktiv</option>
-                <option value="inactive">Inaktiv</option>
-                <option value="pending">Ausstehend</option>
-                <option value="blocked">Gesperrt</option>
-              </select>
-              <Text className="text-xs text-ui-fg-muted mt-1">Aktueller Status: {formData.status || 'active'}</Text>
-            </div>
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div>
-          <h2 className="text-base font-semibold mb-4">Notizen</h2>
+    <FormProvider {...form}>
+      <form id={formId} onSubmit={handleSubmit(onSubmit)}>
+        <div className="p-6 space-y-8">
+          {/* Basic Information */}
           <div>
-            <Label htmlFor="note">Interne Notizen</Label>
-            <Textarea
-              id="note"
-              placeholder="Zusätzliche Notizen..."
-              value={formData.note || ''}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('note', e.target.value)}
-              rows={4}
-            />
+            <h2 className="text-base font-semibold mb-4">Grundinformationen</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="company">
+                  Firmenname <span className="text-ui-fg-error">*</span>
+                </Label>
+                <Controller
+                  control={control}
+                  name="company"
+                  render={({ field }) => (
+                    <Input
+                      id="company"
+                      placeholder="Firmenname eingeben"
+                      {...field}
+                      className={errors.company ? 'border-ui-error' : ''}
+                    />
+                  )}
+                />
+                {errors.company && <Text className="text-ui-fg-error text-xs mt-1">{errors.company.message}</Text>}
+              </div>
+              <div>
+                <Label htmlFor="company_addition">Firmenzusatz</Label>
+                <Controller
+                  control={control}
+                  name="company_addition"
+                  render={({ field }) => <Input id="company_addition" placeholder="Firmenzusatz" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="supplier_number">Lieferantennummer</Label>
+                <Controller
+                  control={control}
+                  name="supplier_number"
+                  render={({ field }) => <Input id="supplier_number" placeholder="Lieferantennummer" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="customer_number">Kundennummer</Label>
+                <Controller
+                  control={control}
+                  name="customer_number"
+                  render={({ field }) => <Input id="customer_number" placeholder="Kundennummer" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="internal_key">Interner Schlüssel</Label>
+                <Controller
+                  control={control}
+                  name="internal_key"
+                  render={({ field }) => <Input id="internal_key" placeholder="Interner Schlüssel" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vat_id">USt-ID</Label>
+                <Controller
+                  control={control}
+                  name="vat_id"
+                  render={({ field }) => <Input id="vat_id" placeholder="USt-ID" {...field} />}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Business Details */}
+          <div>
+            <h2 className="text-base font-semibold mb-4">Geschäftsdetails</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Controller
+                  control={control}
+                  name="status"
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      id="status"
+                      className="w-full px-3 py-2 border border-ui-border-base rounded-md bg-ui-bg-field"
+                    >
+                      <option value="active">Aktiv</option>
+                      <option value="inactive">Inaktiv</option>
+                      <option value="pending">Ausstehend</option>
+                    </select>
+                  )}
+                />
+              </div>
+              <div>
+                <Label htmlFor="language">Sprache</Label>
+                <Controller
+                  control={control}
+                  name="language"
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      id="language"
+                      className="w-full px-3 py-2 border border-ui-border-base rounded-md bg-ui-bg-field"
+                    >
+                      <option value="Deutsch">Deutsch</option>
+                      <option value="English">English</option>
+                      <option value="Français">Français</option>
+                      <option value="Italiano">Italiano</option>
+                      <option value="Español">Español</option>
+                      <option value="Português">Português</option>
+                      <option value="Русский">Русский</option>
+                      <option value="中文">中文</option>
+                      <option value="日本語">日本語</option>
+                      <option value="한국어">한국어</option>
+                    </select>
+                  )}
+                />
+              </div>
+              <div>
+                <Label htmlFor="lead_time">Lieferzeit (Tage)</Label>
+                <Controller
+                  control={control}
+                  name="lead_time"
+                  render={({ field }) => (
+                    <Input
+                      id="lead_time"
+                      type="number"
+                      placeholder="Lieferzeit in Tagen"
+                      {...field}
+                      value={field.value || ''}
+                      onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <Label htmlFor="website">Website</Label>
+                <Controller
+                  control={control}
+                  name="website"
+                  render={({ field }) => <Input id="website" placeholder="https://..." {...field} />}
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label htmlFor="is_active" className="flex items-center gap-2">
+                <Controller
+                  control={control}
+                  name="is_active"
+                  render={({ field }) => (
+                    <input
+                      type="checkbox"
+                      id="is_active"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="rounded border-ui-border-base"
+                    />
+                  )}
+                />
+                Lieferant ist aktiv
+              </Label>
+            </div>
+          </div>
+
+          {/* Bank Details */}
+          <div>
+            <h2 className="text-base font-semibold mb-4">Bankdaten</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="bank_name">Bankname</Label>
+                <Controller
+                  control={control}
+                  name="bank_name"
+                  render={({ field }) => <Input id="bank_name" placeholder="Bankname" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="bank_code">Bankleitzahl</Label>
+                <Controller
+                  control={control}
+                  name="bank_code"
+                  render={({ field }) => <Input id="bank_code" placeholder="BLZ" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="account_number">Kontonummer</Label>
+                <Controller
+                  control={control}
+                  name="account_number"
+                  render={({ field }) => <Input id="account_number" placeholder="Kontonummer" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="account_holder">Kontoinhaber</Label>
+                <Controller
+                  control={control}
+                  name="account_holder"
+                  render={({ field }) => <Input id="account_holder" placeholder="Kontoinhaber" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="iban">IBAN</Label>
+                <Controller
+                  control={control}
+                  name="iban"
+                  render={({ field }) => <Input id="iban" placeholder="IBAN" {...field} />}
+                />
+              </div>
+              <div>
+                <Label htmlFor="bic">BIC</Label>
+                <Controller
+                  control={control}
+                  name="bic"
+                  render={({ field }) => <Input id="bic" placeholder="BIC" {...field} />}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contacts Section */}
+          <div>
+            <h2 className="text-base font-semibold mb-4">Kontakte</h2>
+            {contactFields.map((contact, cIdx) => (
+              <ContactForm key={contact.id} contactIndex={cIdx} control={control} removeContact={removeContact} />
+            ))}
+            <Button
+              type="button"
+              size="small"
+              variant="primary"
+              onClick={() => {
+                console.log('Adding new contact...');
+                try {
+                  appendContact({
+                    salutation: '',
+                    first_name: '',
+                    last_name: '',
+                    department: '',
+                    phones: [{ number: '', label: '' }], // Start with one empty phone
+                    emails: [{ email: '', label: '' }], // Start with one empty email
+                  });
+                  console.log('Contact added successfully');
+                } catch (error) {
+                  console.error('Error adding contact:', error);
+                }
+              }}
+            >
+              Kontakt hinzufügen
+            </Button>
+          </div>
+
+          {/* Addresses Section */}
+          <div>
+            <h2 className="text-base font-semibold mb-4">Adressen</h2>
+            {addressFields.map((address, aIdx) => (
+              <div key={address.id} className="border rounded-md p-4 mb-4 bg-ui-bg-subtle">
+                <div className="flex items-center justify-between mb-2">
+                  <Text className="font-semibold">Adresse {aIdx + 1}</Text>
+                  <Button type="button" size="small" variant="danger" onClick={() => removeAddress(aIdx)}>
+                    Entfernen
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Label</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.label`}
+                      render={({ field }) => <Input placeholder="z.B. Hauptsitz, Lager" {...field} />}
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <Label className="flex items-center gap-2">
+                      <Controller
+                        control={control}
+                        name={`addresses.${aIdx}.is_default`}
+                        render={({ field }) => (
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="rounded border-ui-border-base"
+                          />
+                        )}
+                      />
+                      Standard-Adresse
+                    </Label>
+                  </div>
+                  <div>
+                    <Label>Straße</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.street`}
+                      render={({ field }) => <Input placeholder="Straße" {...field} />}
+                    />
+                  </div>
+                  <div>
+                    <Label>Hausnummer</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.street_number`}
+                      render={({ field }) => <Input placeholder="Hausnummer" {...field} />}
+                    />
+                  </div>
+                  <div>
+                    <Label>PLZ</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.postal_code`}
+                      render={({ field }) => <Input placeholder="PLZ" {...field} />}
+                    />
+                  </div>
+                  <div>
+                    <Label>Stadt</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.city`}
+                      render={({ field }) => <Input placeholder="Stadt" {...field} />}
+                    />
+                  </div>
+                  <div>
+                    <Label>Land</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.country_name`}
+                      render={({ field }) => <Input placeholder="Land" {...field} />}
+                    />
+                  </div>
+                  <div>
+                    <Label>Bundesland</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.state`}
+                      render={({ field }) => <Input placeholder="Bundesland" {...field} />}
+                    />
+                  </div>
+                  <div>
+                    <Label>Telefon</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.phone`}
+                      render={({ field }) => <Input placeholder="Telefon" {...field} />}
+                    />
+                  </div>
+                  <div>
+                    <Label>E-Mail</Label>
+                    <Controller
+                      control={control}
+                      name={`addresses.${aIdx}.email`}
+                      render={({ field }) => <Input placeholder="E-Mail" {...field} />}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              size="small"
+              variant="primary"
+              onClick={() =>
+                appendAddress({
+                  label: '',
+                  street: '',
+                  street_number: '',
+                  postal_code: '',
+                  city: '',
+                  country_name: '',
+                  state: '',
+                  phone: '',
+                  email: '',
+                  is_default: false,
+                })
+              }
+            >
+              Adresse hinzufügen
+            </Button>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <h2 className="text-base font-semibold mb-4">Notizen</h2>
+            <div>
+              <Label htmlFor="note">Anmerkungen</Label>
+              <Controller
+                control={control}
+                name="note"
+                render={({ field }) => <Textarea id="note" placeholder="Anmerkungen..." {...field} rows={3} />}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </FormProvider>
   );
 };
 

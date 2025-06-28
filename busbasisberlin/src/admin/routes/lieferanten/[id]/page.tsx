@@ -5,6 +5,35 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { Supplier } from '../../../../modules/supplier/models/supplier';
 import SupplierForm from '../components/SupplierForm';
 
+// Type matching the new API structure
+interface UpdateSupplierData {
+  company: string;
+  company_addition?: string;
+  supplier_number?: string;
+  customer_number?: string;
+  internal_key?: string;
+  website?: string;
+  vat_id?: string;
+  status?: string;
+  is_active?: boolean;
+  language?: string;
+  bank_name?: string;
+  bank_code?: string;
+  account_number?: string;
+  iban?: string;
+  bic?: string;
+  note?: string;
+  contacts?: Array<{
+    salutation?: string;
+    first_name?: string;
+    last_name?: string;
+    department?: string;
+    phones?: Array<{ number: string; label?: string; type?: string }>;
+    emails?: Array<{ email: string; label?: string; type?: string }>;
+  }>;
+  addresses?: Array<any>;
+}
+
 const EditSupplierPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -14,7 +43,7 @@ const EditSupplierPage = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-supplier', id],
     queryFn: async () => {
-      const res = await fetch(`/admin/suppliers/${id}`, { credentials: 'include' });
+      const res = await fetch(`/admin/suppliers/${id}/details`, { credentials: 'include' });
       if (!res.ok) throw new Error('Lieferant konnte nicht geladen werden');
       const { supplier } = await res.json();
       return supplier as Supplier;
@@ -22,7 +51,7 @@ const EditSupplierPage = () => {
   });
 
   const updateSupplier = useMutation({
-    mutationFn: async (values: Partial<Supplier>) => {
+    mutationFn: async (values: UpdateSupplierData) => {
       const res = await fetch(`/admin/suppliers/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -35,13 +64,14 @@ const EditSupplierPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-suppliers'] });
       queryClient.invalidateQueries({ queryKey: ['admin-supplier', id] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-details', id] });
       toast.success('Lieferant erfolgreich gespeichert');
       navigate('/lieferanten');
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const handleSubmit = (data: Partial<Supplier>) => {
+  const handleSubmit = (data: UpdateSupplierData) => {
     updateSupplier.mutate(data);
   };
 
@@ -76,6 +106,7 @@ const EditSupplierPage = () => {
           <SupplierForm
             formId={formId}
             initialData={data}
+            supplierId={id}
             onSubmit={handleSubmit}
             isSubmitting={updateSupplier.isPending}
           />
