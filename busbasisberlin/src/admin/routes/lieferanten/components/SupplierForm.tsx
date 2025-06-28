@@ -6,34 +6,102 @@ import LabelSelect from './LabelSelect';
 
 // --- Zod Schema (Complete) ---
 const phoneSchema = z.object({
-  number: z.string().optional(),
-  label: z.string().optional(),
+  number: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  label: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
 });
 
 const emailSchema = z.object({
-  email: z.string().optional(),
-  label: z.string().optional(),
+  email: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  label: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
 });
 
 const contactSchema = z.object({
-  salutation: z.string().optional(),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  department: z.string().optional(),
+  salutation: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  first_name: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  last_name: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  department: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
   phones: z.array(phoneSchema).default([]),
   emails: z.array(emailSchema).default([]),
 });
 
 const addressSchema = z.object({
-  label: z.string().optional(),
-  street: z.string().optional(),
-  street_number: z.string().optional(),
-  postal_code: z.string().optional(),
-  city: z.string().optional(),
-  country_name: z.string().optional(),
-  state: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
+  label: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  street: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  street_number: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  postal_code: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  city: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  country_name: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  state: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  phone: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  email: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
   is_default: z.boolean().default(false),
 });
 
@@ -41,30 +109,90 @@ const supplierSchema = z.object({
   // Required fields
   company: z.string().min(1, 'Firmenname ist erforderlich'),
 
-  // Basic identification
-  company_addition: z.string().optional(),
-  supplier_number: z.string().optional(),
-  customer_number: z.string().optional(),
-  internal_key: z.string().optional(),
+  // Basic identification - handle null values from database
+  company_addition: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  supplier_number: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  customer_number: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  internal_key: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
 
   // Business details
-  vat_id: z.string().optional(),
-  status: z.string().optional(),
+  vat_id: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  status: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
   is_active: z.boolean().default(true),
-  language: z.string().optional(),
-  lead_time: z.number().optional(),
+  language: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  lead_time: z.number().nullable().optional(),
 
   // Web & notes
-  website: z.string().optional(),
-  note: z.string().optional(),
+  website: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  note: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
 
   // Bank details
-  bank_name: z.string().optional(),
-  bank_code: z.string().optional(),
-  account_number: z.string().optional(),
-  account_holder: z.string().optional(),
-  iban: z.string().optional(),
-  bic: z.string().optional(),
+  bank_name: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  bank_code: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  account_number: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  account_holder: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  iban: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
+  bic: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || ''),
 
   // Related data
   contacts: z.array(contactSchema).default([]),
@@ -129,7 +257,7 @@ const ContactForm = ({
           <Controller
             control={control}
             name={`contacts.${contactIndex}.department`}
-            render={({ field }) => <Input placeholder="Abteilung" {...field} />}
+            render={({ field }) => <Input placeholder="Abteilung" {...field} value={field.value || ''} />}
           />
         </div>
         <div>
@@ -137,7 +265,7 @@ const ContactForm = ({
           <Controller
             control={control}
             name={`contacts.${contactIndex}.first_name`}
-            render={({ field }) => <Input placeholder="Vorname" {...field} />}
+            render={({ field }) => <Input placeholder="Vorname" {...field} value={field.value || ''} />}
           />
         </div>
         <div>
@@ -145,7 +273,7 @@ const ContactForm = ({
           <Controller
             control={control}
             name={`contacts.${contactIndex}.last_name`}
-            render={({ field }) => <Input placeholder="Nachname" {...field} />}
+            render={({ field }) => <Input placeholder="Nachname" {...field} value={field.value || ''} />}
           />
         </div>
       </div>
@@ -158,7 +286,7 @@ const ContactForm = ({
             <Controller
               control={control}
               name={`contacts.${contactIndex}.phones.${pIdx}.number`}
-              render={({ field }) => <Input placeholder="Nummer" {...field} />}
+              render={({ field }) => <Input placeholder="Nummer" {...field} value={field.value || ''} />}
             />
             <Controller
               control={control}
@@ -197,7 +325,7 @@ const ContactForm = ({
             <Controller
               control={control}
               name={`contacts.${contactIndex}.emails.${eIdx}.email`}
-              render={({ field }) => <Input placeholder="E-Mail" {...field} />}
+              render={({ field }) => <Input placeholder="E-Mail" {...field} value={field.value || ''} />}
             />
             <Controller
               control={control}
@@ -259,6 +387,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
   const form = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierSchema),
     defaultValues: initialData ? { ...defaultValues, ...initialData } : defaultValues,
+    mode: 'onSubmit', // Only validate on submit, not on change
   });
 
   const {
@@ -280,10 +409,31 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
     remove: removeAddress,
   } = useFieldArray({ control, name: 'addresses' });
 
+  // Custom submit handler with debugging
+  const onFormSubmit = (data: SupplierFormValues) => {
+    console.log('Form is valid, submitting data:', data);
+    onSubmit(data);
+  };
+
+  const onFormError = (errors: any) => {
+    console.error('Form validation errors:', errors);
+    // Find the first error and focus on it
+    const firstErrorField = Object.keys(errors)[0];
+    console.log('First error field:', firstErrorField, errors[firstErrorField]);
+  };
+
   return (
     <FormProvider {...form}>
-      <form id={formId} onSubmit={handleSubmit(onSubmit)}>
+      <form id={formId} onSubmit={handleSubmit(onFormSubmit, onFormError)}>
         <div className="p-6 space-y-8">
+          {/* Debug info */}
+          {Object.keys(errors).length > 0 && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <strong>Validation Errors:</strong>
+              <pre>{JSON.stringify(errors, null, 2)}</pre>
+            </div>
+          )}
+
           {/* Basic Information */}
           <div>
             <h2 className="text-base font-semibold mb-4">Grundinformationen</h2>
@@ -311,7 +461,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="company_addition"
-                  render={({ field }) => <Input id="company_addition" placeholder="Firmenzusatz" {...field} />}
+                  render={({ field }) => (
+                    <Input id="company_addition" placeholder="Firmenzusatz" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -319,7 +471,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="supplier_number"
-                  render={({ field }) => <Input id="supplier_number" placeholder="Lieferantennummer" {...field} />}
+                  render={({ field }) => (
+                    <Input id="supplier_number" placeholder="Lieferantennummer" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -327,7 +481,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="customer_number"
-                  render={({ field }) => <Input id="customer_number" placeholder="Kundennummer" {...field} />}
+                  render={({ field }) => (
+                    <Input id="customer_number" placeholder="Kundennummer" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -335,7 +491,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="internal_key"
-                  render={({ field }) => <Input id="internal_key" placeholder="Interner Schlüssel" {...field} />}
+                  render={({ field }) => (
+                    <Input id="internal_key" placeholder="Interner Schlüssel" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -343,7 +501,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="vat_id"
-                  render={({ field }) => <Input id="vat_id" placeholder="USt-ID" {...field} />}
+                  render={({ field }) => (
+                    <Input id="vat_id" placeholder="USt-ID" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
             </div>
@@ -418,7 +578,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="website"
-                  render={({ field }) => <Input id="website" placeholder="https://..." {...field} />}
+                  render={({ field }) => (
+                    <Input id="website" placeholder="https://..." {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
             </div>
@@ -451,7 +613,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="bank_name"
-                  render={({ field }) => <Input id="bank_name" placeholder="Bankname" {...field} />}
+                  render={({ field }) => (
+                    <Input id="bank_name" placeholder="Bankname" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -459,7 +623,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="bank_code"
-                  render={({ field }) => <Input id="bank_code" placeholder="BLZ" {...field} />}
+                  render={({ field }) => (
+                    <Input id="bank_code" placeholder="BLZ" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -467,7 +633,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="account_number"
-                  render={({ field }) => <Input id="account_number" placeholder="Kontonummer" {...field} />}
+                  render={({ field }) => (
+                    <Input id="account_number" placeholder="Kontonummer" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -475,7 +643,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="account_holder"
-                  render={({ field }) => <Input id="account_holder" placeholder="Kontoinhaber" {...field} />}
+                  render={({ field }) => (
+                    <Input id="account_holder" placeholder="Kontoinhaber" {...field} value={field.value || ''} />
+                  )}
                 />
               </div>
               <div>
@@ -483,7 +653,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="iban"
-                  render={({ field }) => <Input id="iban" placeholder="IBAN" {...field} />}
+                  render={({ field }) => <Input id="iban" placeholder="IBAN" {...field} value={field.value || ''} />}
                 />
               </div>
               <div>
@@ -491,7 +661,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 <Controller
                   control={control}
                   name="bic"
-                  render={({ field }) => <Input id="bic" placeholder="BIC" {...field} />}
+                  render={({ field }) => <Input id="bic" placeholder="BIC" {...field} value={field.value || ''} />}
                 />
               </div>
             </div>
@@ -577,7 +747,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.street`}
-                      render={({ field }) => <Input placeholder="Straße" {...field} />}
+                      render={({ field }) => <Input placeholder="Straße" {...field} value={field.value || ''} />}
                     />
                   </div>
                   <div>
@@ -585,7 +755,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.street_number`}
-                      render={({ field }) => <Input placeholder="Hausnummer" {...field} />}
+                      render={({ field }) => <Input placeholder="Hausnummer" {...field} value={field.value || ''} />}
                     />
                   </div>
                   <div>
@@ -593,7 +763,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.postal_code`}
-                      render={({ field }) => <Input placeholder="PLZ" {...field} />}
+                      render={({ field }) => <Input placeholder="PLZ" {...field} value={field.value || ''} />}
                     />
                   </div>
                   <div>
@@ -601,7 +771,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.city`}
-                      render={({ field }) => <Input placeholder="Stadt" {...field} />}
+                      render={({ field }) => <Input placeholder="Stadt" {...field} value={field.value || ''} />}
                     />
                   </div>
                   <div>
@@ -609,7 +779,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.country_name`}
-                      render={({ field }) => <Input placeholder="Land" {...field} />}
+                      render={({ field }) => <Input placeholder="Land" {...field} value={field.value || ''} />}
                     />
                   </div>
                   <div>
@@ -617,7 +787,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.state`}
-                      render={({ field }) => <Input placeholder="Bundesland" {...field} />}
+                      render={({ field }) => <Input placeholder="Bundesland" {...field} value={field.value || ''} />}
                     />
                   </div>
                   <div>
@@ -625,7 +795,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.phone`}
-                      render={({ field }) => <Input placeholder="Telefon" {...field} />}
+                      render={({ field }) => <Input placeholder="Telefon" {...field} value={field.value || ''} />}
                     />
                   </div>
                   <div>
@@ -633,7 +803,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                     <Controller
                       control={control}
                       name={`addresses.${aIdx}.email`}
-                      render={({ field }) => <Input placeholder="E-Mail" {...field} />}
+                      render={({ field }) => <Input placeholder="E-Mail" {...field} value={field.value || ''} />}
                     />
                   </div>
                 </div>
@@ -670,7 +840,9 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
               <Controller
                 control={control}
                 name="note"
-                render={({ field }) => <Textarea id="note" placeholder="Anmerkungen..." {...field} rows={3} />}
+                render={({ field }) => (
+                  <Textarea id="note" placeholder="Anmerkungen..." {...field} value={field.value || ''} rows={3} />
+                )}
               />
             </div>
           </div>

@@ -13,7 +13,10 @@ const OTHER_OPTION = 'Andere';
 
 const LabelSelect: React.FC<LabelSelectProps> = ({ value, onChange, options, label, placeholder }) => {
   // Determine if the current value is a custom one
-  const isCustom = value && !options.includes(value);
+  const isCustom = value && !options.includes(value) && value !== OTHER_OPTION;
+  const [showCustomInput, setShowCustomInput] = React.useState(isCustom);
+  const [customValue, setCustomValue] = React.useState(isCustom ? value : '');
+
   return (
     <div className="flex gap-2 items-center">
       {label && <Label>{label}</Label>}
@@ -22,8 +25,12 @@ const LabelSelect: React.FC<LabelSelectProps> = ({ value, onChange, options, lab
         value={isCustom ? OTHER_OPTION : value || ''}
         onChange={e => {
           if (e.target.value === OTHER_OPTION) {
-            onChange(''); // Clear value to show input
+            setShowCustomInput(true);
+            setCustomValue('');
+            onChange(''); // Start with empty custom value
           } else {
+            setShowCustomInput(false);
+            setCustomValue('');
             onChange(e.target.value);
           }
         }}
@@ -36,15 +43,19 @@ const LabelSelect: React.FC<LabelSelectProps> = ({ value, onChange, options, lab
         ))}
         <option value={OTHER_OPTION}>{OTHER_OPTION}</option>
       </select>
-      {/* Show custom input if 'Other' is selected */}
-      {isCustom || value === '' ? (
+      {/* Show custom input if 'Other' is selected or if we have a custom value */}
+      {(showCustomInput || isCustom) && (
         <Input
           placeholder="Eigenes Label..."
-          value={isCustom ? value : ''}
-          onChange={e => onChange(e.target.value)}
+          value={isCustom ? value : customValue}
+          onChange={e => {
+            const newValue = e.target.value;
+            setCustomValue(newValue);
+            onChange(newValue);
+          }}
           className="w-32"
         />
-      ) : null}
+      )}
     </div>
   );
 };
