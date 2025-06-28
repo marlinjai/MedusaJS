@@ -103,7 +103,7 @@ const ContactForm = ({
   return (
     <div className="border rounded-md p-4 mb-4 bg-ui-bg-subtle">
       <div className="flex items-center justify-between mb-2">
-        <Text className="font-semibold">Kontakt {contactIndex + 1}</Text>
+        <Text className="font-semibold">Kontaktinformation {contactIndex + 1}</Text>
         <Button type="button" size="small" variant="danger" onClick={() => removeContact(contactIndex)}>
           Entfernen
         </Button>
@@ -499,7 +499,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
 
           {/* Contacts Section */}
           <div>
-            <h2 className="text-base font-semibold mb-4">Kontakte</h2>
+            <h2 className="text-base font-semibold mb-4">Kontaktinformationen</h2>
             {contactFields.map((contact, cIdx) => (
               <ContactForm key={contact.id} contactIndex={cIdx} control={control} removeContact={removeContact} />
             ))}
@@ -524,7 +524,7 @@ const SupplierForm = ({ formId, initialData, onSubmit, isSubmitting }: SupplierF
                 }
               }}
             >
-              Kontakt hinzufügen
+              Kontaktinformation hinzufügen
             </Button>
           </div>
 

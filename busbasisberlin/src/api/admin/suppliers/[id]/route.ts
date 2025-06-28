@@ -208,7 +208,38 @@ export const DELETE = async (req: MedusaRequest, res: MedusaResponse) => {
   const { id } = req.params;
 
   try {
-    // Use the auto-generated deleteSuppliers method
+    // First, delete all related contacts and their phones/emails
+    const existingContacts = await supplierService.listContacts({ supplier_id: id });
+    for (const contact of existingContacts) {
+      // Delete phones for this contact
+      const existingPhones = await supplierService.listContactPhones({ contact_id: contact.id });
+      for (const phone of existingPhones) {
+        await supplierService.deleteContactPhones(phone.id);
+      }
+
+      // Delete emails for this contact
+      const existingEmails = await supplierService.listContactEmails({ contact_id: contact.id });
+      for (const email of existingEmails) {
+        await supplierService.deleteContactEmails(email.id);
+      }
+
+      // Delete the contact
+      await supplierService.deleteContacts(contact.id);
+    }
+
+    // Delete all related addresses
+    const existingAddresses = await supplierService.listSupplierAddresses({ supplier_id: id });
+    for (const address of existingAddresses) {
+      await supplierService.deleteSupplierAddresses(address.id);
+    }
+
+    // Delete any product-supplier relationships
+    const existingProductRelationships = await supplierService.listProductSuppliers({ supplier_id: id });
+    for (const relationship of existingProductRelationships) {
+      await supplierService.deleteProductSuppliers(relationship.id);
+    }
+
+    // Finally, delete the supplier itself
     await supplierService.deleteSuppliers(id);
 
     res.status(204).send();
