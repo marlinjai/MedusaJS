@@ -3,14 +3,14 @@
  * Enhanced script to upload all product images to S3 and create mapping file
  * Run with: medusa exec ./src/scripts/import-product-images.ts
  */
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { ExecArgs } from '@medusajs/framework/types';
+import dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as stream from 'stream';
 
-interface SimpleFileService {
-  upload(data: { name: string; mimeType: string; content: stream.PassThrough }): Promise<{ url: string }>;
-}
+// Load environment variables
+dotenv.config();
 
 interface ImageMapping {
   [filename: string]: {
@@ -23,7 +23,6 @@ interface ImageMapping {
 
 export default async function importProductImages({ container }: ExecArgs) {
   const logger = container.resolve('logger');
-  const fileService: SimpleFileService = container.resolve('fileService');
 
   const imageDirectory = path.resolve(__dirname, '..', '..', '..', 'data', 'artikelbilder');
   const mappingFile = path.resolve(__dirname, '..', '..', '..', 'data', 'image-url-mapping.json');
@@ -36,6 +35,39 @@ export default async function importProductImages({ container }: ExecArgs) {
     logger.error(`❌ Image directory not found: ${imageDirectory}`);
     return;
   }
+
+  // Get S3 configuration from environment variables
+  const s3Config = {
+    endpoint: process.env.S3_ENDPOINT,
+    region: process.env.S3_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+    },
+    forcePathStyle: true, // Required for Supabase S3-compatible API
+  };
+
+  const bucketName = process.env.S3_BUCKET || '';
+  const fileUrl = process.env.S3_FILE_URL || '';
+
+  if (!bucketName) {
+    logger.error('❌ S3_BUCKET environment variable is not set');
+    return;
+  }
+
+  if (!s3Config.credentials.accessKeyId || !s3Config.credentials.secretAccessKey) {
+    logger.error('❌ S3 credentials are not properly configured');
+    return;
+  }
+
+  if (!fileUrl) {
+    logger.error('❌ S3_FILE_URL environment variable is not set');
+    return;
+  }
+
+  // Create S3 client
+  logger.info(`🔗 Connecting to S3 with endpoint: ${s3Config.endpoint}`);
+  const s3Client = new S3Client(s3Config);
 
   // Get all image files
   let files: string[];
@@ -100,14 +132,12 @@ export default async function importProductImages({ container }: ExecArgs) {
           // Get file stats
           const stats = fs.statSync(filePath);
 
-          // Create file stream
-          const fileStream = fs.createReadStream(filePath);
-          const passThrough = new stream.PassThrough();
-          fileStream.pipe(passThrough);
+          // Read file content
+          const fileContent = fs.readFileSync(filePath);
 
           // Determine MIME type
           const ext = path.extname(file).toLowerCase();
-          const mimeType =
+          const contentType =
             {
               '.jpg': 'image/jpeg',
               '.jpeg': 'image/jpeg',
@@ -117,11 +147,17 @@ export default async function importProductImages({ container }: ExecArgs) {
             }[ext] || 'image/jpeg';
 
           // Upload to S3
-          const { url } = await fileService.upload({
-            name: file,
-            mimeType,
-            content: passThrough,
+          const uploadCommand = new PutObjectCommand({
+            Bucket: bucketName,
+            Key: file,
+            Body: fileContent,
+            ContentType: contentType,
           });
+
+          await s3Client.send(uploadCommand);
+
+          // Construct the URL
+          const url = `${fileUrl}/${file}`;
 
           // Store mapping
           newMapping[file] = {

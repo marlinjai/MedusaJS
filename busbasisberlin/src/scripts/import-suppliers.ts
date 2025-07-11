@@ -16,7 +16,7 @@ const splitMulti = (val: string | null | undefined) =>
     : [];
 
 export default async function importSuppliers({ container, args }: ExecArgs) {
-  const csvPath = args[0] || path.join(__dirname, '../../data/JTL-Export-Lieferantendaten-02052025.csv');
+  const csvPath = args[0] || path.join(__dirname, '../../../data/JTL-Export-Lieferantendaten-02052025.csv');
   if (!fs.existsSync(csvPath)) {
     console.error('CSV file not found:', csvPath);
     return;

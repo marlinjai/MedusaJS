@@ -11,6 +11,14 @@ import productSupplier, { ProductSupplier } from './models/product-supplier';
 import supplier, { Supplier } from './models/supplier';
 import supplierAddress, { SupplierAddress } from './models/supplier-address';
 
+// Interface for grouped supplier relationships
+interface GroupedSupplierRelationship {
+  supplier: Supplier;
+  relationships: ProductSupplier[];
+  totalRelationships: number;
+  primaryRelationship?: ProductSupplier;
+}
+
 /**
  * SupplierService extends the MedusaService factory,
  * which automatically generates CRUD operations for all supplier-related models.
@@ -119,7 +127,63 @@ class SupplierService extends MedusaService({
   }
 
   /**
-   * Get suppliers for a specific product
+   * NEW: Get suppliers for a product grouped by supplier with all their relationships
+   * @param productId - product ID
+   * @return array of grouped supplier relationships
+   */
+  async getGroupedSuppliersForProduct(productId: string): Promise<GroupedSupplierRelationship[]> {
+    const relationships = await this.listProductSuppliers({
+      product_id: productId,
+      is_active: true,
+    });
+
+    // Group relationships by supplier
+    const groupedMap = new Map<string, GroupedSupplierRelationship>();
+
+    for (const relationship of relationships) {
+      const supplierId = relationship.supplier_id;
+
+      if (!groupedMap.has(supplierId)) {
+        // Get supplier details
+        const supplier = await this.retrieveSupplier(supplierId);
+
+        groupedMap.set(supplierId, {
+          supplier,
+          relationships: [],
+          totalRelationships: 0,
+          primaryRelationship: undefined,
+        });
+      }
+
+      const group = groupedMap.get(supplierId)!;
+      group.relationships.push(relationship);
+      group.totalRelationships++;
+
+      // Track primary relationship
+      if (relationship.is_primary) {
+        group.primaryRelationship = relationship;
+      }
+    }
+
+    // Sort relationships within each group by sort_order and variant_name
+    for (const group of groupedMap.values()) {
+      group.relationships.sort((a, b) => {
+        // First by sort_order
+        if (a.sort_order !== b.sort_order) {
+          return (a.sort_order || 0) - (b.sort_order || 0);
+        }
+        // Then by variant_name
+        const nameA = a.variant_name || a.supplier_product_name || '';
+        const nameB = b.variant_name || b.supplier_product_name || '';
+        return nameA.localeCompare(nameB);
+      });
+    }
+
+    return Array.from(groupedMap.values());
+  }
+
+  /**
+   * Get suppliers for a specific product (legacy method for backward compatibility)
    * @param productId - product ID
    * @return array of suppliers with their relationship data
    */
@@ -202,10 +266,10 @@ class SupplierService extends MedusaService({
   }
 
   /**
-   * Link a product to a supplier
+   * NEW: Link a product to a supplier with variant support
    * @param productId - product ID
    * @param supplierId - supplier ID
-   * @param data - additional relationship data
+   * @param data - additional relationship data including variant info
    * @return created product-supplier relationship
    */
   async linkProductToSupplier(
@@ -213,6 +277,31 @@ class SupplierService extends MedusaService({
     supplierId: string,
     data: Partial<ProductSupplier> = {},
   ): Promise<ProductSupplier> {
+    // If no variant_name is provided, check if this is the first relationship for this supplier
+    if (!data.variant_name) {
+      const existingRelationships = await this.listProductSuppliers({
+        product_id: productId,
+        supplier_id: supplierId,
+      });
+
+      // If this is the first relationship, don't require a variant name
+      if (existingRelationships.length === 0) {
+        data.variant_name = null;
+      } else {
+        // If there are existing relationships, provide a default variant name
+        data.variant_name = `Variant ${existingRelationships.length + 1}`;
+      }
+    }
+
+    // Set sort_order if not provided
+    if (data.sort_order === undefined) {
+      const existingRelationships = await this.listProductSuppliers({
+        product_id: productId,
+        supplier_id: supplierId,
+      });
+      data.sort_order = existingRelationships.length;
+    }
+
     return await this.createProductSuppliers({
       product_id: productId,
       supplier_id: supplierId,
@@ -222,7 +311,52 @@ class SupplierService extends MedusaService({
   }
 
   /**
-   * Unlink a product from a supplier
+   * NEW: Update a specific product-supplier relationship
+   * @param relationshipId - the ID of the relationship to update
+   * @param data - updated relationship data
+   * @return updated relationship
+   */
+  async updateProductSupplierRelationship(
+    relationshipId: string,
+    data: Partial<ProductSupplier>,
+  ): Promise<ProductSupplier> {
+    const updatedRelationships = await this.updateProductSuppliers({
+      id: relationshipId,
+      ...data,
+    });
+
+    if (!updatedRelationships) {
+      throw new Error('Relationship not found');
+    }
+
+    return updatedRelationships;
+  }
+
+  /**
+   * NEW: Delete a specific product-supplier relationship
+   * @param relationshipId - the ID of the relationship to delete
+   */
+  async deleteProductSupplierRelationship(relationshipId: string): Promise<void> {
+    await this.deleteProductSuppliers(relationshipId);
+  }
+
+  /**
+   * NEW: Reorder relationships within a supplier group
+   * @param productId - product ID
+   * @param supplierId - supplier ID
+   * @param relationshipIds - array of relationship IDs in desired order
+   */
+  async reorderSupplierRelationships(productId: string, supplierId: string, relationshipIds: string[]): Promise<void> {
+    for (let i = 0; i < relationshipIds.length; i++) {
+      await this.updateProductSuppliers({
+        id: relationshipIds[i],
+        sort_order: i,
+      });
+    }
+  }
+
+  /**
+   * Unlink a product from a supplier (removes all relationships)
    * @param productId - product ID
    * @param supplierId - supplier ID
    */
@@ -232,8 +366,8 @@ class SupplierService extends MedusaService({
       supplier_id: supplierId,
     });
 
-    if (relationships.length > 0) {
-      await this.deleteProductSuppliers(relationships[0].id);
+    for (const relationship of relationships) {
+      await this.deleteProductSuppliers(relationship.id);
     }
   }
 

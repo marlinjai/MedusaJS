@@ -1,11 +1,11 @@
 import { Metadata } from "next"
 
+import { listCollections } from "@lib/data/collections"
+import { getRegion } from "@lib/data/regions"
 import FeaturedProducts from "@modules/home/components/featured-products"
 import Hero from "@modules/home/components/hero"
 import Services from "@modules/home/components/services"
 import Team from "@modules/home/components/team"
-import { listCollections } from "@lib/data/collections"
-import { getRegion } from "@lib/data/regions"
 
 export const metadata: Metadata = {
   title: "BusBasis Berlin - Ihr Spezialist für Mercedes-Transporter",
@@ -22,12 +22,14 @@ export default async function Home(props: {
 
   const region = await getRegion(countryCode)
 
-  const { collections } = await listCollections({
-    fields: "id, handle, title",
-  })
+  // Simplified collections query for debugging
+  const { collections } = await listCollections()
+  console.log("Collections count:", collections?.length || 0)
+  console.log("Collections data:", collections)
+  console.log("Region:", region)
 
-  if (!collections || !region) {
-    return null
+  if (!region) {
+    return <div>No region found</div>
   }
 
   return (
@@ -37,7 +39,7 @@ export default async function Home(props: {
       <Team />
       <div className="py-12">
         <ul className="flex flex-col gap-x-6">
-          <FeaturedProducts collections={collections} region={region} />
+          <FeaturedProducts collections={collections || []} region={region} />
         </ul>
       </div>
     </>

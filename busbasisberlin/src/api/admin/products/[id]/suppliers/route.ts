@@ -51,6 +51,16 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     const requestBody = req.body as { supplier_id: string } & Partial<ProductSupplier>;
     const { supplier_id, ...relationshipData } = requestBody;
 
+    // Set default values for new fields if not provided
+    if (relationshipData.sort_order === undefined) {
+      // Get existing relationships count for this supplier to set sort_order
+      const existingRelationships = await supplierService.listProductSuppliers({
+        product_id: productId,
+        supplier_id: supplier_id,
+      });
+      relationshipData.sort_order = existingRelationships.length;
+    }
+
     if (!supplier_id) {
       return res.status(400).json({
         error: 'Validation error',
@@ -68,18 +78,8 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       });
     }
 
-    // Check if relationship already exists
-    const existingRelationships = await supplierService.listProductSuppliers({
-      product_id: productId,
-      supplier_id: supplier_id,
-    });
-
-    if (existingRelationships.length > 0) {
-      return res.status(409).json({
-        error: 'Relationship already exists',
-        message: 'This product is already linked to this supplier',
-      });
-    }
+    // Note: We now allow multiple relationships per supplier (variants)
+    // This enables the core functionality of having multiple entries per supplier
 
     // Create the relationship
     const relationship = await supplierService.linkProductToSupplier(productId, supplier_id, relationshipData);

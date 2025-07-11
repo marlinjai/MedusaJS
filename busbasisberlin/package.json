@@ -26,9 +26,12 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "import:suppliers": "medusa exec ./src/scripts/import-suppliers.ts",
     "update:suppliers": "medusa exec ./src/scripts/update-suppliers.ts",
-    "import:images": "medusa exec ./src/scripts/upload-images.ts"
+    "import:images": "medusa exec ./src/scripts/upload-images.ts",
+    "import:products": "medusa exec ./src/scripts/import-products.ts",
+    "cleanup:database": "medusa exec ./src/scripts/cleanup-database.ts"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^16.6.0",
     "@medusajs/admin-sdk": "^2.6.1",
     "@medusajs/cli": "2.6.1",
     "@medusajs/framework": "2.6.1",
