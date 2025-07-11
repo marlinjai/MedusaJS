@@ -45,5 +45,8 @@ module.exports = defineConfig({
     {
       resolve: './src/modules/service',
     },
+    {
+      resolve: './src/modules/offer',
+    },
   ],
 });
