@@ -63,10 +63,10 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     const customerData = req.body as any;
 
     // Basic validation
-    if (!customerData.first_name && !customerData.last_name && !customerData.company) {
+    if (!customerData.first_name && !customerData.last_name && !customerData.company && !customerData.email) {
       return res.status(400).json({
         error: 'Invalid customer data',
-        message: 'At least one of first_name, last_name, or company must be provided',
+        message: 'At least one of first_name, last_name, company, or email must be provided',
       });
     }
 

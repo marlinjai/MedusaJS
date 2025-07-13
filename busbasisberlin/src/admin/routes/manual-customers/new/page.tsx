@@ -2,6 +2,7 @@
 // Create Manual Customer page (Medusa admin UI pattern, all fields, grouped sections)
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { Button, Container, Input, Select, Text, Textarea, toast } from '@medusajs/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -100,6 +101,7 @@ const initialForm: ManualCustomerForm = {
 
 export default function CreateManualCustomerPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState<ManualCustomerForm>(initialForm);
   const [loading, setLoading] = useState(false);
 
@@ -117,10 +119,28 @@ export default function CreateManualCustomerPage() {
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Require at least one of: first_name, last_name, company, or email
+    const hasRequiredField =
+      form.first_name?.trim() || form.last_name?.trim() || form.company?.trim() || form.email?.trim();
+
+    if (!hasRequiredField) {
+      toast.error('Mindestens ein Feld erforderlich: Vorname, Nachname, Firma oder E-Mail');
+      return;
+    }
+
     setLoading(true);
     try {
       // Prepare payload (convert empty strings to null, handle numbers/dates)
       const payload: Record<string, any> = { ...form };
+
+      // Set reasonable defaults for required fields if they're empty
+      if (!payload.customer_type) payload.customer_type = 'walk-in';
+      if (!payload.status) payload.status = 'active';
+      if (!payload.source) payload.source = 'manual-entry';
+      if (!payload.language) payload.language = 'de';
+      if (!payload.first_contact_date) payload.first_contact_date = new Date();
+
       // Convert empty strings to null
       Object.keys(payload).forEach(k => {
         if (payload[k] === '') payload[k] = null;
@@ -145,6 +165,10 @@ export default function CreateManualCustomerPage() {
       }
 
       toast.success('Kunde erfolgreich erstellt');
+
+      // Invalidate cache to ensure fresh data on the overview page
+      queryClient.invalidateQueries({ queryKey: ['admin-manual-customers'] });
+
       navigate('/manual-customers');
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Fehler beim Erstellen des Kunden');
@@ -167,7 +191,7 @@ export default function CreateManualCustomerPage() {
             Neuen manuellen Kunden anlegen
           </Text>
           <Text size="small" className="text-ui-fg-subtle">
-            Erfassen Sie einen neuen Kunden (alle Felder optional)
+            Mindestens ein Feld erforderlich: Vorname, Nachname, Firma oder E-Mail
           </Text>
         </div>
       </div>
@@ -215,19 +239,19 @@ export default function CreateManualCustomerPage() {
           </div>
           <div>
             <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
-              Vorname
+              Vorname <span className="text-ui-fg-error">*</span>
             </Text>
             <Input name="first_name" value={form.first_name || ''} onChange={handleChange} placeholder="Vorname" />
           </div>
           <div>
             <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
-              Nachname
+              Nachname <span className="text-ui-fg-error">*</span>
             </Text>
             <Input name="last_name" value={form.last_name || ''} onChange={handleChange} placeholder="Nachname" />
           </div>
           <div>
             <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
-              Firma
+              Firma <span className="text-ui-fg-error">*</span>
             </Text>
             <Input name="company" value={form.company || ''} onChange={handleChange} placeholder="Firmenname" />
           </div>
@@ -248,7 +272,7 @@ export default function CreateManualCustomerPage() {
         <Section title="Kontaktinformationen">
           <div>
             <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
-              E-Mail
+              E-Mail <span className="text-ui-fg-error">*</span>
             </Text>
             <Input
               name="email"

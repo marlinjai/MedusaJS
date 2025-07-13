@@ -2,7 +2,8 @@
 // Manual Customer Detail page with customer linking functionality
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { Badge, Button, Container, Input, Select, Text, Textarea, toast } from '@medusajs/ui';
-import { ArrowLeft, Edit, Save, Unlink, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Edit, ExternalLink, Save, Unlink, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -64,6 +65,7 @@ export const config = defineRouteConfig({
 export default function ManualCustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [customer, setCustomer] = useState<ManualCustomer | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -76,6 +78,7 @@ export default function ManualCustomerDetailPage() {
   const [searchingCustomers, setSearchingCustomers] = useState(false);
   const [linking, setLinking] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [linkedCoreCustomer, setLinkedCoreCustomer] = useState<any>(null);
 
   // Load customer data
   useEffect(() => {
@@ -88,16 +91,34 @@ export default function ManualCustomerDetailPage() {
     try {
       const response = await fetch(`/admin/manual-customers/${id}`);
       if (!response.ok) {
-        throw new Error('Kunde nicht gefunden');
+        throw new Error('Failed to load customer');
       }
       const data = await response.json();
       setCustomer(data.customer);
+
+      // If customer is linked, fetch core customer details
+      if (data.customer.is_linked && data.customer.core_customer_id) {
+        await loadLinkedCoreCustomer(data.customer.core_customer_id);
+      }
     } catch (error) {
       console.error('Error loading customer:', error);
-      toast.error(error instanceof Error ? error.message : 'Fehler beim Laden des Kunden');
-      navigate('/manual-customers');
+      toast.error('Fehler beim Laden des Kunden');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load linked core customer details
+  const loadLinkedCoreCustomer = async (coreCustomerId: string) => {
+    try {
+      const response = await fetch(`/admin/customers/${coreCustomerId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLinkedCoreCustomer(data.customer);
+      }
+    } catch (error) {
+      console.error('Error loading core customer:', error);
+      // Don't show error toast for this, it's not critical
     }
   };
 
@@ -138,6 +159,9 @@ export default function ManualCustomerDetailPage() {
       setCustomer(result.customer);
       setEditing(false);
       toast.success('Kunde erfolgreich gespeichert');
+
+      // Invalidate cache to ensure fresh data on the overview page
+      queryClient.invalidateQueries({ queryKey: ['admin-manual-customers'] });
     } catch (error) {
       console.error('Error saving customer:', error);
       toast.error(error instanceof Error ? error.message : 'Fehler beim Speichern des Kunden');
@@ -273,6 +297,9 @@ export default function ManualCustomerDetailPage() {
       setCoreCustomers([]);
       setSelectedCustomer(null);
       await loadCustomer(); // Reload customer data
+
+      // Invalidate cache to ensure fresh data on the overview page
+      queryClient.invalidateQueries({ queryKey: ['admin-manual-customers'] });
     } catch (error) {
       console.error('Error linking customer:', error);
       toast.error(error instanceof Error ? error.message : 'Fehler beim Verknüpfen des Kunden');
@@ -298,6 +325,9 @@ export default function ManualCustomerDetailPage() {
 
       toast.success('Verknüpfung erfolgreich entfernt');
       await loadCustomer(); // Reload customer data
+
+      // Invalidate cache to ensure fresh data on the overview page
+      queryClient.invalidateQueries({ queryKey: ['admin-manual-customers'] });
     } catch (error) {
       console.error('Error unlinking customer:', error);
       toast.error(error instanceof Error ? error.message : 'Fehler beim Entfernen der Verknüpfung');
@@ -1150,9 +1180,40 @@ export default function ManualCustomerDetailPage() {
             <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
               Core Kunden-ID
             </Text>
-            <Text size="small" className="text-ui-fg-base">
-              {customer.core_customer_id || 'Nicht verknüpft'}
-            </Text>
+            {customer.core_customer_id ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="transparent"
+                  size="small"
+                  onClick={() => {
+                    // Navigate to core customer in Medusa admin
+                    window.open(`/app/customers/${customer.core_customer_id}`, '_blank');
+                  }}
+                  className="p-0 h-auto text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline flex items-center gap-1"
+                  title={`Core-Kunden öffnen${linkedCoreCustomer ? `: ${linkedCoreCustomer.first_name} ${linkedCoreCustomer.last_name}` : ''}`}
+                >
+                  <div className="flex flex-col items-start">
+                    <Text size="small" className="text-ui-fg-interactive">
+                      {customer.core_customer_id}
+                    </Text>
+                    {linkedCoreCustomer && (
+                      <Text size="xsmall" className="text-ui-fg-muted">
+                        {linkedCoreCustomer.first_name} {linkedCoreCustomer.last_name}
+                        {linkedCoreCustomer.email && ` (${linkedCoreCustomer.email})`}
+                      </Text>
+                    )}
+                  </div>
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+                <Badge color="green" size="2xsmall">
+                  Verknüpft
+                </Badge>
+              </div>
+            ) : (
+              <Text size="small" className="text-ui-fg-muted">
+                Nicht verknüpft
+              </Text>
+            )}
           </div>
 
           <div>
