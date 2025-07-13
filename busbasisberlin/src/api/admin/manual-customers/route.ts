@@ -13,13 +13,19 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const manualCustomerService: ManualCustomerService = req.scope.resolve(MANUAL_CUSTOMER_MODULE);
 
   try {
-    const { search, customer_type, status, source, limit, offset } = req.query;
+    const { search, customer_type, status, source, limit = '20', offset = '0' } = req.query;
+
+    const limitNum = parseInt(limit as string);
+    const offsetNum = parseInt(offset as string);
 
     let customers;
+    let totalCount = 0;
 
     // If search term is provided, use search functionality
     if (search) {
-      customers = await manualCustomerService.searchCustomers(search as string);
+      const searchResults = await manualCustomerService.searchCustomers(search as string);
+      totalCount = searchResults.length;
+      customers = searchResults.slice(offsetNum, offsetNum + limitNum);
     } else {
       // Build filter object
       const filters: any = {};
@@ -28,30 +34,29 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       if (status) filters.status = status;
       if (source) filters.source = source;
 
-      customers = await manualCustomerService.listManualCustomers(filters);
+      // Get total count for pagination
+      const allCustomers = await manualCustomerService.listManualCustomers(filters);
+      totalCount = allCustomers.length;
+
+      // Apply pagination
+      customers = allCustomers.slice(offsetNum, offsetNum + limitNum);
     }
 
-    // Apply pagination if specified
-    if (limit || offset) {
-      const startIndex = offset ? parseInt(offset as string) : 0;
-      const endIndex = limit ? startIndex + parseInt(limit as string) : customers.length;
-      customers = customers.slice(startIndex, endIndex);
-    }
-
-    // Get statistics
+    // Get statistics (these are global stats, not filtered)
     const stats = await manualCustomerService.getStatistics();
 
     res.json({
       customers,
       stats,
       count: customers.length,
+      total: totalCount,
+      limit: limitNum,
+      offset: offsetNum,
+      has_more: offsetNum + limitNum < totalCount,
     });
   } catch (error) {
     console.error('Error fetching manual customers:', error);
-    res.status(500).json({
-      error: 'Failed to fetch manual customers',
-      message: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.status(500).json({ error: 'Fehler beim Laden der Kunden' });
   }
 };
 

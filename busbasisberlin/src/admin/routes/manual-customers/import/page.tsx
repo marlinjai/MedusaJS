@@ -1,0 +1,521 @@
+// busbasisberlin/src/admin/routes/manual-customers/import/page.tsx
+// Simple CSV import page for one-time legacy data import
+import { defineRouteConfig } from '@medusajs/admin-sdk';
+import { Button, Container, Input, Select, Text, toast } from '@medusajs/ui';
+import { useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, ArrowLeft, CheckCircle, FileText, Upload } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+export const config = defineRouteConfig({
+  label: 'CSV Import',
+});
+
+type ImportResults = {
+  imported: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+};
+
+const CSVImportPage = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [file, setFile] = useState<File | null>(null);
+  const [csvData, setCsvData] = useState<any[]>([]);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [fieldMapping, setFieldMapping] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  const [results, setResults] = useState<ImportResults | null>(null);
+
+  // Available fields for mapping - matching actual ManualCustomer model
+  const availableFields = {
+    // Basic identification
+    customer_number: 'Kundennummer',
+    internal_key: 'Interner Schlüssel',
+
+    // Personal information
+    salutation: 'Anrede',
+    title: 'Titel',
+    first_name: 'Vorname',
+    last_name: 'Nachname',
+    company: 'Firma',
+    company_addition: 'Firmenzusatz',
+
+    // Contact information
+    email: 'E-Mail',
+    phone: 'Telefon',
+    fax: 'Fax',
+    mobile: 'Mobil',
+    website: 'Homepage (WWW)',
+
+    // Address information
+    street: 'Straße',
+    address_addition: 'Adresszusatz',
+    street_number: 'Hausnummer',
+    postal_code: 'PLZ',
+    city: 'Ort',
+    country: 'Land',
+    state: 'Bundesland',
+
+    // Business information
+    vat_id: 'USt-IdNr.',
+    tax_number: 'Steuernummer',
+
+    // Customer classification
+    customer_type: 'Kundentyp',
+    customer_group: 'Kundengruppe',
+    status: 'Status',
+
+    // Additional information
+    notes: 'Notizen',
+    birthday: 'Geburtstag',
+    ebay_name: 'eBay-Name',
+    language: 'Sprache',
+    preferred_contact_method: 'Bevorzugte Kontaktmethode',
+
+    // Legacy/Source tracking
+    source: 'Quelle',
+    import_reference: 'Import-Referenz',
+    legacy_customer_id: 'Legacy Kunden-ID',
+    legacy_system_reference: 'Legacy System-Referenz',
+  };
+
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFile = event.target.files?.[0];
+    if (!uploadedFile) return;
+
+    if (!uploadedFile.name.endsWith('.csv')) {
+      toast.error('Bitte wählen Sie eine CSV-Datei aus');
+      return;
+    }
+
+    setFile(uploadedFile);
+
+    // Read and parse CSV
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target?.result as string;
+      parseCSV(text);
+    };
+    reader.readAsText(uploadedFile);
+  };
+
+  // Improved CSV parser with delimiter detection
+  const parseCSV = (text: string) => {
+    const lines = text.trim().split('\n');
+    if (lines.length === 0) return;
+
+    // Detect delimiter (semicolon vs comma)
+    const firstLine = lines[0];
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const delimiter = semicolonCount > commaCount ? ';' : ',';
+
+    // Parse headers
+    const headers = firstLine.split(delimiter).map(h => h.trim().replace(/"/g, ''));
+
+    // Parse data rows
+    const data = lines.slice(1).map(line => {
+      const values = line.split(delimiter).map(v => v.trim().replace(/"/g, ''));
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      return row;
+    });
+
+    setCsvHeaders(headers);
+    setCsvData(data);
+
+    // Auto-map common German/English fields
+    const autoMapping: Record<string, string> = {};
+    headers.forEach(header => {
+      const lowerHeader = header.toLowerCase();
+      if (lowerHeader.includes('kundennummer') || lowerHeader.includes('customer')) {
+        autoMapping[header] = 'customer_number';
+      } else if (lowerHeader.includes('interner') || lowerHeader.includes('internal')) {
+        autoMapping[header] = 'internal_key';
+      } else if (lowerHeader.includes('anrede') || lowerHeader.includes('salutation')) {
+        autoMapping[header] = 'salutation';
+      } else if (lowerHeader.includes('titel') || lowerHeader.includes('title')) {
+        autoMapping[header] = 'title';
+      } else if (lowerHeader.includes('vorname') || lowerHeader.includes('first')) {
+        autoMapping[header] = 'first_name';
+      } else if (lowerHeader.includes('nachname') || lowerHeader.includes('last')) {
+        autoMapping[header] = 'last_name';
+      } else if (lowerHeader.includes('firma') || lowerHeader.includes('company')) {
+        autoMapping[header] = 'company';
+      } else if (lowerHeader.includes('firmenzusatz') || lowerHeader.includes('company_addition')) {
+        autoMapping[header] = 'company_addition';
+      } else if (lowerHeader.includes('email') || lowerHeader.includes('e-mail')) {
+        autoMapping[header] = 'email';
+      } else if (lowerHeader.includes('telefon') || lowerHeader.includes('phone')) {
+        autoMapping[header] = 'phone';
+      } else if (lowerHeader.includes('fax')) {
+        autoMapping[header] = 'fax';
+      } else if (lowerHeader.includes('mobil') || lowerHeader.includes('mobile')) {
+        autoMapping[header] = 'mobile';
+      } else if (lowerHeader.includes('homepage') || lowerHeader.includes('website') || lowerHeader.includes('www')) {
+        autoMapping[header] = 'website';
+      } else if (lowerHeader.includes('strasse') || lowerHeader.includes('street') || lowerHeader.includes('address')) {
+        autoMapping[header] = 'street';
+      } else if (lowerHeader.includes('adresszusatz') || lowerHeader.includes('address_addition')) {
+        autoMapping[header] = 'address_addition';
+      } else if (lowerHeader.includes('hausnummer') || lowerHeader.includes('street_number')) {
+        autoMapping[header] = 'street_number';
+      } else if (lowerHeader.includes('plz') || lowerHeader.includes('postal')) {
+        autoMapping[header] = 'postal_code';
+      } else if (lowerHeader.includes('ort') || lowerHeader.includes('city')) {
+        autoMapping[header] = 'city';
+      } else if (lowerHeader.includes('land') || lowerHeader.includes('country')) {
+        autoMapping[header] = 'country';
+      } else if (lowerHeader.includes('bundesland') || lowerHeader.includes('state')) {
+        autoMapping[header] = 'state';
+      } else if (lowerHeader.includes('ust') || lowerHeader.includes('vat')) {
+        autoMapping[header] = 'vat_id';
+      } else if (lowerHeader.includes('steuernummer') || lowerHeader.includes('tax')) {
+        autoMapping[header] = 'tax_number';
+      } else if (lowerHeader.includes('geburtstag') || lowerHeader.includes('birthday')) {
+        autoMapping[header] = 'birthday';
+      } else if (lowerHeader.includes('ebay')) {
+        autoMapping[header] = 'ebay_name';
+      } else if (lowerHeader.includes('notizen') || lowerHeader.includes('notes')) {
+        autoMapping[header] = 'notes';
+      }
+    });
+
+    setFieldMapping(autoMapping);
+
+    // Show success message
+    toast.success(`CSV erfolgreich geladen: ${data.length} Datensätze, ${headers.length} Spalten`);
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!csvData.length || !fieldMapping) {
+      toast.error('Bitte laden Sie eine CSV-Datei und konfigurieren Sie die Feldmapping');
+      return;
+    }
+
+    setImporting(true);
+    setImportProgress({ current: 0, total: 0 });
+
+    // Configuration for batching
+    const BATCH_SIZE = 500; // Process 500 customers per batch (increased from 100)
+    const totalBatches = Math.ceil(csvData.length / BATCH_SIZE);
+    const cumulativeResults: ImportResults = { imported: 0, updated: 0, skipped: 0, errors: [] };
+
+    setImportProgress({ current: 0, total: totalBatches });
+
+    try {
+      for (let i = 0; i < totalBatches; i++) {
+        const startIndex = i * BATCH_SIZE;
+        const endIndex = Math.min(startIndex + BATCH_SIZE, csvData.length);
+        const batchData = csvData.slice(startIndex, endIndex);
+
+        toast.info(`Verarbeite Batch ${i + 1} von ${totalBatches} (${batchData.length} Kunden)...`);
+
+        const response = await fetch('/admin/manual-customers/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            csvData: batchData,
+            fieldMapping,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Batch ${i + 1} fehlgeschlagen: ${errorText}`);
+        }
+
+        const batchResult = await response.json();
+        const batchResults = batchResult.results;
+
+        // Accumulate results
+        cumulativeResults.imported += batchResults.imported;
+        cumulativeResults.updated += batchResults.updated;
+        cumulativeResults.skipped += batchResults.skipped;
+        cumulativeResults.errors.push(...batchResults.errors);
+
+        // Update progress
+        setImportProgress({ current: i + 1, total: totalBatches });
+
+        // Small delay to prevent overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      setResults(cumulativeResults);
+
+      // Invalidate cache to refresh the main page
+      queryClient.invalidateQueries({ queryKey: ['admin-manual-customers'] });
+
+      toast.success(
+        `Import abgeschlossen: ${cumulativeResults.imported} Kunden importiert, ${cumulativeResults.updated} aktualisiert, ${cumulativeResults.skipped} übersprungen`,
+      );
+
+      if (cumulativeResults.errors.length > 0) {
+        toast.warning(`${cumulativeResults.errors.length} Fehler aufgetreten`);
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error(`Fehler beim Import: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+    } finally {
+      setImporting(false);
+      setImportProgress({ current: 0, total: 0 });
+    }
+  };
+
+  return (
+    <Container>
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="secondary" size="small" onClick={() => navigate('/manual-customers')}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Zurück
+        </Button>
+        <div>
+          <Text size="xlarge" weight="plus" className="text-ui-fg-base">
+            CSV Import
+          </Text>
+          <Text size="small" className="text-ui-fg-subtle">
+            Importieren Sie Legacy-Kundendaten aus einer CSV-Datei
+          </Text>
+        </div>
+      </div>
+
+      {!results ? (
+        <div className="space-y-6">
+          {/* File Upload */}
+          <div className="border-2 border-dashed border-ui-border-base rounded-lg p-8 text-center">
+            <Upload className="mx-auto h-12 w-12 text-ui-fg-muted mb-4" />
+            <Text size="large" weight="plus" className="text-ui-fg-base mb-2">
+              CSV-Datei auswählen
+            </Text>
+            <Text size="small" className="text-ui-fg-subtle mb-4">
+              Wählen Sie eine CSV-Datei mit Ihren Kundendaten aus
+            </Text>
+            <Input type="file" accept=".csv" onChange={handleFileUpload} className="max-w-sm mx-auto" />
+            {file && (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <FileText className="w-4 h-4" />
+                <Text size="small" className="text-ui-fg-subtle">
+                  {file.name} ({csvData.length} Zeilen)
+                </Text>
+              </div>
+            )}
+          </div>
+
+          {/* Field Mapping */}
+          {csvHeaders.length > 0 && (
+            <div className="border border-ui-border-base rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <Text size="large" weight="plus" className="text-ui-fg-base">
+                  Feldmapping
+                </Text>
+                <div className="flex items-center gap-2">
+                  <Text size="small" className="text-ui-fg-subtle">
+                    {Object.values(fieldMapping).filter(v => v !== '').length} von {csvHeaders.length} Spalten
+                    zugeordnet
+                  </Text>
+                </div>
+              </div>
+              <Text size="small" className="text-ui-fg-subtle mb-6">
+                Ordnen Sie die CSV-Spalten den Kundenfeldern zu
+              </Text>
+
+              <div className="space-y-4">
+                {csvHeaders.map((header, index) => (
+                  <div key={index} className="flex items-center gap-4 p-4 bg-ui-bg-subtle rounded-lg">
+                    <div className="w-64">
+                      <Text size="small" weight="plus" className="text-ui-fg-base mb-1">
+                        {header}
+                      </Text>
+                      <Text size="xsmall" className="text-ui-fg-subtle">
+                        Beispiel: {csvData[0]?.[header] || 'Leer'}
+                      </Text>
+                    </div>
+                    <div className="flex-1">
+                      <Select
+                        value={fieldMapping[header] || 'none'}
+                        onValueChange={value => {
+                          setFieldMapping(prev => ({
+                            ...prev,
+                            [header]: value === 'none' ? '' : value,
+                          }));
+                        }}
+                      >
+                        <Select.Trigger>
+                          <Select.Value placeholder="Feld auswählen..." />
+                        </Select.Trigger>
+                        <Select.Content>
+                          <Select.Item key="no-mapping" value="none">
+                            Nicht zuordnen
+                          </Select.Item>
+                          {Object.entries(availableFields).map(([key, label]) => (
+                            <Select.Item key={key} value={key}>
+                              {label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Import Button */}
+          {csvData.length > 0 && (
+            <div className="space-y-4">
+              {/* Progress Bar */}
+              {importing && importProgress.total > 0 && (
+                <div className="border border-ui-border-base rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <Text size="small" weight="plus">
+                      Import Fortschritt
+                    </Text>
+                    <Text size="small" className="text-ui-fg-subtle">
+                      {importProgress.current} von {importProgress.total} Batches
+                    </Text>
+                  </div>
+                  <div className="w-full bg-ui-bg-subtle rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.round((importProgress.current / importProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <Text size="xsmall" className="text-ui-fg-subtle mt-1">
+                    {Math.round((importProgress.current / importProgress.total) * 100)}% abgeschlossen
+                  </Text>
+                </div>
+              )}
+
+              {/* Import Button */}
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleImport}
+                  disabled={importing || Object.keys(fieldMapping).length === 0}
+                  size="large"
+                >
+                  {importing
+                    ? `Verarbeite Batch ${importProgress.current}/${importProgress.total}...`
+                    : `${csvData.length} Kunden importieren`}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Results */
+        <div className="space-y-6">
+          {/* Results Display */}
+          {results && (
+            <div className="border border-ui-border-base rounded-lg p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-ui-tag-green-text" />
+                <Text size="large" weight="plus" className="text-ui-fg-base">
+                  Import abgeschlossen
+                </Text>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <Text size="xlarge" weight="plus" className="text-ui-tag-green-text">
+                    {results.imported}
+                  </Text>
+                  <Text size="small" className="text-ui-fg-subtle">
+                    Erfolgreich importiert
+                  </Text>
+                </div>
+
+                <div className="text-center">
+                  <Text size="xlarge" weight="plus" className="text-ui-tag-blue-text">
+                    {results.updated}
+                  </Text>
+                  <Text size="small" className="text-ui-fg-subtle">
+                    Aktualisiert
+                  </Text>
+                </div>
+
+                <div className="text-center">
+                  <Text size="xlarge" weight="plus" className="text-ui-tag-orange-text">
+                    {results.skipped}
+                  </Text>
+                  <Text size="small" className="text-ui-fg-subtle">
+                    Übersprungen
+                  </Text>
+                </div>
+              </div>
+
+              {/* Error Details */}
+              {results.errors.length > 0 && (
+                <div className="border-t border-ui-border-base pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="w-4 h-4 text-ui-tag-red-text" />
+                    <Text size="small" weight="plus" className="text-ui-fg-base">
+                      Fehler beim Import ({results.errors.length})
+                    </Text>
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto bg-ui-bg-subtle rounded-lg p-3">
+                    <div className="space-y-2">
+                      {results.errors.slice(0, 50).map((error, index) => (
+                        <div
+                          key={index}
+                          className="text-sm font-mono text-ui-fg-subtle border-b border-ui-border-base pb-1 last:border-b-0"
+                        >
+                          {error}
+                        </div>
+                      ))}
+                      {results.errors.length > 50 && (
+                        <div className="text-sm text-ui-fg-muted text-center pt-2">
+                          ... und {results.errors.length - 50} weitere Fehler
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 p-3 bg-ui-tag-orange-bg rounded-lg">
+                    <Text size="small" className="text-ui-fg-base">
+                      <strong>Häufige Fehlerursachen:</strong>
+                      <br />• <strong>Invalid date</strong>: Datumswerte im falschen Format (erwartet: YYYY-MM-DD oder
+                      DD.MM.YYYY)
+                      <br />• <strong>Invalid number</strong>: Numerische Werte enthalten Buchstaben oder falsche
+                      Formatierung
+                      <br />• <strong>Field errors</strong>: Feldmapping stimmt nicht mit den Datentypen überein
+                    </Text>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setResults(null);
+                setFile(null);
+                setCsvData([]);
+                setCsvHeaders([]);
+                setFieldMapping({});
+              }}
+            >
+              Weiteren Import starten
+            </Button>
+            <Button onClick={() => navigate('/manual-customers')}>Zu den Kunden</Button>
+          </div>
+        </div>
+      )}
+    </Container>
+  );
+};
+
+export default CSVImportPage;

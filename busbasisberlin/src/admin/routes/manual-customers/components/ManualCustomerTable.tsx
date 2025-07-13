@@ -32,9 +32,10 @@ interface ManualCustomerTableProps {
   onEdit: (customer: ManualCustomer) => void;
   onDelete: (id: string) => void;
   isLoading: boolean;
+  isFetching?: boolean;
 }
 
-const ManualCustomerTable = ({ customers, onEdit, onDelete, isLoading }: ManualCustomerTableProps) => {
+const ManualCustomerTable = ({ customers, onEdit, onDelete, isLoading, isFetching }: ManualCustomerTableProps) => {
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
@@ -126,7 +127,7 @@ const ManualCustomerTable = ({ customers, onEdit, onDelete, isLoading }: ManualC
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className="flex items-center justify-center h-64">
         <Text>Lade Kunden...</Text>

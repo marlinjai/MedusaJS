@@ -7,7 +7,7 @@ import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { MagnifyingGlass, Plus, User, XMark } from '@medusajs/icons';
 import { Button, Container, Input, Select, Text, toast } from '@medusajs/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import ManualCustomerTable from './components/ManualCustomerTable';
@@ -53,15 +53,21 @@ const ManualCustomersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50); // Show 50 customers per page
+  const [isPrefetching, setIsPrefetching] = useState(false);
+  const [prefetchProgress, setPrefetchProgress] = useState({ current: 0, total: 0 });
 
-  // Fetch manual customers
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['admin-manual-customers', searchTerm, typeFilter, statusFilter],
+  // Fetch manual customers with pagination
+  const { data, isLoading, error, isFetching } = useQuery({
+    queryKey: ['admin-manual-customers', searchTerm, typeFilter, statusFilter, currentPage, pageSize],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (typeFilter !== 'all') params.append('customer_type', typeFilter);
       if (statusFilter !== 'all') params.append('status', statusFilter);
+      params.append('limit', pageSize.toString());
+      params.append('offset', ((currentPage - 1) * pageSize).toString());
 
       const res = await fetch(`/admin/manual-customers?${params.toString()}`, {
         credentials: 'include',
@@ -69,7 +75,72 @@ const ManualCustomersPage = () => {
       if (!res.ok) throw new Error('Failed to fetch manual customers');
       return res.json();
     },
+    staleTime: 30000, // Cache for 30 seconds
+    placeholderData: previousData => previousData, // Keep previous data while loading
   });
+
+  // Prefetch adjacent pages for seamless navigation
+  const prefetchAdjacentPages = async (centerPage: number, totalPages: number) => {
+    setIsPrefetching(true);
+
+    const pagesToPrefetch = [];
+
+    // Prefetch next 5 pages
+    for (let i = 1; i <= 5; i++) {
+      const nextPage = centerPage + i;
+      if (nextPage <= totalPages) {
+        pagesToPrefetch.push(nextPage);
+      }
+    }
+
+    // Prefetch previous 5 pages
+    for (let i = 1; i <= 5; i++) {
+      const prevPage = centerPage - i;
+      if (prevPage >= 1) {
+        pagesToPrefetch.push(prevPage);
+      }
+    }
+
+    setPrefetchProgress({ current: 0, total: pagesToPrefetch.length });
+
+    // Prefetch each page (with some delay to avoid overwhelming the server)
+    const prefetchPromises = pagesToPrefetch.map((page, index) => {
+      return new Promise(resolve => {
+        setTimeout(async () => {
+          const params = new URLSearchParams();
+          if (searchTerm) params.append('search', searchTerm);
+          if (typeFilter !== 'all') params.append('customer_type', typeFilter);
+          if (statusFilter !== 'all') params.append('status', statusFilter);
+          params.append('limit', pageSize.toString());
+          params.append('offset', ((page - 1) * pageSize).toString());
+
+          try {
+            await queryClient.prefetchQuery({
+              queryKey: ['admin-manual-customers', searchTerm, typeFilter, statusFilter, page, pageSize],
+              queryFn: async () => {
+                const res = await fetch(`/admin/manual-customers?${params.toString()}`, {
+                  credentials: 'include',
+                });
+                if (!res.ok) throw new Error('Failed to fetch manual customers');
+                return res.json();
+              },
+              staleTime: 30000,
+            });
+          } catch (error) {
+            console.warn(`Failed to prefetch page ${page}:`, error);
+          }
+
+          // Update progress
+          setPrefetchProgress(prev => ({ ...prev, current: prev.current + 1 }));
+          resolve(page);
+        }, index * 50); // 50ms delay between each prefetch
+      });
+    });
+
+    // Wait for all prefetching to complete
+    await Promise.all(prefetchPromises);
+    setIsPrefetching(false);
+  };
 
   const customers = data?.customers || [];
   const stats = data?.stats || {
@@ -83,6 +154,21 @@ const ManualCustomersPage = () => {
     withPhone: 0,
     totalSpent: 0,
   };
+
+  const totalPages = Math.ceil((data?.total || 0) / pageSize);
+  const hasMore = data?.has_more || false;
+
+  // Trigger prefetching when current page loads successfully
+  useEffect(() => {
+    if (data && !isLoading && !isFetching && totalPages > 1) {
+      // Small delay to avoid overwhelming the server
+      const timer = setTimeout(() => {
+        prefetchAdjacentPages(currentPage, totalPages);
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [data, isLoading, isFetching, currentPage, totalPages, searchTerm, typeFilter, statusFilter]);
 
   // Delete manual customer
   const deleteCustomer = useMutation({
@@ -105,7 +191,64 @@ const ManualCustomersPage = () => {
   const handleEdit = (customer: ManualCustomer) => navigate(`/manual-customers/${customer.id}`);
   const handleDelete = (id: string) => deleteCustomer.mutate(id);
   const handleImport = () => navigate('/manual-customers/import');
-  const handleClearSearch = () => setSearchTerm('');
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  // Reset page when filters change
+  const handleTypeFilterChange = (value: string) => {
+    setTypeFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      // Check if we have prefetched data for this page
+      const queryKey = ['admin-manual-customers', searchTerm, typeFilter, statusFilter, currentPage - 1, pageSize];
+      const cachedData = queryClient.getQueryData(queryKey);
+      if (cachedData) {
+        // Data is already available, navigation will be instant
+        console.log('Using prefetched data for page', currentPage - 1);
+      }
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      // Check if we have prefetched data for this page
+      const queryKey = ['admin-manual-customers', searchTerm, typeFilter, statusFilter, currentPage + 1, pageSize];
+      const cachedData = queryClient.getQueryData(queryKey);
+      if (cachedData) {
+        // Data is already available, navigation will be instant
+        console.log('Using prefetched data for page', currentPage + 1);
+      }
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Check if we have prefetched data for this page
+    const queryKey = ['admin-manual-customers', searchTerm, typeFilter, statusFilter, page, pageSize];
+    const cachedData = queryClient.getQueryData(queryKey);
+    if (cachedData) {
+      // Data is already available, navigation will be instant
+      console.log('Using prefetched data for page', page);
+    }
+  };
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -213,7 +356,7 @@ const ManualCustomersPage = () => {
             <Input
               placeholder="Suchen nach Name, Firma, E-Mail, Telefon, Kundennummer..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={e => handleSearchChange(e.target.value)}
               className="pl-10 pr-10"
             />
             {searchTerm && (
@@ -224,7 +367,7 @@ const ManualCustomersPage = () => {
           </div>
 
           {/* Type Filter */}
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
             <Select.Trigger className="w-40">
               <Select.Value />
             </Select.Trigger>
@@ -237,7 +380,7 @@ const ManualCustomersPage = () => {
           </Select>
 
           {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
             <Select.Trigger className="w-32">
               <Select.Value />
             </Select.Trigger>
@@ -251,12 +394,90 @@ const ManualCustomersPage = () => {
         </div>
 
         {/* Filter Results Info */}
-        <div className="mt-2">
-          <Text className="text-sm text-ui-fg-muted">
-            {customers.length} Kunden {searchTerm && `gefunden für "${searchTerm}"`}
-            {typeFilter !== 'all' && ` • Typ: ${typeFilter}`}
-            {statusFilter !== 'all' && ` • Status: ${statusFilter}`}
-          </Text>
+        <div className="mt-2 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Text className="text-sm text-ui-fg-muted">
+              {isFetching ? 'Wird geladen...' : `${customers.length} Kunden auf Seite ${currentPage} von ${totalPages}`}
+              {searchTerm && ` • Suche: "${searchTerm}"`}
+              {typeFilter !== 'all' && ` • Typ: ${typeFilter}`}
+              {statusFilter !== 'all' && ` • Status: ${statusFilter}`}
+              {data?.total && ` • Gesamt: ${data.total} Kunden`}
+            </Text>
+
+            {/* Prefetching indicator */}
+            {isPrefetching && (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-3 w-3 border-2 border-ui-border-base border-t-ui-fg-interactive"></div>
+                <Text className="text-xs text-ui-fg-interactive">
+                  Lädt weitere Seiten... ({prefetchProgress.current}/{prefetchProgress.total})
+                </Text>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1 || isFetching}
+              >
+                Zurück
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {/* Show page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                  if (page > totalPages) return null;
+
+                  // Check if this page has prefetched data
+                  const queryKey = ['admin-manual-customers', searchTerm, typeFilter, statusFilter, page, pageSize];
+                  const hasPrefetchedData = queryClient.getQueryData(queryKey) !== undefined;
+
+                  return (
+                    <Button
+                      key={page}
+                      variant={page === currentPage ? 'primary' : 'secondary'}
+                      size="small"
+                      onClick={() => handlePageChange(page)}
+                      disabled={isFetching}
+                      className={`min-w-[36px] ${hasPrefetchedData && page !== currentPage ? 'ring-1 ring-ui-fg-interactive ring-opacity-30' : ''}`}
+                      title={hasPrefetchedData ? 'Seite bereits geladen - sofortige Navigation' : 'Seite wird geladen'}
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+
+                {totalPages > 5 && currentPage < totalPages - 2 && (
+                  <>
+                    <Text className="text-sm text-ui-fg-muted mx-1">...</Text>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={isFetching}
+                      className="min-w-[36px]"
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages || isFetching}
+              >
+                Weiter
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -267,7 +488,8 @@ const ManualCustomersPage = () => {
             customers={customers}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            isLoading={isLoading}
+            isLoading={isLoading && currentPage === 1} // Only show loading on initial load
+            isFetching={isFetching}
           />
         </div>
       </div>

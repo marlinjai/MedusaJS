@@ -37,20 +37,43 @@ class ManualCustomerService extends MedusaService({
     // Find the highest existing number for this year
     const customers = await this.listManualCustomers({});
 
+    // First, try to find the highest number from our standard format (MC-YYYY-NNNN)
     const yearCustomers = customers.filter(c => c.customer_number && c.customer_number.startsWith(prefix));
+    let maxStandardNumber = 0;
 
-    let maxNumber = 0;
     yearCustomers.forEach(customer => {
       if (customer.customer_number) {
         const match = customer.customer_number.match(/MC-\d{4}-(\d+)/);
         if (match) {
           const number = parseInt(match[1], 10);
-          if (number > maxNumber) {
-            maxNumber = number;
+          if (number > maxStandardNumber) {
+            maxStandardNumber = number;
           }
         }
       }
     });
+
+    // Also check all imported customer numbers for numeric patterns
+    // This helps auto-increment work correctly after CSV imports
+    let maxImportedNumber = 0;
+
+    customers.forEach(customer => {
+      if (customer.customer_number && customer.source === 'csv-import') {
+        // Extract all numbers from the customer number
+        const numbers = customer.customer_number.match(/\d+/g);
+        if (numbers) {
+          numbers.forEach(numStr => {
+            const num = parseInt(numStr, 10);
+            if (num > maxImportedNumber) {
+              maxImportedNumber = num;
+            }
+          });
+        }
+      }
+    });
+
+    // Use the higher of the two maximum numbers found
+    const maxNumber = Math.max(maxStandardNumber, maxImportedNumber);
 
     return `${prefix}${String(maxNumber + 1).padStart(4, '0')}`;
   }
@@ -146,7 +169,7 @@ class ManualCustomerService extends MedusaService({
   }
 
   /**
-   * Import customers from CSV data
+   * Import customers from CSV data with idempotent behavior
    * @param csvData - Array of CSV row objects
    * @param fieldMapping - Mapping of CSV columns to customer fields
    * @returns Import results with counts and errors
@@ -156,29 +179,62 @@ class ManualCustomerService extends MedusaService({
     fieldMapping: Record<string, string>,
   ): Promise<{
     imported: number;
+    updated: number;
     skipped: number;
     errors: string[];
   }> {
     const results = {
       imported: 0,
+      updated: 0,
       skipped: 0,
       errors: [] as string[],
     };
 
+    // Get all existing customers once for efficient lookups
+    const existingCustomers = await this.listManualCustomers({});
+    const customersByNumber = new Map<string, ManualCustomer>();
+
+    existingCustomers.forEach(customer => {
+      if (customer.customer_number) {
+        customersByNumber.set(customer.customer_number, customer);
+      }
+    });
+
     for (let i = 0; i < csvData.length; i++) {
       const row = csvData[i];
       try {
-        // Map CSV fields to customer fields
+        // Map CSV fields to customer fields with better error handling
         const customerData: Partial<ManualCustomer> = {};
 
         Object.entries(fieldMapping).forEach(([csvField, customerField]) => {
           if (row[csvField] !== undefined && row[csvField] !== '') {
-            if (customerField === 'total_spent' || customerField === 'total_purchases') {
-              customerData[customerField] = Number(row[csvField]) || 0;
-            } else if (customerField === 'birthday' || customerField === 'last_purchase_date') {
-              customerData[customerField] = row[csvField] ? new Date(row[csvField]) : null;
-            } else {
-              customerData[customerField] = row[csvField];
+            try {
+              if (customerField === 'total_spent' || customerField === 'total_purchases') {
+                const numValue = Number(row[csvField]);
+                if (isNaN(numValue)) {
+                  throw new Error(`Invalid number "${row[csvField]}" for field ${customerField}`);
+                }
+                customerData[customerField] = numValue;
+              } else if (
+                customerField === 'birthday' ||
+                customerField === 'last_purchase_date' ||
+                customerField === 'first_contact_date' ||
+                customerField === 'last_contact_date'
+              ) {
+                if (row[csvField]) {
+                  const dateValue = new Date(row[csvField]);
+                  if (isNaN(dateValue.getTime())) {
+                    throw new Error(`Invalid date "${row[csvField]}" for field ${customerField}`);
+                  }
+                  customerData[customerField] = dateValue;
+                }
+              } else {
+                customerData[customerField] = row[csvField];
+              }
+            } catch (fieldError) {
+              throw new Error(
+                `Field "${csvField}" (${customerField}): ${fieldError instanceof Error ? fieldError.message : 'Invalid value'}`,
+              );
             }
           }
         });
@@ -187,16 +243,79 @@ class ManualCustomerService extends MedusaService({
         customerData.source = 'csv-import';
         customerData.import_reference = `csv-row-${i + 1}`;
 
-        // Create customer
-        await this.createManualCustomerWithNumber(customerData);
-        results.imported++;
+        // Check if customer already exists by customer_number (idempotent behavior)
+        const customerNumber = customerData.customer_number;
+        const existingCustomer = customerNumber ? customersByNumber.get(customerNumber) : null;
+
+        if (existingCustomer) {
+          // Update existing customer (idempotent)
+          await this.updateCustomerWithContactTracking(existingCustomer.id, {
+            ...customerData,
+            // Preserve original creation info but update import reference
+            source: existingCustomer.source === 'csv-import' ? 'csv-import' : `${existingCustomer.source}, csv-import`,
+            import_reference: `${existingCustomer.import_reference || ''}, csv-row-${i + 1}`.replace(/^, /, ''),
+          });
+          results.updated++;
+        } else {
+          // Create new customer
+          await this.createManualCustomerFromCSV(customerData);
+          results.imported++;
+
+          // Add to our lookup map for subsequent rows in this batch
+          if (customerNumber) {
+            const newCustomer = await this.findByCustomerNumber(customerNumber);
+            if (newCustomer) {
+              customersByNumber.set(customerNumber, newCustomer);
+            }
+          }
+        }
       } catch (error) {
         results.skipped++;
-        results.errors.push(`Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const customerNumber =
+          row[Object.keys(fieldMapping).find(key => fieldMapping[key] === 'customer_number') || ''] || 'Unknown';
+        results.errors.push(
+          `Row ${i + 1} (Customer: ${customerNumber}): ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     }
 
     return results;
+  }
+
+  /**
+   * Create a manual customer from CSV data without auto-generating customer numbers
+   * @param data - Customer data from CSV
+   * @returns Created manual customer
+   */
+  async createManualCustomerFromCSV(data: Partial<ManualCustomer>): Promise<ManualCustomer> {
+    // For CSV imports, we preserve existing customer numbers and don't auto-generate
+    // Set default values
+    const customerData = {
+      status: 'active',
+      customer_type: 'legacy', // CSV imports are typically legacy data
+      source: 'csv-import',
+      language: 'de',
+      total_purchases: 0,
+      total_spent: 0,
+      is_linked: false,
+      ...data,
+    };
+
+    // Validate that we have some identifying information
+    if (
+      !customerData.customer_number &&
+      !customerData.first_name &&
+      !customerData.last_name &&
+      !customerData.company &&
+      !customerData.email
+    ) {
+      throw new Error(
+        'Customer must have at least one identifying field (customer_number, first_name, last_name, company, or email)',
+      );
+    }
+
+    const [customer] = await this.createManualCustomers([customerData]);
+    return customer;
   }
 
   /**
@@ -369,6 +488,16 @@ class ManualCustomerService extends MedusaService({
     const allCustomers = await this.listManualCustomers({});
     const linkedCustomer = allCustomers.find(customer => customer.core_customer_id === coreCustomerId);
     return linkedCustomer || null;
+  }
+
+  /**
+   * Find manual customer by customer number
+   * @param customerNumber - The customer number to find
+   * @returns Manual customer if found, null otherwise
+   */
+  async findByCustomerNumber(customerNumber: string): Promise<ManualCustomer | null> {
+    const allCustomers = await this.listManualCustomers({});
+    return allCustomers.find(customer => customer.customer_number === customerNumber) || null;
   }
 
   /**
