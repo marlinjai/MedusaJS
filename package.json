@@ -33,6 +33,14 @@
   "author": "BusBasisBerlin",
   "license": "MIT",
   "dependencies": {
-    "ajv": "^8.17.1"
+    "ajv": "^8.17.1",
+    "csv-parser": "^3.2.0",
+    "csv-writer": "^1.6.0",
+    "gemeindeverzeichnis": "^0.1.0",
+    "google-libphonenumber": "^3.2.42",
+    "node-fetch": "^3.3.2",
+    "openai": "^5.9.0",
+    "p-limit": "^6.2.0",
+    "postal-codes-js": "^2.5.2"
   }
 }

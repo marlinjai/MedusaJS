@@ -48,5 +48,8 @@ module.exports = defineConfig({
     {
       resolve: './src/modules/offer',
     },
+    {
+      resolve: './src/modules/manual-customer',
+    },
   ],
 });

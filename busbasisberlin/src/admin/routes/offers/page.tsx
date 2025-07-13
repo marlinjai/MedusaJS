@@ -303,10 +303,6 @@ const OffersPage = () => {
       <div className="px-6 py-4 border-b bg-ui-bg-subtle">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="primary" size="base" onClick={() => navigate('/admin/offers/new')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Angebot erstellen
-            </Button>
             <div className="flex items-center gap-2">
               <Input
                 type="text"
