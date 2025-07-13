@@ -51,6 +51,12 @@ const manualCustomer = model.define('manual_customer', {
   source: model.text().nullable(), // 'csv-import', 'manual-entry', 'pos-system'
   import_reference: model.text().nullable(), // Reference to original import (e.g., CSV row)
 
+  // Customer linking - connection to core Medusa customers
+  core_customer_id: model.text().nullable(), // Foreign key to core customer when linked
+  is_linked: model.boolean().default(false), // Whether this manual customer is linked to a core customer
+  linked_at: model.dateTime().nullable(), // When the linking occurred
+  linking_method: model.text().nullable(), // 'email-match', 'manual-link', 'phone-match', 'name-match'
+
   // Additional flexible data
   notes: model.text().nullable(), // Free text notes
   additional_info: model.text().nullable(), // JSON string for any additional data

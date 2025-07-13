@@ -108,9 +108,30 @@ export class Migration20250127000001 extends Migration {
     this.addSql(
       `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_ebay_name" ON "manual_customer" (ebay_name) WHERE deleted_at IS NULL;`,
     );
+
+    // Add customer linking fields
+    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "core_customer_id" text NULL;');
+    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "is_linked" boolean NOT NULL DEFAULT false;');
+    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "linked_at" timestamptz NULL;');
+    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "linking_method" text NULL;');
+
+    // Add index on core_customer_id for performance
+    this.addSql('CREATE INDEX "IDX_manual_customer_core_customer_id" ON "manual_customer" ("core_customer_id");');
+
+    // Add index on is_linked for filtering
+    this.addSql('CREATE INDEX "IDX_manual_customer_is_linked" ON "manual_customer" ("is_linked");');
   }
 
   override async down(): Promise<void> {
     this.addSql(`DROP TABLE IF EXISTS "manual_customer" CASCADE;`);
+    // Remove indexes
+    this.addSql('DROP INDEX "IDX_manual_customer_is_linked";');
+    this.addSql('DROP INDEX "IDX_manual_customer_core_customer_id";');
+
+    // Remove columns
+    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "linking_method";');
+    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "linked_at";');
+    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "is_linked";');
+    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "core_customer_id";');
   }
 }

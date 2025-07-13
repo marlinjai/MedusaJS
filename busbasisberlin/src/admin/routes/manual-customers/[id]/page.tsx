@@ -1,8 +1,8 @@
 // busbasisberlin/src/admin/routes/manual-customers/[id]/page.tsx
-// Edit Manual Customer page (Medusa admin UI pattern, all fields, toggle editing)
+// Manual Customer Detail page with customer linking functionality
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { Badge, Button, Container, Input, Select, Text, Textarea, toast } from '@medusajs/ui';
-import { ArrowLeft, Edit, Save, X } from 'lucide-react';
+import { ArrowLeft, Edit, Save, Unlink, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -35,6 +35,11 @@ interface ManualCustomer {
   status: string;
   source: string;
   import_reference: string;
+  // Customer linking fields
+  core_customer_id: string;
+  is_linked: boolean;
+  linked_at: string;
+  linking_method: string;
   notes: string;
   additional_info: string;
   birthday: string;
@@ -63,6 +68,14 @@ export default function ManualCustomerDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Customer linking states
+  const [showLinkingDropdown, setShowLinkingDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [coreCustomers, setCoreCustomers] = useState<any[]>([]);
+  const [searchingCustomers, setSearchingCustomers] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
   // Load customer data
   useEffect(() => {
@@ -191,6 +204,105 @@ export default function ManualCustomerDetailPage() {
         return 'Wartend';
       default:
         return status;
+    }
+  };
+
+  // Search for core customers with debouncing
+  const searchCoreCustomers = async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setCoreCustomers([]);
+      return;
+    }
+
+    setSearchingCustomers(true);
+    try {
+      // Search in Medusa's core customer API
+      const res = await fetch(`/admin/customers?q=${encodeURIComponent(query)}&limit=10`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error('Fehler beim Suchen der Kunden');
+      }
+
+      const data = await res.json();
+      setCoreCustomers(data.customers || []);
+    } catch (error) {
+      console.error('Error searching core customers:', error);
+      toast.error('Fehler beim Suchen der Kunden');
+      setCoreCustomers([]);
+    } finally {
+      setSearchingCustomers(false);
+    }
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchCoreCustomers(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // Link customer manually
+  const linkCustomer = async (coreCustomerId: string) => {
+    if (!customer?.id) return;
+
+    setLinking(true);
+    try {
+      const res = await fetch(`/admin/manual-customers/${customer.id}/link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          core_customer_id: coreCustomerId,
+          linking_method: 'manual-link',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Fehler beim Verknüpfen des Kunden');
+      }
+
+      toast.success('Kunde erfolgreich verknüpft');
+      setShowLinkingDropdown(false);
+      setSearchQuery('');
+      setCoreCustomers([]);
+      setSelectedCustomer(null);
+      await loadCustomer(); // Reload customer data
+    } catch (error) {
+      console.error('Error linking customer:', error);
+      toast.error(error instanceof Error ? error.message : 'Fehler beim Verknüpfen des Kunden');
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  // Unlink customer
+  const unlinkCustomer = async () => {
+    if (!customer?.id) return;
+
+    setLinking(true);
+    try {
+      const res = await fetch(`/admin/manual-customers/${customer.id}/link`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Fehler beim Entfernen der Verknüpfung');
+      }
+
+      toast.success('Verknüpfung erfolgreich entfernt');
+      await loadCustomer(); // Reload customer data
+    } catch (error) {
+      console.error('Error unlinking customer:', error);
+      toast.error(error instanceof Error ? error.message : 'Fehler beim Entfernen der Verknüpfung');
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -1006,6 +1118,163 @@ export default function ManualCustomerDetailPage() {
               </Text>
             )}
           </div>
+        </Section>
+
+        {/* Customer Linking */}
+        <Section title="Kundenverknüpfung">
+          <div>
+            <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+              Verknüpfungsstatus
+            </Text>
+            <div className="flex items-center gap-2">
+              <Badge color={customer.is_linked ? 'green' : 'grey'}>
+                {customer.is_linked ? 'Verknüpft' : 'Nicht verknüpft'}
+              </Badge>
+              {customer.is_linked && customer.linking_method && (
+                <Badge color="blue">
+                  {customer.linking_method === 'email-match'
+                    ? 'E-Mail Match'
+                    : customer.linking_method === 'phone-match'
+                      ? 'Telefon Match'
+                      : customer.linking_method === 'name-match'
+                        ? 'Name Match'
+                        : customer.linking_method === 'manual-link'
+                          ? 'Manuell verknüpft'
+                          : customer.linking_method}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+              Core Kunden-ID
+            </Text>
+            <Text size="small" className="text-ui-fg-base">
+              {customer.core_customer_id || 'Nicht verknüpft'}
+            </Text>
+          </div>
+
+          <div>
+            <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+              Verknüpft am
+            </Text>
+            <Text size="small" className="text-ui-fg-base">
+              {customer.linked_at ? new Date(customer.linked_at).toLocaleString('de-DE') : 'Nicht verknüpft'}
+            </Text>
+          </div>
+
+          <div>
+            <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+              Verknüpfungsmethode
+            </Text>
+            <Text size="small" className="text-ui-fg-base">
+              {customer.linking_method === 'email-match'
+                ? 'E-Mail Übereinstimmung'
+                : customer.linking_method === 'phone-match'
+                  ? 'Telefon Übereinstimmung'
+                  : customer.linking_method === 'name-match'
+                    ? 'Name Übereinstimmung'
+                    : customer.linking_method === 'manual-link'
+                      ? 'Manuell verknüpft'
+                      : customer.linking_method || 'Nicht festgelegt'}
+            </Text>
+          </div>
+
+          {/* Customer Linking Search */}
+          {!customer.is_linked && (
+            <div className="col-span-2">
+              <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                Mit Core-Kunden verknüpfen
+              </Text>
+              <div className="relative">
+                <Input
+                  placeholder="Kunde suchen (Name, E-Mail, Telefon)..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  disabled={linking}
+                  className="w-full"
+                />
+
+                {/* Search Results Dropdown */}
+                {searchQuery.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-ui-bg-base border border-ui-border-base rounded-md shadow-elevation-flyout z-50 max-h-60 overflow-y-auto">
+                    {searchingCustomers && (
+                      <div className="flex items-center gap-3 px-3 py-2 text-ui-fg-subtle">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-ui-border-base border-t-ui-fg-base"></div>
+                        <Text size="small" className="text-ui-fg-subtle">
+                          Suche läuft...
+                        </Text>
+                      </div>
+                    )}
+
+                    {!searchingCustomers && coreCustomers.length === 0 && (
+                      <div className="px-3 py-2">
+                        <Text size="small" className="text-ui-fg-muted">
+                          Keine Kunden gefunden
+                        </Text>
+                      </div>
+                    )}
+
+                    {!searchingCustomers &&
+                      coreCustomers.map(coreCustomer => (
+                        <div
+                          key={coreCustomer.id}
+                          className="px-3 py-2 hover:bg-ui-bg-subtle cursor-pointer transition-colors duration-150 border-b border-ui-border-base last:border-b-0 first:rounded-t-md last:rounded-b-md"
+                          onClick={() => {
+                            setSelectedCustomer(coreCustomer);
+                            linkCustomer(coreCustomer.id);
+                            setSearchQuery('');
+                            setCoreCustomers([]);
+                          }}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Text size="small" weight="plus" className="text-ui-fg-base truncate">
+                                  {coreCustomer.first_name} {coreCustomer.last_name}
+                                </Text>
+                                {coreCustomer.has_account && (
+                                  <Badge color="green" size="2xsmall">
+                                    Registriert
+                                  </Badge>
+                                )}
+                              </div>
+                              <Text size="xsmall" className="text-ui-fg-subtle truncate">
+                                {coreCustomer.email}
+                              </Text>
+                              {coreCustomer.phone && (
+                                <Text size="xsmall" className="text-ui-fg-muted truncate">
+                                  {coreCustomer.phone}
+                                </Text>
+                              )}
+                            </div>
+                            <div className="flex-shrink-0 ml-2">
+                              <Badge color="blue" size="2xsmall">
+                                {coreCustomer.id.slice(-8)}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+              <Text size="small" className="text-ui-fg-subtle mt-1">
+                Geben Sie mindestens 2 Zeichen ein, um nach Kunden zu suchen
+              </Text>
+            </div>
+          )}
+
+          {/* Unlink Button */}
+          {customer.is_linked && (
+            <div className="col-span-2">
+              <Button variant="secondary" size="small" onClick={unlinkCustomer} disabled={linking} className="mt-2">
+                <Unlink className="w-4 h-4 mr-2" />
+                {linking ? 'Entferne Verknüpfung...' : 'Verknüpfung entfernen'}
+              </Button>
+            </div>
+          )}
         </Section>
 
         {/* System Info */}

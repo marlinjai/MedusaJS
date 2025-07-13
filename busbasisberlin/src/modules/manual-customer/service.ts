@@ -57,8 +57,8 @@ class ManualCustomerService extends MedusaService({
 
   /**
    * Create a manual customer with auto-generated customer number
-   * @param data - Customer data
-   * @returns Created customer
+   * @param data - Customer data (customer_number will be auto-generated if not provided)
+   * @returns Created manual customer
    */
   async createManualCustomerWithNumber(data: Partial<ManualCustomer>): Promise<ManualCustomer> {
     // Generate customer number if not provided
@@ -68,24 +68,23 @@ class ManualCustomerService extends MedusaService({
 
     // Set default values
     const customerData = {
+      status: 'active',
+      customer_type: 'walk-in',
+      source: 'manual-entry',
+      language: 'de',
+      total_purchases: 0,
+      total_spent: 0,
+      is_linked: false,
       ...data,
-      customer_type: data.customer_type || 'walk-in',
-      status: data.status || 'active',
-      language: data.language || 'de',
-      source: data.source || 'manual-entry',
-      total_purchases: data.total_purchases || 0,
-      total_spent: data.total_spent || 0,
-      first_contact_date: data.first_contact_date || new Date(),
-      last_contact_date: data.last_contact_date || new Date(),
     };
 
-    const createdCustomers = await this.createManualCustomers([customerData]);
-    return createdCustomers[0];
+    const [customer] = await this.createManualCustomers([customerData]);
+    return customer;
   }
 
   /**
-   * Get customer statistics
-   * @returns Customer statistics
+   * Get statistics about manual customers
+   * @returns Statistics object with counts and totals
    */
   async getStatistics(): Promise<{
     total: number;
@@ -102,66 +101,47 @@ class ManualCustomerService extends MedusaService({
 
     const stats = {
       total: customers.length,
-      active: 0,
-      inactive: 0,
-      legacy: 0,
-      walkIn: 0,
-      business: 0,
-      withEmail: 0,
-      withPhone: 0,
-      totalSpent: 0,
+      active: customers.filter(c => c.status === 'active').length,
+      inactive: customers.filter(c => c.status === 'inactive').length,
+      legacy: customers.filter(c => c.customer_type === 'legacy').length,
+      walkIn: customers.filter(c => c.customer_type === 'walk-in').length,
+      business: customers.filter(c => c.customer_type === 'business').length,
+      withEmail: customers.filter(c => c.email && c.email.trim() !== '').length,
+      withPhone: customers.filter(c => c.phone && c.phone.trim() !== '').length,
+      totalSpent: customers.reduce((sum, c) => sum + (c.total_spent || 0), 0),
     };
-
-    customers.forEach(customer => {
-      // Status
-      if (customer.status === 'active') stats.active++;
-      else stats.inactive++;
-
-      // Type
-      if (customer.customer_type === 'legacy') stats.legacy++;
-      else if (customer.customer_type === 'walk-in') stats.walkIn++;
-      else if (customer.customer_type === 'business') stats.business++;
-
-      // Contact info
-      if (customer.email) stats.withEmail++;
-      if (customer.phone || customer.mobile) stats.withPhone++;
-
-      // Total spent
-      stats.totalSpent += customer.total_spent || 0;
-    });
 
     return stats;
   }
 
   /**
-   * Search customers by text
-   * @param searchTerm - Search term
-   * @returns Matching customers
+   * Search customers by various fields
+   * @param searchTerm - Search term to match against multiple fields
+   * @returns Array of matching customers
    */
   async searchCustomers(searchTerm: string): Promise<ManualCustomer[]> {
-    const searchLower = searchTerm.toLowerCase();
+    if (!searchTerm || searchTerm.trim() === '') {
+      return [];
+    }
 
-    // Get all customers and filter in memory
     const allCustomers = await this.listManualCustomers({});
+    const term = searchTerm.toLowerCase().trim();
 
     return allCustomers.filter(customer => {
-      return (
-        (customer.first_name && customer.first_name.toLowerCase().includes(searchLower)) ||
-        (customer.last_name && customer.last_name.toLowerCase().includes(searchLower)) ||
-        (customer.company && customer.company.toLowerCase().includes(searchLower)) ||
-        (customer.company_addition && customer.company_addition.toLowerCase().includes(searchLower)) ||
-        (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
-        (customer.phone && customer.phone.toLowerCase().includes(searchLower)) ||
-        (customer.fax && customer.fax.toLowerCase().includes(searchLower)) ||
-        (customer.mobile && customer.mobile.toLowerCase().includes(searchLower)) ||
-        (customer.customer_number && customer.customer_number.toLowerCase().includes(searchLower)) ||
-        (customer.internal_key && customer.internal_key.toLowerCase().includes(searchLower)) ||
-        (customer.city && customer.city.toLowerCase().includes(searchLower)) ||
-        (customer.postal_code && customer.postal_code.toLowerCase().includes(searchLower)) ||
-        (customer.street && customer.street.toLowerCase().includes(searchLower)) ||
-        (customer.ebay_name && customer.ebay_name.toLowerCase().includes(searchLower)) ||
-        (customer.customer_group && customer.customer_group.toLowerCase().includes(searchLower))
-      );
+      const searchableFields = [
+        customer.customer_number,
+        customer.first_name,
+        customer.last_name,
+        customer.company,
+        customer.email,
+        customer.phone,
+        customer.mobile,
+        customer.city,
+        customer.legacy_customer_id,
+        customer.internal_key,
+      ];
+
+      return searchableFields.some(field => field && field.toLowerCase().includes(term));
     });
   }
 
@@ -169,7 +149,7 @@ class ManualCustomerService extends MedusaService({
    * Import customers from CSV data
    * @param csvData - Array of CSV row objects
    * @param fieldMapping - Mapping of CSV columns to customer fields
-   * @returns Import results
+   * @returns Import results with counts and errors
    */
   async importFromCSV(
     csvData: CSVCustomerRow[],
@@ -179,46 +159,40 @@ class ManualCustomerService extends MedusaService({
     skipped: number;
     errors: string[];
   }> {
-    const results: { imported: number; skipped: number; errors: string[] } = {
+    const results = {
       imported: 0,
       skipped: 0,
-      errors: [],
+      errors: [] as string[],
     };
 
     for (let i = 0; i < csvData.length; i++) {
       const row = csvData[i];
-
       try {
         // Map CSV fields to customer fields
         const customerData: Partial<ManualCustomer> = {};
 
         Object.entries(fieldMapping).forEach(([csvField, customerField]) => {
-          if (row[csvField] && row[csvField].trim()) {
-            // Handle date fields
-            if (customerField === 'birthday' && row[csvField]) {
-              customerData.birthday = new Date(row[csvField]);
+          if (row[csvField] !== undefined && row[csvField] !== '') {
+            if (customerField === 'total_spent' || customerField === 'total_purchases') {
+              customerData[customerField] = Number(row[csvField]) || 0;
+            } else if (customerField === 'birthday' || customerField === 'last_purchase_date') {
+              customerData[customerField] = row[csvField] ? new Date(row[csvField]) : null;
             } else {
-              (customerData as any)[customerField] = row[csvField].trim();
+              customerData[customerField] = row[csvField];
             }
           }
         });
 
-        // Set import-specific fields
+        // Set import metadata
         customerData.source = 'csv-import';
-        customerData.import_reference = `Row ${i + 1}`;
-        customerData.customer_type = 'legacy';
+        customerData.import_reference = `csv-row-${i + 1}`;
 
-        // Skip if no meaningful data
-        if (!customerData.first_name && !customerData.last_name && !customerData.company) {
-          results.skipped++;
-          continue;
-        }
-
+        // Create customer
         await this.createManualCustomerWithNumber(customerData);
         results.imported++;
       } catch (error) {
-        results.errors.push(`Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         results.skipped++;
+        results.errors.push(`Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
@@ -232,9 +206,9 @@ class ManualCustomerService extends MedusaService({
    * @returns Updated customer
    */
   async recordPurchase(customerId: string, amount: number): Promise<ManualCustomer> {
-    // Get customer using list method (retrieve method has signature issues)
-    const customers = await this.listManualCustomers({});
-    const customer = customers.find(c => c.id === customerId);
+    const allCustomers = await this.listManualCustomers({});
+    const customer = allCustomers.find(c => c.id === customerId);
+
     if (!customer) {
       throw new Error(`Customer with ID ${customerId} not found`);
     }
@@ -252,48 +226,306 @@ class ManualCustomerService extends MedusaService({
   }
 
   /**
-   * Update customer with contact date tracking
+   * Update customer and track contact
    * @param customerId - Customer ID
    * @param data - Update data
    * @returns Updated customer
    */
   async updateCustomerWithContactTracking(customerId: string, data: Partial<ManualCustomer>): Promise<ManualCustomer> {
-    // Update last contact date if any contact info is being updated
-    if (data.email || data.phone || data.mobile) {
-      data.last_contact_date = new Date();
-    }
+    const updateData = {
+      id: customerId,
+      ...data,
+      last_contact_date: new Date(),
+    };
 
-    const updatePayload = { id: customerId, ...data };
-    const updatedCustomers = await this.updateManualCustomers([updatePayload]);
+    const updatedCustomers = await this.updateManualCustomers([updateData]);
     return updatedCustomers[0];
   }
 
   /**
    * Get customers by type
-   * @param customerType - Customer type
-   * @returns Customers of specified type
+   * @param customerType - Customer type to filter by
+   * @returns Array of customers
    */
   async getCustomersByType(customerType: string): Promise<ManualCustomer[]> {
     const allCustomers = await this.listManualCustomers({});
-    return allCustomers.filter(customer => customer.customer_type === customerType && customer.status === 'active');
+    return allCustomers.filter(customer => customer.customer_type === customerType);
   }
 
   /**
-   * Get customers without email
-   * @returns Customers without email addresses
+   * Get customers without email addresses
+   * @returns Array of customers without email
    */
   async getCustomersWithoutEmail(): Promise<ManualCustomer[]> {
     const allCustomers = await this.listManualCustomers({});
-    return allCustomers.filter(customer => !customer.email && customer.status === 'active');
+    return allCustomers.filter(customer => !customer.email || customer.email.trim() === '');
   }
 
   /**
-   * Get customers without phone
-   * @returns Customers without phone numbers
+   * Get customers without phone numbers
+   * @returns Array of customers without phone
    */
   async getCustomersWithoutPhone(): Promise<ManualCustomer[]> {
     const allCustomers = await this.listManualCustomers({});
-    return allCustomers.filter(customer => !customer.phone && !customer.mobile && customer.status === 'active');
+    return allCustomers.filter(customer => !customer.phone || customer.phone.trim() === '');
+  }
+
+  // ========================================
+  // CUSTOMER LINKING METHODS
+  // ========================================
+
+  /**
+   * Link a manual customer to a core customer
+   * @param manualCustomerId - Manual customer ID
+   * @param coreCustomerId - Core customer ID
+   * @param linkingMethod - How the link was established
+   * @returns Updated manual customer
+   */
+  async linkToCustomer(
+    manualCustomerId: string,
+    coreCustomerId: string,
+    linkingMethod: 'email-match' | 'manual-link' | 'phone-match' | 'name-match',
+  ): Promise<ManualCustomer> {
+    // Check if manual customer exists
+    const allCustomers = await this.listManualCustomers({});
+    const manualCustomer = allCustomers.find(customer => customer.id === manualCustomerId);
+
+    if (!manualCustomer) {
+      throw new Error(`Manual customer with ID ${manualCustomerId} not found`);
+    }
+
+    // Check if already linked
+    if (manualCustomer.is_linked && manualCustomer.core_customer_id) {
+      throw new Error(`Manual customer is already linked to core customer ${manualCustomer.core_customer_id}`);
+    }
+
+    // Update the manual customer with linking information
+    const updateData = {
+      id: manualCustomerId,
+      core_customer_id: coreCustomerId,
+      is_linked: true,
+      linked_at: new Date(),
+      linking_method: linkingMethod,
+    };
+
+    const updatedCustomers = await this.updateManualCustomers([updateData]);
+    return updatedCustomers[0];
+  }
+
+  /**
+   * Unlink a manual customer from a core customer
+   * @param manualCustomerId - Manual customer ID
+   * @returns Updated manual customer
+   */
+  async unlinkFromCustomer(manualCustomerId: string): Promise<ManualCustomer> {
+    const allCustomers = await this.listManualCustomers({});
+    const manualCustomer = allCustomers.find(customer => customer.id === manualCustomerId);
+
+    if (!manualCustomer) {
+      throw new Error(`Manual customer with ID ${manualCustomerId} not found`);
+    }
+
+    if (!manualCustomer.is_linked || !manualCustomer.core_customer_id) {
+      throw new Error('Manual customer is not linked to any core customer');
+    }
+
+    // Update the manual customer to remove linking information
+    const updateData = {
+      id: manualCustomerId,
+      core_customer_id: null,
+      is_linked: false,
+      linked_at: null,
+      linking_method: null,
+    };
+
+    const updatedCustomers = await this.updateManualCustomers([updateData]);
+    return updatedCustomers[0];
+  }
+
+  /**
+   * Get linked manual customers
+   * @returns Manual customers that are linked to core customers
+   */
+  async getLinkedCustomers(): Promise<ManualCustomer[]> {
+    const allCustomers = await this.listManualCustomers({});
+    return allCustomers.filter(customer => customer.is_linked && customer.core_customer_id);
+  }
+
+  /**
+   * Get unlinked manual customers
+   * @returns Manual customers that are not linked to core customers
+   */
+  async getUnlinkedCustomers(): Promise<ManualCustomer[]> {
+    const allCustomers = await this.listManualCustomers({});
+    return allCustomers.filter(customer => !customer.is_linked);
+  }
+
+  /**
+   * Find manual customer by core customer ID
+   * @param coreCustomerId - Core customer ID
+   * @returns Manual customer if found, null otherwise
+   */
+  async findByCoreCusterId(coreCustomerId: string): Promise<ManualCustomer | null> {
+    const allCustomers = await this.listManualCustomers({});
+    const linkedCustomer = allCustomers.find(customer => customer.core_customer_id === coreCustomerId);
+    return linkedCustomer || null;
+  }
+
+  /**
+   * Find potential matches for a core customer
+   * @param coreCustomer - Core customer data
+   * @returns Array of potential matches with match reasons
+   */
+  async findPotentialMatches(coreCustomer: {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+  }): Promise<Array<{ customer: ManualCustomer; matchReasons: string[] }>> {
+    const allCustomers = await this.listManualCustomers({});
+    const potentialMatches: Array<{ customer: ManualCustomer; matchReasons: string[] }> = [];
+
+    for (const customer of allCustomers) {
+      // Skip already linked customers
+      if (customer.is_linked) {
+        continue;
+      }
+
+      const matchReasons: string[] = [];
+
+      // Email match (highest priority)
+      if (coreCustomer.email && customer.email && coreCustomer.email.toLowerCase() === customer.email.toLowerCase()) {
+        matchReasons.push('email-exact');
+      }
+
+      // Phone match (high priority)
+      if (coreCustomer.phone && customer.phone) {
+        const normalizedCorePhone = this.normalizePhone(coreCustomer.phone);
+        const normalizedCustomerPhone = this.normalizePhone(customer.phone);
+        if (normalizedCorePhone === normalizedCustomerPhone) {
+          matchReasons.push('phone-exact');
+        }
+      }
+
+      // Mobile phone match
+      if (coreCustomer.phone && customer.mobile) {
+        const normalizedCorePhone = this.normalizePhone(coreCustomer.phone);
+        const normalizedCustomerMobile = this.normalizePhone(customer.mobile);
+        if (normalizedCorePhone === normalizedCustomerMobile) {
+          matchReasons.push('phone-mobile-exact');
+        }
+      }
+
+      // Name match (lower priority)
+      if (coreCustomer.first_name && coreCustomer.last_name && customer.first_name && customer.last_name) {
+        const coreFirstName = coreCustomer.first_name.toLowerCase().trim();
+        const coreLastName = coreCustomer.last_name.toLowerCase().trim();
+        const customerFirstName = customer.first_name.toLowerCase().trim();
+        const customerLastName = customer.last_name.toLowerCase().trim();
+
+        if (coreFirstName === customerFirstName && coreLastName === customerLastName) {
+          matchReasons.push('name-exact');
+        }
+      }
+
+      // Add to potential matches if any match found
+      if (matchReasons.length > 0) {
+        potentialMatches.push({
+          customer,
+          matchReasons,
+        });
+      }
+    }
+
+    // Sort by match score (email and phone matches first)
+    potentialMatches.sort((a, b) => {
+      const scoreA = this.calculateMatchScore(a.matchReasons);
+      const scoreB = this.calculateMatchScore(b.matchReasons);
+      return scoreB - scoreA;
+    });
+
+    return potentialMatches;
+  }
+
+  /**
+   * Auto-link customers based on strong matches (email or phone)
+   * @param coreCustomer - Core customer data with ID
+   * @returns Linking result
+   */
+  async autoLinkCustomer(coreCustomer: {
+    id: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+  }): Promise<{ linked: boolean; manualCustomer?: ManualCustomer; reason?: string }> {
+    const potentialMatches = await this.findPotentialMatches(coreCustomer);
+
+    // Only auto-link on very strong matches (email or phone)
+    const strongMatches = potentialMatches.filter(
+      match => match.matchReasons.includes('email-exact') || match.matchReasons.includes('phone-exact'),
+    );
+
+    if (strongMatches.length === 1) {
+      // Exactly one strong match - safe to auto-link
+      const match = strongMatches[0];
+      const linkingMethod = match.matchReasons.includes('email-exact') ? 'email-match' : 'phone-match';
+
+      const linkedCustomer = await this.linkToCustomer(match.customer.id, coreCustomer.id, linkingMethod as any);
+
+      return {
+        linked: true,
+        manualCustomer: linkedCustomer,
+        reason: `Auto-linked via ${linkingMethod}`,
+      };
+    }
+
+    // Multiple matches or no strong matches - don't auto-link
+    return { linked: false };
+  }
+
+  /**
+   * Normalize phone number for comparison
+   * @param phone - Phone number to normalize
+   * @returns Normalized phone number
+   */
+  private normalizePhone(phone: string): string {
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+
+    // If starts with country code, normalize it
+    if (digits.startsWith('49')) {
+      return '+49' + digits.slice(2);
+    }
+    if (digits.startsWith('0')) {
+      return '+49' + digits.slice(1);
+    }
+
+    return '+49' + digits;
+  }
+
+  /**
+   * Calculate match score based on match reasons
+   * @param matchReasons - Array of match reasons
+   * @returns Numeric score
+   */
+  private calculateMatchScore(matchReasons: string[]): number {
+    let score = 0;
+    matchReasons.forEach(reason => {
+      switch (reason) {
+        case 'email-exact':
+          score += 100;
+          break;
+        case 'phone-exact':
+        case 'phone-mobile-exact':
+          score += 50;
+          break;
+        case 'name-exact':
+          score += 10;
+          break;
+      }
+    });
+    return score;
   }
 }
 
