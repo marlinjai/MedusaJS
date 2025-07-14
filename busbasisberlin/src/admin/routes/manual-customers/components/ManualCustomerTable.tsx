@@ -55,12 +55,12 @@ const columns = [
   { key: 'name', label: 'Name / Firma', width: 200, sortable: true, filterable: true },
   { key: 'contact', label: 'Kontakt', width: 180, sortable: false, filterable: true },
   { key: 'address', label: 'Adresse', width: 200, sortable: false, filterable: true },
-  { key: 'customer_type', label: 'Typ', width: 100, sortable: true, filterable: true },
-  { key: 'status', label: 'Status', width: 100, sortable: true, filterable: true },
+  { key: 'customer_type', label: 'Typ', width: 100, sortable: false, filterable: false, noMenu: true },
+  { key: 'status', label: 'Status', width: 100, sortable: false, filterable: false, noMenu: true },
   { key: 'total_purchases', label: 'Käufe', width: 80, sortable: true, filterable: false },
   { key: 'total_spent', label: 'Umsatz', width: 100, sortable: true, filterable: false },
   { key: 'created_at', label: 'Erstellt', width: 120, sortable: true, filterable: false },
-  { key: 'actions', label: 'Aktionen', width: 100, sortable: false, filterable: false },
+  { key: 'actions', label: 'Aktionen', width: 100, sortable: false, filterable: false, noMenu: true },
 ];
 
 const ManualCustomerTable = ({
@@ -213,7 +213,8 @@ const ManualCustomerTable = ({
   // Apply filter from menu
   const applyFilter = (columnKey: string) => {
     const value = filterInputs[columnKey] || '';
-    handleFilterChange(columnKey, value);
+    const actualValue = value === 'all' ? '' : value;
+    handleFilterChange(columnKey, actualValue);
     setOpenColumnMenu(null); // Close menu after action
   };
 
@@ -229,7 +230,7 @@ const ManualCustomerTable = ({
   // Clear filter
   const clearFilter = (columnKey: string) => {
     handleFilterChange(columnKey, '');
-    setFilterInputs(prev => ({ ...prev, [columnKey]: '' }));
+    setFilterInputs(prev => ({ ...prev, [columnKey]: 'all' }));
     setOpenColumnMenu(null);
   };
 
@@ -289,8 +290,8 @@ const ManualCustomerTable = ({
     console.log('toggleColumnMenu', columnKey);
     setOpenColumnMenu(openColumnMenu === columnKey ? null : columnKey);
     // Initialize filter input with current filter value
-    if (!filterInputs[columnKey] && activeFilters[columnKey]) {
-      setFilterInputs(prev => ({ ...prev, [columnKey]: activeFilters[columnKey] }));
+    if (!filterInputs[columnKey]) {
+      setFilterInputs(prev => ({ ...prev, [columnKey]: activeFilters[columnKey] || 'all' }));
     }
   };
 
@@ -444,8 +445,11 @@ const ManualCustomerTable = ({
               >
                 {/* Clickable header for column menu */}
                 <div
-                  className="column-header flex items-center cursor-pointer hover:bg-ui-bg-subtle rounded px-2 py-1 -mx-2 -my-1"
+                  className={`column-header flex items-center rounded px-2 py-1 -mx-2 -my-1 ${
+                    column.noMenu ? '' : 'cursor-pointer hover:bg-ui-bg-subtle'
+                  }`}
                   onClick={e => {
+                    if (column.noMenu) return;
                     e.stopPropagation();
                     toggleColumnMenu(column.key);
                     console.log('clicked');
@@ -488,7 +492,7 @@ const ManualCustomerTable = ({
                 </div>
 
                 {/* Column Menu Dropdown */}
-                {openColumnMenu === column.key && (
+                {openColumnMenu === column.key && !column.noMenu && (
                   <div className="column-menu absolute top-full left-0 z-40 mt-1 bg-ui-bg-base border border-ui-border-base rounded-md shadow-lg min-w-[200px] py-1">
                     {/* Sort options */}
                     {column.sortable && (
@@ -539,10 +543,11 @@ const ManualCustomerTable = ({
 
                           {getFilterOptions(column.key).length > 0 ? (
                             <Select
-                              value={filterInputs[column.key] || activeFilters[column.key] || ''}
+                              value={filterInputs[column.key] || activeFilters[column.key] || 'all'}
                               onValueChange={value => {
-                                setFilterInputs(prev => ({ ...prev, [column.key]: value }));
-                                handleFilterChange(column.key, value);
+                                const actualValue = value === 'all' ? '' : value;
+                                setFilterInputs(prev => ({ ...prev, [column.key]: actualValue }));
+                                handleFilterChange(column.key, actualValue);
                                 setOpenColumnMenu(null);
                               }}
                             >
@@ -550,7 +555,7 @@ const ManualCustomerTable = ({
                                 <Select.Value placeholder="Select option" />
                               </Select.Trigger>
                               <Select.Content>
-                                <Select.Item value="">All</Select.Item>
+                                <Select.Item value="all">All</Select.Item>
                                 {getFilterOptions(column.key).map(option => (
                                   <Select.Item key={option.value} value={option.value}>
                                     {option.label}
