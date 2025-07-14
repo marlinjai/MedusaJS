@@ -24,6 +24,10 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       sort_direction = 'asc',
     } = req.query;
 
+    // Convert query parameters to strings to avoid TypeScript errors
+    const sortBy = Array.isArray(sort_by) ? String(sort_by[0]) : String(sort_by || '');
+    const sortDirection = Array.isArray(sort_direction) ? String(sort_direction[0]) : String(sort_direction || 'asc');
+
     const limitNum = parseInt(limit as string);
     const offsetNum = parseInt(offset as string);
 
@@ -98,11 +102,11 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     }
 
     // Apply sorting
-    if (sort_by) {
+    if (sortBy) {
       customers.sort((a: any, b: any) => {
         let aValue, bValue;
 
-        switch (sort_by) {
+        switch (sortBy) {
           case 'customer_number':
             aValue = parseInt(a.customer_number) || 0;
             bValue = parseInt(b.customer_number) || 0;
@@ -134,12 +138,12 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
             bValue = new Date(b.created_at).getTime();
             break;
           default:
-            aValue = a[sort_by] || '';
-            bValue = b[sort_by] || '';
+            aValue = a[sortBy] || '';
+            bValue = b[sortBy] || '';
         }
 
-        if (aValue < bValue) return sort_direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sort_direction === 'asc' ? 1 : -1;
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
         return 0;
       });
     }
