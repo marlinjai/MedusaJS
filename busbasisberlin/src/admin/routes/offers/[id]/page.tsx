@@ -50,6 +50,7 @@ interface Offer {
 
 export const config = defineRouteConfig({
   label: 'Angebot Details',
+  hideFromNav: true, // Hide from sidebar since this is a dynamic route with parameters
 });
 
 export default function OfferDetailPage() {
