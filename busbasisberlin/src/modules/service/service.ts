@@ -50,6 +50,33 @@ class ServiceService extends MedusaService({
   }
 
   /**
+   * Search services by various fields
+   * @param searchTerm - Search term to match against multiple fields
+   * @returns Array of matching services
+   */
+  async searchServices(searchTerm: string): Promise<Service[]> {
+    if (!searchTerm || searchTerm.trim() === '') {
+      return [];
+    }
+
+    const allServices = await this.listServices({});
+    const term = searchTerm.toLowerCase().trim();
+
+    return allServices.filter(service => {
+      const searchableFields = [
+        service.title,
+        service.description,
+        service.short_description,
+        service.category,
+        service.service_type,
+        service.notes,
+      ];
+
+      return searchableFields.some(field => field && field.toLowerCase().includes(term));
+    });
+  }
+
+  /**
    * Calculate service price based on duration
    * @param serviceId - service ID
    * @param durationMinutes - duration in minutes

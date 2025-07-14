@@ -407,75 +407,71 @@ class OfferService extends MedusaService({
   }
 
   /**
-   * Reserve inventory for offer items (when status becomes 'active')
+   * Reserve inventory for an offer using Medusa workflows
+   * Supports negative stock scenarios for backorders
    */
   private async reserveOfferInventory(offer: OfferWithItems): Promise<void> {
-    const productItems = offer.items.filter(item => item.item_type === 'product' && item.product_id);
-
-    let reservationCount = 0;
-    let totalReservedQuantity = 0;
-
-    for (const item of productItems) {
-      if (!item.is_reservable || item.quantity <= 0 || !item.product_id) continue;
-
-      try {
-        // Get inventory items for this product
-        const inventoryItems = await this.getInventoryItemsForProduct(item.product_id);
-
-        if (inventoryItems.length === 0) {
-          this.logger_.warn(`No inventory items found for product ${item.product_id}`);
-          continue;
-        }
-
-        // Reserve inventory for each inventory item
-        for (const inventoryItem of inventoryItems) {
-          const availableQuantity = await this.getInventoryItemAvailableQuantity(inventoryItem.id);
-          const quantityToReserve = Math.min(item.quantity, availableQuantity);
-
-          if (quantityToReserve > 0) {
-            await this.createInventoryReservation(inventoryItem.id, quantityToReserve, {
-              type: 'offer',
-              offer_id: offer.id,
-              offer_item_id: item.id,
-              description: `Reserved for offer ${offer.offer_number}`,
-            });
-
-            // Update offer item with reserved quantity
-            await this.updateOfferItems({
-              id: item.id,
-              reserved_quantity: quantityToReserve,
-            });
-
-            reservationCount++;
-            totalReservedQuantity += quantityToReserve;
-
-            this.logger_.info(`Reserved ${quantityToReserve} units of ${item.title} for offer ${offer.offer_number}`);
-          }
-        }
-      } catch (error) {
-        this.logger_.error(`Failed to reserve inventory for item ${item.title}: ${error.message}`);
-      }
+    if (!this.inventoryService_ || !this.productService_) {
+      this.logger_.warn('Inventory services not available, skipping reservation');
+      return;
     }
 
-    // Update offer with reservation status
-    await this.updateOffers({
-      id: offer.id,
-      has_reservations: reservationCount > 0,
-      reservation_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    });
+    try {
+      const reservationItems: Array<{
+        inventory_item_id: string;
+        required_quantity: number;
+        allow_backorder: boolean;
+        quantity: number;
+        location_ids: string[];
+      }> = [];
 
-    // Create status history entry for reservation
-    await this.createOfferStatusHistories([
-      {
-        offer_id: offer.id,
-        previous_status: null,
-        new_status: offer.status,
-        event_type: 'reservation',
-        event_description: 'Inventory reserved for offer items',
-        system_change: true,
-        inventory_impact: `Reserved ${totalReservedQuantity} units across ${reservationCount} items`,
-      },
-    ]);
+      for (const item of offer.items) {
+        if (item.item_type === 'product' && item.product_id) {
+          // Get inventory items for the product
+          const inventoryItems = await this.getInventoryItemsForProduct(item.product_id);
+
+          for (const inventoryItem of inventoryItems) {
+            const availableQuantity = await this.getInventoryItemAvailableQuantity(inventoryItem.id);
+
+            // Allow backorders (negative stock) for offers
+            const allowBackorder = true;
+            const requiredQuantity = Math.min(item.quantity, availableQuantity + (allowBackorder ? item.quantity : 0));
+
+            reservationItems.push({
+              inventory_item_id: inventoryItem.id,
+              required_quantity: requiredQuantity,
+              allow_backorder: allowBackorder,
+              quantity: item.quantity,
+              location_ids: inventoryItem.location_levels?.map((level: any) => level.location_id) || [],
+            });
+          }
+        }
+      }
+
+      if (reservationItems.length > 0) {
+        // For now, use direct inventory service calls until workflow is properly integrated
+        for (const reservation of reservationItems) {
+          await this.createInventoryReservation(reservation.inventory_item_id, reservation.quantity, {
+            type: 'offer',
+            offer_id: offer.id,
+            allow_backorder: reservation.allow_backorder,
+            description: `Reserved for offer ${offer.offer_number}`,
+          });
+        }
+
+        this.logger_.info(`Inventory reserved for offer ${offer.offer_number}`);
+
+        // Update offer with reservation info
+        await this.updateOffers({
+          id: offer.id,
+          has_reservations: true,
+          reservation_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        });
+      }
+    } catch (error) {
+      this.logger_.error(`Failed to reserve inventory for offer ${offer.id}:`, error);
+      throw new Error(`Inventory reservation failed: ${error.message}`);
+    }
   }
 
   /**
