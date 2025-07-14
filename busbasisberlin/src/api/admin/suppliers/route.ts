@@ -46,14 +46,59 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const supplierService: SupplierModuleService = req.scope.resolve(SUPPLIER_MODULE);
 
   try {
-    const suppliers = await supplierService.listSuppliers();
+    // Check if we want suppliers with details (new optimized endpoint)
+    const withDetails = req.query.withDetails === 'true';
 
-    res.json({
-      suppliers,
-      count: suppliers.length,
-      offset: 0,
-      limit: suppliers.length,
-    });
+    if (withDetails) {
+      // Get all suppliers with their details in a single optimized request
+      const suppliers = await supplierService.listSuppliers();
+
+      // Get all suppliers with details in parallel
+      const suppliersWithDetails = await Promise.all(
+        suppliers.map(async supplier => {
+          try {
+            return await supplierService.getSupplierWithDetails(supplier.id);
+          } catch (error) {
+            console.error(`Error fetching details for supplier ${supplier.id}:`, error);
+            // Return basic supplier data if details fetch fails
+            return {
+              ...supplier,
+              contacts: [],
+              addresses: [],
+            };
+          }
+        }),
+      );
+
+      // Calculate statistics
+      const stats = {
+        total: suppliers.length,
+        active: suppliers.filter(s => s.is_active).length,
+        inactive: suppliers.filter(s => !s.is_active).length,
+        withContacts: suppliersWithDetails.filter(s => s.contacts && s.contacts.length > 0).length,
+        withAddresses: suppliersWithDetails.filter(s => s.addresses && s.addresses.length > 0).length,
+        withVatId: suppliers.filter(s => s.vat_id).length,
+        withBankInfo: suppliers.filter(s => s.bank_name || s.iban).length,
+      };
+
+      res.json({
+        suppliers: suppliersWithDetails,
+        stats,
+        count: suppliersWithDetails.length,
+        offset: 0,
+        limit: suppliersWithDetails.length,
+      });
+    } else {
+      // Original behavior - just return basic supplier list
+      const suppliers = await supplierService.listSuppliers();
+
+      res.json({
+        suppliers,
+        count: suppliers.length,
+        offset: 0,
+        limit: suppliers.length,
+      });
+    }
   } catch (error) {
     console.error('Error fetching suppliers:', error);
     res.status(500).json({

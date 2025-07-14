@@ -1,41 +1,45 @@
 import { EllipsisHorizontal, PencilSquare, Trash } from '@medusajs/icons';
 import { Container, DropdownMenu, IconButton, Table, Text } from '@medusajs/ui';
-import { useQuery } from '@tanstack/react-query';
 import type { Supplier } from '../../../../modules/supplier/models/supplier';
 
+// Type for supplier with details
+type SupplierWithDetails = Supplier & {
+  contacts: Array<{
+    id: string;
+    salutation?: string;
+    first_name?: string;
+    last_name?: string;
+    department?: string;
+    phones: Array<{ number: string; label?: string }>;
+    emails: Array<{ email: string; label?: string }>;
+  }>;
+  addresses: Array<{
+    id: string;
+    label?: string;
+    street?: string;
+    postal_code?: string;
+    city?: string;
+    country_name?: string;
+  }>;
+};
+
 interface SupplierTableProps {
-  suppliers: Supplier[];
+  suppliers: SupplierWithDetails[];
   onEdit: (supplier: Supplier) => void;
   onDelete: (id: string) => void;
   isLoading: boolean;
 }
 
-// Custom hook to fetch supplier details with contacts and addresses
-const useSupplierDetails = (supplierId: string) => {
-  return useQuery({
-    queryKey: ['supplier-details', supplierId],
-    queryFn: async () => {
-      const res = await fetch(`/admin/suppliers/${supplierId}/details`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch supplier details');
-      return res.json();
-    },
-    enabled: !!supplierId,
-  });
-};
-
-// Separate component for each supplier row to handle hooks properly
+// Separate component for each supplier row
 const SupplierRow = ({
   supplier,
   onEdit,
   onDelete,
 }: {
-  supplier: Supplier;
+  supplier: SupplierWithDetails;
   onEdit: (supplier: Supplier) => void;
   onDelete: (id: string) => void;
 }) => {
-  // This hook is now called at the component level, not inside a map
-  const { data: supplierDetails } = useSupplierDetails(supplier.id);
-
   return (
     <Table.Row
       key={supplier.id}
@@ -69,9 +73,9 @@ const SupplierRow = ({
       {/* Contact Information Details */}
       <Table.Cell>
         <div className="flex flex-col gap-y-1">
-          {supplierDetails?.supplier?.contacts && supplierDetails.supplier.contacts.length > 0 ? (
+          {supplier.contacts && supplier.contacts.length > 0 ? (
             (() => {
-              const contact = supplierDetails.supplier.contacts[0];
+              const contact = supplier.contacts[0];
               const hasPerson = contact.salutation || contact.first_name || contact.last_name;
               return (
                 <div>
@@ -101,10 +105,6 @@ const SupplierRow = ({
                 </div>
               );
             })()
-          ) : supplierDetails === undefined ? (
-            <Text size="small" className="text-ui-fg-muted">
-              Lädt...
-            </Text>
           ) : (
             <Text size="small" className="text-ui-fg-muted">
               -
@@ -116,9 +116,9 @@ const SupplierRow = ({
       {/* Address */}
       <Table.Cell>
         <div className="flex flex-col gap-y-1">
-          {supplierDetails?.supplier?.addresses && supplierDetails.supplier.addresses.length > 0 ? (
+          {supplier.addresses && supplier.addresses.length > 0 ? (
             (() => {
-              const address = supplierDetails.supplier.addresses[0];
+              const address = supplier.addresses[0];
               return (
                 <div>
                   {address.street && <Text size="small">📍 {address.street}</Text>}
@@ -135,10 +135,6 @@ const SupplierRow = ({
                 </div>
               );
             })()
-          ) : supplierDetails === undefined ? (
-            <Text size="small" className="text-ui-fg-muted">
-              Lädt...
-            </Text>
           ) : (
             <Text size="small" className="text-ui-fg-muted">
               -
