@@ -3,7 +3,6 @@
  * Offer detail page for viewing and editing offers
  * Includes status management, item editing, and comprehensive information display
  */
-import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { ArrowLeft, Edit, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -48,9 +47,8 @@ interface Offer {
   has_reservations: boolean;
 }
 
-export const config = defineRouteConfig({
-  label: 'Angebot Details',
-});
+// Dynamic routes with parameters cannot be added to sidebar menu
+// This route is accessed through navigation from the main offers page
 
 export default function OfferDetailPage() {
   const { id } = useParams<{ id: string }>();

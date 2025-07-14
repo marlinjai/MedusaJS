@@ -35,18 +35,6 @@ type ManualCustomer = {
   updated_at: string;
 };
 
-type ManualCustomerStats = {
-  total: number;
-  active: number;
-  inactive: number;
-  legacy: number;
-  walkIn: number;
-  business: number;
-  withEmail: number;
-  withPhone: number;
-  totalSpent: number;
-};
-
 const ManualCustomersPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -199,7 +187,6 @@ const ManualCustomersPage = () => {
   };
 
   const totalPages = Math.ceil((data?.total || 0) / pageSize);
-  const hasMore = data?.has_more || false;
 
   // Trigger prefetching when current page loads successfully
   useEffect(() => {

@@ -1,6 +1,5 @@
 // busbasisberlin/src/admin/routes/manual-customers/[id]/page.tsx
 // Manual Customer Detail page with customer linking functionality
-import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { Badge, Button, Container, Input, Select, Text, Textarea, toast } from '@medusajs/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit, ExternalLink, Save, Unlink, X } from 'lucide-react';
@@ -58,10 +57,6 @@ interface ManualCustomer {
   updated_at: string;
 }
 
-export const config = defineRouteConfig({
-  label: 'Manueller Kunde Details',
-});
-
 export default function ManualCustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -72,12 +67,12 @@ export default function ManualCustomerDetailPage() {
   const [saving, setSaving] = useState(false);
 
   // Customer linking states
-  const [showLinkingDropdown, setShowLinkingDropdown] = useState(false);
+  const [, setShowLinkingDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [coreCustomers, setCoreCustomers] = useState<any[]>([]);
   const [searchingCustomers, setSearchingCustomers] = useState(false);
   const [linking, setLinking] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [, setSelectedCustomer] = useState<any>(null);
   const [linkedCoreCustomer, setLinkedCoreCustomer] = useState<any>(null);
 
   // Load customer data

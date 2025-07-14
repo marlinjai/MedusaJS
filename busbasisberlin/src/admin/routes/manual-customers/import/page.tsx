@@ -300,7 +300,7 @@ const CSVImportPage = () => {
           const batchResults = await Promise.all(batchPromises);
 
           // Accumulate results from all batches in this group
-          batchResults.forEach(({ batchIndex, result }) => {
+          batchResults.forEach(({ result }) => {
             const batchResults = result.results;
             cumulativeResults.imported += batchResults.imported;
             cumulativeResults.updated += batchResults.updated;
