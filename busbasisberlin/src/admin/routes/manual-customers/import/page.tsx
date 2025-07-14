@@ -133,12 +133,17 @@ const CSVImportPage = () => {
     // Auto-map common German/English fields
     const autoMapping: Record<string, string> = {};
     headers.forEach(header => {
-      const lowerHeader = header.toLowerCase();
+      const lowerHeader = header.toLowerCase().trim();
+
+      // Customer identification
       if (lowerHeader.includes('kundennummer') || lowerHeader.includes('customer')) {
         autoMapping[header] = 'customer_number';
       } else if (lowerHeader.includes('interner') || lowerHeader.includes('internal')) {
         autoMapping[header] = 'internal_key';
-      } else if (lowerHeader.includes('anrede') || lowerHeader.includes('salutation')) {
+      }
+
+      // Personal information
+      else if (lowerHeader.includes('anrede') || lowerHeader.includes('salutation')) {
         autoMapping[header] = 'salutation';
       } else if (lowerHeader.includes('titel') || lowerHeader.includes('title')) {
         autoMapping[header] = 'title';
@@ -146,44 +151,86 @@ const CSVImportPage = () => {
         autoMapping[header] = 'first_name';
       } else if (lowerHeader.includes('nachname') || lowerHeader.includes('last')) {
         autoMapping[header] = 'last_name';
-      } else if (lowerHeader.includes('firma') || lowerHeader.includes('company')) {
+      } else if (
+        lowerHeader.includes('firma') ||
+        lowerHeader.includes('company') ||
+        lowerHeader.includes('unternehmen')
+      ) {
         autoMapping[header] = 'company';
       } else if (lowerHeader.includes('firmenzusatz') || lowerHeader.includes('company_addition')) {
         autoMapping[header] = 'company_addition';
-      } else if (lowerHeader.includes('email') || lowerHeader.includes('e-mail')) {
+      }
+
+      // Contact information
+      else if (lowerHeader.includes('e-mail') || lowerHeader.includes('email') || lowerHeader.includes('mail')) {
         autoMapping[header] = 'email';
-      } else if (lowerHeader.includes('telefon') || lowerHeader.includes('phone')) {
+      } else if (lowerHeader.includes('telefon') || lowerHeader.includes('phone') || lowerHeader.includes('tel')) {
         autoMapping[header] = 'phone';
       } else if (lowerHeader.includes('fax')) {
         autoMapping[header] = 'fax';
-      } else if (lowerHeader.includes('mobil') || lowerHeader.includes('mobile')) {
+      } else if (lowerHeader.includes('mobil') || lowerHeader.includes('mobile') || lowerHeader.includes('handy')) {
         autoMapping[header] = 'mobile';
       } else if (lowerHeader.includes('homepage') || lowerHeader.includes('website') || lowerHeader.includes('www')) {
         autoMapping[header] = 'website';
-      } else if (lowerHeader.includes('strasse') || lowerHeader.includes('street') || lowerHeader.includes('address')) {
+      }
+
+      // Address information
+      else if (lowerHeader.includes('straße') || lowerHeader.includes('strasse') || lowerHeader.includes('street')) {
         autoMapping[header] = 'street';
       } else if (lowerHeader.includes('adresszusatz') || lowerHeader.includes('address_addition')) {
         autoMapping[header] = 'address_addition';
-      } else if (lowerHeader.includes('hausnummer') || lowerHeader.includes('street_number')) {
+      } else if (lowerHeader.includes('hausnummer') || lowerHeader.includes('number')) {
         autoMapping[header] = 'street_number';
-      } else if (lowerHeader.includes('plz') || lowerHeader.includes('postal')) {
+      } else if (lowerHeader.includes('plz') || lowerHeader.includes('postcode') || lowerHeader.includes('postal')) {
         autoMapping[header] = 'postal_code';
-      } else if (lowerHeader.includes('ort') || lowerHeader.includes('city')) {
+      } else if (lowerHeader.includes('ort') || lowerHeader.includes('city') || lowerHeader.includes('stadt')) {
         autoMapping[header] = 'city';
       } else if (lowerHeader.includes('land') || lowerHeader.includes('country')) {
         autoMapping[header] = 'country';
       } else if (lowerHeader.includes('bundesland') || lowerHeader.includes('state')) {
         autoMapping[header] = 'state';
-      } else if (lowerHeader.includes('ust') || lowerHeader.includes('vat')) {
+      }
+
+      // Business information
+      else if (lowerHeader.includes('ust') || lowerHeader.includes('vat') || lowerHeader.includes('mwst')) {
         autoMapping[header] = 'vat_id';
-      } else if (lowerHeader.includes('steuernummer') || lowerHeader.includes('tax')) {
+      } else if (lowerHeader.includes('steuer') || lowerHeader.includes('tax')) {
         autoMapping[header] = 'tax_number';
-      } else if (lowerHeader.includes('geburtstag') || lowerHeader.includes('birthday')) {
+      }
+
+      // Customer classification
+      else if (lowerHeader.includes('kundentyp') || lowerHeader.includes('customer_type')) {
+        autoMapping[header] = 'customer_type';
+      } else if (lowerHeader.includes('kundengruppe') || lowerHeader.includes('customer_group')) {
+        autoMapping[header] = 'customer_group';
+      } else if (lowerHeader.includes('status')) {
+        autoMapping[header] = 'status';
+      }
+
+      // Additional information
+      else if (lowerHeader.includes('notiz') || lowerHeader.includes('note') || lowerHeader.includes('bemerkung')) {
+        autoMapping[header] = 'notes';
+      } else if (
+        lowerHeader.includes('geburtstag') ||
+        lowerHeader.includes('birthday') ||
+        lowerHeader.includes('birth')
+      ) {
         autoMapping[header] = 'birthday';
       } else if (lowerHeader.includes('ebay')) {
         autoMapping[header] = 'ebay_name';
-      } else if (lowerHeader.includes('notizen') || lowerHeader.includes('notes')) {
-        autoMapping[header] = 'notes';
+      } else if (lowerHeader.includes('sprache') || lowerHeader.includes('language') || lowerHeader.includes('lang')) {
+        autoMapping[header] = 'language';
+      } else if (lowerHeader.includes('kontakt') || lowerHeader.includes('contact')) {
+        autoMapping[header] = 'preferred_contact_method';
+      }
+
+      // Legacy/Source tracking
+      else if (lowerHeader.includes('quelle') || lowerHeader.includes('source')) {
+        autoMapping[header] = 'source';
+      } else if (lowerHeader.includes('import') || lowerHeader.includes('referenz')) {
+        autoMapping[header] = 'import_reference';
+      } else if (lowerHeader.includes('legacy')) {
+        autoMapping[header] = 'legacy_customer_id';
       }
     });
 
@@ -204,50 +251,76 @@ const CSVImportPage = () => {
     setImportProgress({ current: 0, total: 0 });
 
     // Configuration for batching
-    const BATCH_SIZE = 500; // Process 500 customers per batch (increased from 100)
+    const BATCH_SIZE = 100; // Process 100 customers per batch (safe payload size)
+    const PARALLEL_BATCHES = 3; // Process 3 batches in parallel for better performance
     const totalBatches = Math.ceil(csvData.length / BATCH_SIZE);
     const cumulativeResults: ImportResults = { imported: 0, updated: 0, skipped: 0, errors: [] };
 
     setImportProgress({ current: 0, total: totalBatches });
 
     try {
-      for (let i = 0; i < totalBatches; i++) {
-        const startIndex = i * BATCH_SIZE;
-        const endIndex = Math.min(startIndex + BATCH_SIZE, csvData.length);
-        const batchData = csvData.slice(startIndex, endIndex);
+      // Process batches in parallel groups for better performance
+      for (let i = 0; i < totalBatches; i += PARALLEL_BATCHES) {
+        const currentBatchGroup = Math.min(PARALLEL_BATCHES, totalBatches - i);
+        const batchPromises = [];
 
-        toast.info(`Verarbeite Batch ${i + 1} von ${totalBatches} (${batchData.length} Kunden)...`);
+        // Create promises for parallel batch processing
+        for (let j = 0; j < currentBatchGroup; j++) {
+          const batchIndex = i + j;
+          const startIndex = batchIndex * BATCH_SIZE;
+          const endIndex = Math.min(startIndex + BATCH_SIZE, csvData.length);
+          const batchData = csvData.slice(startIndex, endIndex);
 
-        const response = await fetch('/admin/manual-customers/import', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            csvData: batchData,
-            fieldMapping,
-          }),
-        });
+          const batchPromise = fetch('/admin/manual-customers/import', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              csvData: batchData,
+              fieldMapping,
+            }),
+          }).then(async response => {
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`Batch ${batchIndex + 1} fehlgeschlagen: ${errorText}`);
+            }
+            return { batchIndex: batchIndex + 1, result: await response.json() };
+          });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Batch ${i + 1} fehlgeschlagen: ${errorText}`);
+          batchPromises.push(batchPromise);
         }
 
-        const batchResult = await response.json();
-        const batchResults = batchResult.results;
+        // Process current group of batches in parallel
+        const batchGroupText = currentBatchGroup === 1 ? `Batch ${i + 1}` : `Batches ${i + 1}-${i + currentBatchGroup}`;
 
-        // Accumulate results
-        cumulativeResults.imported += batchResults.imported;
-        cumulativeResults.updated += batchResults.updated;
-        cumulativeResults.skipped += batchResults.skipped;
-        cumulativeResults.errors.push(...batchResults.errors);
+        toast.info(`Verarbeite ${batchGroupText} von ${totalBatches}...`);
 
-        // Update progress
-        setImportProgress({ current: i + 1, total: totalBatches });
+        try {
+          const batchResults = await Promise.all(batchPromises);
 
-        // Small delay to prevent overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 100));
+          // Accumulate results from all batches in this group
+          batchResults.forEach(({ batchIndex, result }) => {
+            const batchResults = result.results;
+            cumulativeResults.imported += batchResults.imported;
+            cumulativeResults.updated += batchResults.updated;
+            cumulativeResults.skipped += batchResults.skipped;
+            cumulativeResults.errors.push(...batchResults.errors);
+          });
+
+          // Update progress (count completed batches)
+          setImportProgress({ current: i + currentBatchGroup, total: totalBatches });
+        } catch (error) {
+          // If any batch in the group fails, add to errors but continue
+          const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+          cumulativeResults.errors.push(`Batch-Gruppe ${i + 1}-${i + currentBatchGroup}: ${errorMessage}`);
+          setImportProgress({ current: i + currentBatchGroup, total: totalBatches });
+        }
+
+        // Small delay between batch groups to avoid overwhelming the server
+        if (i + PARALLEL_BATCHES < totalBatches) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
       }
 
       setResults(cumulativeResults);
@@ -382,7 +455,7 @@ const CSVImportPage = () => {
                       Import Fortschritt
                     </Text>
                     <Text size="small" className="text-ui-fg-subtle">
-                      {importProgress.current} von {importProgress.total} Batches
+                      {importProgress.current} von {importProgress.total} Batches • 3 parallel
                     </Text>
                   </div>
                   <div className="w-full bg-ui-bg-subtle rounded-full h-2">

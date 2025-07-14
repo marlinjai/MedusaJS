@@ -190,51 +190,34 @@ class ManualCustomerService extends MedusaService({
       errors: [] as string[],
     };
 
-    // Get all existing customers once for efficient lookups
-    const existingCustomers = await this.listManualCustomers({});
-    const customersByNumber = new Map<string, ManualCustomer>();
-
-    existingCustomers.forEach(customer => {
-      if (customer.customer_number) {
-        customersByNumber.set(customer.customer_number, customer);
-      }
-    });
+    console.log(`Starting CSV import for ${csvData.length} rows`);
 
     for (let i = 0; i < csvData.length; i++) {
       const row = csvData[i];
       try {
-        // Map CSV fields to customer fields with better error handling
+        // Map CSV fields to customer fields
         const customerData: Partial<ManualCustomer> = {};
 
+        // Process field mapping with basic error handling
         Object.entries(fieldMapping).forEach(([csvField, customerField]) => {
-          if (row[csvField] !== undefined && row[csvField] !== '') {
-            try {
-              if (customerField === 'total_spent' || customerField === 'total_purchases') {
-                const numValue = Number(row[csvField]);
-                if (isNaN(numValue)) {
-                  throw new Error(`Invalid number "${row[csvField]}" for field ${customerField}`);
-                }
-                customerData[customerField] = numValue;
-              } else if (
-                customerField === 'birthday' ||
-                customerField === 'last_purchase_date' ||
-                customerField === 'first_contact_date' ||
-                customerField === 'last_contact_date'
-              ) {
-                if (row[csvField]) {
-                  const dateValue = new Date(row[csvField]);
-                  if (isNaN(dateValue.getTime())) {
-                    throw new Error(`Invalid date "${row[csvField]}" for field ${customerField}`);
-                  }
-                  customerData[customerField] = dateValue;
-                }
-              } else {
-                customerData[customerField] = row[csvField];
+          const value = row[csvField];
+          if (value !== undefined && value !== '') {
+            if (customerField === 'total_spent' || customerField === 'total_purchases') {
+              const numValue = Number(value);
+              customerData[customerField] = isNaN(numValue) ? 0 : numValue;
+            } else if (
+              customerField === 'birthday' ||
+              customerField === 'last_purchase_date' ||
+              customerField === 'first_contact_date' ||
+              customerField === 'last_contact_date'
+            ) {
+              // Skip problematic date fields for now to avoid errors
+              const dateValue = new Date(value);
+              if (!isNaN(dateValue.getTime())) {
+                customerData[customerField] = dateValue;
               }
-            } catch (fieldError) {
-              throw new Error(
-                `Field "${csvField}" (${customerField}): ${fieldError instanceof Error ? fieldError.message : 'Invalid value'}`,
-              );
+            } else {
+              customerData[customerField] = value;
             }
           }
         });
@@ -245,40 +228,34 @@ class ManualCustomerService extends MedusaService({
 
         // Check if customer already exists by customer_number (idempotent behavior)
         const customerNumber = customerData.customer_number;
-        const existingCustomer = customerNumber ? customersByNumber.get(customerNumber) : null;
+        let existingCustomer: ManualCustomer | null = null;
+
+        if (customerNumber) {
+          existingCustomer = await this.findByCustomerNumber(customerNumber);
+        }
 
         if (existingCustomer) {
-          // Update existing customer (idempotent)
-          await this.updateCustomerWithContactTracking(existingCustomer.id, {
-            ...customerData,
-            // Preserve original creation info but update import reference
-            source: existingCustomer.source === 'csv-import' ? 'csv-import' : `${existingCustomer.source}, csv-import`,
-            import_reference: `${existingCustomer.import_reference || ''}, csv-row-${i + 1}`.replace(/^, /, ''),
-          });
+          // Update existing customer
+          await this.updateCustomerWithContactTracking(existingCustomer.id, customerData);
           results.updated++;
         } else {
           // Create new customer
           await this.createManualCustomerFromCSV(customerData);
           results.imported++;
-
-          // Add to our lookup map for subsequent rows in this batch
-          if (customerNumber) {
-            const newCustomer = await this.findByCustomerNumber(customerNumber);
-            if (newCustomer) {
-              customersByNumber.set(customerNumber, newCustomer);
-            }
-          }
         }
       } catch (error) {
         results.skipped++;
         const customerNumber =
           row[Object.keys(fieldMapping).find(key => fieldMapping[key] === 'customer_number') || ''] || 'Unknown';
-        results.errors.push(
-          `Row ${i + 1} (Customer: ${customerNumber}): ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        results.errors.push(`Row ${i + 1} (Customer: ${customerNumber}): ${errorMessage}`);
+        console.error(`Import error on row ${i + 1}:`, error);
       }
     }
 
+    console.log(
+      `CSV import completed: ${results.imported} imported, ${results.updated} updated, ${results.skipped} skipped`,
+    );
     return results;
   }
 

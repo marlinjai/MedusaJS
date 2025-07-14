@@ -18,8 +18,11 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       fieldMapping: Record<string, string>;
     };
 
+    console.log(`Import request received: ${csvData?.length || 0} rows, field mapping:`, fieldMapping);
+
     // Validate input
     if (!csvData || !Array.isArray(csvData)) {
+      console.error('Invalid CSV data:', typeof csvData);
       return res.status(400).json({
         error: 'Invalid CSV data',
         message: 'csvData must be an array of objects',
@@ -27,24 +30,34 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     }
 
     if (!fieldMapping || typeof fieldMapping !== 'object') {
+      console.error('Invalid field mapping:', typeof fieldMapping);
       return res.status(400).json({
         error: 'Invalid field mapping',
         message: 'fieldMapping must be an object mapping CSV columns to customer fields',
       });
     }
 
+    // Log first few rows for debugging
+    console.log('Sample CSV data (first 2 rows):', csvData.slice(0, 2));
+
     // Perform the import
     const results = await manualCustomerService.importFromCSV(csvData, fieldMapping);
 
+    console.log('Import completed successfully:', results);
+
     res.json({
       results,
-      message: `Import completed. ${results.imported} customers imported, ${results.skipped} skipped.`,
+      message: `Import completed. ${results.imported} customers imported, ${results.updated} updated, ${results.skipped} skipped.`,
     });
   } catch (error) {
-    console.error('Error importing manual customers:', error);
+    console.error('Critical error during import:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack available');
+
     res.status(500).json({
-      error: 'Failed to import manual customers',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      code: 'import_error',
+      type: 'import_error',
+      message: error instanceof Error ? error.message : 'Unknown error occurred during import',
+      details: error instanceof Error ? error.stack : undefined,
     });
   }
 };
