@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { Button, Container, Input, Select, Text, Textarea, toast } from '@medusajs/ui';
 import SearchableDropdown from '../components/SearchableDropdown';
+import VariantSelector from '../components/VariantSelector';
 
 interface SearchableItem {
   id: string;
@@ -17,7 +18,39 @@ interface SearchableItem {
   display_name?: string;
   name?: string;
   type?: string;
+  variants?: Array<{
+    id: string;
+    title: string;
+    sku: string;
+    // Support both old prices array and new single price object
+    prices?: Array<{
+      amount: number;
+      currency_code: string;
+    }>;
+    price?: {
+      amount: number;
+      currency_code: string;
+    };
+    inventory_quantity: number;
+  }>;
+  variants_count?: number;
   [key: string]: any;
+}
+
+interface ProductVariant {
+  id: string;
+  title: string;
+  sku: string;
+  // Support both old prices array and new single price object
+  prices?: Array<{
+    amount: number;
+    currency_code: string;
+  }>;
+  price?: {
+    amount: number;
+    currency_code: string;
+  };
+  inventory_quantity: number;
 }
 
 interface OfferItem {
@@ -27,9 +60,8 @@ interface OfferItem {
   description: string;
   quantity: number;
   unit: string;
-  unit_price: number;
+  unit_price: number; // already gross
   discount_percentage: number;
-  tax_rate: number;
   total_price: number;
   // New fields for selected items
   product_id?: string;
@@ -43,10 +75,11 @@ interface OfferItem {
   inventory_quantity?: number;
   category?: string;
   service_type?: string;
+  // Product selection state
+  selectedProduct?: SearchableItem;
 }
 
 interface OfferFormData {
-  title: string;
   description: string;
   customer_name: string;
   customer_email: string;
@@ -68,8 +101,9 @@ export const config = defineRouteConfig({
 export default function CreateOfferPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  // Add local state for price input values to allow natural typing
+  const [priceInputStates, setPriceInputStates] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<OfferFormData>({
-    title: '',
     description: '',
     customer_name: '',
     customer_email: '',
@@ -105,27 +139,108 @@ export default function CreateOfferPage() {
               item_type: 'product',
               title: product.title || product.name || '',
               description: product.description || '',
-              sku: product.sku || '',
-              variant_id: product.variant_id,
-              variant_title: product.variant_title,
-              unit_price: product.unit_price || 0, // Already in cents from API
-              currency_code: product.currency_code || 'EUR',
-              inventory_quantity: product.inventory_quantity || 0,
+              product_id: product.id,
+              selectedProduct: product,
+              // Reset variant-specific fields - will be set when variant is selected
+              variant_id: undefined,
+              variant_title: undefined,
+              sku: undefined,
+              unit_price: 0,
+              inventory_quantity: undefined,
               category: product.category,
-              total_price: calculateItemTotal({
-                ...item,
-                item_type: 'product',
-                title: product.title || product.name || '',
-                unit_price: product.unit_price || 0,
-              }),
+              total_price: 0,
             }
           : item,
       ),
     }));
   };
 
+  // Handle variant selection for a product item
+  const handleVariantSelect = (itemId: string, variant: ProductVariant) => {
+    // Get unit price from variant (supports both old prices array and new single price object)
+    const getVariantPrice = (variant: ProductVariant): number => {
+      // New API format: single price object
+      if (variant.price) {
+        return variant.price.amount;
+      }
+
+      // Old API format: prices array
+      if (variant.prices && variant.prices.length > 0) {
+        // Find EUR price first, then fall back to first available
+        const eurPrice = variant.prices.find(p => p.currency_code === 'EUR');
+        return eurPrice ? eurPrice.amount : variant.prices[0].amount;
+      }
+
+      return 0;
+    };
+
+    const unitPrice = getVariantPrice(variant);
+    // Log the price for debugging
+    console.log('[PRICE-TRACE] handleVariantSelect:', {
+      variant,
+      variantPriceAmount: variant.price?.amount,
+      unitPriceSet: unitPrice,
+    });
+
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map(item =>
+        item.id === itemId
+          ? {
+              ...item,
+              variant_id: variant.id,
+              variant_title: variant.title,
+              sku: variant.sku,
+              unit_price: unitPrice,
+              inventory_quantity: variant.inventory_quantity,
+              currency_code: 'EUR',
+              total_price: calculateItemTotal({
+                ...item,
+                variant_id: variant.id,
+                variant_title: variant.title,
+                sku: variant.sku,
+                unit_price: unitPrice,
+                inventory_quantity: variant.inventory_quantity,
+              }),
+            }
+          : item,
+      ),
+    }));
+
+    // Sync the price input state with the new variant price
+    setPriceInputStates(prev => ({
+      ...prev,
+      [itemId]: (unitPrice / 100).toFixed(2),
+    }));
+  };
+
+  // Handle price input blur - convert to proper format and update model
+  const handlePriceBlur = (itemId: string, inputValue: string) => {
+    if (!inputValue.trim()) {
+      setPriceInputStates(prev => ({ ...prev, [itemId]: '' }));
+      updateItem(itemId, { unit_price: undefined });
+      return;
+    }
+
+    // Parse the input value and convert to cents
+    const num = Number(inputValue.replace(',', '.'));
+    if (!isNaN(num) && num >= 0) {
+      const cents = Math.round(num * 100);
+      updateItem(itemId, { unit_price: cents });
+      // Format the display value
+      setPriceInputStates(prev => ({ ...prev, [itemId]: num.toFixed(2) }));
+    } else {
+      // Invalid input, reset to current model value
+      const currentItem = formData.items.find(item => item.id === itemId);
+      const displayValue = currentItem?.unit_price ? (currentItem.unit_price / 100).toFixed(2) : '';
+      setPriceInputStates(prev => ({ ...prev, [itemId]: displayValue }));
+    }
+  };
+
   // Handle service selection for an item
   const handleServiceSelect = (itemId: string, service: SearchableItem) => {
+    const servicePrice = service.base_price || service.hourly_rate || 0;
+
     setFormData(prev => ({
       ...prev,
       items: prev.items.map(item =>
@@ -136,21 +251,27 @@ export default function CreateOfferPage() {
               title: service.title || service.name || '',
               description: service.description || service.short_description || '',
               service_id: service.id,
-              base_price: service.base_price || 0, // Already in cents from API
+              base_price: servicePrice, // Already in cents from API
               hourly_rate: service.hourly_rate || 0,
               currency_code: service.currency_code || 'EUR',
               category: service.category,
               service_type: service.service_type,
-              unit_price: service.base_price || service.hourly_rate || 0, // Already in cents from API
+              unit_price: servicePrice, // Already in cents from API
               total_price: calculateItemTotal({
                 ...item,
                 item_type: 'service',
                 title: service.title || service.name || '',
-                unit_price: service.base_price || service.hourly_rate || 0,
+                unit_price: servicePrice,
               }),
             }
           : item,
       ),
+    }));
+
+    // Sync the price input state with the new service price
+    setPriceInputStates(prev => ({
+      ...prev,
+      [itemId]: (servicePrice / 100).toFixed(2),
     }));
   };
 
@@ -165,7 +286,6 @@ export default function CreateOfferPage() {
       unit: 'STK',
       unit_price: 0,
       discount_percentage: 0,
-      tax_rate: 19,
       total_price: 0,
     };
     setFormData(prev => ({
@@ -199,29 +319,67 @@ export default function CreateOfferPage() {
     return subtotal - discount;
   };
 
-  // Calculate offer totals
+  // Calculate offer totals with proper tax-inclusive pricing
   const calculateOfferTotals = () => {
-    const subtotal = formData.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
-    const tax = formData.items.reduce((sum, item) => {
-      const itemTotal = calculateItemTotal(item);
-      return sum + itemTotal * (item.tax_rate / 100);
-    }, 0);
-    const total = subtotal + tax;
+    // Calculate gross total (tax-inclusive)
+    const grossTotal = formData.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
 
-    return { subtotal, tax, total };
+    // Calculate net total (tax-exclusive) - 19% VAT
+    const netTotal = Math.round(grossTotal / 1.19);
+
+    // Calculate VAT amount
+    const vatAmount = grossTotal - netTotal;
+
+    // Calculate total discount
+    const totalDiscount = formData.items.reduce((sum, item) => {
+      const itemSubtotal = item.unit_price * item.quantity;
+      const itemDiscount = itemSubtotal * (item.discount_percentage / 100);
+      return sum + itemDiscount;
+    }, 0);
+
+    return {
+      subtotal: netTotal,
+      discount_amount: totalDiscount,
+      vat_amount: vatAmount,
+      total: grossTotal,
+    };
   };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim()) {
-      toast.error('Titel ist erforderlich');
+    if (!formData.items.length) {
+      toast.error('Mindestens ein Artikel ist erforderlich');
       return;
     }
 
-    if (formData.items.length === 0) {
-      toast.error('Mindestens ein Artikel ist erforderlich');
+    // Validate that product items have variants selected (only for linked products)
+    const productItemsWithoutVariants = formData.items.filter(
+      item => item.item_type === 'product' && item.selectedProduct && (!item.variant_id || !item.selectedProduct),
+    );
+
+    if (productItemsWithoutVariants.length > 0) {
+      toast.error('Bitte wählen Sie für alle verknüpften Produkte eine Variante aus.');
+      return;
+    }
+
+    // Validate that all items have required fields
+    const invalidItems = formData.items.filter(item => {
+      // For manual products: only require title, quantity, and unit_price
+      if (!item.product_id && !item.service_id) {
+        return !item.title || item.quantity <= 0 || !item.unit_price || item.unit_price <= 0;
+      }
+      // For linked products/services: require title, quantity, unit_price, and variant_id (for products)
+      if (item.item_type === 'product') {
+        return !item.title || item.quantity <= 0 || !item.unit_price || item.unit_price <= 0 || !item.variant_id;
+      }
+      // For services: require title, quantity, and unit_price
+      return !item.title || item.quantity <= 0 || !item.unit_price || item.unit_price <= 0;
+    });
+
+    if (invalidItems.length > 0) {
+      toast.error('Bitte füllen Sie alle erforderlichen Felder für alle Artikel aus.');
       return;
     }
 
@@ -237,7 +395,7 @@ export default function CreateOfferPage() {
           ...formData,
           items: formData.items.map(item => ({
             ...item,
-            unit_price: Math.round(item.unit_price * 100), // Convert to cents
+            unit_price: Math.round(item.unit_price), // Already in cents
           })),
         }),
       });
@@ -285,19 +443,6 @@ export default function CreateOfferPage() {
           </Text>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
-                Titel *
-              </Text>
-              <Input
-                type="text"
-                value={formData.title}
-                onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Angebotsbeschreibung"
-                required
-              />
-            </div>
-
             <div>
               <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
                 Währung
@@ -480,6 +625,25 @@ export default function CreateOfferPage() {
                     </div>
                   </div>
 
+                  {/* Variant Selection for Products */}
+                  {item.item_type === 'product' && item.selectedProduct && (
+                    <div className="mb-4">
+                      <VariantSelector
+                        product={item.selectedProduct}
+                        selectedVariantId={item.variant_id || null}
+                        onVariantSelect={variant => handleVariantSelect(item.id, variant)}
+                        disabled={!item.selectedProduct}
+                      />
+                      {item.selectedProduct && !item.variant_id && (
+                        <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-md">
+                          <Text size="small" className="text-orange-700">
+                            ⚠️ Bitte wählen Sie eine Variante für dieses Produkt aus
+                          </Text>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Item Details */}
                   <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                     <div>
@@ -522,13 +686,31 @@ export default function CreateOfferPage() {
                       <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
                         Preis (€)
                       </Text>
+                      {/* Price input with natural typing behavior - updates on blur */}
                       <Input
                         type="number"
-                        value={item.unit_price ? (item.unit_price / 100).toFixed(2) : ''}
-                        onChange={e => updateItem(item.id, { unit_price: Number(e.target.value) * 100 })}
+                        value={priceInputStates[item.id] || (item.unit_price ? (item.unit_price / 100).toFixed(2) : '')}
+                        onChange={e => {
+                          const val = e.target.value;
+                          // Only update the local input state - don't update the model yet
+                          setPriceInputStates(prev => ({ ...prev, [item.id]: val }));
+                        }}
+                        onBlur={() => handlePriceBlur(item.id, priceInputStates[item.id] || '')}
                         min="0"
                         step="0.01"
+                        inputMode="decimal"
+                        disabled={Boolean(item.item_type === 'product' && item.variant_id)}
+                        className={item.item_type === 'product' && item.variant_id ? 'bg-gray-100' : ''}
                       />
+                      {/* Netto price in euros */}
+                      <Text size="xsmall" className="text-ui-fg-subtle mt-1">
+                        Netto: {(item.unit_price ? item.unit_price / 1.19 / 100 : 0).toFixed(2)} €
+                      </Text>
+                      {item.item_type === 'product' && item.variant_id && (
+                        <Text size="xsmall" className="text-ui-fg-subtle mt-1">
+                          Preis von Variante übernommen
+                        </Text>
+                      )}
                     </div>
 
                     <div>
@@ -539,19 +721,6 @@ export default function CreateOfferPage() {
                         type="number"
                         value={item.discount_percentage}
                         onChange={e => updateItem(item.id, { discount_percentage: Number(e.target.value) })}
-                        min="0"
-                        max="100"
-                      />
-                    </div>
-
-                    <div>
-                      <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
-                        USt. %
-                      </Text>
-                      <Input
-                        type="number"
-                        value={item.tax_rate}
-                        onChange={e => updateItem(item.id, { tax_rate: Number(e.target.value) })}
                         min="0"
                         max="100"
                       />
@@ -589,6 +758,11 @@ export default function CreateOfferPage() {
                           Lager: {item.inventory_quantity}
                         </Text>
                       )}
+                      {item.variant_title && (
+                        <Text size="small" className="text-ui-fg-subtle">
+                          Variante: {item.variant_title}
+                        </Text>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <Text size="small" weight="plus">
@@ -611,22 +785,31 @@ export default function CreateOfferPage() {
             <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
               Gesamtsumme
             </Text>
-
             <div className="space-y-2">
               <div className="flex justify-between">
                 <Text size="small" className="text-ui-fg-subtle">
-                  Zwischensumme:
+                  Nettobetrag:
                 </Text>
                 <Text size="small" weight="plus">
-                  {(totals.subtotal / 100).toFixed(2)} €
+                  {totals.subtotal ? (totals.subtotal / 100).toFixed(2) : '0.00'} €
                 </Text>
               </div>
+              {totals.discount_amount > 0 && (
+                <div className="flex justify-between">
+                  <Text size="small" className="text-ui-fg-subtle">
+                    Rabatt:
+                  </Text>
+                  <Text size="small" weight="plus" className="text-red-600">
+                    -{(totals.discount_amount / 100).toFixed(2)} €
+                  </Text>
+                </div>
+              )}
               <div className="flex justify-between">
                 <Text size="small" className="text-ui-fg-subtle">
-                  Umsatzsteuer:
+                  MwSt. (19%):
                 </Text>
                 <Text size="small" weight="plus">
-                  {(totals.tax / 100).toFixed(2)} €
+                  {totals.vat_amount ? (totals.vat_amount / 100).toFixed(2) : '0.00'} €
                 </Text>
               </div>
               <div className="flex justify-between border-t border-ui-border-base pt-2">
@@ -634,9 +817,12 @@ export default function CreateOfferPage() {
                   Gesamtsumme:
                 </Text>
                 <Text size="base" weight="plus" className="text-ui-fg-base">
-                  {(totals.total / 100).toFixed(2)} €
+                  {totals.total ? (totals.total / 100).toFixed(2) : '0.00'} €
                 </Text>
               </div>
+              <Text size="small" className="text-ui-fg-subtle mt-1">
+                Alle Preise inklusive 19% MwSt.
+              </Text>
             </div>
           </div>
         )}

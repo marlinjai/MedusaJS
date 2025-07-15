@@ -13,6 +13,7 @@ const offerItem = model.define('offer_item', {
   offer_id: model.text(), // Foreign key to offer
   product_id: model.text().nullable(), // Product ID if this is a product
   service_id: model.text().nullable(), // Service ID if this is a service
+  variant_id: model.text().nullable(), // Product variant ID if this is a specific variant
 
   // Item identification and description
   item_type: model.text(), // 'product' or 'service'
@@ -43,21 +44,11 @@ const offerItem = model.define('offer_item', {
 
   // Availability and inventory
   available_quantity: model.number().nullable(), // Available stock at time of offer creation
-  reserved_quantity: model.number().default(0), // Currently reserved quantity
-  is_reservable: model.boolean().default(true), // Whether this item can be reserved
+  reserved_quantity: model.number().default(0), // How many are currently reserved
 
   // Special instructions and notes
   custom_specifications: model.text().nullable(), // Custom requirements or specifications
   delivery_notes: model.text().nullable(), // Special delivery instructions
-  internal_notes: model.text().nullable(), // Internal notes about this item
-
-  // Ordering and grouping
-  sort_order: model.number().default(0), // Order of items in the offer
-  item_group: model.text().nullable(), // Group items together (e.g., "Installation", "Parts")
-
-  // Status tracking
-  is_active: model.boolean().default(true), // Whether this item is active in the offer
-  requires_approval: model.boolean().default(false), // Whether this specific item needs approval
 });
 
 export type OfferItem = InferTypeOf<typeof offerItem>;

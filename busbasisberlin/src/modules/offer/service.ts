@@ -11,7 +11,6 @@ import offerStatusHistory from './models/offer-status-history';
 
 // Interfaces for service operations
 interface CreateOfferInput {
-  title: string;
   description?: string;
   customer_name?: string;
   customer_email?: string;
@@ -23,12 +22,15 @@ interface CreateOfferInput {
   created_by?: string;
   assigned_to?: string;
   currency_code?: string;
+  has_reservations?: boolean;
+  reservation_expires_at?: Date;
   items?: CreateOfferItemInput[];
 }
 
 interface CreateOfferItemInput {
   product_id?: string;
   service_id?: string;
+  variant_id?: string; // Add variant_id field
   item_type: 'product' | 'service';
   sku?: string;
   title: string;
@@ -116,13 +118,14 @@ class OfferService extends MedusaService({
    * Create a new offer with items and automatic numbering
    */
   async createOfferWithItems(input: CreateOfferInput): Promise<OfferWithItems> {
-    const offerNumber = await this.generateOfferNumber();
+    // Generate the next offer number sequence and formatted offer number
+    const { offerNumberSeq, formattedOfferNumber } = await this.generateOfferNumber();
 
     // Create the main offer
     const [createdOffer] = await this.createOffers([
       {
-        offer_number: offerNumber,
-        title: input.title,
+        offer_number_seq: offerNumberSeq,
+        offer_number: formattedOfferNumber,
         description: input.description,
         customer_name: input.customer_name,
         customer_email: input.customer_email,
@@ -135,79 +138,89 @@ class OfferService extends MedusaService({
         assigned_to: input.assigned_to,
         currency_code: input.currency_code || 'EUR',
         status: 'draft',
+        has_reservations: input.has_reservations || false,
+        reservation_expires_at: input.reservation_expires_at || null,
       },
     ]);
 
     // Create offer items with enhanced inventory data
     const offerItems: OfferItem[] = [];
     for (const [index, itemInput] of (input.items || []).entries()) {
-      // Simplified item creation for now (inventory integration can be added later)
-      const itemData = {
-        offer_id: createdOffer.id,
-        product_id: itemInput.product_id || null,
-        service_id: itemInput.service_id || null,
-        item_type: itemInput.item_type,
-        sku: itemInput.sku || null,
-        title: itemInput.title,
-        description: itemInput.description || null,
-        quantity: itemInput.quantity,
-        unit: itemInput.unit || 'STK',
-        unit_price: itemInput.unit_price,
-        total_price: itemInput.unit_price * itemInput.quantity,
-        discount_percentage: itemInput.discount_percentage || 0,
-        discount_amount: itemInput.discount_amount || 0,
-        tax_rate: itemInput.tax_rate || 0,
-        tax_amount: 0,
-        variant_title: itemInput.variant_title || null,
-        supplier_info: itemInput.supplier_info || null,
-        lead_time: itemInput.lead_time || null,
-        custom_specifications: itemInput.custom_specifications || null,
-        delivery_notes: itemInput.delivery_notes || null,
-        internal_notes: null,
-        item_group: itemInput.item_group || null,
-        sort_order: itemInput.sort_order || index,
-        available_quantity: null, // Will be populated when inventory integration is ready
-        reserved_quantity: 0,
-        is_reservable: false, // Will be enabled when inventory integration is ready
-        is_active: true,
-        requires_approval: false,
-      };
-
-      try {
-        const createdItems = await this.createOfferItems([itemData]);
-        if (createdItems && createdItems.length > 0) {
-          offerItems.push(createdItems[0]);
-        }
-      } catch (error) {
-        this.logger_.error(`Failed to create offer item: ${error.message}`);
-        // Continue with other items
+      // Calculate discount amount from percentage if provided
+      let discountAmount = itemInput.discount_amount || 0;
+      if (itemInput.discount_percentage && itemInput.discount_percentage > 0) {
+        const itemSubtotal = itemInput.unit_price * itemInput.quantity;
+        discountAmount = (itemSubtotal * itemInput.discount_percentage) / 100;
       }
+
+      // Calculate total price after discount
+      const itemSubtotal = itemInput.unit_price * itemInput.quantity;
+      const totalPrice = itemSubtotal - discountAmount;
+
+      // Create offer item with calculated values
+      const [offerItem] = await this.createOfferItems([
+        {
+          offer_id: createdOffer.id,
+          product_id: itemInput.product_id,
+          service_id: itemInput.service_id,
+          variant_id: itemInput.variant_id,
+          item_type: itemInput.item_type,
+          sku: itemInput.sku,
+          title: itemInput.title,
+          description: itemInput.description,
+          quantity: itemInput.quantity,
+          unit: itemInput.unit || 'STK',
+          unit_price: itemInput.unit_price,
+          total_price: totalPrice,
+          discount_percentage: itemInput.discount_percentage || 0,
+          discount_amount: discountAmount,
+          tax_rate: itemInput.tax_rate || 0,
+          tax_amount: 0, // Will be calculated later
+          variant_title: itemInput.variant_title,
+          supplier_info: itemInput.supplier_info,
+          lead_time: itemInput.lead_time,
+          available_quantity: 0, // Will be populated from inventory
+          reserved_quantity: 0,
+          custom_specifications: itemInput.custom_specifications,
+          delivery_notes: itemInput.delivery_notes,
+        },
+      ]);
+
+      offerItems.push(offerItem);
     }
 
-    // Calculate and update totals
+    // Calculate totals
     const totals = await this.calculateOfferTotals(createdOffer.id);
+
+    // Update offer with calculated totals
     await this.updateOffers({
       id: createdOffer.id,
       subtotal: totals.subtotal,
       tax_amount: totals.tax_amount,
-      discount_amount: totals.discount_amount,
       total_amount: totals.total_amount,
     });
 
-    // Create initial status history
+    // Create initial status history entry
     await this.createOfferStatusHistories([
       {
         offer_id: createdOffer.id,
         previous_status: null,
         new_status: 'draft',
         event_type: 'created',
-        event_description: `Offer ${offerNumber} created`,
+        event_description: 'Offer created',
+        system_change: true,
         changed_by: input.created_by,
-        system_change: false,
-        inventory_impact: `${offerItems.length} items added`,
+        changed_by_name: 'System',
       },
     ]);
 
+    // Return the complete offer with items
+    const offerWithDetails = await this.getOfferWithDetails(createdOffer.id);
+    if (offerWithDetails) {
+      return offerWithDetails;
+    }
+
+    // Fallback: return the created offer with items if getOfferWithDetails fails
     return {
       ...createdOffer,
       items: offerItems,
@@ -285,50 +298,56 @@ class OfferService extends MedusaService({
   }
 
   /**
-   * Calculate financial totals for an offer
+   * Calculate totals for an offer including discount amounts
    */
   async calculateOfferTotals(offerId: string): Promise<{
     subtotal: number;
-    tax_amount: number;
     discount_amount: number;
+    tax_amount: number;
     total_amount: number;
   }> {
-    const items = await this.listOfferItems({ offer_id: offerId });
-
-    let subtotal = 0;
-    let totalTaxAmount = 0;
-    let totalDiscountAmount = 0;
-
-    for (const item of items) {
-      const itemSubtotal = item.unit_price * item.quantity;
-      const itemDiscount = item.discount_amount || (itemSubtotal * (item.discount_percentage || 0)) / 100;
-      const itemTaxableAmount = itemSubtotal - itemDiscount;
-      const itemTax = (itemTaxableAmount * (item.tax_rate || 0)) / 100;
-
-      subtotal += itemSubtotal;
-      totalDiscountAmount += itemDiscount;
-      totalTaxAmount += itemTax;
-
-      // Update item with calculated values
-      try {
-        await this.updateOfferItems({
-          id: item.id,
-          total_price: itemSubtotal,
-          discount_amount: itemDiscount,
-          tax_amount: itemTax,
-        });
-      } catch (error) {
-        this.logger_.error(`Failed to update offer item ${item.id}: ${error.message}`);
-      }
+    const offer = await this.getOfferWithDetails(offerId);
+    if (!offer) {
+      throw new Error('Offer not found');
     }
 
-    const total_amount = subtotal - totalDiscountAmount + totalTaxAmount;
+    let grossTotal = 0;
+    let totalDiscount = 0;
+
+    for (const item of offer.items) {
+      const itemSubtotal = item.unit_price * item.quantity;
+
+      // Calculate discount amount from percentage if not already set
+      let itemDiscount = item.discount_amount || 0;
+      if (item.discount_percentage && item.discount_percentage > 0) {
+        itemDiscount = (itemSubtotal * item.discount_percentage) / 100;
+      }
+
+      const itemNetAmount = itemSubtotal - itemDiscount;
+
+      grossTotal += itemNetAmount;
+      totalDiscount += itemDiscount;
+    }
+
+    // Calculate net total (tax-exclusive) from gross total (tax-inclusive)
+    const netTotal = Math.round(grossTotal / 1.19);
+
+    // Calculate VAT amount
+    const vatAmount = grossTotal - netTotal;
+
+    // Update the offer with calculated totals
+    await this.updateOffers({
+      id: offerId,
+      subtotal: netTotal,
+      tax_amount: vatAmount,
+      total_amount: grossTotal,
+    });
 
     return {
-      subtotal,
-      tax_amount: totalTaxAmount,
-      discount_amount: totalDiscountAmount,
-      total_amount,
+      subtotal: netTotal,
+      discount_amount: totalDiscount,
+      tax_amount: vatAmount,
+      total_amount: grossTotal,
     };
   }
 
@@ -354,14 +373,32 @@ class OfferService extends MedusaService({
   }
 
   /**
-   * Generate unique offer number
+   * Generate unique offer number with auto-incrementing sequence
    */
-  private async generateOfferNumber(): Promise<string> {
-    const year = new Date().getFullYear();
+  private async generateOfferNumber(): Promise<{ offerNumberSeq: number; formattedOfferNumber: string }> {
+    // Get the highest existing offer_number_seq
     const existingOffers = await this.listOffers({});
-    const yearOffers = existingOffers.filter(o => o.offer_number.includes(year.toString()));
-    const nextNumber = yearOffers.length + 1;
-    return `OFF-${year}-${nextNumber.toString().padStart(3, '0')}`;
+    let maxSeq = 0;
+
+    if (existingOffers.length > 0) {
+      // Find the highest offer_number_seq value
+      for (const offer of existingOffers) {
+        if (offer.offer_number_seq && offer.offer_number_seq > maxSeq) {
+          maxSeq = offer.offer_number_seq;
+        }
+      }
+    }
+
+    // Generate the next sequence number
+    const nextSeq = maxSeq + 1;
+
+    // Format the offer number as "ANG-00001", "ANG-00002", etc.
+    const formattedOfferNumber = `ANG-${nextSeq.toString().padStart(5, '0')}`;
+
+    return {
+      offerNumberSeq: nextSeq,
+      formattedOfferNumber,
+    };
   }
 
   /**
@@ -423,27 +460,57 @@ class OfferService extends MedusaService({
         allow_backorder: boolean;
         quantity: number;
         location_ids: string[];
+        variant_id?: string;
       }> = [];
 
       for (const item of offer.items) {
         if (item.item_type === 'product' && item.product_id) {
-          // Get inventory items for the product
-          const inventoryItems = await this.getInventoryItemsForProduct(item.product_id);
+          // If we have a specific variant_id, use it for more precise reservation
+          if (item.variant_id) {
+            // Get inventory items for the specific variant
+            const inventoryItems = await this.getInventoryItemsForVariant(item.variant_id);
 
-          for (const inventoryItem of inventoryItems) {
-            const availableQuantity = await this.getInventoryItemAvailableQuantity(inventoryItem.id);
+            for (const inventoryItem of inventoryItems) {
+              const availableQuantity = await this.getInventoryItemAvailableQuantity(inventoryItem.id);
 
-            // Allow backorders (negative stock) for offers
-            const allowBackorder = true;
-            const requiredQuantity = Math.min(item.quantity, availableQuantity + (allowBackorder ? item.quantity : 0));
+              // Allow backorders (negative stock) for offers
+              const allowBackorder = true;
+              const requiredQuantity = Math.min(
+                item.quantity,
+                availableQuantity + (allowBackorder ? item.quantity : 0),
+              );
 
-            reservationItems.push({
-              inventory_item_id: inventoryItem.id,
-              required_quantity: requiredQuantity,
-              allow_backorder: allowBackorder,
-              quantity: item.quantity,
-              location_ids: inventoryItem.location_levels?.map((level: any) => level.location_id) || [],
-            });
+              reservationItems.push({
+                inventory_item_id: inventoryItem.id,
+                required_quantity: requiredQuantity,
+                allow_backorder: allowBackorder,
+                quantity: item.quantity,
+                location_ids: inventoryItem.location_levels?.map((level: any) => level.location_id) || [],
+                variant_id: item.variant_id,
+              });
+            }
+          } else {
+            // Fallback to product-level reservation (legacy behavior)
+            const inventoryItems = await this.getInventoryItemsForProduct(item.product_id);
+
+            for (const inventoryItem of inventoryItems) {
+              const availableQuantity = await this.getInventoryItemAvailableQuantity(inventoryItem.id);
+
+              // Allow backorders (negative stock) for offers
+              const allowBackorder = true;
+              const requiredQuantity = Math.min(
+                item.quantity,
+                availableQuantity + (allowBackorder ? item.quantity : 0),
+              );
+
+              reservationItems.push({
+                inventory_item_id: inventoryItem.id,
+                required_quantity: requiredQuantity,
+                allow_backorder: allowBackorder,
+                quantity: item.quantity,
+                location_ids: inventoryItem.location_levels?.map((level: any) => level.location_id) || [],
+              });
+            }
           }
         }
       }
@@ -454,8 +521,9 @@ class OfferService extends MedusaService({
           await this.createInventoryReservation(reservation.inventory_item_id, reservation.quantity, {
             type: 'offer',
             offer_id: offer.id,
+            variant_id: reservation.variant_id,
             allow_backorder: reservation.allow_backorder,
-            description: `Reserved for offer ${offer.offer_number}`,
+            description: `Reserved for offer ${offer.offer_number}${reservation.variant_id ? ` (variant: ${reservation.variant_id})` : ''}`,
           });
         }
 
@@ -641,6 +709,16 @@ class OfferService extends MedusaService({
   private async getInventoryItemsForProduct(productId: string): Promise<any[]> {
     // Simplified implementation for now
     this.logger_.info(`Getting inventory items for product ${productId} - simplified implementation`);
+    return [];
+  }
+
+  /**
+   * Get inventory items for a specific variant
+   * Simplified implementation - will be enhanced when inventory integration is ready
+   */
+  private async getInventoryItemsForVariant(variantId: string): Promise<any[]> {
+    // Simplified implementation for now
+    this.logger_.info(`Getting inventory items for variant ${variantId} - simplified implementation`);
     return [];
   }
 

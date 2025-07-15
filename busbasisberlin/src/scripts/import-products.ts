@@ -671,7 +671,7 @@ export default async function importProducts({ container }: ExecArgs) {
           }
 
           // Parse pricing - handle German number format (comma as decimal separator)
-          // Note: Prices should be in cents for supplier fields, but raw euros for product prices
+          // Note: All prices should be stored in cents for consistency with Medusa
           const parsePrice = (priceStr: string, forSupplier: boolean = false): number => {
             if (!priceStr) return 0;
 
@@ -694,21 +694,20 @@ export default async function importProducts({ container }: ExecArgs) {
             const parsed = parseFloat(cleaned);
             if (isNaN(parsed)) return 0;
 
-            // Convert to cents for supplier prices (widget expects this),
-            // but keep as raw euros for product prices (Medusa expects this)
-            const result = forSupplier ? Math.round(parsed * 100) : Math.round(parsed);
+            // Always convert to cents for consistency with Medusa
+            const result = Math.round(parsed * 100);
 
             // Debug log to verify price parsing
             console.log(
-              `Price parsing: "${priceStr}" -> "${cleaned}" -> ${parsed} -> ${result} ${forSupplier ? 'cents' : 'euros'} (${forSupplier ? (result / 100).toFixed(2) : result}€)`,
+              `Price parsing: "${priceStr}" -> "${cleaned}" -> ${parsed} -> ${result} cents (${(result / 100).toFixed(2)}€)`,
             );
 
             return result;
           };
 
           // Updated field mappings to match actual CSV structure
-          const nettoPrice = parsePrice(safe(baseArticle, 'Std. VK Netto') || '0', false); // Customer selling price (euros)
-          const bruttoPrice = parsePrice(safe(baseArticle, 'Std. VK Brutto') || '0', false); // Customer selling price gross (euros)
+          const nettoPrice = parsePrice(safe(baseArticle, 'Std. VK Netto') || '0', false); // Customer selling price (cents)
+          const bruttoPrice = parsePrice(safe(baseArticle, 'Std. VK Brutto') || '0', false); // Customer selling price (cents)
           const supplierPrice = parsePrice(safe(baseArticle, 'EK Netto (für GLD)') || '0', true); // Supplier purchase price (cents)
 
           // Parse dimensions and weight

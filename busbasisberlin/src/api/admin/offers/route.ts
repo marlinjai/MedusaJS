@@ -13,7 +13,6 @@ const OFFER_MODULE = 'offer';
 
 // Type definitions for request/response
 interface CreateOfferRequest {
-  title: string;
   description?: string;
   customer_name?: string;
   customer_email?: string;
@@ -138,7 +137,6 @@ export async function POST(req: MedusaRequest<CreateOfferRequest>, res: MedusaRe
 
   try {
     const {
-      title,
       description,
       customer_name,
       customer_email,
@@ -151,15 +149,6 @@ export async function POST(req: MedusaRequest<CreateOfferRequest>, res: MedusaRe
       items = [],
     } = req.body;
 
-    // Validate required fields
-    if (!title || !title.trim()) {
-      res.status(400).json({
-        error: 'Validation error',
-        message: 'Title is required',
-      });
-      return;
-    }
-
     // Validate items
     if (items.length === 0) {
       res.status(400).json({
@@ -170,14 +159,6 @@ export async function POST(req: MedusaRequest<CreateOfferRequest>, res: MedusaRe
     }
 
     for (const [index, item] of items.entries()) {
-      if (!item.title || !item.title.trim()) {
-        res.status(400).json({
-          error: 'Validation error',
-          message: `Item ${index + 1}: Title is required`,
-        });
-        return;
-      }
-
       if (!item.item_type || !['product', 'service'].includes(item.item_type)) {
         res.status(400).json({
           error: 'Validation error',
@@ -205,7 +186,6 @@ export async function POST(req: MedusaRequest<CreateOfferRequest>, res: MedusaRe
 
     // Prepare offer data
     const offerData = {
-      title: title.trim(),
       description: description?.trim(),
       customer_name: customer_name?.trim(),
       customer_email: customer_email?.trim(),
