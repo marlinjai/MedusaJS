@@ -36,6 +36,14 @@ export default function ProductPrice({
           {selectedPrice.calculated_price}
         </span>
       </span>
+      
+      {/* USt. 19% info text */}
+      <div className="flex items-center gap-x-1 mt-1">
+        <span className="text-xs text-ui-fg-subtle">inkl. USt. 19%</span>
+        <span className="text-xs text-ui-fg-muted">•</span>
+        <span className="text-xs text-ui-fg-subtle">Alle Preise inklusive Mehrwertsteuer</span>
+      </div>
+      
       {selectedPrice.price_type === "sale" && (
         <>
           <p>
