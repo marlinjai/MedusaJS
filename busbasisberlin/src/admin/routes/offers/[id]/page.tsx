@@ -3,11 +3,39 @@
  * Offer detail page for viewing and editing offers
  * Includes status management, item editing, and comprehensive information display
  */
-import { ArrowLeft, Edit, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { Badge, Button, Container, Input, Select, Table, Text, Textarea, toast } from '@medusajs/ui';
+import { Badge, Button, Container, Input, Select, Text, Textarea, toast } from '@medusajs/ui';
+import SearchableDropdown from '../components/SearchableDropdown';
+import VariantSelector from '../components/VariantSelector';
+
+interface SearchableItem {
+  id: string;
+  title?: string;
+  display_name?: string;
+  name?: string;
+  type?: string;
+  variants?: Array<ProductVariant>;
+  variants_count?: number;
+  [key: string]: any;
+}
+
+interface ProductVariant {
+  id: string;
+  title: string;
+  sku: string;
+  prices?: Array<{
+    amount: number;
+    currency_code: string;
+  }>;
+  price?: {
+    amount: number;
+    currency_code: string;
+  };
+  inventory_quantity: number;
+}
 
 interface OfferItem {
   id: string;
@@ -16,18 +44,29 @@ interface OfferItem {
   description: string;
   quantity: number;
   unit: string;
-  unit_price: number;
+  unit_price: number; // Already gross (tax-inclusive)
   discount_percentage: number;
-  tax_rate: number;
+  tax_rate: number; // Default 19% for products
   total_price: number;
-  available_quantity?: number;
-  reserved_quantity?: number;
+  // New fields for selected items
+  product_id?: string;
+  service_id?: string;
+  sku?: string;
+  variant_id?: string;
+  variant_title?: string;
+  base_price?: number;
+  hourly_rate?: number;
+  currency_code?: string;
+  inventory_quantity?: number;
+  category?: string;
+  service_type?: string;
+  // Product selection state
+  selectedProduct?: SearchableItem;
 }
 
 interface Offer {
   id: string;
   offer_number: string;
-  title: string;
   description: string;
   status: 'draft' | 'active' | 'accepted' | 'completed' | 'cancelled';
   customer_name: string;
@@ -57,6 +96,24 @@ export default function OfferDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Add local state for price input values to allow natural typing
+  const [priceInputStates, setPriceInputStates] = useState<Record<string, string>>({});
+
+  // Add inventory checking state
+  const [inventoryStatus, setInventoryStatus] = useState<{
+    can_complete: boolean;
+    has_out_of_stock: boolean;
+    has_low_stock: boolean;
+    items: Array<{
+      item_id: string;
+      available_quantity: number;
+      is_available: boolean;
+      stock_status: string;
+    }>;
+  } | null>(null);
+  const [checkingInventory, setCheckingInventory] = useState(false);
 
   // Load offer data
   useEffect(() => {
@@ -73,14 +130,49 @@ export default function OfferDetailPage() {
       }
       const data = await response.json();
       setOffer(data.offer);
+
+      // Initialize price input states
+      const priceStates: Record<string, string> = {};
+      data.offer.items.forEach((item: OfferItem) => {
+        priceStates[item.id] = (item.unit_price / 100).toFixed(2);
+      });
+      setPriceInputStates(priceStates);
     } catch (error) {
       console.error('Error loading offer:', error);
       toast.error(error instanceof Error ? error.message : 'Fehler beim Laden des Angebots');
-      navigate('/admin/offers');
+      navigate('/offers');
     } finally {
       setLoading(false);
     }
   };
+
+  // Check inventory availability for offer items
+  const checkInventoryAvailability = async () => {
+    if (!offer) return;
+
+    setCheckingInventory(true);
+    try {
+      const response = await fetch(`/admin/offers/${offer.id}/check-inventory`);
+      if (!response.ok) {
+        throw new Error('Fehler beim Prüfen der Inventarverfügbarkeit');
+      }
+      const data = await response.json();
+      setInventoryStatus(data);
+    } catch (error) {
+      console.error('Error checking inventory:', error);
+      toast.error('Fehler beim Prüfen der Inventarverfügbarkeit');
+    } finally {
+      setCheckingInventory(false);
+    }
+  };
+
+  // Load inventory status when offer loads or changes
+  useEffect(() => {
+    if (offer && offer.items.some(item => item.item_type === 'product' && item.variant_id)) {
+      // Check inventory immediately after offer loads
+      checkInventoryAvailability();
+    }
+  }, [offer?.id, offer?.items?.length]); // Re-run when offer ID changes or items change
 
   // Update offer status
   const updateStatus = async (newStatus: string) => {
@@ -93,7 +185,7 @@ export default function OfferDetailPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ new_status: newStatus }),
       });
 
       if (!response.ok) {
@@ -104,11 +196,60 @@ export default function OfferDetailPage() {
       const result = await response.json();
       setOffer(result.offer);
       toast.success('Status erfolgreich aktualisiert');
+
+      // Refresh inventory status after status change
+      if (newStatus === 'accepted' || newStatus === 'completed') {
+        checkInventoryAvailability();
+      }
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error(error instanceof Error ? error.message : 'Fehler beim Aktualisieren des Status');
+      const errorMessage = error instanceof Error ? error.message : 'Fehler beim Aktualisieren des Status';
+
+      // Show specific inventory error messages
+      if (errorMessage.includes('out of stock')) {
+        toast.error(`❌ ${errorMessage}`);
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setUpdating(false);
+    }
+  };
+
+  // Save offer changes
+  const saveOffer = async () => {
+    if (!offer) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/admin/offers/${offer.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...offer,
+          items: offer.items.map(item => ({
+            ...item,
+            unit_price: Math.round(item.unit_price), // Already in cents
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Fehler beim Speichern des Angebots');
+      }
+
+      const result = await response.json();
+      setOffer(result.offer);
+      setEditing(false);
+      toast.success('Angebot erfolgreich gespeichert');
+    } catch (error) {
+      console.error('Error saving offer:', error);
+      toast.error(error instanceof Error ? error.message : 'Fehler beim Speichern des Angebots');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -160,7 +301,218 @@ export default function OfferDetailPage() {
     return transitions[currentStatus] || [];
   };
 
-  // Handle item updates
+  // Get inventory status for a specific item
+  const getItemInventoryStatus = (itemId: string) => {
+    if (!inventoryStatus) return null;
+    return inventoryStatus.items.find(item => item.item_id === itemId);
+  };
+
+  // Handle product selection for an item
+  const handleProductSelect = (itemId: string, product: SearchableItem) => {
+    if (!offer) return;
+
+    setOffer(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map(item =>
+          item.id === itemId
+            ? {
+                ...item,
+                item_type: 'product',
+                title: product.title || product.name || '',
+                description: product.description || '',
+                product_id: product.id,
+                selectedProduct: product,
+                // Reset variant-specific fields - will be set when variant is selected
+                variant_id: undefined,
+                variant_title: undefined,
+                sku: undefined,
+                unit_price: 0,
+                tax_rate: 19, // Default 19% VAT for products
+                inventory_quantity: undefined,
+                category: product.category,
+                total_price: 0,
+              }
+            : item,
+        ),
+      };
+    });
+  };
+
+  // Handle variant selection for a product item
+  const handleVariantSelect = (itemId: string, variant: ProductVariant) => {
+    if (!offer) return;
+
+    // Get unit price from variant (supports both old prices array and new single price object)
+    const getVariantPrice = (variant: ProductVariant): number => {
+      // New API format: single price object
+      if (variant.price) {
+        return variant.price.amount;
+      }
+
+      // Old API format: prices array
+      if (variant.prices && variant.prices.length > 0) {
+        // Find EUR price first, then fall back to first available
+        const eurPrice = variant.prices.find(p => p.currency_code === 'EUR');
+        return eurPrice ? eurPrice.amount : variant.prices[0].amount;
+      }
+
+      return 0;
+    };
+
+    const unitPrice = getVariantPrice(variant);
+
+    setOffer(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map(item =>
+          item.id === itemId
+            ? {
+                ...item,
+                variant_id: variant.id,
+                variant_title: variant.title,
+                sku: variant.sku,
+                unit_price: unitPrice,
+                tax_rate: 19, // Default 19% VAT for products
+                inventory_quantity: variant.inventory_quantity, // Use cached value initially
+                currency_code: 'EUR',
+                total_price: calculateItemTotal({
+                  ...item,
+                  variant_id: variant.id,
+                  variant_title: variant.title,
+                  sku: variant.sku,
+                  unit_price: unitPrice,
+                  tax_rate: 19,
+                  inventory_quantity: variant.inventory_quantity,
+                }),
+              }
+            : item,
+        ),
+      };
+    });
+
+    // Sync the price input state with the new variant price
+    setPriceInputStates(prev => ({
+      ...prev,
+      [itemId]: (unitPrice / 100).toFixed(2),
+    }));
+
+    // Refresh inventory status immediately after variant selection to get real-time data
+    setTimeout(() => checkInventoryAvailability(), 200);
+  };
+
+  // Handle service selection for an item
+  const handleServiceSelect = (itemId: string, service: SearchableItem) => {
+    if (!offer) return;
+
+    const servicePrice = service.base_price || service.hourly_rate || 0;
+
+    setOffer(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map(item =>
+          item.id === itemId
+            ? {
+                ...item,
+                item_type: 'service',
+                title: service.title || service.name || '',
+                description: service.description || service.short_description || '',
+                service_id: service.id,
+                base_price: servicePrice, // Already in cents from API
+                hourly_rate: service.hourly_rate || 0,
+                currency_code: service.currency_code || 'EUR',
+                category: service.category,
+                service_type: service.service_type,
+                unit_price: servicePrice, // Already in cents from API
+                tax_rate: 19, // Default 19% VAT for services
+                total_price: calculateItemTotal({
+                  ...item,
+                  item_type: 'service',
+                  title: service.title || service.name || '',
+                  unit_price: servicePrice,
+                  tax_rate: 19,
+                }),
+              }
+            : item,
+        ),
+      };
+    });
+
+    // Sync the price input state with the new service price
+    setPriceInputStates(prev => ({
+      ...prev,
+      [itemId]: (servicePrice / 100).toFixed(2),
+    }));
+  };
+
+  // Handle price input blur - convert to proper format and update model
+  const handlePriceBlur = (itemId: string, inputValue: string) => {
+    if (!offer) return;
+
+    if (!inputValue.trim()) {
+      setPriceInputStates(prev => ({ ...prev, [itemId]: '' }));
+      updateItem(itemId, { unit_price: 0 });
+      return;
+    }
+
+    // Parse the input value and convert to cents
+    const num = Number(inputValue.replace(',', '.'));
+    if (!isNaN(num) && num >= 0) {
+      const cents = Math.round(num * 100);
+      updateItem(itemId, { unit_price: cents });
+      // Format the display value
+      setPriceInputStates(prev => ({ ...prev, [itemId]: num.toFixed(2) }));
+    } else {
+      // Invalid input, reset to current model value
+      const currentItem = offer.items.find(item => item.id === itemId);
+      const displayValue = currentItem?.unit_price ? (currentItem.unit_price / 100).toFixed(2) : '';
+      setPriceInputStates(prev => ({ ...prev, [itemId]: displayValue }));
+    }
+  };
+
+  // Add new item to the offer
+  const addItem = () => {
+    if (!offer) return;
+
+    const newItem: OfferItem = {
+      id: Date.now().toString(),
+      item_type: 'product',
+      title: '',
+      description: '',
+      quantity: 1,
+      unit: 'STK',
+      unit_price: 0,
+      discount_percentage: 0,
+      tax_rate: 19, // Default 19% VAT
+      total_price: 0,
+    };
+
+    setOffer(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: [...prev.items, newItem],
+      };
+    });
+  };
+
+  // Remove item from the offer
+  const removeItem = (itemId: string) => {
+    if (!offer) return;
+
+    setOffer(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.filter(item => item.id !== itemId),
+      };
+    });
+  };
+
+  // Update item in the offer
   const updateItem = (itemId: string, updates: Partial<OfferItem>) => {
     if (!offer) return;
 
@@ -168,30 +520,38 @@ export default function OfferDetailPage() {
       if (!prev) return prev;
       return {
         ...prev,
-        items: prev.items.map(item => (item.id === itemId ? { ...item, ...updates } : item)),
+        items: prev.items.map(item =>
+          item.id === itemId ? { ...item, ...updates, total_price: calculateItemTotal({ ...item, ...updates }) } : item,
+        ),
       };
     });
   };
 
-  // Calculate item total
+  // Calculate total price for an item
   const calculateItemTotal = (item: OfferItem): number => {
     const subtotal = item.unit_price * item.quantity;
     const discount = subtotal * (item.discount_percentage / 100);
     return subtotal - discount;
   };
 
-  // Calculate offer totals
+  // Calculate offer totals with proper tax-inclusive pricing
   const calculateOfferTotals = () => {
     if (!offer) return { subtotal: 0, tax: 0, total: 0 };
 
-    const subtotal = offer.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
-    const tax = offer.items.reduce((sum, item) => {
-      const itemTotal = calculateItemTotal(item);
-      return sum + itemTotal * (item.tax_rate / 100);
-    }, 0);
-    const total = subtotal + tax;
+    // Calculate gross total (tax-inclusive)
+    const grossTotal = offer.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
 
-    return { subtotal, tax, total };
+    // Calculate net total (tax-exclusive) - 19% VAT
+    const netTotal = Math.round(grossTotal / 1.19);
+
+    // Calculate VAT amount
+    const vatAmount = grossTotal - netTotal;
+
+    return {
+      subtotal: netTotal,
+      tax: vatAmount,
+      total: grossTotal,
+    };
   };
 
   if (loading) {
@@ -226,7 +586,7 @@ export default function OfferDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="secondary" size="small" onClick={() => navigate('/admin/offers')}>
+          <Button variant="secondary" size="small" onClick={() => navigate('/offers')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Zurück
           </Button>
@@ -235,40 +595,76 @@ export default function OfferDetailPage() {
               <Text size="xlarge" weight="plus" className="text-ui-fg-base">
                 {offer.offer_number}
               </Text>
-              <Badge color={getStatusColor(offer.status)}>{getStatusText(offer.status)}</Badge>
               {offer.has_reservations && <Badge color="orange">Reserviert</Badge>}
             </div>
-            <Text size="small" className="text-ui-fg-subtle">
-              {offer.title}
-            </Text>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {availableTransitions.length > 0 && (
-            <Select onValueChange={updateStatus} disabled={updating}>
-              <Select.Trigger>
-                <Select.Value placeholder="Status ändern" />
-              </Select.Trigger>
-              <Select.Content>
-                {availableTransitions.map(status => (
-                  <Select.Item key={status} value={status}>
-                    {getStatusText(status)}
-                  </Select.Item>
-                ))}
-              </Select.Content>
-            </Select>
-          )}
-          <Button variant="secondary" size="small" onClick={() => setEditing(!editing)}>
-            <Edit className="w-4 h-4 mr-2" />
+          <div className="flex items-center gap-2">
+            <Badge color={getStatusColor(offer.status)}>{getStatusText(offer.status)}</Badge>
+            {inventoryStatus?.has_out_of_stock && (
+              <Badge color="red" size="small">
+                ⚠️ Artikel nicht verfügbar
+              </Badge>
+            )}
+            {inventoryStatus?.has_low_stock && !inventoryStatus?.has_out_of_stock && (
+              <Badge color="orange" size="small">
+                ⚠️ Niedriger Lagerbestand
+              </Badge>
+            )}
+            {availableTransitions.length > 0 && (
+              <div className="relative">
+                <Select value="" onValueChange={updateStatus} disabled={updating}>
+                  <Select.Trigger className="w-auto">
+                    <Select.Value placeholder="Status ändern" />
+                  </Select.Trigger>
+                  <Select.Content>
+                    {availableTransitions.map(status => (
+                      <Select.Item
+                        key={status}
+                        value={status}
+                        disabled={status === 'completed' && inventoryStatus ? !inventoryStatus.can_complete : false}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{getStatusText(status)}</span>
+                          {status === 'completed' && inventoryStatus && !inventoryStatus.can_complete && (
+                            <span className="text-red-500 text-xs">⚠️ Nicht verfügbar</span>
+                          )}
+                        </div>
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select>
+                {inventoryStatus && !inventoryStatus.can_complete && availableTransitions.includes('completed') && (
+                  <div className="absolute top-full left-0 mt-1 p-2 bg-red-50 border border-red-200 rounded-md text-xs text-red-700 whitespace-nowrap z-10">
+                    ⚠️ Angebot kann nicht abgeschlossen werden - Artikel nicht verfügbar
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => setEditing(!editing)}
+            disabled={saving}
+            className={editing ? 'px-6' : ''}
+          >
+            <Edit className="w-full h-4 mr-2" />
             {editing ? 'Bearbeitung beenden' : 'Bearbeiten'}
           </Button>
+          {editing && (
+            <Button variant="primary" size="small" onClick={saveOffer} disabled={saving} className="px-3">
+              {saving ? 'Speichern...' : 'Speichern'}
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-4 space-y-6">
           {/* Basic Information */}
           <div className="bg-ui-bg-subtle rounded-lg p-6">
             <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
@@ -276,23 +672,6 @@ export default function OfferDetailPage() {
             </Text>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
-                  Titel
-                </Text>
-                {editing ? (
-                  <Input
-                    type="text"
-                    value={offer.title}
-                    onChange={e => setOffer(prev => (prev ? { ...prev, title: e.target.value } : prev))}
-                  />
-                ) : (
-                  <Text size="small" className="text-ui-fg-base">
-                    {offer.title}
-                  </Text>
-                )}
-              </div>
-
               <div>
                 <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
                   Gültig bis
@@ -331,115 +710,372 @@ export default function OfferDetailPage() {
 
           {/* Items */}
           <div className="bg-ui-bg-subtle rounded-lg p-6">
-            <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
-              Artikel
-            </Text>
+            <div className="flex items-center justify-between mb-4">
+              <Text size="large" weight="plus" className="text-ui-fg-base">
+                Artikel
+              </Text>
+              {editing && (
+                <Button type="button" variant="secondary" size="small" onClick={addItem}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Artikel hinzufügen
+                </Button>
+              )}
+            </div>
 
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.HeaderCell>Typ</Table.HeaderCell>
-                  <Table.HeaderCell>Titel</Table.HeaderCell>
-                  <Table.HeaderCell>Menge</Table.HeaderCell>
-                  <Table.HeaderCell>Einheit</Table.HeaderCell>
-                  <Table.HeaderCell>Preis</Table.HeaderCell>
-                  <Table.HeaderCell>Rabatt %</Table.HeaderCell>
-                  <Table.HeaderCell>USt. %</Table.HeaderCell>
-                  <Table.HeaderCell>Summe</Table.HeaderCell>
-                  {offer.status === 'active' && <Table.HeaderCell>Verfügbar</Table.HeaderCell>}
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
+            {offer.items.length === 0 ? (
+              <div className="text-center py-8">
+                <Text size="small" className="text-ui-fg-muted">
+                  Keine Artikel vorhanden.
+                </Text>
+              </div>
+            ) : (
+              <div className="space-y-4">
                 {offer.items.map(item => (
-                  <Table.Row key={item.id}>
-                    <Table.Cell>
-                      <Badge color={item.item_type === 'product' ? 'blue' : 'green'}>
-                        {item.item_type === 'product' ? 'Produkt' : 'Service'}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell>
-                      {editing ? (
-                        <Input
-                          type="text"
-                          value={item.title}
-                          onChange={e => updateItem(item.id, { title: e.target.value })}
-                          className="w-full"
-                        />
-                      ) : (
-                        <Text size="small" className="text-ui-fg-base">
-                          {item.title}
+                  <div key={item.id} className="border border-ui-border-base rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      {/* Item Type Selection */}
+                      <div>
+                        <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                          Artikeltyp
                         </Text>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {editing ? (
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
-                          min="1"
-                          className="w-20"
-                        />
-                      ) : (
-                        <Text size="small" className="text-ui-fg-base">
-                          {item.quantity}
-                        </Text>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" className="text-ui-fg-base">
-                        {item.unit}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      {editing ? (
-                        <Input
-                          type="number"
-                          value={item.unit_price / 100}
-                          onChange={e => updateItem(item.id, { unit_price: Number(e.target.value) * 100 })}
-                          min="0"
-                          step="0.01"
-                          className="w-24"
-                        />
-                      ) : (
-                        <Text size="small" className="text-ui-fg-base">
-                          {(item.unit_price / 100).toFixed(2)} €
-                        </Text>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" className="text-ui-fg-base">
-                        {item.discount_percentage}%
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" className="text-ui-fg-base">
-                        {item.tax_rate}%
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" weight="plus" className="text-ui-fg-base">
-                        {(calculateItemTotal(item) / 100).toFixed(2)} €
-                      </Text>
-                    </Table.Cell>
-                    {offer.status === 'active' && (
-                      <Table.Cell>
-                        <div className="flex flex-col">
+                        {editing ? (
+                          <Select
+                            value={item.item_type}
+                            onValueChange={value => updateItem(item.id, { item_type: value as 'product' | 'service' })}
+                          >
+                            <Select.Trigger>
+                              <Select.Value />
+                            </Select.Trigger>
+                            <Select.Content>
+                              <Select.Item value="product">Produkt</Select.Item>
+                              <Select.Item value="service">Service</Select.Item>
+                            </Select.Content>
+                          </Select>
+                        ) : (
+                          <Badge color={item.item_type === 'product' ? 'blue' : 'green'}>
+                            {item.item_type === 'product' ? 'Produkt' : 'Service'}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Item Selection */}
+                      <div>
+                        {editing ? (
+                          item.item_type === 'product' ? (
+                            <SearchableDropdown
+                              key={`product-${item.id}`}
+                              label="Produkt auswählen"
+                              placeholder="Produkt suchen..."
+                              value={item.product_id || ''}
+                              onValueChange={() => {}}
+                              onItemSelect={product => handleProductSelect(item.id, product)}
+                              searchEndpoint="/admin/offers/search/products"
+                              itemType="product"
+                            />
+                          ) : (
+                            <SearchableDropdown
+                              key={`service-${item.id}`}
+                              label="Service auswählen"
+                              placeholder="Service suchen..."
+                              value={item.service_id || ''}
+                              onValueChange={() => {}}
+                              onItemSelect={service => handleServiceSelect(item.id, service)}
+                              searchEndpoint="/admin/offers/search/services"
+                              itemType="service"
+                            />
+                          )
+                        ) : (
                           <Text size="small" className="text-ui-fg-base">
-                            {item.available_quantity || 0} verfügbar
+                            {item.title || 'Kein Titel'}
                           </Text>
-                          {item.reserved_quantity && item.reserved_quantity > 0 && (
-                            <Text size="small" className="text-ui-fg-subtle">
-                              {item.reserved_quantity} reserviert
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Variant Selection for Products */}
+                    {editing && item.item_type === 'product' && item.selectedProduct && (
+                      <div className="mb-4">
+                        <VariantSelector
+                          product={item.selectedProduct}
+                          selectedVariantId={item.variant_id || null}
+                          onVariantSelect={variant => handleVariantSelect(item.id, variant)}
+                          disabled={!item.selectedProduct}
+                        />
+                        {item.selectedProduct && !item.variant_id && (
+                          <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-md">
+                            <Text size="small" className="text-orange-700">
+                              ⚠️ Bitte wählen Sie eine Variante für dieses Produkt aus
                             </Text>
-                          )}
-                        </div>
-                      </Table.Cell>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </Table.Row>
+
+                    {/* Item Details */}
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                      <div>
+                        <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                          Titel
+                        </Text>
+                        {editing ? (
+                          <Input
+                            type="text"
+                            value={item.title}
+                            onChange={e => updateItem(item.id, { title: e.target.value })}
+                            placeholder="Artikelname"
+                          />
+                        ) : (
+                          <Text size="small" className="text-ui-fg-base">
+                            {item.title}
+                          </Text>
+                        )}
+                      </div>
+
+                      <div>
+                        <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                          Menge
+                        </Text>
+                        {editing ? (
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
+                            min="1"
+                          />
+                        ) : (
+                          <Text size="small" className="text-ui-fg-base">
+                            {item.quantity}
+                          </Text>
+                        )}
+                      </div>
+
+                      <div>
+                        <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                          Einheit
+                        </Text>
+                        {editing ? (
+                          <Input
+                            type="text"
+                            value={item.unit}
+                            onChange={e => updateItem(item.id, { unit: e.target.value })}
+                            placeholder="STK"
+                          />
+                        ) : (
+                          <Text size="small" className="text-ui-fg-base">
+                            {item.unit}
+                          </Text>
+                        )}
+                      </div>
+
+                      <div>
+                        <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                          Preis (€)
+                        </Text>
+                        {editing ? (
+                          <Input
+                            type="number"
+                            value={
+                              priceInputStates[item.id] || (item.unit_price ? (item.unit_price / 100).toFixed(2) : '')
+                            }
+                            onChange={e => {
+                              const val = e.target.value;
+                              // Only update the local input state - don't update the model yet
+                              setPriceInputStates(prev => ({ ...prev, [item.id]: val }));
+                            }}
+                            onBlur={() => handlePriceBlur(item.id, priceInputStates[item.id] || '')}
+                            min="0"
+                            step="0.01"
+                            inputMode="decimal"
+                            disabled={Boolean(item.item_type === 'product' && item.variant_id)}
+                            className={item.item_type === 'product' && item.variant_id ? 'bg-gray-100' : ''}
+                          />
+                        ) : (
+                          <Text size="small" className="text-ui-fg-base">
+                            {(item.unit_price / 100).toFixed(2)} €
+                          </Text>
+                        )}
+                        {/* Netto price in euros */}
+                        <Text size="xsmall" className="text-ui-fg-subtle mt-1">
+                          Netto: {(item.unit_price ? item.unit_price / 1.19 / 100 : 0).toFixed(2)} €
+                        </Text>
+                        {editing && item.item_type === 'product' && item.variant_id && (
+                          <Text size="xsmall" className="text-ui-fg-subtle mt-1">
+                            Preis von Variante übernommen
+                          </Text>
+                        )}
+                      </div>
+
+                      <div>
+                        <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                          Rabatt %
+                        </Text>
+                        {editing ? (
+                          <Input
+                            type="number"
+                            value={item.discount_percentage}
+                            onChange={e => updateItem(item.id, { discount_percentage: Number(e.target.value) })}
+                            min="0"
+                            max="100"
+                          />
+                        ) : (
+                          <Text size="small" className="text-ui-fg-base">
+                            {item.discount_percentage}%
+                          </Text>
+                        )}
+                      </div>
+
+                      <div>
+                        <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                          USt. %
+                        </Text>
+                        <Text size="small" className="text-ui-fg-base">
+                          {item.tax_rate}%
+                        </Text>
+                      </div>
+                    </div>
+
+                    {/* Item Description */}
+                    <div className="mt-4">
+                      <Text size="small" weight="plus" className="text-ui-fg-base mb-2">
+                        Beschreibung
+                      </Text>
+                      {editing ? (
+                        <Textarea
+                          value={item.description}
+                          onChange={e => updateItem(item.id, { description: e.target.value })}
+                          placeholder="Artikelbeschreibung"
+                          rows={2}
+                        />
+                      ) : (
+                        <Text size="small" className="text-ui-fg-base">
+                          {item.description || 'Keine Beschreibung'}
+                        </Text>
+                      )}
+                    </div>
+
+                    {/* Item Summary */}
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-ui-border-base">
+                      <div className="flex items-center gap-4">
+                        {item.sku && (
+                          <Text size="small" className="text-ui-fg-subtle">
+                            SKU:
+                            {item.variant_id ? (
+                              <a
+                                href={`/app/inventory?q=${encodeURIComponent(item.sku)}`}
+                                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover ml-1"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Lagerbestand für diese SKU anzeigen"
+                              >
+                                {item.sku}
+                              </a>
+                            ) : (
+                              <span className="ml-1">{item.sku}</span>
+                            )}
+                          </Text>
+                        )}
+                        {item.category && (
+                          <Text size="small" className="text-ui-fg-subtle">
+                            Kategorie: {item.category}
+                          </Text>
+                        )}
+                        {(item.inventory_quantity !== undefined || getItemInventoryStatus(item.id)) && (
+                          <div className="flex items-center gap-2">
+                            <Text size="small" className="text-ui-fg-subtle">
+                              Lager:{' '}
+                              {(() => {
+                                const inventoryItem = getItemInventoryStatus(item.id);
+                                if (inventoryItem && inventoryItem.stock_status !== 'service') {
+                                  return inventoryItem.available_quantity;
+                                }
+                                return item.inventory_quantity ?? 'Unbekannt';
+                              })()}
+                              {checkingInventory && <span className="ml-1">⏳</span>}
+                            </Text>
+                            {(() => {
+                              const inventoryItem = getItemInventoryStatus(item.id);
+                              if (inventoryItem) {
+                                switch (inventoryItem.stock_status) {
+                                  case 'out_of_stock':
+                                    return (
+                                      <Badge color="red" size="small">
+                                        Nicht verfügbar
+                                      </Badge>
+                                    );
+                                  case 'low_stock':
+                                    return (
+                                      <Badge color="orange" size="small">
+                                        Niedrig
+                                      </Badge>
+                                    );
+                                  case 'available':
+                                    return (
+                                      <Badge color="green" size="small">
+                                        Verfügbar
+                                      </Badge>
+                                    );
+                                  case 'service':
+                                    return (
+                                      <Badge color="blue" size="small">
+                                        Service
+                                      </Badge>
+                                    );
+                                }
+                              }
+                              // Fallback to old logic
+                              if (item.inventory_quantity !== undefined) {
+                                if (item.inventory_quantity <= 0) {
+                                  return (
+                                    <Badge color="red" size="small">
+                                      Nicht verfügbar
+                                    </Badge>
+                                  );
+                                }
+                                if (item.inventory_quantity <= 5) {
+                                  return (
+                                    <Badge color="orange" size="small">
+                                      Niedrig
+                                    </Badge>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        )}
+                        {item.variant_title && (
+                          <Text size="small" className="text-ui-fg-subtle">
+                            Variante:
+                            {item.variant_id && item.product_id ? (
+                              <a
+                                href={`/app/products/${item.product_id}/variants/${item.variant_id}`}
+                                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover ml-1"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {item.variant_title}
+                              </a>
+                            ) : (
+                              <span className="ml-1">{item.variant_title}</span>
+                            )}
+                          </Text>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Text size="small" weight="plus">
+                          Summe: {(calculateItemTotal(item) / 100).toFixed(2)} €
+                        </Text>
+                        {editing && (
+                          <Button type="button" variant="transparent" size="small" onClick={() => removeItem(item.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </Table.Body>
-            </Table>
+              </div>
+            )}
           </div>
 
           {/* Totals */}
@@ -451,18 +1087,18 @@ export default function OfferDetailPage() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <Text size="small" className="text-ui-fg-subtle">
-                  Zwischensumme:
+                  Nettobetrag:
                 </Text>
                 <Text size="small" weight="plus">
-                  {(totals.subtotal / 100).toFixed(2)} €
+                  {totals.subtotal ? (totals.subtotal / 100).toFixed(2) : '0.00'} €
                 </Text>
               </div>
               <div className="flex justify-between">
                 <Text size="small" className="text-ui-fg-subtle">
-                  Umsatzsteuer:
+                  MwSt. (19%):
                 </Text>
                 <Text size="small" weight="plus">
-                  {(totals.tax / 100).toFixed(2)} €
+                  {totals.tax ? (totals.tax / 100).toFixed(2) : '0.00'} €
                 </Text>
               </div>
               <div className="flex justify-between border-t border-ui-border-base pt-2">
@@ -470,9 +1106,12 @@ export default function OfferDetailPage() {
                   Gesamtsumme:
                 </Text>
                 <Text size="base" weight="plus" className="text-ui-fg-base">
-                  {(totals.total / 100).toFixed(2)} €
+                  {totals.total ? (totals.total / 100).toFixed(2) : '0.00'} €
                 </Text>
               </div>
+              <Text size="small" className="text-ui-fg-subtle mt-1">
+                Alle Preise inklusive 19% MwSt.
+              </Text>
             </div>
           </div>
         </div>
@@ -570,6 +1209,44 @@ export default function OfferDetailPage() {
             </div>
           </div>
 
+          {/* Inventory Status */}
+          {inventoryStatus && offer.items.some(item => item.item_type === 'product') && (
+            <div className="bg-ui-bg-subtle rounded-lg p-6">
+              <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
+                Lagerstatus
+              </Text>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Text size="small" className="text-ui-fg-subtle">
+                    Gesamtstatus:
+                  </Text>
+                  <Badge color={inventoryStatus.can_complete ? 'green' : 'red'} size="small">
+                    {inventoryStatus.can_complete ? '✅ Verfügbar' : '❌ Nicht verfügbar'}
+                  </Badge>
+                </div>
+
+                {inventoryStatus.has_out_of_stock && (
+                  <div className="p-2 bg-red-50 border border-red-200 rounded-md">
+                    <Text size="small" className="text-red-700">
+                      ⚠️ Einige Artikel sind nicht auf Lager
+                    </Text>
+                  </div>
+                )}
+
+                {inventoryStatus.has_low_stock && (
+                  <div className="p-2 bg-orange-50 border border-orange-200 rounded-md">
+                    <Text size="small" className="text-orange-700">
+                      ⚠️ Einige Artikel haben niedrigen Lagerbestand
+                    </Text>
+                  </div>
+                )}
+
+                <div className="text-xs text-ui-fg-muted">Letzter Check: {new Date().toLocaleTimeString('de-DE')}</div>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="bg-ui-bg-subtle rounded-lg p-6">
             <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
@@ -585,6 +1262,17 @@ export default function OfferDetailPage() {
                 <FileText className="w-4 h-4 mr-2" />
                 PDF erstellen
               </Button>
+
+              {offer.items.some(item => item.item_type === 'product') && (
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={checkInventoryAvailability}
+                  disabled={checkingInventory}
+                >
+                  {checkingInventory ? <>⏳ Prüfe...</> : <>🔄 Lager prüfen</>}
+                </Button>
+              )}
             </div>
           </div>
 

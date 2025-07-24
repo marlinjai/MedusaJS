@@ -84,6 +84,7 @@ export async function GET(req: MedusaRequest<SearchProductsQuery>, res: MedusaRe
       );
 
       try {
+        // @ts-ignore - Type conflict between @medusajs/types versions
         const availability = await getVariantAvailability(query, {
           variant_ids: allVariantIds,
           sales_channel_id,

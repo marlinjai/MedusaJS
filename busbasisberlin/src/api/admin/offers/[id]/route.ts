@@ -1,8 +1,7 @@
-/**
- * route.ts
- * Individual offer API route for specific offer operations
- * Handles GET (retrieve), PUT (update), and DELETE (delete) operations
- */
+// route.ts
+// Individual offer API route for specific offer operations
+// Handles GET (retrieve), PUT (update), and DELETE (delete) operations
+
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 
@@ -24,6 +23,23 @@ interface UpdateOfferRequest {
   customer_notes?: string;
   assigned_to?: string;
   currency_code?: string;
+  items?: Array<{
+    id?: string; // If present, update existing item. If not, create new item
+    product_id?: string;
+    service_id?: string;
+    variant_id?: string;
+    item_type: 'product' | 'service';
+    sku?: string;
+    title: string;
+    description?: string;
+    quantity: number;
+    unit?: string;
+    unit_price: number;
+    discount_percentage?: number;
+    tax_rate?: number;
+    variant_title?: string;
+    inventory_quantity?: number; // Used for available_quantity mapping
+  }>;
 }
 
 interface OfferParams {
@@ -146,6 +162,141 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
     }
     if (updateData.currency_code !== undefined) {
       updateFields.currency_code = updateData.currency_code || 'EUR';
+    }
+
+    // Handle item updates if provided
+    if (updateData.items !== undefined) {
+      // Get current items for comparison
+      const currentItems = existingOffer.items;
+      const newItems = updateData.items;
+
+      // Track if any product items changed for reservation updates
+      const hasProductItemChanges =
+        currentItems.length !== newItems.length ||
+        currentItems.some(currentItem => {
+          const matchingNewItem = newItems.find(newItem => newItem.id === currentItem.id);
+          return (
+            !matchingNewItem ||
+            currentItem.quantity !== matchingNewItem.quantity ||
+            currentItem.variant_id !== matchingNewItem.variant_id ||
+            currentItem.product_id !== matchingNewItem.product_id
+          );
+        });
+
+      // Get existing item IDs and new item IDs
+      const currentItemIds = new Set(currentItems.map(item => item.id));
+      const newItemIds = new Set(newItems.filter(item => item.id).map(item => item.id!));
+
+      // Find items to delete (exist in current but not in new)
+      const itemsToDelete = currentItems.filter(item => !newItemIds.has(item.id));
+
+      // Find items to update (have IDs and exist in both)
+      const itemsToUpdate = newItems.filter(item => item.id && currentItemIds.has(item.id));
+
+      // Find items to create (no ID or ID doesn't exist in current)
+      const itemsToCreate = newItems.filter(item => !item.id || !currentItemIds.has(item.id));
+
+      // Delete removed items
+      if (itemsToDelete.length > 0) {
+        const itemIdsToDelete = itemsToDelete.map(item => item.id);
+        await offerService.deleteOfferItems(itemIdsToDelete);
+        logger.info(`Deleted ${itemIdsToDelete.length} offer items`);
+      }
+
+      // Update existing items
+      for (const itemData of itemsToUpdate) {
+        if (itemData.id) {
+          await offerService.updateOfferItems({
+            id: itemData.id,
+            product_id: itemData.product_id,
+            service_id: itemData.service_id,
+            variant_id: itemData.variant_id,
+            item_type: itemData.item_type,
+            sku: itemData.sku,
+            title: itemData.title,
+            description: itemData.description,
+            quantity: itemData.quantity,
+            unit: itemData.unit || 'STK',
+            unit_price: itemData.unit_price,
+            discount_percentage: itemData.discount_percentage || 0,
+            tax_rate: itemData.tax_rate || 19,
+            variant_title: itemData.variant_title,
+            total_price: itemData.unit_price * itemData.quantity * (1 - (itemData.discount_percentage || 0) / 100),
+          });
+        }
+      }
+
+      // Create new items
+      let createdItems: any[] = [];
+      if (itemsToCreate.length > 0) {
+        const itemsToCreateData = itemsToCreate.map(itemData => ({
+          offer_id: id,
+          product_id: itemData.product_id,
+          service_id: itemData.service_id,
+          variant_id: itemData.variant_id,
+          item_type: itemData.item_type,
+          sku: itemData.sku,
+          title: itemData.title,
+          description: itemData.description,
+          quantity: itemData.quantity,
+          unit: itemData.unit || 'STK',
+          unit_price: itemData.unit_price,
+          discount_percentage: itemData.discount_percentage || 0,
+          tax_rate: itemData.tax_rate || 19,
+          variant_title: itemData.variant_title,
+          total_price: itemData.unit_price * itemData.quantity * (1 - (itemData.discount_percentage || 0) / 100),
+          tax_amount: 0, // Will be calculated later
+          available_quantity: itemData.inventory_quantity || 0,
+          reserved_quantity: 0,
+        }));
+
+        createdItems = await offerService.createOfferItems(itemsToCreateData);
+        logger.info(`Created ${itemsToCreateData.length} new offer items`);
+      }
+
+      // Recalculate offer totals after item changes
+      await offerService.calculateOfferTotals(id);
+
+      // Update inventory reservations if items changed and offer is active/accepted
+      // This happens AFTER all database operations are complete
+      if (hasProductItemChanges && ['active', 'accepted'].includes(existingOffer.status)) {
+        try {
+          // Prepare detailed change information for granular reservation updates
+          const itemChanges = {
+            itemsToDelete: itemsToDelete.map(item => ({ id: item.id })),
+            itemsToUpdate: itemsToUpdate
+              .filter(item => item.item_type === 'product' && item.variant_id && item.sku)
+              .map(item => ({
+                id: item.id!,
+                variant_id: item.variant_id,
+                sku: item.sku,
+                quantity: item.quantity,
+                title: item.title,
+              })),
+            itemsToCreate: createdItems
+              .filter(item => item.item_type === 'product' && item.variant_id && item.sku)
+              .map(item => ({
+                id: item.id,
+                variant_id: item.variant_id,
+                sku: item.sku,
+                quantity: item.quantity,
+                title: item.title,
+                item_type: item.item_type,
+              })),
+          };
+
+          await offerService.updateOfferReservations(
+            id,
+            'admin', // TODO: Get actual user ID from request context
+            `Items modified: ${itemsToDelete.length} deleted, ${itemsToUpdate.length} updated, ${createdItems.length} created`,
+            itemChanges,
+          );
+          logger.info(`Updated inventory reservations for offer ${existingOffer.offer_number} due to item changes`);
+        } catch (reservationError) {
+          logger.error(`Failed to update reservations for offer ${existingOffer.offer_number}:`, reservationError);
+          // Don't fail the entire update if reservation update fails - just log the error
+        }
+      }
     }
 
     // Update the offer

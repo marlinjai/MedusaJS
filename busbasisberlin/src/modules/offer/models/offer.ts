@@ -49,5 +49,5 @@ const offer = model.define('offer', {
   reservation_expires_at: model.dateTime().nullable(), // When reservations expire
 });
 
-export type Offer = InferTypeOf<typeof offer>;
+export type OfferType = InferTypeOf<typeof offer>;
 export default offer;

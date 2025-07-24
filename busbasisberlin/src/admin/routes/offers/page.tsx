@@ -5,11 +5,12 @@
  */
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { MagnifyingGlass, Plus } from '@medusajs/icons';
-import { CheckCircle, Clock, Edit, Eye, FileText, Trash2, TrendingUp } from 'lucide-react';
+import { CheckCircle, Clock, FileText, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Badge, Button, Container, Input, Table, Text, toast } from '@medusajs/ui';
+import { Button, Container, Input, Text, toast } from '@medusajs/ui';
+import OfferTable from './components/OfferTable';
 
 // TypeScript types for our offer data
 type OfferStatus = 'draft' | 'active' | 'accepted' | 'completed' | 'cancelled';
@@ -67,6 +68,10 @@ const OffersPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Sorting and filtering state
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [columnFilters, setColumnFilters] = useState<{ [key: string]: string }>({});
+
   const navigate = useNavigate();
 
   // Fetch offers from API
@@ -78,6 +83,19 @@ const OffersPage = () => {
       if (statusFilter !== 'all') {
         params.append('status', statusFilter);
       }
+
+      // Add sorting parameters
+      if (sortConfig) {
+        params.append('sort_by', sortConfig.key);
+        params.append('sort_direction', sortConfig.direction);
+      }
+
+      // Add column filters
+      Object.entries(columnFilters).forEach(([key, value]) => {
+        if (value) {
+          params.append(`filter_${key}`, value);
+        }
+      });
 
       const response = await fetch(`/admin/offers?${params.toString()}`);
       const data = await response.json();
@@ -111,7 +129,7 @@ const OffersPage = () => {
   // Load offers on component mount and when filters change
   useEffect(() => {
     fetchOffers();
-  }, [statusFilter]);
+  }, [statusFilter, sortConfig, columnFilters]);
 
   // Filter offers based on search term
   const filteredOffers = offers.filter(
@@ -122,62 +140,29 @@ const OffersPage = () => {
       (offer.customer_email && offer.customer_email.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
-  // Status color mapping for badges
-  const getStatusBadgeProps = (status: OfferStatus) => {
-    switch (status) {
-      case 'draft':
-        return { color: 'grey' as const };
-      case 'active':
-        return { color: 'blue' as const };
-      case 'accepted':
-        return { color: 'green' as const };
-      case 'completed':
-        return { color: 'green' as const };
-      case 'cancelled':
-        return { color: 'red' as const };
-      default:
-        return { color: 'grey' as const };
-    }
+  // Handle sorting
+  const handleSort = (key: string, direction: 'asc' | 'desc') => {
+    setSortConfig({ key, direction });
   };
 
-  // Status translation
-  const getStatusText = (status: OfferStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'Entwurf';
-      case 'active':
-        return 'Aktiv';
-      case 'accepted':
-        return 'Angenommen';
-      case 'completed':
-        return 'Abgeschlossen';
-      case 'cancelled':
-        return 'Storniert';
-      default:
-        return status;
-    }
+  // Handle column filtering
+  const handleColumnFilter = (filters: { [key: string]: string }) => {
+    setColumnFilters(filters);
   };
-
-  // Format currency
-  const formatCurrency = (amount: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount / 100); // Convert from cents
-  };
-
-  // Format date - currently unused but may be needed later
-  // const formatDate = (dateString: string) => {
-  //   return new Date(dateString).toLocaleDateString('de-DE', {
-  //     day: '2-digit',
-  //     month: '2-digit',
-  //     year: 'numeric',
-  //   });
-  // };
 
   // Handle creating a new offer
   const handleCreateOffer = () => {
     navigate('/offers/new');
+  };
+
+  // Handle viewing an offer
+  const handleViewOffer = (offer: Offer) => {
+    navigate(`/offers/${offer.id}`);
+  };
+
+  // Handle editing an offer
+  const handleEditOffer = (offer: Offer) => {
+    navigate(`/offers/${offer.id}`);
   };
 
   // Handle deleting an offer
@@ -203,11 +188,6 @@ const OffersPage = () => {
       toast.error(error instanceof Error ? error.message : 'Fehler beim Löschen des Angebots');
     }
   };
-
-  // Handle clearing search - currently unused but may be needed later
-  // const handleClearSearch = () => {
-  //   setSearchTerm('');
-  // };
 
   if (loading) {
     return (
@@ -292,7 +272,12 @@ const OffersPage = () => {
               </div>
               <div className="ml-3">
                 <Text className="text-xs font-medium text-ui-fg-subtle">Gesamtwert</Text>
-                <Text className="text-lg font-semibold">{formatCurrency(stats.totalValue)}</Text>
+                <Text className="text-lg font-semibold">
+                  {new Intl.NumberFormat('de-DE', {
+                    style: 'currency',
+                    currency: 'EUR',
+                  }).format(stats.totalValue / 100)}
+                </Text>
               </div>
             </div>
           </div>
@@ -370,95 +355,18 @@ const OffersPage = () => {
               <Text className="text-ui-fg-muted text-sm">Erstellen Sie Ihr erstes Angebot</Text>
             </div>
           ) : (
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.HeaderCell>Angebot</Table.HeaderCell>
-                  <Table.HeaderCell>Kunde</Table.HeaderCell>
-                  <Table.HeaderCell>Status</Table.HeaderCell>
-                  <Table.HeaderCell>Wert</Table.HeaderCell>
-                  <Table.HeaderCell>Erstellt</Table.HeaderCell>
-                  <Table.HeaderCell className="w-[32px]">Aktionen</Table.HeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {filteredOffers.map(offer => (
-                  <Table.Row
-                    key={offer.id}
-                    className="cursor-pointer hover:bg-ui-bg-subtle-hover"
-                    onClick={() => navigate(`/admin/offers/${offer.id}`)}
-                  >
-                    <Table.Cell>
-                      <div className="flex flex-col">
-                        <Text size="small" weight="plus" className="text-ui-fg-base">
-                          {offer.offer_number}
-                        </Text>
-                        <Text size="small" className="text-ui-fg-subtle">
-                          {offer.title}
-                        </Text>
-                      </div>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" className="text-ui-fg-base">
-                        {offer.customer_name || 'Kein Name'}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Badge color={getStatusBadgeProps(offer.status).color}>{getStatusText(offer.status)}</Badge>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" className="text-ui-fg-base">
-                        {new Date(offer.created_at).toLocaleDateString('de-DE')}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" className="text-ui-fg-base">
-                        {offer.valid_until ? new Date(offer.valid_until).toLocaleDateString('de-DE') : '-'}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="small" weight="plus" className="text-ui-fg-base">
-                        {(offer.total_amount / 100).toFixed(2)} €
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="transparent"
-                          size="small"
-                          onClick={e => {
-                            e.stopPropagation();
-                            navigate(`/admin/offers/${offer.id}`);
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="transparent"
-                          size="small"
-                          onClick={e => {
-                            e.stopPropagation();
-                            navigate(`/admin/offers/${offer.id}`);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="transparent"
-                          size="small"
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDeleteOffer(offer.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
+            <OfferTable
+              offers={filteredOffers}
+              onEdit={handleEditOffer}
+              onDelete={handleDeleteOffer}
+              onView={handleViewOffer}
+              isLoading={loading}
+              isFetching={false}
+              onSort={handleSort}
+              onFilter={handleColumnFilter}
+              sortConfig={sortConfig}
+              filters={columnFilters}
+            />
           )}
         </div>
       </div>
