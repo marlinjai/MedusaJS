@@ -40,9 +40,6 @@ module.exports = defineConfig({
       resolve: './src/modules/supplier',
     },
     {
-      resolve: './src/modules/blog',
-    },
-    {
       resolve: './src/modules/service',
     },
     {

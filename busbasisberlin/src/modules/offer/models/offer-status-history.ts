@@ -40,5 +40,5 @@ const offerStatusHistory = model.define('offer_status_history', {
   // Timestamps are automatically added by Medusa (created_at, updated_at)
 });
 
-export type OfferStatusHistory = InferTypeOf<typeof offerStatusHistory>;
+export type OfferStatusHistoryType = InferTypeOf<typeof offerStatusHistory>;
 export default offerStatusHistory;
