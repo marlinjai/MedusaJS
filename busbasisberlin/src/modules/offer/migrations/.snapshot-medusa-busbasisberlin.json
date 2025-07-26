@@ -385,6 +385,15 @@
           "nullable": true,
           "mappedType": "text"
         },
+        "variant_title": {
+          "name": "variant_title",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
         "quantity": {
           "name": "quantity",
           "type": "integer",
@@ -463,15 +472,6 @@
           "default": "0",
           "mappedType": "integer"
         },
-        "variant_title": {
-          "name": "variant_title",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "mappedType": "text"
-        },
         "supplier_info": {
           "name": "supplier_info",
           "type": "text",
@@ -488,25 +488,6 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "mappedType": "integer"
-        },
-        "available_quantity": {
-          "name": "available_quantity",
-          "type": "integer",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "mappedType": "integer"
-        },
-        "reserved_quantity": {
-          "name": "reserved_quantity",
-          "type": "integer",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "default": "0",
           "mappedType": "integer"
         },
         "custom_specifications": {
@@ -526,6 +507,25 @@
           "primary": false,
           "nullable": true,
           "mappedType": "text"
+        },
+        "item_group": {
+          "name": "item_group",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "0",
+          "mappedType": "integer"
         },
         "created_at": {
           "name": "created_at",
