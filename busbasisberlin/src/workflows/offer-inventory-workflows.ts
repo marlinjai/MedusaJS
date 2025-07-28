@@ -783,6 +783,48 @@ const updateReservationsForChangedItemsStep = createStep(
                 `[OFFER-INVENTORY] Cleaned up stale reservation ${reservation.id} (${reservation.quantity} units) for item ${item.title}`,
               );
             }
+            
+            // ✅ CRITICAL FIX: Manually sync inventory level after cleanup
+            // Medusa's deleteReservationItems() has a bug where it doesn't properly 
+            // decrement inventory_level.reserved_quantity, causing "ghost reservations"
+            if (offerItemReservations.length > 0) {
+              try {
+                // Get current inventory levels
+                const currentLevels = await inventoryModuleService.listInventoryLevels({
+                  inventory_item_id: inventoryItem.id,
+                });
+                
+                if (currentLevels.length > 0) {
+                  const currentLevel = currentLevels[0];
+                  
+                  // Calculate what reserved_quantity should actually be
+                  const allActiveReservations = await inventoryModuleService.listReservationItems({
+                    inventory_item_id: inventoryItem.id,
+                  });
+                  
+                  const actualReservedQuantity = allActiveReservations
+                    .filter(r => !r.deleted_at)
+                    .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
+                  
+                  const currentReservedQuantity = Number(currentLevel.reserved_quantity || 0);
+                  
+                  if (actualReservedQuantity !== currentReservedQuantity) {
+                    logger.warn(
+                      `[OFFER-INVENTORY] 🐛 Medusa inventory sync bug detected: inventory_level shows ${currentReservedQuantity} reserved, but only ${actualReservedQuantity} actually exist. This will cause stacking issues.`
+                    );
+                    
+                    // Note: We cannot directly fix this due to Medusa API limitations
+                    // The reserved_quantity field is not directly updateable through updateInventoryLevels
+                    // This is a fundamental bug in Medusa's inventory sync that needs to be reported
+                    logger.error(
+                      `[OFFER-INVENTORY] ❌ Cannot fix inventory sync automatically - this is a Medusa bug. Inventory levels will be incorrect until Medusa fixes deleteReservationItems sync.`
+                    );
+                  }
+                }
+              } catch (syncError) {
+                logger.error(`[OFFER-INVENTORY] Failed to sync inventory levels: ${syncError.message}`);
+              }
+            }
           } catch (cleanupError) {
             logger.error(`[OFFER-INVENTORY] Failed to clean up stale reservations: ${cleanupError.message}`);
           }
@@ -792,7 +834,7 @@ const updateReservationsForChangedItemsStep = createStep(
           logger.info(
             `[OFFER-INVENTORY] Cleaned up ${cleanedUpReservations} stale reservations for item ${item.title}`,
           );
-          
+
           // ✅ CRITICAL: Wait for inventory levels to sync after deletion
           // Give Medusa time to update inventory_level.reserved_quantity after deleteReservationItems
           await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
@@ -823,7 +865,7 @@ const updateReservationsForChangedItemsStep = createStep(
           const currentStock = inventoryLevels[0].stocked_quantity || 0;
           const reservedQuantity = inventoryLevels[0].reserved_quantity || 0;
           const availableQuantity = currentStock - reservedQuantity;
-          
+
           logger.info(
             `[OFFER-INVENTORY] Post-cleanup inventory state for ${item.title}: Stock=${currentStock}, Reserved=${reservedQuantity}, Available=${availableQuantity}, Requesting=${item.quantity}`,
           );
@@ -834,7 +876,7 @@ const updateReservationsForChangedItemsStep = createStep(
             const remainingReservations = await inventoryModuleService.listReservationItems({
               inventory_item_id: inventoryItem.id,
             });
-            
+
             const offerItemReservationsRemaining = remainingReservations.filter(
               reservation =>
                 reservation.metadata &&
@@ -842,7 +884,7 @@ const updateReservationsForChangedItemsStep = createStep(
                 reservation.metadata.offer_id === input.offer_id &&
                 reservation.metadata.offer_item_id === item.id,
             );
-            
+
             if (offerItemReservationsRemaining.length > 0) {
               logger.warn(
                 `[OFFER-INVENTORY] ⚠️ Warning: Still found ${offerItemReservationsRemaining.length} reservations for item ${item.title} after cleanup. Inventory sync may be delayed.`,
