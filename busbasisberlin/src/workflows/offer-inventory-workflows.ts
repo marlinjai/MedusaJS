@@ -703,7 +703,13 @@ const updateReservationsForChangedItemsStep = createStep(
 
       try {
         // Step 1: Get the current offer item to check for existing reservation_id
-        const offerItems = await offerService.listOfferItems({ id: item.id });
+        // Explicitly select the fields we need including reservation_id
+        const offerItems = await offerService.listOfferItems(
+          { id: item.id },
+          { 
+            select: ['id', 'offer_id', 'variant_id', 'sku', 'title', 'quantity', 'reservation_id'],
+          }
+        );
         const offerItem = offerItems[0];
 
         if (!offerItem) {
@@ -712,7 +718,9 @@ const updateReservationsForChangedItemsStep = createStep(
         }
 
         // Debug logging to understand the reservation_id situation
-        logger.info(`[OFFER-INVENTORY-DEBUG] Item ${item.title}: reservation_id = ${offerItem.reservation_id || 'null'}, quantity = ${item.quantity}`);
+        logger.info(
+          `[OFFER-INVENTORY-DEBUG] Item ${item.title}: reservation_id = ${offerItem.reservation_id || 'null'}, quantity = ${item.quantity}`,
+        );
 
         // Step 2: Try to update existing reservation first (proper Medusa approach)
         if (offerItem.reservation_id) {
@@ -841,10 +849,12 @@ const updateReservationsForChangedItemsStep = createStep(
           const reservation = reservations[0];
 
           // Store the reservation_id in the offer_item for future tracking
-          await offerService.updateOfferItems({
-            id: item.id,
-            reservation_id: reservation.id,
-          });
+          await offerService.updateOfferItems([
+            {
+              id: item.id,
+              reservation_id: reservation.id,
+            },
+          ]);
 
           updatedReservations.push({
             reservation_id: reservation.id,
@@ -854,7 +864,7 @@ const updateReservationsForChangedItemsStep = createStep(
           });
 
           logger.info(
-            `[OFFER-INVENTORY] Created new reservation for item ${item.title}: ${reservation.id} (${item.quantity} units)`,
+            `[OFFER-INVENTORY] ✅ Created new reservation for item ${item.title}: ${reservation.id} (${item.quantity} units) and updated offer_item.reservation_id`,
           );
         }
       } catch (error) {
@@ -956,10 +966,12 @@ const createReservationsForNewItemsStep = createStep(
           const reservation = reservations[0];
 
           // Store the reservation_id in the offer_item for future tracking
-          await offerService.updateOfferItems({
-            id: item.id,
-            reservation_id: reservation.id,
-          });
+          await offerService.updateOfferItems([
+            {
+              id: item.id,
+              reservation_id: reservation.id,
+            },
+          ]);
 
           createdReservations.push({
             reservation_id: reservation.id,
