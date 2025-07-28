@@ -27,11 +27,15 @@ export async function POST(req: MedusaRequest<UpdateReservationsRequest>, res: M
       });
     }
 
-    // ✅ Validate that at least one change type is provided
-    if (!items_to_delete?.length && !items_to_update?.length && !items_to_create?.length) {
+    // ✅ Validate that at least one change type is provided (allow empty arrays for targeted operations)
+    const hasDeletes = items_to_delete?.length > 0;
+    const hasUpdates = items_to_update?.length > 0;
+    const hasCreates = items_to_create?.length > 0;
+
+    if (!hasDeletes && !hasUpdates && !hasCreates) {
       return res.status(400).json({
         success: false,
-        error: 'At least one of items_to_delete, items_to_update, or items_to_create must be provided',
+        error: 'At least one of items_to_delete, items_to_update, or items_to_create must have elements',
       });
     }
 

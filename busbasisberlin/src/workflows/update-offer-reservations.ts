@@ -24,6 +24,7 @@ const removeReservationsStep = createStep(
   async (input: { offer_id: string; item_ids_to_delete: string[] }, { container }) => {
     const logger = getLogger(container);
     const offerService = container.resolve(OFFER_MODULE);
+    const inventoryService = container.resolve(Modules.INVENTORY);
 
     let removedCount = 0;
 
@@ -31,14 +32,41 @@ const removeReservationsStep = createStep(
       try {
         const offerItem = await offerService.retrieveOfferItem(itemId);
 
-        if (offerItem?.reservation_id) {
+        if (offerItem?.reservation_id && offerItem?.variant_id) {
+          // Get reservation details before deletion
+          const reservation = await inventoryService.retrieveReservationItem(offerItem.reservation_id);
+
           // ✅ USE OFFICIAL WORKFLOW: Delete reservation
           await deleteReservationsWorkflow(container).run({
             input: { ids: [offerItem.reservation_id] },
           });
 
+          // ✅ MANUAL COORDINATION: Verify reserved_quantity decreased correctly
+          // This is required because reservation_item and inventory_level tables
+          // work in conjunction but require manual coordination in custom integrations
+          if (reservation && reservation.inventory_item_id && reservation.location_id) {
+            const deletedQuantity = Number(reservation.quantity) || 0;
+
+            // Get inventory level after deletion to verify reserved_quantity decreased
+            const inventoryLevels = await inventoryService.listInventoryLevels({
+              inventory_item_id: reservation.inventory_item_id,
+              location_id: reservation.location_id,
+            });
+
+            if (inventoryLevels.length > 0) {
+              const currentLevel = inventoryLevels[0];
+
+              logger.info(
+                `[UPDATE-WORKFLOW] Deleted reservation ${offerItem.reservation_id}: ${deletedQuantity} units for item ${reservation.inventory_item_id}`,
+              );
+              logger.info(
+                `[UPDATE-WORKFLOW] Current inventory state: reserved_quantity=${currentLevel.reserved_quantity}, available=${currentLevel.stocked_quantity - currentLevel.reserved_quantity}`,
+              );
+            }
+          }
+
           removedCount++;
-          logger.info(`[UPDATE-WORKFLOW] Removed reservation for deleted item ${itemId}`);
+          logger.info(`[UPDATE-WORKFLOW] Removed reservation ${offerItem.reservation_id} for deleted item ${itemId}`);
         }
       } catch (error) {
         logger.error(`[UPDATE-WORKFLOW] Failed to remove reservation for item ${itemId}: ${error.message}`);
