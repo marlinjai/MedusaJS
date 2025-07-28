@@ -56,6 +56,55 @@ export async function POST(req: MedusaRequest<TransitionStatusRequest>, res: Med
       },
     });
 
+    // ✅ ENHANCEMENT: Auto-refresh inventory data after transitions that affect reservations
+    // This eliminates the need for manual "lager prüfen" clicks in the admin UI
+    let inventoryStatus = null;
+    if (['reservations_created', 'reservations_released'].includes(result.result.inventory_action)) {
+      try {
+        // Get the offer service to check inventory status
+        const offerService = req.scope.resolve('offer');
+        const logger = req.scope.resolve('logger');
+        const query = req.scope.resolve('query');
+        
+        // Get offer with items to check inventory
+        const offer = await offerService.getOfferWithDetails(offer_id);
+        
+        if (offer && offer.items.length > 0) {
+          // Use the same logic as check-inventory endpoint
+          const { getVariantAvailability } = require('@medusajs/framework/utils');
+          const sales_channel_id = 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8'; // Hardcoded for customer
+          
+          // Filter product items that have variant_id
+          const productItems = offer.items.filter(item => item.item_type === 'product' && item.variant_id);
+          const variantIds = productItems
+            .map(item => item.variant_id)
+            .filter((variantId): variantId is string => Boolean(variantId));
+
+          if (variantIds.length > 0) {
+            const availability = await getVariantAvailability(query, {
+              variant_ids: variantIds,
+              sales_channel_id,
+            });
+            
+            // Build inventory status summary
+            inventoryStatus = {
+              total_items_checked: productItems.length,
+              items_available: productItems.filter(item => {
+                const availableQty = availability[item.variant_id!]?.availability || 0;
+                return availableQty >= item.quantity;
+              }).length,
+              inventory_refreshed: true,
+            };
+            
+            logger.info(`[TRANSITION-STATUS] Auto-refreshed inventory after ${result.result.inventory_action}: ${inventoryStatus.items_available}/${inventoryStatus.total_items_checked} items available`);
+          }
+        }
+      } catch (inventoryError) {
+        // Don't fail the status transition if inventory check fails
+        console.warn('Failed to auto-refresh inventory after status transition:', inventoryError.message);
+      }
+    }
+
     return res.json({
       success: true,
       result: {
@@ -64,6 +113,7 @@ export async function POST(req: MedusaRequest<TransitionStatusRequest>, res: Med
         new_status: result.result.new_status,
         inventory_action: result.result.inventory_action,
         history_created: result.result.history_created,
+        inventory_status: inventoryStatus, // ✅ NEW: Auto-refreshed inventory data
       },
     });
   } catch (error) {
