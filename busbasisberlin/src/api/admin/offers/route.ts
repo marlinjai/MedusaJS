@@ -7,42 +7,13 @@ import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 
 import OfferService from '../../../modules/offer/service';
+import { CreateOfferInput } from '../../../modules/offer/types';
 
 // Module constant for service resolution
 const OFFER_MODULE = 'offer';
 
-// Type definitions for request/response
-interface CreateOfferRequest {
-  description?: string;
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  customer_address?: string;
-  valid_until?: string;
-  internal_notes?: string;
-  customer_notes?: string;
-  currency_code?: string;
-  items?: Array<{
-    product_id?: string;
-    service_id?: string;
-    item_type: 'product' | 'service';
-    sku?: string;
-    title: string;
-    description?: string;
-    quantity: number;
-    unit?: string;
-    unit_price: number;
-    discount_percentage?: number;
-    discount_amount?: number;
-    tax_rate?: number;
-    variant_title?: string;
-    supplier_info?: string;
-    lead_time?: number;
-    custom_specifications?: string;
-    delivery_notes?: string;
-    item_group?: string;
-  }>;
-}
+// ✅ Use centralized types instead of redeclaring
+type CreateOfferRequest = CreateOfferInput;
 
 interface ListOffersQuery {
   limit?: number;

@@ -6,41 +6,25 @@ import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 
 import OfferService from '../../../../modules/offer/service';
+import { UpdateOfferInput, UpdateOfferItemInput } from '../../../../modules/offer/types';
 
 // Module constant for service resolution
 const OFFER_MODULE = 'offer';
 
-// Type definitions for request/response
-interface UpdateOfferRequest {
-  title?: string;
-  description?: string;
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  customer_address?: string;
-  valid_until?: string;
-  internal_notes?: string;
-  customer_notes?: string;
-  assigned_to?: string;
-  currency_code?: string;
-  items?: Array<{
-    id?: string; // If present, update existing item. If not, create new item
-    product_id?: string;
-    service_id?: string;
-    variant_id?: string;
-    item_type: 'product' | 'service';
-    sku?: string;
-    title: string;
-    description?: string;
-    quantity: number;
-    unit?: string;
-    unit_price: number;
-    discount_percentage?: number;
-    tax_rate?: number;
-    variant_title?: string;
-    inventory_quantity?: number; // Used for available_quantity mapping
-  }>;
-}
+// ✅ Use centralized types instead of redeclaring
+type UpdateOfferRequest = UpdateOfferInput & {
+  title?: string; // Add title back since it's used in the route
+  items?: Array<
+    UpdateOfferItemInput & {
+      id?: string; // If present, update existing item. If not, create new item
+      inventory_quantity?: number; // Used for available_quantity mapping
+      // Make required fields non-optional for API usage
+      quantity: number;
+      unit_price: number;
+      title: string;
+    }
+  >;
+};
 
 interface OfferParams {
   id: string;
@@ -183,6 +167,11 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
           );
         });
 
+      logger.info(
+        `[RESERVATION-DEBUG] hasProductItemChanges: ${hasProductItemChanges}, offer status: ${existingOffer.status}`,
+      );
+      logger.info(`[RESERVATION-DEBUG] Current items: ${currentItems.length}, New items: ${newItems.length}`);
+
       // Get existing item IDs and new item IDs
       const currentItemIds = new Set(currentItems.map(item => item.id));
       const newItemIds = new Set(newItems.filter(item => item.id).map(item => item.id!));
@@ -195,6 +184,13 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
 
       // Find items to create (no ID or ID doesn't exist in current)
       const itemsToCreate = newItems.filter(item => !item.id || !currentItemIds.has(item.id));
+
+      // Debug logging for reservation updates
+      if (hasProductItemChanges) {
+        logger.info(
+          `[RESERVATION-DEBUG] Items to delete: ${itemsToDelete.length}, update: ${itemsToUpdate.length}, create: ${itemsToCreate.length}`,
+        );
+      }
 
       // Delete removed items
       if (itemsToDelete.length > 0) {
@@ -257,14 +253,16 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
       // Recalculate offer totals after item changes
       await offerService.calculateOfferTotals(id);
 
-      // Update inventory reservations if items changed and offer is active/accepted
+      // ✅ Update inventory reservations if items changed and offer is active/accepted
       // This happens AFTER all database operations are complete
       if (hasProductItemChanges && ['active', 'accepted'].includes(existingOffer.status)) {
         try {
-          // Prepare detailed change information for granular reservation updates
-          const itemChanges = {
-            itemsToDelete: itemsToDelete.map(item => ({ id: item.id })),
-            itemsToUpdate: itemsToUpdate
+          // ✅ Call the dedicated reservation update API route (following Medusa best practices)
+          // The API route will handle workflow execution properly
+          const workflowInput = {
+            offer_id: id,
+            items_to_delete: itemsToDelete.map(item => item.id),
+            items_to_update: itemsToUpdate
               .filter(item => item.item_type === 'product' && item.variant_id && item.sku)
               .map(item => ({
                 id: item.id!,
@@ -273,7 +271,7 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
                 quantity: item.quantity,
                 title: item.title,
               })),
-            itemsToCreate: createdItems
+            items_to_create: createdItems
               .filter(item => item.item_type === 'product' && item.variant_id && item.sku)
               .map(item => ({
                 id: item.id,
@@ -283,15 +281,37 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
                 title: item.title,
                 item_type: item.item_type,
               })),
+            user_id: 'admin', // TODO: Get actual user ID from request context
+            change_description: `Items modified: ${itemsToDelete.length} deleted, ${itemsToUpdate.length} updated, ${createdItems.length} created`,
           };
 
-          await offerService.updateOfferReservations(
-            id,
-            'admin', // TODO: Get actual user ID from request context
-            `Items modified: ${itemsToDelete.length} deleted, ${itemsToUpdate.length} updated, ${createdItems.length} created`,
-            itemChanges,
+          logger.info(
+            `[RESERVATION-UPDATE] Calling reservation update API with input: ${JSON.stringify(workflowInput)}`,
           );
-          logger.info(`Updated inventory reservations for offer ${existingOffer.offer_number} due to item changes`);
+
+          // ✅ Use internal API call with proper authentication context
+          const reservationUpdateResponse = await fetch(
+            `http://localhost:9000/admin/offers/${id}/update-reservations`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                // Forward the authorization header from the original request
+                ...(req.headers.authorization && { Authorization: req.headers.authorization }),
+                // Forward the cookie header for session-based auth
+                ...(req.headers.cookie && { Cookie: req.headers.cookie }),
+              },
+              body: JSON.stringify(workflowInput),
+            },
+          );
+
+          if (!reservationUpdateResponse.ok) {
+            const errorData = await reservationUpdateResponse.json();
+            throw new Error(`Reservation update failed: ${errorData.error || 'Unknown error'}`);
+          }
+
+          const reservationResult = await reservationUpdateResponse.json();
+          logger.info(`[RESERVATION-UPDATE] API call completed successfully: ${reservationResult.message}`);
         } catch (reservationError) {
           logger.error(`Failed to update reservations for offer ${existingOffer.offer_number}:`, reservationError);
           // Don't fail the entire update if reservation update fails - just log the error
@@ -311,12 +331,14 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
     logger.info(`Offer updated successfully: ${updatedOffer?.offer_number}`);
 
     res.json({
+      success: true,
       offer: updatedOffer,
       message: 'Offer updated successfully',
     });
   } catch (error) {
     logger.error('Error updating offer:', error);
     res.status(500).json({
+      success: false,
       error: 'Failed to update offer',
       message: error.message,
     });

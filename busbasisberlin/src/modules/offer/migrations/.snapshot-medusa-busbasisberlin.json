@@ -349,6 +349,15 @@
           "nullable": true,
           "mappedType": "text"
         },
+        "reservation_id": {
+          "name": "reservation_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
         "item_type": {
           "name": "item_type",
           "type": "text",

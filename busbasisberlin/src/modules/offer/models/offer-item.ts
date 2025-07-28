@@ -19,6 +19,7 @@ const offerItem = model.define('offer_item', {
   product_id: model.text().nullable(), // Product ID if this is a product
   service_id: model.text().nullable(), // Service ID if this is a service
   variant_id: model.text().nullable(), // Product variant ID for inventory lookup
+  reservation_id: model.text().nullable(), // Inventory reservation ID for tracking
 
   // ✅ ITEM IDENTIFICATION: Snapshot data captured at offer creation
   item_type: model.text(), // 'product' or 'service'

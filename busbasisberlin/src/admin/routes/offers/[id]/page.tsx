@@ -180,26 +180,38 @@ export default function OfferDetailPage() {
 
     setUpdating(true);
     try {
-      const response = await fetch(`/admin/offers/${offer.id}/status`, {
+      // ✅ Use new workflow-based API for status transitions
+      const response = await fetch(`/admin/offers/${offer.id}/transition-status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ new_status: newStatus }),
+        body: JSON.stringify({
+          offer_id: offer.id,
+          new_status: newStatus,
+          user_id: 'admin', // TODO: Get actual user ID from context
+        }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Fehler beim Aktualisieren des Status');
+        throw new Error(error.error || error.message || 'Fehler beim Aktualisieren des Status');
       }
 
       const result = await response.json();
-      setOffer(result.offer);
-      toast.success('Status erfolgreich aktualisiert');
 
-      // Refresh inventory status after status change
-      if (newStatus === 'accepted' || newStatus === 'completed') {
-        checkInventoryAvailability();
+      // ✅ Handle new workflow response format
+      if (result.success) {
+        // Reload the offer to get updated data
+        await loadOffer();
+        toast.success('Status erfolgreich aktualisiert');
+
+        // Refresh inventory status after status change
+        if (newStatus === 'accepted' || newStatus === 'completed') {
+          checkInventoryAvailability();
+        }
+      } else {
+        throw new Error(result.error || 'Fehler beim Aktualisieren des Status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -211,6 +223,45 @@ export default function OfferDetailPage() {
       } else {
         toast.error(errorMessage);
       }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // ✅ Fulfill offer (complete and reduce inventory)
+  const fulfillOffer = async () => {
+    if (!offer) return;
+
+    setUpdating(true);
+    try {
+      const response = await fetch(`/admin/offers/${offer.id}/fulfill`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          offer_id: offer.id,
+          user_id: 'admin', // TODO: Get actual user ID from context
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || error.message || 'Fehler beim Abschließen des Angebots');
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Reload the offer to get updated data
+        await loadOffer();
+        toast.success('Angebot erfolgreich abgeschlossen');
+      } else {
+        throw new Error(result.error || 'Fehler beim Abschließen des Angebots');
+      }
+    } catch (error) {
+      console.error('Error fulfilling offer:', error);
+      toast.error(error instanceof Error ? error.message : 'Fehler beim Abschließen des Angebots');
     } finally {
       setUpdating(false);
     }
@@ -238,13 +289,19 @@ export default function OfferDetailPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Fehler beim Speichern des Angebots');
+        throw new Error(error.error || error.message || 'Fehler beim Speichern des Angebots');
       }
 
       const result = await response.json();
-      setOffer(result.offer);
-      setEditing(false);
-      toast.success('Angebot erfolgreich gespeichert');
+
+      // ✅ Handle new API response format
+      if (result.success) {
+        setOffer(result.offer);
+        setEditing(false);
+        toast.success('Angebot erfolgreich gespeichert');
+      } else {
+        throw new Error(result.error || 'Fehler beim Speichern des Angebots');
+      }
     } catch (error) {
       console.error('Error saving offer:', error);
       toast.error(error instanceof Error ? error.message : 'Fehler beim Speichern des Angebots');
@@ -289,14 +346,14 @@ export default function OfferDetailPage() {
     }
   };
 
-  // Get available status transitions
+  // ✅ Get available status transitions with workflow support
   const getAvailableStatusTransitions = (currentStatus: string): string[] => {
     const transitions: { [key: string]: string[] } = {
       draft: ['active', 'cancelled'],
       active: ['accepted', 'cancelled'],
-      accepted: ['completed', 'cancelled'],
-      completed: [],
-      cancelled: [],
+      accepted: ['completed', 'cancelled'], // Can now be fulfilled via workflow
+      completed: [], // Cannot transition from completed
+      cancelled: [], // Cannot transition from cancelled
     };
     return transitions[currentStatus] || [];
   };
@@ -642,6 +699,13 @@ export default function OfferDetailPage() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ✅ Fulfill button for accepted offers */}
+            {offer.status === 'accepted' && (
+              <Button variant="primary" size="small" onClick={fulfillOffer} disabled={updating} className="px-3">
+                {updating ? 'Abschließen...' : 'Abschließen'}
+              </Button>
             )}
           </div>
           <Button

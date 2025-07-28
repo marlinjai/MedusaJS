@@ -67,3 +67,50 @@ export const getInventoryStatus = (available: number, requested: number): Invent
   if (available < requested) return 'low_stock';
   return 'available';
 };
+
+// ✅ WORKFLOW INPUT TYPES: For workflow operations
+export type ReserveOfferInventoryInput = {
+  offer_id: string;
+  user_id?: string;
+  reason?: string;
+};
+
+export type UpdateOfferReservationsInput = {
+  offer_id: string;
+  items_to_delete: string[];
+  items_to_update: Array<{
+    id: string;
+    variant_id: string;
+    sku: string;
+    quantity: number;
+    title: string;
+  }>;
+  items_to_create: Array<{
+    id: string;
+    variant_id: string;
+    sku: string;
+    quantity: number;
+    title: string;
+    item_type: string;
+  }>;
+  user_id?: string;
+  change_description?: string;
+};
+
+export type FulfillOfferReservationsInput = {
+  offer_id: string;
+  user_id?: string;
+};
+
+export type ReleaseOfferReservationsInput = {
+  offer_id: string;
+  reason?: string;
+  user_id?: string;
+};
+
+export type CreatedReservation = {
+  reservation_id: string;
+  item_id: string;
+  variant_id: string;
+  quantity: number;
+};

@@ -10,11 +10,6 @@ import offerItem, { OfferItemType } from './models/offer-item';
 import offerStatusHistory from './models/offer-status-history';
 
 // Import our custom workflows
-import {
-  releaseOfferReservationsWorkflow,
-  reserveOfferInventoryWorkflow,
-  updateOfferInventoryReservationsWorkflow,
-} from '../../workflows/offer-inventory-workflows';
 
 // ✅ Use centralized types instead of interfaces
 import {
@@ -288,24 +283,22 @@ class OfferService extends MedusaService({
   }
 
   /**
-   * Transition offer to new status with validation and inventory actions
+   * ✅ SIMPLIFIED: Validate status transition (moved complex logic to workflow)
    */
-  async transitionOfferStatus(
-    offerId: string,
-    newStatus: string,
-    changedBy?: string,
-    notes?: string,
-  ): Promise<OfferWithItems> {
+  async validateStatusTransition(offerId: string, newStatus: string): Promise<{ isValid: boolean; error?: string }> {
     const offer = await this.getOfferWithDetails(offerId);
     if (!offer) {
-      throw new Error(`Offer with ID ${offerId} not found`);
+      return { isValid: false, error: `Offer with ID ${offerId} not found` };
     }
 
     const previousStatus = offer.status;
 
     // Validate status transition
     if (!this.isValidStatusTransition(previousStatus, newStatus)) {
-      throw new Error(`Invalid status transition from ${previousStatus} to ${newStatus}`);
+      return {
+        isValid: false,
+        error: `Invalid status transition from ${previousStatus} to ${newStatus}`,
+      };
     }
 
     // Check inventory availability for transitions that require it
@@ -323,43 +316,14 @@ class OfferService extends MedusaService({
           })
           .filter(Boolean);
 
-        throw new Error(
-          `Cannot transition to ${newStatus} - insufficient inventory for: ${unavailableItems.join(', ')}`,
-        );
+        return {
+          isValid: false,
+          error: `Cannot transition to ${newStatus} - insufficient inventory for: ${unavailableItems.join(', ')}`,
+        };
       }
     }
 
-    // Perform status transition actions (inventory reservations, etc.)
-    await this.performStatusTransitionActions(offer, newStatus);
-
-    // Update offer status
-    await this.updateOffers({
-      id: offerId,
-      status: newStatus,
-      ...(newStatus === 'accepted' && { accepted_at: new Date() }),
-      ...(newStatus === 'completed' && { completed_at: new Date() }),
-      ...(newStatus === 'cancelled' && { cancelled_at: new Date() }),
-    });
-
-    // Create status history entry
-    await this.createOfferStatusHistories([
-      {
-        offer_id: offerId,
-        previous_status: previousStatus,
-        new_status: newStatus,
-        event_type: 'status_change',
-        event_description: `Status changed from ${previousStatus} to ${newStatus}`,
-        changed_by: changedBy || null,
-        notes: notes || null,
-        system_change: false,
-      },
-    ]);
-
-    const updatedOffer = await this.getOfferWithDetails(offerId);
-    if (!updatedOffer) {
-      throw new Error(`Failed to retrieve updated offer ${offerId}`);
-    }
-    return updatedOffer;
+    return { isValid: true };
   }
 
   /**
@@ -482,433 +446,38 @@ class OfferService extends MedusaService({
   }
 
   /**
-   * Perform actions specific to status transitions using Medusa workflows
+   * ✅ REMOVED: Complex status transition actions moved to workflow
+   * This method is now handled by transitionOfferStatusWorkflow
    */
-  private async performStatusTransitionActions(offer: OfferWithItems, newStatus: string): Promise<void> {
-    switch (newStatus) {
-      case 'active':
-        // Reserve inventory when offer becomes active using workflow
-        this.logger_.info(`Executing inventory reservation workflow for offer ${offer.offer_number}`);
-        try {
-          const result = await reserveOfferInventoryWorkflow(this.container_).run({
-            input: {
-              offer_id: offer.id,
-            },
-          });
-          this.logger_.info(
-            `Inventory reservation completed: ${result.result.reservations_created} reservations created`,
-          );
-        } catch (error) {
-          this.logger_.error(`Inventory reservation workflow failed: ${error.message}`);
-          throw new Error(`Failed to reserve inventory: ${error.message}`);
-        }
-        break;
-
-      case 'accepted':
-        // For accepted status, inventory should already be reserved from active
-        this.logger_.info(`Offer ${offer.offer_number} accepted - reservations maintained`);
-        break;
-
-      case 'completed':
-        // TODO: Implement fulfill reservations workflow
-        this.logger_.info(`Offer ${offer.offer_number} completed - reservations should be fulfilled`);
-        break;
-
-      case 'cancelled':
-        // Release all reservations using workflow
-        this.logger_.info(`Executing inventory release workflow for offer ${offer.offer_number}`);
-        try {
-          const result = await releaseOfferReservationsWorkflow(this.container_).run({
-            input: {
-              offer_id: offer.id,
-              reason: 'Offer cancelled',
-            },
-          });
-          this.logger_.info(`Inventory reservations released for cancelled offer`);
-        } catch (error) {
-          this.logger_.error(`Inventory release workflow failed: ${error.message}`);
-          // Don't throw error for release failures to allow cancellation to proceed
-        }
-        break;
-    }
-  }
 
   /**
-   * Reserve inventory for an offer using Medusa workflows
-   * Supports negative stock scenarios for backorders
+   * ✅ REMOVED: Complex inventory reservation logic moved to workflow
+   * This method is now handled by reserveOfferInventoryWorkflow
    */
-  private async reserveOfferInventory(offer: OfferWithItems): Promise<void> {
-    if (!this.inventoryService_ || !this.productService_) {
-      this.logger_.warn('Inventory services not available, skipping reservation');
-      return;
-    }
-
-    try {
-      const reservationItems: Array<{
-        inventory_item_id: string;
-        required_quantity: number;
-        allow_backorder: boolean;
-        quantity: number;
-        location_ids: string[];
-        variant_id?: string;
-      }> = [];
-
-      for (const item of offer.items) {
-        if (item.item_type === 'product' && item.product_id) {
-          // If we have a specific variant_id, use it for more precise reservation
-          if (item.variant_id) {
-            // Get inventory items for the specific variant
-            const inventoryItems = await this.getInventoryItemsForVariant(item.variant_id);
-
-            for (const inventoryItem of inventoryItems) {
-              const availableQuantity = await this.getInventoryItemAvailableQuantity(inventoryItem.id);
-
-              // Allow backorders (negative stock) for offers
-              const allowBackorder = true;
-              const requiredQuantity = Math.min(
-                item.quantity,
-                availableQuantity + (allowBackorder ? item.quantity : 0),
-              );
-
-              reservationItems.push({
-                inventory_item_id: inventoryItem.id,
-                required_quantity: requiredQuantity,
-                allow_backorder: allowBackorder,
-                quantity: item.quantity,
-                location_ids: inventoryItem.location_levels?.map((level: any) => level.location_id) || [],
-                variant_id: item.variant_id,
-              });
-            }
-          } else {
-            // Fallback to product-level reservation (legacy behavior)
-            const inventoryItems = await this.getInventoryItemsForProduct(item.product_id);
-
-            for (const inventoryItem of inventoryItems) {
-              const availableQuantity = await this.getInventoryItemAvailableQuantity(inventoryItem.id);
-
-              // Allow backorders (negative stock) for offers
-              const allowBackorder = true;
-              const requiredQuantity = Math.min(
-                item.quantity,
-                availableQuantity + (allowBackorder ? item.quantity : 0),
-              );
-
-              reservationItems.push({
-                inventory_item_id: inventoryItem.id,
-                required_quantity: requiredQuantity,
-                allow_backorder: allowBackorder,
-                quantity: item.quantity,
-                location_ids: inventoryItem.location_levels?.map((level: any) => level.location_id) || [],
-              });
-            }
-          }
-        }
-      }
-
-      if (reservationItems.length > 0) {
-        // For now, use direct inventory service calls until workflow is properly integrated
-        for (const reservation of reservationItems) {
-          await this.createInventoryReservation(reservation.inventory_item_id, reservation.quantity, {
-            type: 'offer',
-            offer_id: offer.id,
-            variant_id: reservation.variant_id,
-            allow_backorder: reservation.allow_backorder,
-            description: `Reserved for offer ${offer.offer_number}${reservation.variant_id ? ` (variant: ${reservation.variant_id})` : ''}`,
-          });
-        }
-
-        this.logger_.info(`Inventory reserved for offer ${offer.offer_number}`);
-
-        // Update offer with reservation info
-        await this.updateOffers({
-          id: offer.id,
-          has_reservations: true,
-          reservation_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        });
-      }
-    } catch (error) {
-      this.logger_.error(`Failed to reserve inventory for offer ${offer.id}:`, error);
-      throw new Error(`Inventory reservation failed: ${error.message}`);
-    }
-  }
 
   /**
-   * Confirm reservations (when status becomes 'accepted')
+   * ✅ REMOVED: Complex inventory operations moved to workflows
+   * These methods are now handled by:
+   * - confirmOfferReservations → transitionOfferStatusWorkflow
+   * - fulfillOfferReservations → fulfillOfferReservationsWorkflow
+   * - releaseOfferReservations → releaseOfferReservationsWorkflow
    */
-  private async confirmOfferReservations(offer: OfferWithItems): Promise<void> {
-    // For now, just log the confirmation - reservations remain in place
-    this.logger_.info(`Confirming reservations for offer ${offer.offer_number}`);
-
-    // Create status history entry
-    await this.createOfferStatusHistories([
-      {
-        offer_id: offer.id,
-        previous_status: null,
-        new_status: offer.status,
-        event_type: 'reservation_confirmed',
-        event_description: 'Inventory reservations confirmed',
-        system_change: true,
-        inventory_impact: `Confirmed reservations for ${offer.items.length} items`,
-      },
-    ]);
-  }
 
   /**
-   * Fulfill reservations and reduce stock (when status becomes 'completed')
-   * ✅ UPDATED: Use workflow-based approach instead of direct inventory manipulation
+   * ✅ REMOVED: Complex reservation updates moved to workflow
+   * This method is now handled by updateOfferInventoryReservationsWorkflow
+   * Called from API routes for granular inventory management
    */
-  private async fulfillOfferReservations(offer: OfferWithItems): Promise<void> {
-    this.logger_.info(`Fulfilling reservations for offer ${offer.offer_number}`);
-
-    // ✅ Use workflow for inventory fulfillment
-    try {
-      // TODO: Implement fulfillOfferReservationsWorkflow
-      // For now, log that this would use the workflow
-      this.logger_.info(`Would execute fulfillOfferReservationsWorkflow for offer ${offer.offer_number}`);
-
-      // Placeholder for workflow implementation
-      // await fulfillOfferReservationsWorkflow(this.container_).run({
-      //   input: { offer_id: offer.id },
-      // });
-
-      // Create status history entry for fulfillment
-      await this.createOfferStatusHistories([
-        {
-          offer_id: offer.id,
-          previous_status: null,
-          new_status: offer.status,
-          event_type: 'fulfillment',
-          event_description: 'Inventory fulfilled and stock reduced (workflow-based)',
-          system_change: true,
-          inventory_impact: `Fulfilled reservations for ${offer.items.length} items`,
-        },
-      ]);
-    } catch (error) {
-      this.logger_.error(`Failed to fulfill reservations for offer ${offer.offer_number}: ${error.message}`);
-      throw error;
-    }
-  }
 
   /**
-   * Release reservations (when status becomes 'cancelled')
-   * ✅ UPDATED: Use workflow-based approach instead of direct inventory manipulation
+   * ✅ REMOVED: Direct inventory operations moved to workflows
+   * These helper methods are now handled by workflow steps:
+   * - getInventoryItemsForProduct → workflow inventory service calls
+   * - getInventoryItemsForVariant → workflow inventory service calls
+   * - getInventoryItemAvailableQuantity → workflow inventory service calls
+   * - createInventoryReservation → workflow inventory service calls
+   * - deleteInventoryReservation → workflow inventory service calls
    */
-  private async releaseOfferReservations(offer: OfferWithItems): Promise<void> {
-    this.logger_.info(`Releasing reservations for offer ${offer.offer_number}`);
-
-    // ✅ Use workflow for inventory release
-    try {
-      // TODO: Implement releaseOfferReservationsWorkflow
-      // For now, log that this would use the workflow
-      this.logger_.info(`Would execute releaseOfferReservationsWorkflow for offer ${offer.offer_number}`);
-
-      // Placeholder for workflow implementation
-      // await releaseOfferReservationsWorkflow(this.container_).run({
-      //   input: { offer_id: offer.id, reason: 'Offer cancelled' },
-      // });
-
-      // Create status history entry for release
-      await this.createOfferStatusHistories([
-        {
-          offer_id: offer.id,
-          previous_status: null,
-          new_status: offer.status,
-          event_type: 'reservation_release',
-          event_description: 'Inventory reservations released (workflow-based)',
-          system_change: true,
-          inventory_impact: `Released reservations for ${offer.items.length} items`,
-        },
-      ]);
-    } catch (error) {
-      this.logger_.error(`Failed to release reservations for offer ${offer.offer_number}: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Update inventory reservations for an offer when items change using workflows
-   * Called when editing active or accepted offers
-   */
-  async updateOfferReservations(
-    offerId: string,
-    changedBy?: string,
-    changeDescription?: string,
-    itemChanges?: {
-      itemsToDelete?: Array<{ id: string }>;
-      itemsToUpdate?: Array<{ id: string; variant_id?: string; sku?: string; quantity: number; title: string }>;
-      itemsToCreate?: Array<{
-        id: string;
-        variant_id: string;
-        sku: string;
-        quantity: number;
-        title: string;
-        item_type: string;
-      }>;
-    },
-  ): Promise<void> {
-    const offer = await this.getOfferWithDetails(offerId);
-    if (!offer) {
-      throw new Error(`Offer with ID ${offerId} not found`);
-    }
-
-    // Only update reservations for offers that should have them
-    if (!['active', 'accepted'].includes(offer.status)) {
-      this.logger_.info(`Skipping reservation update for offer ${offer.offer_number} - status is ${offer.status}`);
-      return;
-    }
-
-    this.logger_.info(
-      `Updating inventory reservations for offer ${offer.offer_number} (${offer.status}) using granular workflows`,
-    );
-
-    try {
-      // Use the new granular workflow if detailed change information is provided
-      if (itemChanges) {
-        const result = await updateOfferInventoryReservationsWorkflow(this.container_).run({
-          input: {
-            offer_id: offerId,
-            items_to_delete: itemChanges.itemsToDelete?.map(item => item.id) || [],
-            items_to_update: itemChanges.itemsToUpdate || [],
-            items_to_create: itemChanges.itemsToCreate || [],
-            change_description: changeDescription,
-          },
-        });
-
-        // Create status history entry
-        await this.createOfferStatusHistories([
-          {
-            offer_id: offerId,
-            previous_status: null,
-            new_status: offer.status,
-            event_type: 'reservation_update',
-            event_description: changeDescription || 'Inventory reservations updated due to item changes',
-            changed_by: changedBy || null,
-            system_change: false,
-            inventory_impact: `Granular update: ${result.result.removed_reservations} removed, ${result.result.updated_reservations} updated, ${result.result.created_reservations} created`,
-          },
-        ]);
-
-        this.logger_.info(
-          `Successfully updated reservations for offer ${offer.offer_number}: ${result.result.removed_reservations} removed, ${result.result.updated_reservations} updated, ${result.result.created_reservations} created`,
-        );
-      } else {
-        // Fallback to the old workflow if no detailed change information is provided
-        const result = await reserveOfferInventoryWorkflow(this.container_).run({
-          input: {
-            offer_id: offerId,
-          },
-        });
-
-        // Create status history entry
-        await this.createOfferStatusHistories([
-          {
-            offer_id: offerId,
-            previous_status: null,
-            new_status: offer.status,
-            event_type: 'reservation_update',
-            event_description: changeDescription || 'Inventory reservations updated (full refresh)',
-            changed_by: changedBy || null,
-            system_change: false,
-            inventory_impact: `Full refresh: ${result.result.cleared_reservations} cleared, ${result.result.reservations_created} created`,
-          },
-        ]);
-
-        this.logger_.info(
-          `Successfully refreshed reservations for offer ${offer.offer_number}: ${result.result.cleared_reservations} cleared, ${result.result.reservations_created} created`,
-        );
-      }
-    } catch (error) {
-      this.logger_.error(`Failed to update reservations for offer ${offer.offer_number} using workflows:`, error);
-      throw new Error(`Failed to update inventory reservations: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get inventory items for a product
-   * Simplified implementation - will be enhanced when inventory integration is ready
-   */
-  private async getInventoryItemsForProduct(productId: string): Promise<any[]> {
-    // Simplified implementation for now
-    this.logger_.info(`Getting inventory items for product ${productId} - simplified implementation`);
-    return [];
-  }
-
-  /**
-   * Get inventory items for a specific variant
-   * Simplified implementation - will be enhanced when inventory integration is ready
-   */
-  private async getInventoryItemsForVariant(variantId: string): Promise<any[]> {
-    // Simplified implementation for now
-    this.logger_.info(`Getting inventory items for variant ${variantId} - simplified implementation`);
-    return [];
-  }
-
-  /**
-   * Get available quantity for an inventory item
-   */
-  private async getInventoryItemAvailableQuantity(inventoryItemId: string): Promise<number> {
-    try {
-      const inventoryLevels = await this.inventoryService_.listInventoryLevels({
-        inventory_item_id: inventoryItemId,
-      });
-
-      let totalAvailable = 0;
-      for (const level of inventoryLevels) {
-        // Available = stocked - reserved
-        const available = (level.stocked_quantity || 0) - (level.reserved_quantity || 0);
-        totalAvailable += Math.max(0, available);
-      }
-
-      return totalAvailable;
-    } catch (error) {
-      this.logger_.error(`Failed to get available quantity for inventory item ${inventoryItemId}: ${error.message}`);
-      return 0;
-    }
-  }
-
-  /**
-   * Create inventory reservation
-   */
-  private async createInventoryReservation(inventoryItemId: string, quantity: number, metadata: any): Promise<void> {
-    try {
-      await this.inventoryService_.createReservationItems([
-        {
-          inventory_item_id: inventoryItemId,
-          quantity,
-          metadata,
-        },
-      ]);
-    } catch (error) {
-      this.logger_.error(`Failed to create inventory reservation: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete inventory reservation
-   */
-  private async deleteInventoryReservation(inventoryItemId: string, metadata: any): Promise<void> {
-    try {
-      // Find reservations that match our metadata
-      const reservations = await this.inventoryService_.listReservationItems({
-        inventory_item_id: inventoryItemId,
-      });
-
-      for (const reservation of reservations) {
-        if (
-          reservation.metadata &&
-          reservation.metadata.type === metadata.type &&
-          reservation.metadata.offer_id === metadata.offer_id &&
-          reservation.metadata.offer_item_id === metadata.offer_item_id
-        ) {
-          await this.inventoryService_.deleteReservationItems([reservation.id]);
-        }
-      }
-    } catch (error) {
-      this.logger_.error(`Failed to delete inventory reservation: ${error.message}`);
-      throw error;
-    }
-  }
 
   /**
    * Check variant availability for offer items using real-time inventory data
@@ -1055,30 +624,9 @@ class OfferService extends MedusaService({
   }
 
   /**
-   * Reduce inventory level
+   * ✅ REMOVED: Inventory reduction moved to fulfillOfferReservationsWorkflow
+   * This method is now handled by the workflow for proper transaction safety
    */
-  private async reduceInventoryLevel(inventoryItemId: string, quantity: number): Promise<void> {
-    try {
-      const inventoryLevels = await this.inventoryService_.listInventoryLevels({
-        inventory_item_id: inventoryItemId,
-      });
-
-      for (const level of inventoryLevels) {
-        if (level.stocked_quantity >= quantity) {
-          await this.inventoryService_.updateInventoryLevels([
-            {
-              id: level.id,
-              stocked_quantity: level.stocked_quantity - quantity,
-            },
-          ]);
-          break;
-        }
-      }
-    } catch (error) {
-      this.logger_.error(`Failed to reduce inventory level: ${error.message}`);
-      throw error;
-    }
-  }
 }
 
 export default OfferService;

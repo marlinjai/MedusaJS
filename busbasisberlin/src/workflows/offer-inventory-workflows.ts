@@ -8,55 +8,12 @@ import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import { createStep, createWorkflow, StepResponse, WorkflowResponse } from '@medusajs/framework/workflows-sdk';
 
 import { OFFER_MODULE } from '../modules/offer';
-
-// Types for workflow inputs
-type ReserveOfferInventoryInput = {
-  offer_id: string;
-  user_id?: string;
-};
-
-type UpdateOfferReservationsInput = {
-  offer_id: string;
-  items_to_delete?: string[]; // Array of offer item IDs to remove reservations for
-  items_to_update?: Array<{
-    // Array of items with changed quantities/variants
-    id: string;
-    variant_id?: string;
-    sku?: string;
-    quantity: number;
-    title: string;
-  }>;
-  items_to_create?: Array<{
-    // Array of new items to create reservations for
-    id: string;
-    variant_id: string;
-    sku: string;
-    quantity: number;
-    title: string;
-    item_type: string;
-  }>;
-  user_id?: string;
-  change_description?: string;
-};
-
-type FulfillOfferReservationsInput = {
-  offer_id: string;
-  user_id?: string;
-};
-
-type ReleaseOfferReservationsInput = {
-  offer_id: string;
-  user_id?: string;
-  reason?: string;
-};
-
-// Internal types
-type CreatedReservation = {
-  reservation_id: string;
-  item_id: string;
-  variant_id: string;
-  quantity: number;
-};
+import {
+  CreatedReservation,
+  ReleaseOfferReservationsInput,
+  ReserveOfferInventoryInput,
+  UpdateOfferReservationsInput,
+} from '../modules/offer/types';
 
 // Helper function to safely resolve logger
 const getLogger = (container: any): Logger => {
@@ -659,6 +616,7 @@ const removeReservationsForDeletedItemsStep = createStep(
     { container },
   ) => {
     const inventoryModuleService = container.resolve(Modules.INVENTORY) as IInventoryService;
+    const offerService = container.resolve(OFFER_MODULE) as any;
     const logger = getLogger(container);
 
     if (!input.item_ids_to_delete.length) {
@@ -670,34 +628,28 @@ const removeReservationsForDeletedItemsStep = createStep(
 
     const removedReservations: CreatedReservation[] = [];
 
-    // Find and remove reservations by offer_item_id
+    // Get offer items to find their reservation_ids
     try {
-      const allReservations = await inventoryModuleService.listReservationItems({});
+      for (const itemId of input.item_ids_to_delete) {
+        const offerItems = await offerService.listOfferItems({ id: itemId });
+        const offerItem = offerItems[0];
 
-      // Filter for reservations that belong to this offer and these specific items
-      const reservationsToRemove = allReservations.filter(
-        reservation =>
-          reservation.metadata &&
-          reservation.metadata.type === 'offer' &&
-          reservation.metadata.offer_id === input.offer_id &&
-          reservation.metadata.offer_item_id &&
-          input.item_ids_to_delete.includes(reservation.metadata.offer_item_id as string),
-      );
+        if (!offerItem || !offerItem.reservation_id) {
+          logger.warn(`[OFFER-INVENTORY] No reservation found for deleted item ${itemId}`);
+          continue;
+        }
 
-      // Delete the found reservations
-      for (const reservation of reservationsToRemove) {
-        await inventoryModuleService.deleteReservationItems([reservation.id]);
+        // Delete the reservation directly by ID
+        await inventoryModuleService.deleteReservationItems([offerItem.reservation_id]);
 
         removedReservations.push({
-          reservation_id: reservation.id,
-          item_id: (reservation.metadata?.offer_item_id as string) || '',
-          variant_id: (reservation.metadata?.variant_id as string) || '',
-          quantity: Number(reservation.quantity),
+          reservation_id: offerItem.reservation_id,
+          item_id: itemId,
+          variant_id: offerItem.variant_id || '',
+          quantity: offerItem.quantity || 0,
         });
 
-        logger.info(
-          `[OFFER-INVENTORY] Removed reservation ${reservation.id} for deleted item ${reservation.metadata?.offer_item_id as string}`,
-        );
+        logger.info(`[OFFER-INVENTORY] Removed reservation ${offerItem.reservation_id} for deleted item ${itemId}`);
       }
 
       logger.info(`[OFFER-INVENTORY] Removed ${removedReservations.length} reservations for deleted items`);
@@ -734,6 +686,7 @@ const updateReservationsForChangedItemsStep = createStep(
     { container },
   ) => {
     const inventoryModuleService = container.resolve(Modules.INVENTORY) as IInventoryService;
+    const offerService = container.resolve(OFFER_MODULE) as any;
     const logger = getLogger(container);
 
     if (!input.items_to_update.length) {
@@ -749,22 +702,62 @@ const updateReservationsForChangedItemsStep = createStep(
       if (!item.variant_id || !item.sku) continue;
 
       try {
-        // Step 1: Remove existing reservations for this specific item
-        const allReservations = await inventoryModuleService.listReservationItems({});
-        const existingReservations = allReservations.filter(
-          reservation =>
-            reservation.metadata &&
-            reservation.metadata.type === 'offer' &&
-            reservation.metadata.offer_id === input.offer_id &&
-            reservation.metadata.offer_item_id === item.id,
-        );
+        // Step 1: Get the current offer item to check for existing reservation_id
+        const offerItems = await offerService.listOfferItems({ id: item.id });
+        const offerItem = offerItems[0];
 
-        for (const reservation of existingReservations) {
-          await inventoryModuleService.deleteReservationItems([reservation.id]);
-          logger.info(`[OFFER-INVENTORY] Removed old reservation ${reservation.id} for updated item ${item.id}`);
+        if (!offerItem) {
+          logger.warn(`[OFFER-INVENTORY] Offer item ${item.id} not found`);
+          continue;
         }
 
-        // Step 2: Create new reservation with updated quantity
+        // Step 2: Update existing reservation if reservation_id exists
+        if (offerItem.reservation_id) {
+          try {
+            // Try to update the existing reservation
+            await inventoryModuleService.updateReservationItems([
+              {
+                id: offerItem.reservation_id,
+                quantity: item.quantity,
+                metadata: {
+                  type: 'offer',
+                  offer_id: input.offer_id,
+                  offer_item_id: item.id,
+                  variant_id: item.variant_id,
+                  sku: item.sku,
+                  updated_at: new Date().toISOString(),
+                },
+              },
+            ]);
+
+            updatedReservations.push({
+              reservation_id: offerItem.reservation_id,
+              item_id: item.id,
+              variant_id: item.variant_id,
+              quantity: item.quantity,
+            });
+
+            logger.info(
+              `[OFFER-INVENTORY] Updated existing reservation ${offerItem.reservation_id} for item ${item.title}: ${item.quantity} units`,
+            );
+            continue;
+          } catch (updateError) {
+            logger.warn(
+              `[OFFER-INVENTORY] Failed to update existing reservation ${offerItem.reservation_id}, will delete and recreate: ${updateError.message}`,
+            );
+            
+            // Delete the old reservation before creating a new one
+            try {
+              await inventoryModuleService.deleteReservationItems([offerItem.reservation_id]);
+              logger.info(`[OFFER-INVENTORY] Deleted old reservation ${offerItem.reservation_id} before recreation`);
+            } catch (deleteError) {
+              logger.warn(`[OFFER-INVENTORY] Failed to delete old reservation ${offerItem.reservation_id}: ${deleteError.message}`);
+            }
+            // Fall through to create new reservation
+          }
+        }
+
+        // Step 3: Create new reservation if no existing reservation or update failed
         const inventoryItems = await inventoryModuleService.listInventoryItems({
           sku: item.sku,
         });
@@ -810,6 +803,13 @@ const updateReservationsForChangedItemsStep = createStep(
           ]);
 
           const reservation = reservations[0];
+
+          // Store the reservation_id in the offer_item for future tracking
+          await offerService.updateOfferItems({
+            id: item.id,
+            reservation_id: reservation.id,
+          });
+
           updatedReservations.push({
             reservation_id: reservation.id,
             item_id: item.id,
@@ -818,7 +818,7 @@ const updateReservationsForChangedItemsStep = createStep(
           });
 
           logger.info(
-            `[OFFER-INVENTORY] Updated reservation for item ${item.title}: ${reservation.id} (${item.quantity} units)`,
+            `[OFFER-INVENTORY] Created new reservation for item ${item.title}: ${reservation.id} (${item.quantity} units)`,
           );
         }
       } catch (error) {
@@ -858,6 +858,7 @@ const createReservationsForNewItemsStep = createStep(
     { container },
   ) => {
     const inventoryModuleService = container.resolve(Modules.INVENTORY) as IInventoryService;
+    const offerService = container.resolve(OFFER_MODULE) as any;
     const logger = getLogger(container);
 
     if (!input.items_to_create.length) {
@@ -917,6 +918,13 @@ const createReservationsForNewItemsStep = createStep(
           ]);
 
           const reservation = reservations[0];
+
+          // Store the reservation_id in the offer_item for future tracking
+          await offerService.updateOfferItems({
+            id: item.id,
+            reservation_id: reservation.id,
+          });
+
           createdReservations.push({
             reservation_id: reservation.id,
             item_id: item.id,
