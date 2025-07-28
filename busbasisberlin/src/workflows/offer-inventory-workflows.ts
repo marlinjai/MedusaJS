@@ -711,8 +711,38 @@ const updateReservationsForChangedItemsStep = createStep(
           continue;
         }
 
-        // Step 2: Find and delete ALL existing reservations for this offer item
-        // This ensures we don't have stacking reservations
+        // Step 2: Try to update existing reservation first (proper Medusa approach)
+        if (offerItem.reservation_id) {
+          try {
+            // Update the existing reservation directly using Medusa's updateReservationItems
+            await inventoryModuleService.updateReservationItems([
+              {
+                id: offerItem.reservation_id,
+                quantity: item.quantity,
+              },
+            ]);
+
+            updatedReservations.push({
+              reservation_id: offerItem.reservation_id,
+              item_id: item.id,
+              variant_id: item.variant_id,
+              quantity: item.quantity,
+            });
+
+            logger.info(
+              `[OFFER-INVENTORY] Successfully updated existing reservation ${offerItem.reservation_id} to ${item.quantity} units for item ${item.title}`,
+            );
+            continue; // Successfully updated, move to next item
+          } catch (updateError) {
+            logger.warn(
+              `[OFFER-INVENTORY] Failed to update reservation ${offerItem.reservation_id}: ${updateError.message}. Will clean up and recreate.`,
+            );
+            // Fall through to cleanup and recreate approach
+          }
+        }
+
+        // Step 3: Fallback - Find and clean up ANY stale reservations before creating new one
+        // This handles cases where reservation_id is missing/invalid or update failed
         const existingInventoryItems = await inventoryModuleService.listInventoryItems({
           sku: item.sku,
         });
@@ -722,7 +752,7 @@ const updateReservationsForChangedItemsStep = createStep(
           continue;
         }
 
-        let deletedExistingReservations = 0;
+        let cleanedUpReservations = 0;
         for (const inventoryItem of existingInventoryItems) {
           try {
             // Find ALL existing reservations for this specific offer item
@@ -739,24 +769,26 @@ const updateReservationsForChangedItemsStep = createStep(
                 reservation.metadata.offer_item_id === item.id,
             );
 
-            // Delete all existing reservations for this offer item
+            // Clean up any stale reservations
             for (const reservation of offerItemReservations) {
               await inventoryModuleService.deleteReservationItems([reservation.id]);
-              deletedExistingReservations++;
+              cleanedUpReservations++;
               logger.info(
-                `[OFFER-INVENTORY] Deleted existing reservation ${reservation.id} (${reservation.quantity} units) for item ${item.title}`,
+                `[OFFER-INVENTORY] Cleaned up stale reservation ${reservation.id} (${reservation.quantity} units) for item ${item.title}`,
               );
             }
-          } catch (deleteError) {
-            logger.error(`[OFFER-INVENTORY] Failed to delete existing reservations: ${deleteError.message}`);
+          } catch (cleanupError) {
+            logger.error(`[OFFER-INVENTORY] Failed to clean up stale reservations: ${cleanupError.message}`);
           }
         }
 
-        logger.info(
-          `[OFFER-INVENTORY] Cleaned up ${deletedExistingReservations} existing reservations for item ${item.title}`,
-        );
+        if (cleanedUpReservations > 0) {
+          logger.info(
+            `[OFFER-INVENTORY] Cleaned up ${cleanedUpReservations} stale reservations for item ${item.title}`,
+          );
+        }
 
-        // Step 3: Create new reservation if no existing reservation or update failed
+        // Step 4: Create new reservation (fallback when update fails or no existing reservation)
         const inventoryItems = await inventoryModuleService.listInventoryItems({
           sku: item.sku,
         });
