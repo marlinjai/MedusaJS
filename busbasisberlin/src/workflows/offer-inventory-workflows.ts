@@ -792,6 +792,10 @@ const updateReservationsForChangedItemsStep = createStep(
           logger.info(
             `[OFFER-INVENTORY] Cleaned up ${cleanedUpReservations} stale reservations for item ${item.title}`,
           );
+          
+          // ✅ CRITICAL: Wait for inventory levels to sync after deletion
+          // Give Medusa time to update inventory_level.reserved_quantity after deleteReservationItems
+          await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
         }
 
         // Step 4: Create new reservation (fallback when update fails or no existing reservation)
@@ -805,6 +809,7 @@ const updateReservationsForChangedItemsStep = createStep(
         }
 
         for (const inventoryItem of inventoryItems) {
+          // ✅ IMPROVED: Refresh inventory levels after potential cleanup to get accurate data
           const inventoryLevels = await inventoryModuleService.listInventoryLevels({
             inventory_item_id: inventoryItem.id,
           });
@@ -818,6 +823,36 @@ const updateReservationsForChangedItemsStep = createStep(
           const currentStock = inventoryLevels[0].stocked_quantity || 0;
           const reservedQuantity = inventoryLevels[0].reserved_quantity || 0;
           const availableQuantity = currentStock - reservedQuantity;
+          
+          logger.info(
+            `[OFFER-INVENTORY] Post-cleanup inventory state for ${item.title}: Stock=${currentStock}, Reserved=${reservedQuantity}, Available=${availableQuantity}, Requesting=${item.quantity}`,
+          );
+
+          // ✅ VALIDATION: If we cleaned up reservations, verify that reserved_quantity decreased
+          if (cleanedUpReservations > 0) {
+            // Double-check: query reservations again to ensure cleanup worked
+            const remainingReservations = await inventoryModuleService.listReservationItems({
+              inventory_item_id: inventoryItem.id,
+            });
+            
+            const offerItemReservationsRemaining = remainingReservations.filter(
+              reservation =>
+                reservation.metadata &&
+                reservation.metadata.type === 'offer' &&
+                reservation.metadata.offer_id === input.offer_id &&
+                reservation.metadata.offer_item_id === item.id,
+            );
+            
+            if (offerItemReservationsRemaining.length > 0) {
+              logger.warn(
+                `[OFFER-INVENTORY] ⚠️ Warning: Still found ${offerItemReservationsRemaining.length} reservations for item ${item.title} after cleanup. Inventory sync may be delayed.`,
+              );
+            } else {
+              logger.info(
+                `[OFFER-INVENTORY] ✅ Cleanup verification passed: No stale reservations remaining for item ${item.title}`,
+              );
+            }
+          }
 
           // Create new reservation with updated quantity
           const reservations = await inventoryModuleService.createReservationItems([
