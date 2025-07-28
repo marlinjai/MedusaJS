@@ -1,18 +1,22 @@
 /**
  * offer-inventory-workflows.ts
- * Custom workflows for offer inventory management following Medusa best practices
- * Wraps core inventory workflows with custom offer business logic
+ * Custom workflows for offer inventory management using official Medusa workflows
+ * 
+ * ARCHITECTURE: Based on Medusa documentation recommendations
+ * - Uses official workflows from @medusajs/medusa/core-flows for data consistency
+ * - Provides rollback mechanisms and reliable error handling
+ * - Composes core workflows with custom offer business logic
+ * - Designed for ERP-like integration patterns
  */
 import type { IInventoryService, Logger } from '@medusajs/framework/types';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import { createStep, createWorkflow, StepResponse, WorkflowResponse } from '@medusajs/framework/workflows-sdk';
 
 // ✅ PROPER MEDUSA APPROACH: Import official core workflows for robust inventory management
-import { 
-  updateReservationsWorkflow,
-  updateInventoryLevelsWorkflow,
+import {
   createReservationsWorkflow,
   deleteReservationsWorkflow,
+  updateReservationsWorkflow,
 } from '@medusajs/medusa/core-flows';
 
 import { OFFER_MODULE } from '../modules/offer';
@@ -746,7 +750,7 @@ const updateReservationsForChangedItemsStep = createStep(
             });
 
             logger.info(
-              `[OFFER-INVENTORY] ✅ Successfully updated existing reservation ${offerItem.reservation_id} to ${item.quantity} units for item ${item.title}`,
+              `[OFFER-INVENTORY] ✅ Successfully updated existing reservation ${offerItem.reservation_id} to ${item.quantity} units for item ${item.title} (using updateReservationsWorkflow)`,
             );
             continue; // Successfully updated, move to next item
           } catch (updateError) {
