@@ -65,15 +65,15 @@ export async function POST(req: MedusaRequest<TransitionStatusRequest>, res: Med
         const offerService = req.scope.resolve('offer');
         const logger = req.scope.resolve('logger');
         const query = req.scope.resolve('query');
-        
+
         // Get offer with items to check inventory
         const offer = await offerService.getOfferWithDetails(offer_id);
-        
+
         if (offer && offer.items.length > 0) {
           // Use the same logic as check-inventory endpoint
           const { getVariantAvailability } = require('@medusajs/framework/utils');
           const sales_channel_id = 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8'; // Hardcoded for customer
-          
+
           // Filter product items that have variant_id
           const productItems = offer.items.filter(item => item.item_type === 'product' && item.variant_id);
           const variantIds = productItems
@@ -85,7 +85,7 @@ export async function POST(req: MedusaRequest<TransitionStatusRequest>, res: Med
               variant_ids: variantIds,
               sales_channel_id,
             });
-            
+
             // Build inventory status summary
             inventoryStatus = {
               total_items_checked: productItems.length,
@@ -95,8 +95,10 @@ export async function POST(req: MedusaRequest<TransitionStatusRequest>, res: Med
               }).length,
               inventory_refreshed: true,
             };
-            
-            logger.info(`[TRANSITION-STATUS] Auto-refreshed inventory after ${result.result.inventory_action}: ${inventoryStatus.items_available}/${inventoryStatus.total_items_checked} items available`);
+
+            logger.info(
+              `[TRANSITION-STATUS] Auto-refreshed inventory after ${result.result.inventory_action}: ${inventoryStatus.items_available}/${inventoryStatus.total_items_checked} items available`,
+            );
           }
         }
       } catch (inventoryError) {

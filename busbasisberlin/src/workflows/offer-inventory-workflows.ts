@@ -7,6 +7,14 @@ import type { IInventoryService, Logger } from '@medusajs/framework/types';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import { createStep, createWorkflow, StepResponse, WorkflowResponse } from '@medusajs/framework/workflows-sdk';
 
+// ✅ PROPER MEDUSA APPROACH: Import official core workflows for robust inventory management
+import { 
+  updateReservationsWorkflow,
+  updateInventoryLevelsWorkflow,
+  createReservationsWorkflow,
+  deleteReservationsWorkflow,
+} from '@medusajs/medusa/core-flows';
+
 import { OFFER_MODULE } from '../modules/offer';
 import {
   CreatedReservation,
@@ -715,16 +723,20 @@ const updateReservationsForChangedItemsStep = createStep(
           `[OFFER-INVENTORY-DEBUG] Item ${item.title}: reservation_id = ${offerItem.reservation_id || 'null'}, quantity = ${item.quantity}`,
         );
 
-        // Step 2: Try to update existing reservation first (efficient Medusa pattern)
+        // Step 2: Try to update existing reservation first (proper Medusa workflow pattern)
         if (offerItem.reservation_id) {
           try {
-            // ✅ PROPER MEDUSA API: Update existing reservation directly using updateReservationItems
-            await inventoryModuleService.updateReservationItems([
-              {
-                id: offerItem.reservation_id,
-                quantity: item.quantity,
+            // ✅ PROPER MEDUSA WORKFLOW: Use updateReservationsWorkflow for data consistency & rollback
+            const updateResult = await updateReservationsWorkflow(container).run({
+              input: {
+                updates: [
+                  {
+                    id: offerItem.reservation_id,
+                    quantity: item.quantity,
+                  },
+                ],
               },
-            ]);
+            });
 
             updatedReservations.push({
               reservation_id: offerItem.reservation_id,
@@ -776,9 +788,14 @@ const updateReservationsForChangedItemsStep = createStep(
                 reservation.metadata.offer_item_id === item.id,
             );
 
-            // Clean up any stale reservations
+            // Clean up any stale reservations using proper Medusa workflow
             for (const reservation of offerItemReservations) {
-              await inventoryModuleService.deleteReservationItems([reservation.id]);
+              // ✅ PROPER MEDUSA WORKFLOW: Use deleteReservationsWorkflow for consistency & rollback
+              await deleteReservationsWorkflow(container).run({
+                input: {
+                  ids: [reservation.id],
+                },
+              });
               cleanedUpReservations++;
               logger.info(
                 `[OFFER-INVENTORY] Cleaned up stale reservation ${reservation.id} (${reservation.quantity} units) for item ${item.title}`,
@@ -792,7 +809,7 @@ const updateReservationsForChangedItemsStep = createStep(
               logger.info(
                 `[OFFER-INVENTORY] ✅ Cleaned up ${cleanedUpReservations} stale reservations. Trusting Medusa to sync inventory levels.`,
               );
-              
+
               // Optional: Add a small delay to allow Medusa's internal sync to complete
               // This is not required by the API but can help with timing-sensitive operations
               await new Promise(resolve => setTimeout(resolve, 50));
@@ -868,25 +885,31 @@ const updateReservationsForChangedItemsStep = createStep(
             }
           }
 
-          // Create new reservation with updated quantity
-          const reservations = await inventoryModuleService.createReservationItems([
-            {
-              inventory_item_id: inventoryItem.id,
-              location_id: locationId,
-              quantity: item.quantity,
-              allow_backorder: true, // Allow backorder for offers
-              metadata: {
-                type: 'offer',
-                offer_id: input.offer_id,
-                offer_item_id: item.id,
-                variant_id: item.variant_id,
-                sku: item.sku,
-                backorder_allowed: true,
-                original_available: availableQuantity,
-                created_at: new Date().toISOString(),
-              },
+          // Create new reservation with updated quantity using proper Medusa workflow
+          const reservationResult = await createReservationsWorkflow(container).run({
+            input: {
+              reservations: [
+                {
+                  inventory_item_id: inventoryItem.id,
+                  location_id: locationId,
+                  quantity: item.quantity,
+                  allow_backorder: true, // Allow backorder for offers
+                  metadata: {
+                    type: 'offer',
+                    offer_id: input.offer_id,
+                    offer_item_id: item.id,
+                    variant_id: item.variant_id,
+                    sku: item.sku,
+                    backorder_allowed: true,
+                    original_available: availableQuantity,
+                    created_at: new Date().toISOString(),
+                  },
+                },
+              ],
             },
-          ]);
+          });
+
+          const reservations = reservationResult.result;
 
           const reservation = reservations[0];
 
@@ -986,25 +1009,31 @@ const createReservationsForNewItemsStep = createStep(
           const reservedQuantity = inventoryLevels[0].reserved_quantity || 0;
           const availableQuantity = currentStock - reservedQuantity;
 
-          const reservations = await inventoryModuleService.createReservationItems([
-            {
-              inventory_item_id: inventoryItem.id,
-              location_id: locationId,
-              quantity: item.quantity,
-              allow_backorder: true, // Allow backorder for offers
-              metadata: {
-                type: 'offer',
-                offer_id: input.offer_id,
-                offer_item_id: item.id,
-                variant_id: item.variant_id,
-                sku: item.sku,
-                backorder_allowed: true,
-                original_available: availableQuantity,
-                created_at: new Date().toISOString(),
-              },
+          // ✅ PROPER MEDUSA WORKFLOW: Use createReservationsWorkflow for data consistency & rollback
+          const reservationResult = await createReservationsWorkflow(container).run({
+            input: {
+              reservations: [
+                {
+                  inventory_item_id: inventoryItem.id,
+                  location_id: locationId,
+                  quantity: item.quantity,
+                  allow_backorder: true, // Allow backorder for offers
+                  metadata: {
+                    type: 'offer',
+                    offer_id: input.offer_id,
+                    offer_item_id: item.id,
+                    variant_id: item.variant_id,
+                    sku: item.sku,
+                    backorder_allowed: true,
+                    original_available: availableQuantity,
+                    created_at: new Date().toISOString(),
+                  },
+                },
+              ],
             },
-          ]);
+          });
 
+          const reservations = reservationResult.result;
           const reservation = reservations[0];
 
           // Store the reservation_id in the offer_item for future tracking
