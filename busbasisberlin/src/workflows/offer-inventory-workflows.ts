@@ -711,51 +711,50 @@ const updateReservationsForChangedItemsStep = createStep(
           continue;
         }
 
-        // Step 2: Update existing reservation if reservation_id exists
-        if (offerItem.reservation_id) {
-          try {
-            // Try to update the existing reservation
-            await inventoryModuleService.updateReservationItems([
-              {
-                id: offerItem.reservation_id,
-                quantity: item.quantity,
-                metadata: {
-                  type: 'offer',
-                  offer_id: input.offer_id,
-                  offer_item_id: item.id,
-                  variant_id: item.variant_id,
-                  sku: item.sku,
-                  updated_at: new Date().toISOString(),
-                },
-              },
-            ]);
+        // Step 2: Find and delete ALL existing reservations for this offer item
+        // This ensures we don't have stacking reservations
+        const existingInventoryItems = await inventoryModuleService.listInventoryItems({
+          sku: item.sku,
+        });
 
-            updatedReservations.push({
-              reservation_id: offerItem.reservation_id,
-              item_id: item.id,
-              variant_id: item.variant_id,
-              quantity: item.quantity,
+        if (existingInventoryItems.length === 0) {
+          logger.warn(`[OFFER-INVENTORY] No inventory items found for variant ${item.variant_id} (SKU: ${item.sku})`);
+          continue;
+        }
+
+        let deletedExistingReservations = 0;
+        for (const inventoryItem of existingInventoryItems) {
+          try {
+            // Find ALL existing reservations for this specific offer item
+            const allReservations = await inventoryModuleService.listReservationItems({
+              inventory_item_id: inventoryItem.id,
             });
 
-            logger.info(
-              `[OFFER-INVENTORY] Updated existing reservation ${offerItem.reservation_id} for item ${item.title}: ${item.quantity} units`,
+            // Filter to find reservations belonging to this specific offer item
+            const offerItemReservations = allReservations.filter(
+              reservation =>
+                reservation.metadata &&
+                reservation.metadata.type === 'offer' &&
+                reservation.metadata.offer_id === input.offer_id &&
+                reservation.metadata.offer_item_id === item.id,
             );
-            continue;
-          } catch (updateError) {
-            logger.warn(
-              `[OFFER-INVENTORY] Failed to update existing reservation ${offerItem.reservation_id}, will delete and recreate: ${updateError.message}`,
-            );
-            
-            // Delete the old reservation before creating a new one
-            try {
-              await inventoryModuleService.deleteReservationItems([offerItem.reservation_id]);
-              logger.info(`[OFFER-INVENTORY] Deleted old reservation ${offerItem.reservation_id} before recreation`);
-            } catch (deleteError) {
-              logger.warn(`[OFFER-INVENTORY] Failed to delete old reservation ${offerItem.reservation_id}: ${deleteError.message}`);
+
+            // Delete all existing reservations for this offer item
+            for (const reservation of offerItemReservations) {
+              await inventoryModuleService.deleteReservationItems([reservation.id]);
+              deletedExistingReservations++;
+              logger.info(
+                `[OFFER-INVENTORY] Deleted existing reservation ${reservation.id} (${reservation.quantity} units) for item ${item.title}`,
+              );
             }
-            // Fall through to create new reservation
+          } catch (deleteError) {
+            logger.error(`[OFFER-INVENTORY] Failed to delete existing reservations: ${deleteError.message}`);
           }
         }
+
+        logger.info(
+          `[OFFER-INVENTORY] Cleaned up ${deletedExistingReservations} existing reservations for item ${item.title}`,
+        );
 
         // Step 3: Create new reservation if no existing reservation or update failed
         const inventoryItems = await inventoryModuleService.listInventoryItems({
