@@ -8,6 +8,38 @@ import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import OfferService from '../../../../modules/offer/service';
 import { UpdateOfferInput, UpdateOfferItemInput } from '../../../../modules/offer/types';
 
+/**
+ * ✅ Helper function to auto-trigger inventory refresh for Admin UI
+ * This eliminates the need for manual "Lager prüfen" clicks
+ */
+async function triggerInventoryRefresh(req: MedusaRequest, offerId: string): Promise<void> {
+  const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
+
+  try {
+    logger.info(`[INVENTORY-REFRESH] Auto-triggering inventory check for offer ${offerId}`);
+
+    // Call the inventory check endpoint internally
+    const inventoryResponse = await fetch(`http://localhost:9000/admin/offers/${offerId}/check-inventory`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(req.headers.authorization && { Authorization: req.headers.authorization }),
+        ...(req.headers.cookie && { Cookie: req.headers.cookie }),
+      },
+    });
+
+    if (inventoryResponse.ok) {
+      const inventoryData = await inventoryResponse.json();
+      logger.info(`[INVENTORY-REFRESH] Inventory refresh completed for offer ${offerId}: ${inventoryData.status}`);
+    } else {
+      logger.warn(`[INVENTORY-REFRESH] Inventory refresh failed for offer ${offerId}: ${inventoryResponse.status}`);
+    }
+  } catch (error) {
+    logger.error(`[INVENTORY-REFRESH] Error refreshing inventory for offer ${offerId}:`, error);
+    // Don't throw - this is a nice-to-have feature, shouldn't break the main update
+  }
+}
+
 // Module constant for service resolution
 const OFFER_MODULE = 'offer';
 
@@ -242,6 +274,9 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
 
           const reservationResult = await reservationUpdateResponse.json();
           logger.info(`[RESERVATION-UPDATE] Pre-deletion API call completed: ${reservationResult.message}`);
+
+          // ✅ Auto-trigger inventory refresh for Admin UI
+          await triggerInventoryRefresh(req, id);
         } catch (reservationError) {
           logger.error(`Failed to update reservations for offer ${existingOffer.offer_number}:`, reservationError);
           // Don't fail the entire update if reservation update fails - just log the error
@@ -320,6 +355,9 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
 
           const reservationResult = await reservationUpdateResponse.json();
           logger.info(`[RESERVATION-UPDATE] Item update reservations completed: ${reservationResult.message}`);
+
+          // ✅ Auto-trigger inventory refresh for Admin UI
+          await triggerInventoryRefresh(req, id);
         } catch (reservationError) {
           logger.error(
             `Failed to update reservations for modified items in offer ${existingOffer.offer_number}:`,
@@ -402,6 +440,9 @@ export async function PUT(req: MedusaRequest<UpdateOfferRequest>, res: MedusaRes
 
           const reservationResult = await reservationUpdateResponse.json();
           logger.info(`[RESERVATION-UPDATE] New item reservations completed: ${reservationResult.message}`);
+
+          // ✅ Auto-trigger inventory refresh for Admin UI
+          await triggerInventoryRefresh(req, id);
         } catch (reservationError) {
           logger.error(
             `Failed to create reservations for new items in offer ${existingOffer.offer_number}:`,

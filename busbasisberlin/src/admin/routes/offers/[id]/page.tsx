@@ -172,7 +172,7 @@ export default function OfferDetailPage() {
       // Check inventory immediately after offer loads
       checkInventoryAvailability();
     }
-  }, [offer?.id, offer?.items?.length]); // Re-run when offer ID changes or items change
+  }, [offer?.id, offer?.items?.length, offer?.items]); // Re-run when offer ID changes or items change
 
   // Update offer status
   const updateStatus = async (newStatus: string) => {
@@ -207,7 +207,7 @@ export default function OfferDetailPage() {
         toast.success('Status erfolgreich aktualisiert');
 
         // Refresh inventory status after status change
-        if (newStatus === 'accepted' || newStatus === 'completed') {
+        if (newStatus === 'accepted' || newStatus === 'completed' || newStatus === 'active') {
           checkInventoryAvailability();
         }
       } else {
@@ -1054,7 +1054,6 @@ export default function OfferDetailPage() {
                                 }
                                 return item.inventory_quantity ?? 'Unbekannt';
                               })()}
-                              {checkingInventory && <span className="ml-1">⏳</span>}
                             </Text>
                             {(() => {
                               const inventoryItem = getItemInventoryStatus(item.id);
