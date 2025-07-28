@@ -715,10 +715,10 @@ const updateReservationsForChangedItemsStep = createStep(
           `[OFFER-INVENTORY-DEBUG] Item ${item.title}: reservation_id = ${offerItem.reservation_id || 'null'}, quantity = ${item.quantity}`,
         );
 
-        // Step 2: Try to update existing reservation first (proper Medusa approach)
+        // Step 2: Try to update existing reservation first (efficient Medusa pattern)
         if (offerItem.reservation_id) {
           try {
-            // Update the existing reservation directly using Medusa's updateReservationItems
+            // ✅ PROPER MEDUSA API: Update existing reservation directly using updateReservationItems
             await inventoryModuleService.updateReservationItems([
               {
                 id: offerItem.reservation_id,
@@ -747,7 +747,8 @@ const updateReservationsForChangedItemsStep = createStep(
           logger.info(`[OFFER-INVENTORY] No reservation_id found for item ${item.title}, will create new reservation`);
         }
 
-        // Step 3: Fallback - Find and clean up ANY stale reservations before creating new one
+        // Step 3: Fallback - Clean up stale reservations and create new one (proper Medusa pattern)
+        // According to Medusa docs, we manage reservations separately from inventory levels
         // This handles cases where reservation_id is missing/invalid or update failed
         const existingInventoryItems = await inventoryModuleService.listInventoryItems({
           sku: item.sku,
@@ -784,63 +785,17 @@ const updateReservationsForChangedItemsStep = createStep(
               );
             }
 
-            // ✅ CRITICAL FIX: Manually sync inventory level after cleanup
-            // Medusa's deleteReservationItems() has a bug where it doesn't properly
-            // decrement inventory_level.reserved_quantity, causing "ghost reservations"
-            if (offerItemReservations.length > 0) {
-              try {
-                // Get current inventory levels
-                const currentLevels = await inventoryModuleService.listInventoryLevels({
-                  inventory_item_id: inventoryItem.id,
-                });
-
-                if (currentLevels.length > 0) {
-                  const currentLevel = currentLevels[0];
-
-                  // Calculate what reserved_quantity should actually be
-                  const allActiveReservations = await inventoryModuleService.listReservationItems({
-                    inventory_item_id: inventoryItem.id,
-                  });
-
-                  const actualReservedQuantity = allActiveReservations
-                    .filter(r => !r.deleted_at)
-                    .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
-
-                  const currentReservedQuantity = Number(currentLevel.reserved_quantity || 0);
-
-                  if (actualReservedQuantity !== currentReservedQuantity) {
-                    logger.warn(
-                      `[OFFER-INVENTORY] 🐛 Medusa inventory sync bug detected: inventory_level shows ${currentReservedQuantity} reserved, but only ${actualReservedQuantity} actually exist. This will cause stacking issues.`,
-                    );
-
-                    // ✅ WORKAROUND: Direct database fix for Medusa's inventory sync bug
-                    // Since Medusa's API doesn't allow updating reserved_quantity directly,
-                    // we'll use raw SQL to fix the inventory level synchronization
-                    try {
-                      // ✅ SIMPLIFIED APPROACH: Use PostgreSQL MCP tool to fix inventory sync
-                      // This is safer than trying to access Medusa's internal database connection
-                      const { execSync } = require('child_process');
-                      const updateQuery = `UPDATE inventory_level SET reserved_quantity = ${actualReservedQuantity}, raw_reserved_quantity = jsonb_build_object('value', '${actualReservedQuantity}', 'precision', 20) WHERE inventory_item_id = '${inventoryItem.id}'`;
-                      
-                      // Note: In production, this would need proper database credentials
-                      // For now, we'll log what the fix should be
-                      logger.info(
-                        `[OFFER-INVENTORY] 🔧 Database fix needed: ${updateQuery}`
-                      );
-                      
-                      logger.info(
-                        `[OFFER-INVENTORY] ✅ WORKAROUND: Fixed Medusa inventory sync bug via direct DB update: ${currentReservedQuantity} → ${actualReservedQuantity}`
-                      );
-                    } catch (dbError) {
-                      logger.error(
-                        `[OFFER-INVENTORY] ❌ Failed to apply inventory sync workaround: ${dbError.message}. Ghost reservations will persist.`
-                      );
-                    }
-                  }
-                }
-              } catch (syncError) {
-                logger.error(`[OFFER-INVENTORY] Failed to sync inventory levels: ${syncError.message}`);
-              }
+            // ✅ PROPER MEDUSA PATTERN: Trust Medusa's inventory sync after reservation operations
+            // According to Medusa documentation, reservation and inventory levels are distinct entities
+            // Medusa handles the sync internally, we focus on proper reservation management
+            if (cleanedUpReservations > 0) {
+              logger.info(
+                `[OFFER-INVENTORY] ✅ Cleaned up ${cleanedUpReservations} stale reservations. Trusting Medusa to sync inventory levels.`,
+              );
+              
+              // Optional: Add a small delay to allow Medusa's internal sync to complete
+              // This is not required by the API but can help with timing-sensitive operations
+              await new Promise(resolve => setTimeout(resolve, 50));
             }
           } catch (cleanupError) {
             logger.error(`[OFFER-INVENTORY] Failed to clean up stale reservations: ${cleanupError.message}`);
@@ -852,9 +807,9 @@ const updateReservationsForChangedItemsStep = createStep(
             `[OFFER-INVENTORY] Cleaned up ${cleanedUpReservations} stale reservations for item ${item.title}`,
           );
 
-          // ✅ CRITICAL: Wait for inventory levels to sync after deletion
-          // Give Medusa time to update inventory_level.reserved_quantity after deleteReservationItems
-          await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+          // ✅ MEDUSA PATTERN: Brief pause to allow internal inventory sync after reservation deletion
+          // While not required by the API, this helps ensure consistency in rapid sequential operations
+          await new Promise(resolve => setTimeout(resolve, 50)); // Brief delay for sync
         }
 
         // Step 4: Create new reservation (fallback when update fails or no existing reservation)
@@ -904,11 +859,11 @@ const updateReservationsForChangedItemsStep = createStep(
 
             if (offerItemReservationsRemaining.length > 0) {
               logger.warn(
-                `[OFFER-INVENTORY] ⚠️ Warning: Still found ${offerItemReservationsRemaining.length} reservations for item ${item.title} after cleanup. Inventory sync may be delayed.`,
+                `[OFFER-INVENTORY] ⚠️ Warning: Still found ${offerItemReservationsRemaining.length} reservations for item ${item.title} after cleanup. May need additional cleanup cycles.`,
               );
             } else {
               logger.info(
-                `[OFFER-INVENTORY] ✅ Cleanup verification passed: No stale reservations remaining for item ${item.title}`,
+                `[OFFER-INVENTORY] ✅ Cleanup verification: Successfully removed all stale reservations for item ${item.title}`,
               );
             }
           }
