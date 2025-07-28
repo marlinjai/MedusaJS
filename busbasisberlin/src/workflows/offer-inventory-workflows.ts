@@ -631,8 +631,7 @@ const removeReservationsForDeletedItemsStep = createStep(
     // Get offer items to find their reservation_ids
     try {
       for (const itemId of input.item_ids_to_delete) {
-        const offerItems = await offerService.listOfferItems({ id: itemId });
-        const offerItem = offerItems[0];
+        const offerItem = await offerService.retrieveOfferItem(itemId);
 
         if (!offerItem || !offerItem.reservation_id) {
           logger.warn(`[OFFER-INVENTORY] No reservation found for deleted item ${itemId}`);
@@ -703,14 +702,8 @@ const updateReservationsForChangedItemsStep = createStep(
 
       try {
         // Step 1: Get the current offer item to check for existing reservation_id
-        // Explicitly select the fields we need including reservation_id
-        const offerItems = await offerService.listOfferItems(
-          { id: item.id },
-          { 
-            select: ['id', 'offer_id', 'variant_id', 'sku', 'title', 'quantity', 'reservation_id'],
-          }
-        );
-        const offerItem = offerItems[0];
+        // Use retrieveOfferItem instead of listOfferItems for single item with all fields
+        const offerItem = await offerService.retrieveOfferItem(item.id);
 
         if (!offerItem) {
           logger.warn(`[OFFER-INVENTORY] Offer item ${item.id} not found`);
