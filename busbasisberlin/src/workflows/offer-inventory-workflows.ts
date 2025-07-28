@@ -711,6 +711,9 @@ const updateReservationsForChangedItemsStep = createStep(
           continue;
         }
 
+        // Debug logging to understand the reservation_id situation
+        logger.info(`[OFFER-INVENTORY-DEBUG] Item ${item.title}: reservation_id = ${offerItem.reservation_id || 'null'}, quantity = ${item.quantity}`);
+
         // Step 2: Try to update existing reservation first (proper Medusa approach)
         if (offerItem.reservation_id) {
           try {
@@ -730,15 +733,17 @@ const updateReservationsForChangedItemsStep = createStep(
             });
 
             logger.info(
-              `[OFFER-INVENTORY] Successfully updated existing reservation ${offerItem.reservation_id} to ${item.quantity} units for item ${item.title}`,
+              `[OFFER-INVENTORY] ✅ Successfully updated existing reservation ${offerItem.reservation_id} to ${item.quantity} units for item ${item.title}`,
             );
             continue; // Successfully updated, move to next item
           } catch (updateError) {
             logger.warn(
-              `[OFFER-INVENTORY] Failed to update reservation ${offerItem.reservation_id}: ${updateError.message}. Will clean up and recreate.`,
+              `[OFFER-INVENTORY] ❌ Failed to update reservation ${offerItem.reservation_id}: ${updateError.message}. Will clean up and recreate.`,
             );
             // Fall through to cleanup and recreate approach
           }
+        } else {
+          logger.info(`[OFFER-INVENTORY] No reservation_id found for item ${item.title}, will create new reservation`);
         }
 
         // Step 3: Fallback - Find and clean up ANY stale reservations before creating new one
