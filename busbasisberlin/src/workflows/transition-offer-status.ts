@@ -12,7 +12,24 @@
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { createStep, createWorkflow, StepResponse, WorkflowResponse } from '@medusajs/framework/workflows-sdk';
 import { fulfillOfferReservationsWorkflow } from './fulfill-offer-reservations';
-import { releaseOfferReservationsWorkflow, reserveOfferInventoryWorkflow } from './offer-inventory-workflows';
+import { releaseOfferReservationsWorkflow } from './release-offer-reservations';
+import { reserveOfferInventoryWorkflow } from './reserve-offer-inventory';
+
+// Type for different inventory operation results
+type InventoryOperationResult =
+  | { inventory_action: 'reservations_created'; reservations_created: number }
+  | { inventory_action: 'reservations_maintained'; reservations_maintained: boolean }
+  | { inventory_action: 'reservations_released'; reservations_released: number }
+  | { inventory_action: 'reservations_fulfilled'; reservations_fulfilled: number }
+  | { inventory_action: 'reservations_release_failed'; error: any }
+  | { inventory_action: 'no_action_needed'; no_inventory_action: boolean }
+  | { inventory_action: 'no_inventory_changes' };
+
+type InventoryCompensationData = {
+  inventory_action: string;
+  previous_status: string;
+  offer_id?: string;
+};
 
 // Module constant for service resolution
 const OFFER_MODULE = 'offer';
@@ -65,7 +82,7 @@ const handleInventoryForStatusTransitionStep = createStep(
       user_id?: string;
     },
     { container },
-  ) => {
+  ): Promise<StepResponse<InventoryOperationResult, InventoryCompensationData>> => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
 
     logger.info(`[OFFER-TRANSITION] Handling inventory for transition: ${input.previous_status} → ${input.new_status}`);
@@ -191,9 +208,18 @@ const handleInventoryForStatusTransitionStep = createStep(
   async (compensationData, { container }) => {
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
 
+    if (!compensationData) {
+      logger.warn(`[OFFER-TRANSITION] No compensation data available`);
+      return;
+    }
+
     // ✅ Compensation logic for inventory actions
     if (compensationData.inventory_action === 'reservations_created') {
       logger.info(`[OFFER-TRANSITION] Compensating: Releasing created reservations`);
+      if (!compensationData.offer_id) {
+        logger.error(`[OFFER-TRANSITION] Cannot compensate: missing offer_id`);
+        return;
+      }
       try {
         await releaseOfferReservationsWorkflow(container).run({
           input: {
@@ -206,6 +232,10 @@ const handleInventoryForStatusTransitionStep = createStep(
       }
     } else if (compensationData.inventory_action === 'reservations_released') {
       logger.info(`[OFFER-TRANSITION] Compensating: Re-creating released reservations`);
+      if (!compensationData.offer_id) {
+        logger.error(`[OFFER-TRANSITION] Cannot compensate: missing offer_id`);
+        return;
+      }
       try {
         await reserveOfferInventoryWorkflow(container).run({
           input: { offer_id: compensationData.offer_id },
@@ -268,7 +298,14 @@ const updateOfferStatusStep = createStep(
     const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
     const offerService = container.resolve(OFFER_MODULE);
 
-    logger.info(`[OFFER-TRANSITION] Compensating: Reverting status update for offer ${compensationData.offer_id}`);
+    if (!compensationData) {
+      logger.warn(`[OFFER-TRANSITION] No compensation data available for status reversion`);
+      return;
+    }
+
+    logger.info(
+      `[OFFER-TRANSITION] Compensating: Reverting status update for offer ${compensationData.offer_id || 'unknown'}`,
+    );
 
     // Revert to previous status (we'd need to track this, but for now just log)
     logger.warn(`[OFFER-TRANSITION] Status reversion not implemented - manual intervention may be required`);

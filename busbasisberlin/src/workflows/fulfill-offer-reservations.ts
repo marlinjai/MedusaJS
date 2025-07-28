@@ -10,7 +10,7 @@
 
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import { createStep, createWorkflow, StepResponse, WorkflowResponse } from '@medusajs/framework/workflows-sdk';
-import { releaseOfferReservationsWorkflow } from './offer-inventory-workflows';
+import { releaseOfferReservationsWorkflow } from './release-offer-reservations';
 
 // Module constant for service resolution
 const OFFER_MODULE = 'offer';
@@ -97,7 +97,8 @@ const reduceInventoryLevelsStep = createStep(
                 // Reduce the inventory level
                 await inventoryModuleService.updateInventoryLevels([
                   {
-                    id: level.id,
+                    inventory_item_id: level.inventory_item_id,
+                    location_id: level.location_id,
                     stocked_quantity: level.stocked_quantity - availableToReduce,
                   },
                 ]);
@@ -140,6 +141,11 @@ const reduceInventoryLevelsStep = createStep(
     logger.info(`[OFFER-FULFILLMENT] Compensating: Restoring inventory levels`);
 
     // Restore inventory levels
+    if (!compensationData?.reduced_items) {
+      logger.warn(`[OFFER-FULFILLMENT] No compensation data available for inventory restoration`);
+      return;
+    }
+
     for (const item of compensationData.reduced_items) {
       try {
         const inventoryLevels = await inventoryModuleService.listInventoryLevels({
@@ -149,7 +155,8 @@ const reduceInventoryLevelsStep = createStep(
         for (const level of inventoryLevels) {
           await inventoryModuleService.updateInventoryLevels([
             {
-              id: level.id,
+              inventory_item_id: level.inventory_item_id,
+              location_id: level.location_id,
               stocked_quantity: level.stocked_quantity + item.quantity_reduced,
             },
           ]);
@@ -240,6 +247,11 @@ const updateOfferStatusStep = createStep(
     const offerService = container.resolve(OFFER_MODULE);
 
     logger.info(`[OFFER-FULFILLMENT] Compensating: Reverting status to accepted`);
+
+    if (!compensationData?.offer_id) {
+      logger.warn(`[OFFER-FULFILLMENT] No compensation data available for status reversion`);
+      return;
+    }
 
     try {
       await offerService.updateOffers([

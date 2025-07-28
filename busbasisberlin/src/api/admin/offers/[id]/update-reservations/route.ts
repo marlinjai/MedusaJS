@@ -10,7 +10,7 @@
 
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework';
 import { UpdateOfferReservationsInput } from '../../../../../modules/offer/types';
-import { updateOfferInventoryReservationsWorkflow } from '../../../../../workflows/offer-inventory-workflows';
+import { updateOfferInventoryReservationsWorkflow } from '../../../../../workflows/update-offer-reservations';
 
 // ✅ Use centralized type for workflow input
 type UpdateReservationsRequest = UpdateOfferReservationsInput;
