@@ -155,11 +155,11 @@ const handleInventoryForStatusTransitionStep = createStep(
         const result = await fulfillOfferReservationsWorkflow(container).run({
           input: { offer_id: input.offer.id },
         });
-        logger.info(`[OFFER-TRANSITION] Reservations fulfilled: ${result.result.reservations_fulfilled} items`);
+        logger.info(`[OFFER-TRANSITION] Reservations fulfilled: ${result.result.items_reduced} items`);
         return new StepResponse(
           {
             inventory_action: 'reservations_fulfilled',
-            reservations_fulfilled: result.result.reservations_fulfilled,
+            reservations_fulfilled: result.result.items_reduced,
           },
           {
             inventory_action: 'reservations_fulfilled',

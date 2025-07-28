@@ -1,7 +1,7 @@
 /**
  * offer-inventory-workflows.ts
  * Custom workflows for offer inventory management using official Medusa workflows
- * 
+ *
  * ARCHITECTURE: Based on Medusa documentation recommendations
  * - Uses official workflows from @medusajs/medusa/core-flows for data consistency
  * - Provides rollback mechanisms and reliable error handling

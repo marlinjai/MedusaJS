@@ -58,7 +58,11 @@ export async function POST(req: MedusaRequest<TransitionStatusRequest>, res: Med
 
     // ✅ ENHANCEMENT: Auto-refresh inventory data after transitions that affect reservations
     // This eliminates the need for manual "lager prüfen" clicks in the admin UI
-    let inventoryStatus = null;
+    let inventoryStatus: null | {
+      total_items_checked: number;
+      items_available: number;
+      inventory_refreshed: boolean;
+    } = null;
     if (['reservations_created', 'reservations_released'].includes(result.result.inventory_action)) {
       try {
         // Get the offer service to check inventory status
@@ -97,7 +101,7 @@ export async function POST(req: MedusaRequest<TransitionStatusRequest>, res: Med
             };
 
             logger.info(
-              `[TRANSITION-STATUS] Auto-refreshed inventory after ${result.result.inventory_action}: ${inventoryStatus.items_available}/${inventoryStatus.total_items_checked} items available`,
+              `[TRANSITION-STATUS] Auto-refreshed inventory after ${result.result.inventory_action}: ${inventoryStatus?.items_available}/${inventoryStatus?.total_items_checked} items available`,
             );
           }
         }
