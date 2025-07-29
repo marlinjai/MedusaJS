@@ -6,9 +6,9 @@
 import { Migration } from '@mikro-orm/migrations';
 
 export class Migration20250127000001 extends Migration {
-  override async up(): Promise<void> {
-    this.addSql(
-      `CREATE TABLE IF NOT EXISTS "manual_customer" (
+	override async up(): Promise<void> {
+		this.addSql(
+			`CREATE TABLE IF NOT EXISTS "manual_customer" (
         "id" text PRIMARY KEY NOT NULL,
         "customer_number" text,
         "internal_key" text,
@@ -54,84 +54,98 @@ export class Migration20250127000001 extends Migration {
         "updated_at" timestamptz NOT NULL DEFAULT now(),
         "deleted_at" timestamptz
       );`,
-    );
+		);
 
-    // Create indexes for better performance
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_deleted_at" ON "manual_customer" (deleted_at) WHERE deleted_at IS NULL;`,
-    );
+		// Create indexes for better performance
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_deleted_at" ON "manual_customer" (deleted_at) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_number" ON "manual_customer" (customer_number) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_number" ON "manual_customer" (customer_number) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_email" ON "manual_customer" (email) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_email" ON "manual_customer" (email) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_phone" ON "manual_customer" (phone) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_phone" ON "manual_customer" (phone) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_type_status" ON "manual_customer" (customer_type, status) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_type_status" ON "manual_customer" (customer_type, status) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_source" ON "manual_customer" (source) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_source" ON "manual_customer" (source) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_legacy_id" ON "manual_customer" (legacy_customer_id) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_legacy_id" ON "manual_customer" (legacy_customer_id) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_name" ON "manual_customer" (first_name, last_name) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_name" ON "manual_customer" (first_name, last_name) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_company" ON "manual_customer" (company) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_company" ON "manual_customer" (company) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_internal_key" ON "manual_customer" (internal_key) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_internal_key" ON "manual_customer" (internal_key) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_customer_group" ON "manual_customer" (customer_group) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_customer_group" ON "manual_customer" (customer_group) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_fax" ON "manual_customer" (fax) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_fax" ON "manual_customer" (fax) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_manual_customer_ebay_name" ON "manual_customer" (ebay_name) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_manual_customer_ebay_name" ON "manual_customer" (ebay_name) WHERE deleted_at IS NULL;`,
+		);
 
-    // Add customer linking fields
-    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "core_customer_id" text NULL;');
-    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "is_linked" boolean NOT NULL DEFAULT false;');
-    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "linked_at" timestamptz NULL;');
-    this.addSql('ALTER TABLE "manual_customer" ADD COLUMN "linking_method" text NULL;');
+		// Add customer linking fields
+		this.addSql(
+			'ALTER TABLE "manual_customer" ADD COLUMN "core_customer_id" text NULL;',
+		);
+		this.addSql(
+			'ALTER TABLE "manual_customer" ADD COLUMN "is_linked" boolean NOT NULL DEFAULT false;',
+		);
+		this.addSql(
+			'ALTER TABLE "manual_customer" ADD COLUMN "linked_at" timestamptz NULL;',
+		);
+		this.addSql(
+			'ALTER TABLE "manual_customer" ADD COLUMN "linking_method" text NULL;',
+		);
 
-    // Add index on core_customer_id for performance
-    this.addSql('CREATE INDEX "IDX_manual_customer_core_customer_id" ON "manual_customer" ("core_customer_id");');
+		// Add index on core_customer_id for performance
+		this.addSql(
+			'CREATE INDEX "IDX_manual_customer_core_customer_id" ON "manual_customer" ("core_customer_id");',
+		);
 
-    // Add index on is_linked for filtering
-    this.addSql('CREATE INDEX "IDX_manual_customer_is_linked" ON "manual_customer" ("is_linked");');
-  }
+		// Add index on is_linked for filtering
+		this.addSql(
+			'CREATE INDEX "IDX_manual_customer_is_linked" ON "manual_customer" ("is_linked");',
+		);
+	}
 
-  override async down(): Promise<void> {
-    this.addSql(`DROP TABLE IF EXISTS "manual_customer" CASCADE;`);
-    // Remove indexes
-    this.addSql('DROP INDEX "IDX_manual_customer_is_linked";');
-    this.addSql('DROP INDEX "IDX_manual_customer_core_customer_id";');
+	override async down(): Promise<void> {
+		this.addSql(`DROP TABLE IF EXISTS "manual_customer" CASCADE;`);
+		// Remove indexes
+		this.addSql('DROP INDEX "IDX_manual_customer_is_linked";');
+		this.addSql('DROP INDEX "IDX_manual_customer_core_customer_id";');
 
-    // Remove columns
-    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "linking_method";');
-    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "linked_at";');
-    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "is_linked";');
-    this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "core_customer_id";');
-  }
+		// Remove columns
+		this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "linking_method";');
+		this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "linked_at";');
+		this.addSql('ALTER TABLE "manual_customer" DROP COLUMN "is_linked";');
+		this.addSql(
+			'ALTER TABLE "manual_customer" DROP COLUMN "core_customer_id";',
+		);
+	}
 }

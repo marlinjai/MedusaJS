@@ -20,165 +20,178 @@ import OfferService from '../../../../../modules/offer/service';
 const OFFER_MODULE = 'offer';
 
 interface OfferParams {
-  id: string;
+	id: string;
 }
 
 /**
  * POST /admin/offers/{id}/generate-pdf
  * Generate professional German-compliant PDF for offer
  */
-export async function POST(req: MedusaRequest<OfferParams>, res: MedusaResponse): Promise<void> {
-  const offerService: OfferService = req.scope.resolve(OFFER_MODULE);
-  const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
+export async function POST(
+	req: MedusaRequest<OfferParams>,
+	res: MedusaResponse,
+): Promise<void> {
+	const offerService: OfferService = req.scope.resolve(OFFER_MODULE);
+	const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
 
-  try {
-    const { id: offerId } = req.params;
+	try {
+		const { id: offerId } = req.params;
 
-    if (!offerId) {
-      res.status(400).json({
-        error: 'Validation error',
-        message: 'Offer ID is required',
-      });
-      return;
-    }
+		if (!offerId) {
+			res.status(400).json({
+				error: 'Validation error',
+				message: 'Offer ID is required',
+			});
+			return;
+		}
 
-    // Get offer with full details
-    const offer = await offerService.getOfferWithDetails(offerId);
-    if (!offer) {
-      res.status(404).json({
-        error: 'Not found',
-        message: 'Offer not found',
-      });
-      return;
-    }
+		// Get offer with full details
+		const offer = await offerService.getOfferWithDetails(offerId);
+		if (!offer) {
+			res.status(404).json({
+				error: 'Not found',
+				message: 'Offer not found',
+			});
+			return;
+		}
 
-    // Check if offer status allows PDF generation
-    const allowedStatuses = ['active', 'accepted', 'cancelled', 'completed'];
-    if (!allowedStatuses.includes(offer.status)) {
-      res.status(400).json({
-        error: 'Invalid status',
-        message: 'PDF can only be generated for active, accepted, cancelled, or completed offers',
-      });
-      return;
-    }
+		// Check if offer status allows PDF generation
+		const allowedStatuses = ['active', 'accepted', 'cancelled', 'completed'];
+		if (!allowedStatuses.includes(offer.status)) {
+			res.status(400).json({
+				error: 'Invalid status',
+				message:
+					'PDF can only be generated for active, accepted, cancelled, or completed offers',
+			});
+			return;
+		}
 
-    logger.info(`[PDF-GENERATION] Generating PDF for offer ${offer.offer_number}`);
+		logger.info(
+			`[PDF-GENERATION] Generating PDF for offer ${offer.offer_number}`,
+		);
 
-    // Prepare data for template
-    const templateData = {
-      // Company information
-      company: {
-        name: 'Basis Camp Berlin GmbH',
-        address: 'Hauptstrasse 51',
-        postalCode: '16547',
-        city: 'Birkenwerder',
-        email: 'info@basiscampberlin.de',
-      },
+		// Prepare data for template
+		const templateData = {
+			// Company information
+			company: {
+				name: 'Basis Camp Berlin GmbH',
+				address: 'Hauptstrasse 51',
+				postalCode: '16547',
+				city: 'Birkenwerder',
+				email: 'info@basiscampberlin.de',
+			},
 
-      // Offer information
-      offer: {
-        number: offer.offer_number,
-        date: new Date(offer.created_at).toLocaleDateString('de-DE'),
-        validUntil: offer.valid_until ? new Date(offer.valid_until).toLocaleDateString('de-DE') : null,
-        status: getStatusText(offer.status),
-        description: offer.description || 'Angebot',
-      },
+			// Offer information
+			offer: {
+				number: offer.offer_number,
+				date: new Date(offer.created_at).toLocaleDateString('de-DE'),
+				validUntil: offer.valid_until
+					? new Date(offer.valid_until).toLocaleDateString('de-DE')
+					: null,
+				status: getStatusText(offer.status),
+				description: offer.description || 'Angebot',
+			},
 
-      // Customer information
-      customer: {
-        name: offer.customer_name,
-        email: offer.customer_email,
-        phone: offer.customer_phone,
-        address: offer.customer_address,
-      },
+			// Customer information
+			customer: {
+				name: offer.customer_name,
+				email: offer.customer_email,
+				phone: offer.customer_phone,
+				address: offer.customer_address,
+			},
 
-      // Items with German formatting
-      items: offer.items.map((item, index) => ({
-        position: index + 1,
-        title: item.title,
-        description: item.description,
-        quantity: item.quantity,
-        unit: item.unit || 'STK',
-        unitPrice: formatCurrency(item.unit_price),
-        discount: item.discount_percentage || 0,
-        totalPrice: formatCurrency(calculateItemTotal(item)),
-        taxRate: item.tax_rate || 19,
-      })),
+			// Items with German formatting
+			items: offer.items.map((item, index) => ({
+				position: index + 1,
+				title: item.title,
+				description: item.description,
+				quantity: item.quantity,
+				unit: item.unit || 'STK',
+				unitPrice: formatCurrency(item.unit_price),
+				discount: item.discount_percentage || 0,
+				totalPrice: formatCurrency(calculateItemTotal(item)),
+				taxRate: item.tax_rate || 19,
+			})),
 
-      // Totals with German tax calculation
-      totals: calculateOfferTotals(offer),
+			// Totals with German tax calculation
+			totals: calculateOfferTotals(offer),
 
-      // Additional information
-      notes: {
-        internal: offer.internal_notes,
-        customer: offer.customer_notes,
-      },
+			// Additional information
+			notes: {
+				internal: offer.internal_notes,
+				customer: offer.customer_notes,
+			},
 
-      // Generation metadata
-      generatedAt: new Date().toLocaleString('de-DE'),
-    };
+			// Generation metadata
+			generatedAt: new Date().toLocaleString('de-DE'),
+		};
 
-    // Generate PDF
-    const pdfBuffer = await generatePDF(templateData);
+		// Generate PDF
+		const pdfBuffer = await generatePDF(templateData);
 
-    // Cache PDF on server for persistence across sessions
-    await cachePDF(offerId, pdfBuffer, logger);
+		// Cache PDF on server for persistence across sessions
+		await cachePDF(offerId, pdfBuffer, logger);
 
-    // Set response headers for PDF download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${offer.offer_number}.pdf"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
+		// Set response headers for PDF download
+		res.setHeader('Content-Type', 'application/pdf');
+		res.setHeader(
+			'Content-Disposition',
+			`attachment; filename="${offer.offer_number}.pdf"`,
+		);
+		res.setHeader('Content-Length', pdfBuffer.length);
 
-    // Send PDF
-    res.end(pdfBuffer);
+		// Send PDF
+		res.end(pdfBuffer);
 
-    logger.info(`[PDF-GENERATION] Successfully generated PDF for offer ${offer.offer_number}`);
-  } catch (error) {
-    logger.error('[PDF-GENERATION] Error generating PDF:', error);
-    res.status(500).json({
-      error: 'PDF Generation Failed',
-      message: error.message || 'Unable to generate PDF',
-    });
-  }
+		logger.info(
+			`[PDF-GENERATION] Successfully generated PDF for offer ${offer.offer_number}`,
+		);
+	} catch (error) {
+		logger.error('[PDF-GENERATION] Error generating PDF:', error);
+		res.status(500).json({
+			error: 'PDF Generation Failed',
+			message: error.message || 'Unable to generate PDF',
+		});
+	}
 }
 
 /**
  * Generate PDF using Puppeteer and German-compliant HTML template
  */
 async function generatePDF(data: any): Promise<Uint8Array> {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
+	const browser = await puppeteer.launch({
+		headless: true,
+		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	});
 
-  try {
-    const page = await browser.newPage();
+	try {
+		const page = await browser.newPage();
 
-    // Set page format for German A4 standard
-    await page.setViewport({ width: 794, height: 1123 }); // A4 at 96 DPI
+		// Set page format for German A4 standard
+		await page.setViewport({ width: 794, height: 1123 }); // A4 at 96 DPI
 
-    // Generate HTML from template
-    const html = getHTMLTemplate(data);
+		// Generate HTML from template
+		const html = getHTMLTemplate(data);
 
-    // Set content and wait for fonts/images to load
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+		// Set content and wait for fonts/images to load
+		await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Generate PDF with German business standards
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '20mm',
-        bottom: '20mm',
-        left: '20mm',
-      },
-    });
+		// Generate PDF with German business standards
+		const pdfBuffer = await page.pdf({
+			format: 'A4',
+			printBackground: true,
+			margin: {
+				top: '20mm',
+				right: '20mm',
+				bottom: '20mm',
+				left: '20mm',
+			},
+		});
 
-    return pdfBuffer;
-  } finally {
-    await browser.close();
-  }
+		return pdfBuffer;
+	} finally {
+		await browser.close();
+	}
 }
 
 /**
@@ -186,7 +199,7 @@ async function generatePDF(data: any): Promise<Uint8Array> {
  * Follows DIN 5008 standards for business correspondence
  */
 function getHTMLTemplate(data: any): string {
-  const template = `
+	const template = `
     <!DOCTYPE html>
     <html lang="de">
     <head>
@@ -520,9 +533,9 @@ function getHTMLTemplate(data: any): string {
     </html>
   `;
 
-  // Compile and render template
-  const compiledTemplate = handlebars.compile(template);
-  return compiledTemplate(data);
+	// Compile and render template
+	const compiledTemplate = handlebars.compile(template);
+	return compiledTemplate(data);
 }
 
 /**
@@ -530,64 +543,74 @@ function getHTMLTemplate(data: any): string {
  */
 
 function getStatusText(status: string): string {
-  const statusMap = {
-    draft: 'Entwurf',
-    active: 'Aktiv',
-    accepted: 'Angenommen',
-    completed: 'Abgeschlossen',
-    cancelled: 'Storniert',
-  };
-  return statusMap[status] || status;
+	const statusMap = {
+		draft: 'Entwurf',
+		active: 'Aktiv',
+		accepted: 'Angenommen',
+		completed: 'Abgeschlossen',
+		cancelled: 'Storniert',
+	};
+	return statusMap[status] || status;
 }
 
 function formatCurrency(amountInCents: number): string {
-  const euros = amountInCents / 100;
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(euros);
+	const euros = amountInCents / 100;
+	return new Intl.NumberFormat('de-DE', {
+		style: 'currency',
+		currency: 'EUR',
+	}).format(euros);
 }
 
 function calculateItemTotal(item: any): number {
-  const subtotal = item.unit_price * item.quantity;
-  const discount = subtotal * ((item.discount_percentage || 0) / 100);
-  return subtotal - discount;
+	const subtotal = item.unit_price * item.quantity;
+	const discount = subtotal * ((item.discount_percentage || 0) / 100);
+	return subtotal - discount;
 }
 
 function calculateOfferTotals(offer: any): any {
-  const subtotal = offer.items.reduce((sum: number, item: any) => sum + calculateItemTotal(item), 0);
+	const subtotal = offer.items.reduce(
+		(sum: number, item: any) => sum + calculateItemTotal(item),
+		0,
+	);
 
-  // Calculate tax (German standard: gross total / 1.19 for net, then tax = gross - net)
-  const grossTotal = subtotal;
-  const netTotal = grossTotal / 1.19;
-  const taxAmount = grossTotal - netTotal;
+	// Calculate tax (German standard: gross total / 1.19 for net, then tax = gross - net)
+	const grossTotal = subtotal;
+	const netTotal = grossTotal / 1.19;
+	const taxAmount = grossTotal - netTotal;
 
-  return {
-    subtotal: formatCurrency(netTotal),
-    taxAmount: formatCurrency(taxAmount),
-    total: formatCurrency(grossTotal),
-    taxRate: 19,
-  };
+	return {
+		subtotal: formatCurrency(netTotal),
+		taxAmount: formatCurrency(taxAmount),
+		total: formatCurrency(grossTotal),
+		taxRate: 19,
+	};
 }
 
 /**
  * Cache PDF on server for persistence across sessions
  */
-async function cachePDF(offerId: string, pdfBuffer: Uint8Array, logger: any): Promise<void> {
-  try {
-    // Create cache directory if it doesn't exist
-    const cacheDir = path.join(process.cwd(), 'tmp', 'pdfs');
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
+async function cachePDF(
+	offerId: string,
+	pdfBuffer: Uint8Array,
+	logger: any,
+): Promise<void> {
+	try {
+		// Create cache directory if it doesn't exist
+		const cacheDir = path.join(process.cwd(), 'tmp', 'pdfs');
+		if (!fs.existsSync(cacheDir)) {
+			fs.mkdirSync(cacheDir, { recursive: true });
+		}
 
-    // Write PDF to cache
-    const pdfPath = path.join(cacheDir, `offer-${offerId}.pdf`);
-    fs.writeFileSync(pdfPath, pdfBuffer);
+		// Write PDF to cache
+		const pdfPath = path.join(cacheDir, `offer-${offerId}.pdf`);
+		fs.writeFileSync(pdfPath, pdfBuffer);
 
-    logger.info(`[PDF-CACHE] Cached PDF for offer ${offerId} at ${pdfPath}`);
-  } catch (error) {
-    logger.error(`[PDF-CACHE] Failed to cache PDF for offer ${offerId}:`, error);
-    // Don't throw - caching failure shouldn't break PDF generation
-  }
+		logger.info(`[PDF-CACHE] Cached PDF for offer ${offerId} at ${pdfPath}`);
+	} catch (error) {
+		logger.error(
+			`[PDF-CACHE] Failed to cache PDF for offer ${offerId}:`,
+			error,
+		);
+		// Don't throw - caching failure shouldn't break PDF generation
+	}
 }

@@ -11,5 +11,5 @@ export const SERVICE_MODULE = 'service';
 
 // Define and export the module
 export default Module(SERVICE_MODULE, {
-  service: ServiceService,
+	service: ServiceService,
 });

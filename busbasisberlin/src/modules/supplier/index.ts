@@ -11,5 +11,5 @@ export const SUPPLIER_MODULE = 'supplier';
 
 // Define and export the module
 export default Module(SUPPLIER_MODULE, {
-  service: SupplierService,
+	service: SupplierService,
 });

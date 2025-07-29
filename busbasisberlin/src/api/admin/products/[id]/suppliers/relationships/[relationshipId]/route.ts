@@ -12,50 +12,56 @@ import SupplierModuleService from '../../../../../../../modules/supplier/service
 
 // PUT - Update a specific product-supplier relationship
 export const PUT = async (req: MedusaRequest, res: MedusaResponse) => {
-  const supplierService: SupplierModuleService = req.scope.resolve(SUPPLIER_MODULE);
-  const { id: productId, relationshipId } = req.params;
+	const supplierService: SupplierModuleService =
+		req.scope.resolve(SUPPLIER_MODULE);
+	const { id: productId, relationshipId } = req.params;
 
-  try {
-    const updateData = req.body as Partial<ProductSupplier>;
+	try {
+		const updateData = req.body as Partial<ProductSupplier>;
 
-    // Update the specific relationship using the enhanced service method
-    const updatedRelationship = await supplierService.updateProductSupplierRelationship(relationshipId, updateData);
+		// Update the specific relationship using the enhanced service method
+		const updatedRelationship =
+			await supplierService.updateProductSupplierRelationship(
+				relationshipId,
+				updateData,
+			);
 
-    res.json({
-      relationship: updatedRelationship,
-    });
-  } catch (error) {
-    console.error('Error updating product-supplier relationship:', error);
+		res.json({
+			relationship: updatedRelationship,
+		});
+	} catch (error) {
+		console.error('Error updating product-supplier relationship:', error);
 
-    if (error.message === 'Relationship not found') {
-      return res.status(404).json({
-        error: 'Relationship not found',
-        message: 'The specified relationship does not exist',
-      });
-    }
+		if (error.message === 'Relationship not found') {
+			return res.status(404).json({
+				error: 'Relationship not found',
+				message: 'The specified relationship does not exist',
+			});
+		}
 
-    res.status(500).json({
-      error: 'Failed to update relationship',
-      message: error.message,
-    });
-  }
+		res.status(500).json({
+			error: 'Failed to update relationship',
+			message: error.message,
+		});
+	}
 };
 
 // DELETE - Delete a specific product-supplier relationship
 export const DELETE = async (req: MedusaRequest, res: MedusaResponse) => {
-  const supplierService: SupplierModuleService = req.scope.resolve(SUPPLIER_MODULE);
-  const { id: productId, relationshipId } = req.params;
+	const supplierService: SupplierModuleService =
+		req.scope.resolve(SUPPLIER_MODULE);
+	const { id: productId, relationshipId } = req.params;
 
-  try {
-    // Delete the specific relationship using the enhanced service method
-    await supplierService.deleteProductSupplierRelationship(relationshipId);
+	try {
+		// Delete the specific relationship using the enhanced service method
+		await supplierService.deleteProductSupplierRelationship(relationshipId);
 
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting product-supplier relationship:', error);
-    res.status(500).json({
-      error: 'Failed to delete relationship',
-      message: error.message,
-    });
-  }
+		res.status(204).send();
+	} catch (error) {
+		console.error('Error deleting product-supplier relationship:', error);
+		res.status(500).json({
+			error: 'Failed to delete relationship',
+			message: error.message,
+		});
+	}
 };

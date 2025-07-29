@@ -8,109 +8,134 @@ import { OfferItemType } from './models/offer-item';
 
 // ✅ UTILITY TYPES: Use inferred types instead of interfaces
 export type CreateOfferInput = Partial<
-  Omit<OfferType, 'id' | 'offer_number_seq' | 'offer_number' | 'created_at' | 'updated_at'>
+	Omit<
+		OfferType,
+		'id' | 'offer_number_seq' | 'offer_number' | 'created_at' | 'updated_at'
+	>
 > & {
-  items?: CreateOfferItemInput[];
+	items?: CreateOfferItemInput[];
 };
 
 export type CreateOfferItemInput = Partial<
-  Omit<OfferItemType, 'id' | 'offer_id' | 'total_price' | 'tax_amount' | 'created_at' | 'updated_at'>
+	Omit<
+		OfferItemType,
+		| 'id'
+		| 'offer_id'
+		| 'total_price'
+		| 'tax_amount'
+		| 'created_at'
+		| 'updated_at'
+	>
 > & {
-  // Only require essential fields for creation
-  item_type: 'product' | 'service';
-  title: string;
-  quantity: number;
-  unit_price: number;
+	// Only require essential fields for creation
+	item_type: 'product' | 'service';
+	title: string;
+	quantity: number;
+	unit_price: number;
 };
 
 export type UpdateOfferInput = Partial<
-  Omit<OfferType, 'id' | 'offer_number_seq' | 'offer_number' | 'created_at' | 'updated_at'>
+	Omit<
+		OfferType,
+		'id' | 'offer_number_seq' | 'offer_number' | 'created_at' | 'updated_at'
+	>
 >;
 
 export type UpdateOfferItemInput = Partial<
-  Omit<OfferItemType, 'id' | 'offer_id' | 'total_price' | 'tax_amount' | 'created_at' | 'updated_at'>
+	Omit<
+		OfferItemType,
+		| 'id'
+		| 'offer_id'
+		| 'total_price'
+		| 'tax_amount'
+		| 'created_at'
+		| 'updated_at'
+	>
 >;
 
 // ✅ COMPUTED TYPES: With relationships
 export type OfferWithItems = OfferType & {
-  items: OfferItemType[];
+	items: OfferItemType[];
 };
 
 // ✅ RUNTIME TYPES: For live inventory data (not stored)
 export type OfferItemWithInventory = OfferItemType & {
-  available_quantity?: number;
-  reserved_quantity?: number;
-  inventory_status?: 'available' | 'low_stock' | 'out_of_stock';
-  can_fulfill?: boolean;
+	available_quantity?: number;
+	reserved_quantity?: number;
+	inventory_status?: 'available' | 'low_stock' | 'out_of_stock';
+	can_fulfill?: boolean;
 };
 
 export type OfferWithInventory = OfferType & {
-  items: OfferItemWithInventory[];
+	items: OfferItemWithInventory[];
 };
 
 // ✅ STATISTICS TYPE: For reporting
 export type OfferStatistics = {
-  total_offers: number;
-  active_offers: number;
-  pending_acceptance: number;
-  completed_offers: number;
-  cancelled_offers: number;
-  total_value: number;
-  average_offer_value: number;
+	total_offers: number;
+	active_offers: number;
+	pending_acceptance: number;
+	completed_offers: number;
+	cancelled_offers: number;
+	total_value: number;
+	average_offer_value: number;
 };
 
 // ✅ INVENTORY STATUS UTILITY
 export type InventoryStatus = 'available' | 'low_stock' | 'out_of_stock';
 
-export const getInventoryStatus = (available: number, requested: number): InventoryStatus => {
-  if (available === 0) return 'out_of_stock';
-  if (available < requested) return 'low_stock';
-  return 'available';
+export const getInventoryStatus = (
+	available: number,
+	requested: number,
+): InventoryStatus => {
+	if (available === 0) return 'out_of_stock';
+	if (available < requested) return 'low_stock';
+	return 'available';
 };
 
 // ✅ WORKFLOW INPUT TYPES: For workflow operations
 export type ReserveOfferInventoryInput = {
-  offer_id: string;
-  user_id?: string;
-  reason?: string;
+	offer_id: string;
+	user_id?: string;
+	reason?: string;
 };
 
 export type UpdateOfferReservationsInput = {
-  offer_id: string;
-  items_to_delete: string[];
-  items_to_update: Array<{
-    id: string;
-    variant_id: string;
-    sku: string;
-    quantity: number;
-    title: string;
-  }>;
-  items_to_create: Array<{
-    id: string;
-    variant_id: string;
-    sku: string;
-    quantity: number;
-    title: string;
-    item_type: string;
-  }>;
-  user_id?: string;
-  change_description?: string;
+	offer_id: string;
+	items_to_delete: string[];
+	items_to_update: Array<{
+		id: string;
+		variant_id: string;
+		sku: string;
+		quantity: number;
+		title: string;
+	}>;
+	items_to_create: Array<{
+		id: string;
+		variant_id: string;
+		sku: string;
+		quantity: number;
+		title: string;
+		item_type: string;
+	}>;
+	user_id?: string;
+	change_description?: string;
 };
 
 export type FulfillOfferReservationsInput = {
-  offer_id: string;
-  user_id?: string;
+	offer_id: string;
+	user_id?: string;
 };
 
 export type ReleaseOfferReservationsInput = {
-  offer_id: string;
-  reason?: string;
-  user_id?: string;
+	offer_id: string;
+	reason?: string;
+	user_id?: string;
 };
 
 export type CreatedReservation = {
-  reservation_id: string;
-  item_id: string;
-  variant_id: string;
-  quantity: number;
+	reservation_id: string;
+	item_id: string;
+	variant_id: string;
+	quantity: number;
 };

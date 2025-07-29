@@ -9,5 +9,5 @@ import ManualCustomerService from './service';
 export const MANUAL_CUSTOMER_MODULE = 'manualCustomerService';
 
 export default Module(MANUAL_CUSTOMER_MODULE, {
-  service: ManualCustomerService,
+	service: ManualCustomerService,
 });

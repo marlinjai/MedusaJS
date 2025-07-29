@@ -1,9 +1,9 @@
 import { Migration } from '@mikro-orm/migrations';
 
 export class Migration20250127000000 extends Migration {
-  override async up(): Promise<void> {
-    this.addSql(
-      `create table if not exists "service" (
+	override async up(): Promise<void> {
+		this.addSql(
+			`create table if not exists "service" (
         "id" text not null,
         "title" text not null,
         "description" text null,
@@ -27,20 +27,22 @@ export class Migration20250127000000 extends Migration {
         "deleted_at" timestamptz null,
         constraint "service_pkey" primary key ("id")
       );`,
-    );
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_service_deleted_at" ON "service" (deleted_at) WHERE deleted_at IS NULL;`,
-    );
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_service_deleted_at" ON "service" (deleted_at) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(`CREATE INDEX IF NOT EXISTS "IDX_service_category" ON "service" (category) WHERE deleted_at IS NULL;`);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_service_category" ON "service" (category) WHERE deleted_at IS NULL;`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "IDX_service_active" ON "service" (is_active, status) WHERE deleted_at IS NULL;`,
-    );
-  }
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "IDX_service_active" ON "service" (is_active, status) WHERE deleted_at IS NULL;`,
+		);
+	}
 
-  override async down(): Promise<void> {
-    this.addSql(`drop table if exists "service" cascade;`);
-  }
+	override async down(): Promise<void> {
+		this.addSql(`drop table if exists "service" cascade;`);
+	}
 }

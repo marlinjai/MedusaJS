@@ -9,13 +9,17 @@
 import { Migration } from '@mikro-orm/migrations';
 
 export class Migration20250715000000 extends Migration {
-  override async up(): Promise<void> {
-    // Remove inventory fields from offer_item table
-    this.addSql(`ALTER TABLE IF EXISTS "offer_item" DROP COLUMN IF EXISTS "available_quantity";`);
-    this.addSql(`ALTER TABLE IF EXISTS "offer_item" DROP COLUMN IF EXISTS "reserved_quantity";`);
+	override async up(): Promise<void> {
+		// Remove inventory fields from offer_item table
+		this.addSql(
+			`ALTER TABLE IF EXISTS "offer_item" DROP COLUMN IF EXISTS "available_quantity";`,
+		);
+		this.addSql(
+			`ALTER TABLE IF EXISTS "offer_item" DROP COLUMN IF EXISTS "reserved_quantity";`,
+		);
 
-    // Add proper foreign key constraint for offer_id if it doesn't exist
-    this.addSql(`
+		// Add proper foreign key constraint for offer_id if it doesn't exist
+		this.addSql(`
       DO $$
       BEGIN
         IF NOT EXISTS (
@@ -29,14 +33,20 @@ export class Migration20250715000000 extends Migration {
         END IF;
       END $$;
     `);
-  }
+	}
 
-  override async down(): Promise<void> {
-    // Add back the inventory fields (for rollback)
-    this.addSql(`ALTER TABLE IF EXISTS "offer_item" ADD COLUMN IF NOT EXISTS "available_quantity" integer;`);
-    this.addSql(`ALTER TABLE IF EXISTS "offer_item" ADD COLUMN IF NOT EXISTS "reserved_quantity" integer DEFAULT 0;`);
+	override async down(): Promise<void> {
+		// Add back the inventory fields (for rollback)
+		this.addSql(
+			`ALTER TABLE IF EXISTS "offer_item" ADD COLUMN IF NOT EXISTS "available_quantity" integer;`,
+		);
+		this.addSql(
+			`ALTER TABLE IF EXISTS "offer_item" ADD COLUMN IF NOT EXISTS "reserved_quantity" integer DEFAULT 0;`,
+		);
 
-    // Remove the foreign key constraint
-    this.addSql(`ALTER TABLE IF EXISTS "offer_item" DROP CONSTRAINT IF EXISTS "offer_item_offer_id_fkey";`);
-  }
+		// Remove the foreign key constraint
+		this.addSql(
+			`ALTER TABLE IF EXISTS "offer_item" DROP CONSTRAINT IF EXISTS "offer_item_offer_id_fkey";`,
+		);
+	}
 }

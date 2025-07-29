@@ -11,69 +11,77 @@ import ServiceService from '../../../modules/service/service';
 
 // GET /admin/services - List all services
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
-  const serviceService: ServiceService = req.scope.resolve(SERVICE_MODULE);
+	const serviceService: ServiceService = req.scope.resolve(SERVICE_MODULE);
 
-  try {
-    const { limit = 50, offset = 0, category, is_active, is_featured } = req.query;
+	try {
+		const {
+			limit = 50,
+			offset = 0,
+			category,
+			is_active,
+			is_featured,
+		} = req.query;
 
-    // Build filters
-    const filters: any = {};
-    if (category) filters.category = category;
-    if (is_active !== undefined) filters.is_active = is_active === 'true';
-    if (is_featured !== undefined) filters.is_featured = is_featured === 'true';
+		// Build filters
+		const filters: any = {};
+		if (category) filters.category = category;
+		if (is_active !== undefined) filters.is_active = is_active === 'true';
+		if (is_featured !== undefined) filters.is_featured = is_featured === 'true';
 
-    // Use the auto-generated listServices method
-    const services = await serviceService.listServices(filters, {
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string),
-      order: { created_at: 'desc' },
-    });
+		// Use the auto-generated listServices method
+		const services = await serviceService.listServices(filters, {
+			take: parseInt(limit as string),
+			skip: parseInt(offset as string),
+			order: { created_at: 'desc' },
+		});
 
-    res.json({
-      services,
-      count: services.length,
-      offset: parseInt(offset as string),
-      limit: parseInt(limit as string),
-    });
-  } catch (error) {
-    console.error('Error listing services:', error);
-    res.status(500).json({
-      error: 'Failed to list services',
-      message: error.message,
-    });
-  }
+		res.json({
+			services,
+			count: services.length,
+			offset: parseInt(offset as string),
+			limit: parseInt(limit as string),
+		});
+	} catch (error) {
+		console.error('Error listing services:', error);
+		res.status(500).json({
+			error: 'Failed to list services',
+			message: error.message,
+		});
+	}
 };
 
 // POST /admin/services - Create new service
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const serviceService: ServiceService = req.scope.resolve(SERVICE_MODULE);
+	const serviceService: ServiceService = req.scope.resolve(SERVICE_MODULE);
 
-  try {
-    const serviceData = req.body as Partial<Service>;
+	try {
+		const serviceData = req.body as Partial<Service>;
 
-    // Validate required fields
-    if (!serviceData.title) {
-      return res.status(400).json({
-        error: 'Validation error',
-        message: 'Service title is required',
-      });
-    }
+		// Validate required fields
+		if (!serviceData.title) {
+			return res.status(400).json({
+				error: 'Validation error',
+				message: 'Service title is required',
+			});
+		}
 
-    // Use the auto-generated createServices method, ensuring data is in an array
-    const createdServices = await serviceService.createServices([serviceData as any]);
+		// Use the auto-generated createServices method, ensuring data is in an array
+		const createdServices = await serviceService.createServices([
+			serviceData as any,
+		]);
 
-    if (!createdServices || createdServices.length === 0) {
-      return res.status(500).json({ error: 'Failed to create service' });
-    }
+		if (!createdServices || createdServices.length === 0) {
+			return res.status(500).json({ error: 'Failed to create service' });
+		}
 
-    res.status(201).json({
-      service: createdServices[0],
-    });
-  } catch (error) {
-    console.error('Error creating service:', error);
-    res.status(500).json({
-      error: 'Failed to create service',
-      message: error.message,
-    });
-  }
+		res.status(201).json({
+			service: createdServices[0],
+		});
+	} catch (error) {
+		console.error('Error creating service:', error);
+		res.status(500).json({
+			error: 'Failed to create service',
+			message: error.message,
+		});
+	}
 };

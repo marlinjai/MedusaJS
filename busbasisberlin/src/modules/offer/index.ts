@@ -9,5 +9,5 @@ import OfferService from './service';
 export const OFFER_MODULE = 'offer';
 
 export default Module(OFFER_MODULE, {
-  service: OfferService,
+	service: OfferService,
 });

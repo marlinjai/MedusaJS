@@ -11,89 +11,94 @@ import service, { Service } from './models/service';
  * which automatically generates CRUD operations for the service model.
  */
 class ServiceService extends MedusaService({
-  service,
+	service,
 }) {
-  /**
-   * Get active services
-   * @return array of active services
-   */
-  async getActiveServices(): Promise<Service[]> {
-    return await this.listServices({
-      is_active: true,
-      status: 'active',
-    });
-  }
+	/**
+	 * Get active services
+	 * @return array of active services
+	 */
+	async getActiveServices(): Promise<Service[]> {
+		return await this.listServices({
+			is_active: true,
+			status: 'active',
+		});
+	}
 
-  /**
-   * Get featured services
-   * @return array of featured services
-   */
-  async getFeaturedServices(): Promise<Service[]> {
-    return await this.listServices({
-      is_active: true,
-      is_featured: true,
-      status: 'active',
-    });
-  }
+	/**
+	 * Get featured services
+	 * @return array of featured services
+	 */
+	async getFeaturedServices(): Promise<Service[]> {
+		return await this.listServices({
+			is_active: true,
+			is_featured: true,
+			status: 'active',
+		});
+	}
 
-  /**
-   * Get services by category
-   * @param category - service category
-   * @return array of services in category
-   */
-  async getServicesByCategory(category: string): Promise<Service[]> {
-    return await this.listServices({
-      category,
-      is_active: true,
-      status: 'active',
-    });
-  }
+	/**
+	 * Get services by category
+	 * @param category - service category
+	 * @return array of services in category
+	 */
+	async getServicesByCategory(category: string): Promise<Service[]> {
+		return await this.listServices({
+			category,
+			is_active: true,
+			status: 'active',
+		});
+	}
 
-  /**
-   * Search services by various fields
-   * @param searchTerm - Search term to match against multiple fields
-   * @returns Array of matching services
-   */
-  async searchServices(searchTerm: string): Promise<Service[]> {
-    if (!searchTerm || searchTerm.trim() === '') {
-      return [];
-    }
+	/**
+	 * Search services by various fields
+	 * @param searchTerm - Search term to match against multiple fields
+	 * @returns Array of matching services
+	 */
+	async searchServices(searchTerm: string): Promise<Service[]> {
+		if (!searchTerm || searchTerm.trim() === '') {
+			return [];
+		}
 
-    const allServices = await this.listServices({});
-    const term = searchTerm.toLowerCase().trim();
+		const allServices = await this.listServices({});
+		const term = searchTerm.toLowerCase().trim();
 
-    return allServices.filter(service => {
-      const searchableFields = [
-        service.title,
-        service.description,
-        service.short_description,
-        service.category,
-        service.service_type,
-        service.notes,
-      ];
+		return allServices.filter(service => {
+			const searchableFields = [
+				service.title,
+				service.description,
+				service.short_description,
+				service.category,
+				service.service_type,
+				service.notes,
+			];
 
-      return searchableFields.some(field => field && field.toLowerCase().includes(term));
-    });
-  }
+			return searchableFields.some(
+				field => field && field.toLowerCase().includes(term),
+			);
+		});
+	}
 
-  /**
-   * Calculate service price based on duration
-   * @param serviceId - service ID
-   * @param durationMinutes - duration in minutes
-   * @return calculated price in cents
-   */
-  async calculatePrice(serviceId: string, durationMinutes?: number): Promise<number> {
-    const service = await this.retrieveService(serviceId);
+	/**
+	 * Calculate service price based on duration
+	 * @param serviceId - service ID
+	 * @param durationMinutes - duration in minutes
+	 * @return calculated price in cents
+	 */
+	async calculatePrice(
+		serviceId: string,
+		durationMinutes?: number,
+	): Promise<number> {
+		const service = await this.retrieveService(serviceId);
 
-    if (service.hourly_rate && durationMinutes) {
-      // Calculate based on hourly rate
-      const hours = durationMinutes / 60;
-      return Math.round(service.hourly_rate * hours);
-    }
+		if (service.hourly_rate && durationMinutes) {
+			// Calculate based on hourly rate
+			const hours = durationMinutes / 60;
+			return Math.round(service.hourly_rate * hours);
+		}
 
-    // Return base price or 0
-    return service.base_price || 0;
-  }
+		// Return base price or 0
+		return service.base_price || 0;
+	}
 }
 
 export default ServiceService;

@@ -5,9 +5,9 @@
 import { Migration } from '@mikro-orm/migrations';
 
 export class Migration20250703000000 extends Migration {
-  async up(): Promise<void> {
-    // Create offer table
-    this.addSql(`
+	async up(): Promise<void> {
+		// Create offer table
+		this.addSql(`
       CREATE TABLE IF NOT EXISTS "offer" (
         "id" text PRIMARY KEY NOT NULL,
         "offer_number" text NOT NULL UNIQUE,
@@ -37,8 +37,8 @@ export class Migration20250703000000 extends Migration {
       );
     `);
 
-    // Create offer_item table
-    this.addSql(`
+		// Create offer_item table
+		this.addSql(`
       CREATE TABLE IF NOT EXISTS "offer_item" (
         "id" text PRIMARY KEY NOT NULL,
         "offer_id" text NOT NULL,
@@ -71,8 +71,8 @@ export class Migration20250703000000 extends Migration {
       );
     `);
 
-    // Create offer_status_history table
-    this.addSql(`
+		// Create offer_status_history table
+		this.addSql(`
       CREATE TABLE IF NOT EXISTS "offer_status_history" (
         "id" text PRIMARY KEY NOT NULL,
         "offer_id" text NOT NULL,
@@ -92,34 +92,54 @@ export class Migration20250703000000 extends Migration {
       );
     `);
 
-    // Create indexes for performance
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_status" ON "offer" ("status");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_offer_number" ON "offer" ("offer_number");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_customer_email" ON "offer" ("customer_email");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_created_at" ON "offer" ("created_at");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_valid_until" ON "offer" ("valid_until");`);
+		// Create indexes for performance
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_status" ON "offer" ("status");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_offer_number" ON "offer" ("offer_number");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_customer_email" ON "offer" ("customer_email");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_created_at" ON "offer" ("created_at");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_valid_until" ON "offer" ("valid_until");`,
+		);
 
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_item_offer_id" ON "offer_item" ("offer_id");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_item_product_id" ON "offer_item" ("product_id");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_item_service_id" ON "offer_item" ("service_id");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_item_type" ON "offer_item" ("item_type");`);
-    this.addSql(`CREATE INDEX IF NOT EXISTS "idx_offer_item_sort_order" ON "offer_item" ("sort_order");`);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_item_offer_id" ON "offer_item" ("offer_id");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_item_product_id" ON "offer_item" ("product_id");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_item_service_id" ON "offer_item" ("service_id");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_item_type" ON "offer_item" ("item_type");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_item_sort_order" ON "offer_item" ("sort_order");`,
+		);
 
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "idx_offer_status_history_offer_id" ON "offer_status_history" ("offer_id");`,
-    );
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "idx_offer_status_history_event_type" ON "offer_status_history" ("event_type");`,
-    );
-    this.addSql(
-      `CREATE INDEX IF NOT EXISTS "idx_offer_status_history_created_at" ON "offer_status_history" ("created_at");`,
-    );
-  }
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_status_history_offer_id" ON "offer_status_history" ("offer_id");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_status_history_event_type" ON "offer_status_history" ("event_type");`,
+		);
+		this.addSql(
+			`CREATE INDEX IF NOT EXISTS "idx_offer_status_history_created_at" ON "offer_status_history" ("created_at");`,
+		);
+	}
 
-  async down(): Promise<void> {
-    // Drop tables in reverse order (child tables first)
-    this.addSql(`DROP TABLE IF EXISTS "offer_status_history";`);
-    this.addSql(`DROP TABLE IF EXISTS "offer_item";`);
-    this.addSql(`DROP TABLE IF EXISTS "offer";`);
-  }
+	async down(): Promise<void> {
+		// Drop tables in reverse order (child tables first)
+		this.addSql(`DROP TABLE IF EXISTS "offer_status_history";`);
+		this.addSql(`DROP TABLE IF EXISTS "offer_item";`);
+		this.addSql(`DROP TABLE IF EXISTS "offer";`);
+	}
 }
