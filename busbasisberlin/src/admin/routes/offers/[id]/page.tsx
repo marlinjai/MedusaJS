@@ -114,6 +114,9 @@ export default function OfferDetailPage() {
     }>;
   } | null>(null);
   const [checkingInventory, setCheckingInventory] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfFilename, setPdfFilename] = useState<string>('');
 
   // Load offer data
   useEffect(() => {
@@ -165,6 +168,85 @@ export default function OfferDetailPage() {
       setCheckingInventory(false);
     }
   };
+
+  // Generate PDF for offer
+  const generatePDF = async () => {
+    if (!offer) return;
+
+    setGeneratingPDF(true);
+    try {
+      const response = await fetch(`/admin/offers/${offer.id}/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('PDF generation failed');
+      }
+
+      const filename = `${offer.offer_number}.pdf`;
+
+      // Set URL to server endpoint for cached PDF (no blob needed)
+      const cachedPdfUrl = `/admin/offers/${offer.id}/get-cached-pdf`;
+      setPdfUrl(cachedPdfUrl);
+      setPdfFilename(filename);
+
+      // Open PDF in new tab using server endpoint
+      window.open(cachedPdfUrl, '_blank', 'noopener,noreferrer');
+
+      toast.success('PDF wurde erfolgreich erstellt');
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('Fehler beim Erstellen der PDF');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  // Cleanup PDF URL when component unmounts or offer changes
+  // Cleanup PDF URL on unmount (only for blob URLs)
+  useEffect(() => {
+    return () => {
+      if (pdfUrl && pdfUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
+
+  // Check for cached PDF when offer loads
+  const checkCachedPDF = async (offerId: string) => {
+    try {
+      const response = await fetch(`/admin/offers/${offerId}/get-cached-pdf?action=check`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.exists && data.isRecent) {
+          // Set URL to server endpoint for cached PDF
+          const cachedPdfUrl = `/admin/offers/${offerId}/get-cached-pdf`;
+          setPdfUrl(cachedPdfUrl);
+          setPdfFilename(`${offer?.offer_number || 'OFFER'}.pdf`);
+        }
+      }
+    } catch (error) {
+      console.log('No cached PDF found:', error);
+      // Silent fail - not having a cached PDF is normal
+    }
+  };
+
+  // Clear PDF when offer changes and check for cached version
+  useEffect(() => {
+    if (pdfUrl && pdfUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(pdfUrl);
+    }
+    setPdfUrl(null);
+    setPdfFilename('');
+
+    // Check for cached PDF if offer exists
+    if (offer?.id) {
+      checkCachedPDF(offer.id);
+    }
+  }, [offer?.id]);
 
   // Load inventory status when offer loads or changes
   useEffect(() => {
@@ -708,27 +790,32 @@ export default function OfferDetailPage() {
               </Button>
             )}
           </div>
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={() => setEditing(!editing)}
-            disabled={saving}
-            className={editing ? 'px-6' : ''}
-          >
-            <Edit className="w-full h-4 mr-2" />
-            {editing ? 'Bearbeitung beenden' : 'Bearbeiten'}
-          </Button>
-          {editing && (
-            <Button variant="primary" size="small" onClick={saveOffer} disabled={saving} className="px-3">
-              {saving ? 'Speichern...' : 'Speichern'}
-            </Button>
+          {/* ✅ Only show edit button if offer is not in final state */}
+          {offer.status !== 'completed' && offer.status !== 'cancelled' && (
+            <>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setEditing(!editing)}
+                disabled={saving}
+                className={editing ? 'px-6' : ''}
+              >
+                <Edit className="w-full h-4 mr-2" />
+                {editing ? 'Bearbeitung beenden' : 'Bearbeiten'}
+              </Button>
+              {editing && (
+                <Button variant="primary" size="small" onClick={saveOffer} disabled={saving} className="px-3">
+                  {saving ? 'Speichern...' : 'Speichern'}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-8 gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-6 space-y-6">
           {/* Basic Information */}
           <div className="bg-ui-bg-subtle rounded-lg p-6">
             <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
@@ -1180,7 +1267,7 @@ export default function OfferDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           {/* Customer Information */}
           <div className="bg-ui-bg-subtle rounded-lg p-6">
             <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
@@ -1317,14 +1404,28 @@ export default function OfferDetailPage() {
             </Text>
 
             <div className="flex flex-col gap-2">
-              <Button
-                variant="secondary"
-                size="small"
-                onClick={() => toast.info('PDF-Generierung wird bald verfügbar sein')}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                PDF erstellen
-              </Button>
+              {/* ✅ PDF generation only for finalized offers (not draft) */}
+              {['active', 'accepted', 'cancelled', 'completed'].includes(offer.status) && (
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" size="small" onClick={generatePDF} disabled={generatingPDF}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    {generatingPDF ? 'PDF wird erstellt...' : 'PDF erstellen'}
+                  </Button>
+                  {pdfUrl && (
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm underline"
+                        title="PDF in neuem Tab öffnen"
+                      >
+                        📄 {pdfFilename}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {offer.items.some(item => item.item_type === 'product') && (
                 <Button

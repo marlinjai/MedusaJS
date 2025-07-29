@@ -16,6 +16,9 @@ medusa-db.sql
 build
 .cache
 
+# Temporary PDF cache
+/tmp
+
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
