@@ -46,14 +46,11 @@ module.exports = defineConfig({
 						options: {
 							channels: ['email'],
 							api_key: process.env.RESEND_API_KEY,
-							from: process.env.RESEND_FROM,
+							from: process.env.RESEND_FROM_EMAIL,
 						},
 					},
 				],
 			},
-		},
-		{
-			resolve: './src/modules/resend',
 		},
 		{
 			resolve: './src/modules/supplier',

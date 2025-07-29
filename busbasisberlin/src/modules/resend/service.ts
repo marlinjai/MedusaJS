@@ -1,9 +1,14 @@
-import { Logger } from '@medusajs/framework/types';
+import {
+	Logger,
+	ProviderSendNotificationDTO,
+	ProviderSendNotificationResultsDTO,
+} from '@medusajs/framework/types';
 import {
 	AbstractNotificationProviderService,
 	MedusaError,
 } from '@medusajs/framework/utils';
-import { Resend } from 'resend';
+import { CreateEmailOptions, Resend } from 'resend';
+import { orderPlacedEmail } from './emails/order-placed';
 
 type ResendOptions = {
 	api_key: string;
@@ -20,6 +25,24 @@ type ResendOptions = {
 type InjectedDependencies = {
 	logger: Logger;
 };
+
+enum Templates {
+	ORDER_PLACED = 'order-placed',
+	ORDER_SHIPPED = 'order-shipped',
+	ORDER_DELIVERED = 'order-delivered',
+	ORDER_CANCELLED = 'order-cancelled',
+	ORDER_REFUNDED = 'order-refunded',
+	ORDER_RETURNED = 'order-returned',
+	PASSWORD_RESET = 'password-reset',
+	WELCOME = 'welcome',
+	VERIFICATION = 'verification',
+	ORDER_CONFIRMATION = 'order-confirmation',
+}
+
+const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
+	{
+		[Templates.ORDER_PLACED]: orderPlacedEmail,
+	};
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
 	static identifier = 'notification-resend';
@@ -50,129 +73,74 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 		}
 	}
 
-	async send(notification: any): Promise<{ id: string }> {
-		const { to, template, data, channel } = notification;
+	getTemplate(template: Templates) {
+		if (this.options.html_templates?.[template]) {
+			return this.options.html_templates[template].content;
+		}
+		const allowedTemplates = Object.keys(templates);
 
-		// Only handle email notifications
-		if (channel !== 'email') {
-			throw new MedusaError(
-				MedusaError.Types.INVALID_DATA,
-				`Notification channel ${channel} is not supported`,
-			);
+		if (!allowedTemplates.includes(template)) {
+			return null;
 		}
 
-		this.logger.info(
-			`Sending email notification to ${to} using template ${template}`,
-		);
-
-		// Get template configuration
-		const templateConfig = this.options.html_templates?.[template];
-
-		// Default templates based on type
-		let subject = templateConfig?.subject || this.getDefaultSubject(template);
-		let html =
-			templateConfig?.content || this.getDefaultTemplate(template, data);
-
-		try {
-			const response = await this.resendClient.emails.send({
-				from: this.options.from,
-				to: [to],
-				subject,
-				html,
-			});
-
-			this.logger.info(`Email sent successfully with ID: ${response.data?.id}`);
-			return { id: response.data?.id || 'unknown' };
-		} catch (error) {
-			this.logger.error(`Failed to send email: ${error.message}`);
-			throw new MedusaError(
-				MedusaError.Types.UNEXPECTED_STATE,
-				`Failed to send email: ${error.message}`,
-			);
-		}
+		return templates[template];
 	}
 
-	private getDefaultSubject(template: string): string {
+	getTemplateSubject(template: Templates) {
+		if (this.options.html_templates?.[template]?.subject) {
+			return this.options.html_templates[template].subject;
+		}
 		switch (template) {
-			case 'order-placed':
-				return 'Your Order Confirmation';
+			case Templates.ORDER_PLACED:
+				return 'Order Confirmation';
 			default:
-				return 'Notification from Bus Basis Berlin';
+				return 'New Email';
 		}
 	}
 
-	private getDefaultTemplate(template: string, data: any): string {
-		switch (template) {
-			case 'order-placed':
-				return this.getOrderPlacedTemplate(data.order);
-			default:
-				return '<p>Thank you for your message!</p>';
+	async send(
+		notification: ProviderSendNotificationDTO,
+	): Promise<ProviderSendNotificationResultsDTO> {
+		const template = this.getTemplate(notification.template as Templates);
+
+		if (!template) {
+			this.logger.error(
+				`Couldn't find an email template for ${notification.template}. The valid options are ${Object.values(Templates)}`,
+			);
+			return {};
 		}
-	}
 
-	private getOrderPlacedTemplate(order: any): string {
-		const items =
-			order.items
-				?.map(
-					(item: any) => `
-				<tr>
-					<td style="padding: 10px; border: 1px solid #ddd;">${item.title || 'Product'}</td>
-					<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-					<td style="padding: 10px; border: 1px solid #ddd; text-align: right;">
-						${this.formatPrice(item.unit_price * item.quantity, order.currency_code)}
-					</td>
-				</tr>
-			`,
-				)
-				.join('') || '';
+		const commonOptions = {
+			from: this.options.from,
+			to: [notification.to],
+			subject: this.getTemplateSubject(notification.template as Templates),
+		};
 
-		return `
-			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-				<h1 style="color: #333; text-align: center;">Order Confirmation</h1>
-				<p>Dear ${order.customer?.first_name || 'Customer'},</p>
-				<p>Thank you for your order! Your order <strong>#${order.display_id}</strong> has been confirmed.</p>
+		let emailOptions: CreateEmailOptions;
+		if (typeof template === 'string') {
+			emailOptions = {
+				...commonOptions,
+				html: template,
+			};
+		} else {
+			emailOptions = {
+				...commonOptions,
+				react: template(notification.data),
+			};
+		}
 
-				<h2 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Order Details</h2>
-				<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-					<thead>
-						<tr style="background-color: #f8f9fa;">
-							<th style="padding: 15px; border: 1px solid #ddd; text-align: left;">Product</th>
-							<th style="padding: 15px; border: 1px solid #ddd; text-align: center;">Quantity</th>
-							<th style="padding: 15px; border: 1px solid #ddd; text-align: right;">Price</th>
-						</tr>
-					</thead>
-					<tbody>
-						${items}
-					</tbody>
-				</table>
+		const { data, error } = await this.resendClient.emails.send(emailOptions);
 
-				<div style="text-align: right; margin-top: 20px;">
-					<p style="margin: 5px 0;"><strong>Subtotal: ${this.formatPrice(order.subtotal, order.currency_code)}</strong></p>
-					${order.shipping_total ? `<p style="margin: 5px 0;">Shipping: ${this.formatPrice(order.shipping_total, order.currency_code)}</p>` : ''}
-					${order.tax_total ? `<p style="margin: 5px 0;">Tax: ${this.formatPrice(order.tax_total, order.currency_code)}</p>` : ''}
-					<p style="margin: 10px 0; font-size: 18px;"><strong>Total: ${this.formatPrice(order.total, order.currency_code)}</strong></p>
-				</div>
+		if (error || !data) {
+			if (error) {
+				this.logger.error('Failed to send email', error);
+			} else {
+				this.logger.error('Failed to send email: unknown error');
+			}
+			return {};
+		}
 
-				${
-					order.shipping_address
-						? `
-				<h3 style="color: #333; margin-top: 30px;">Shipping Address</h3>
-				<p style="margin: 5px 0;">${order.shipping_address.first_name} ${order.shipping_address.last_name}</p>
-				<p style="margin: 5px 0;">${order.shipping_address.address_1}${order.shipping_address.address_2 ? ', ' + order.shipping_address.address_2 : ''}</p>
-				<p style="margin: 5px 0;">${order.shipping_address.postal_code} ${order.shipping_address.city}</p>
-				<p style="margin: 5px 0;">${order.shipping_address.country_code?.toUpperCase()}</p>
-				`
-						: ''
-				}
-
-				<div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
-					<p style="margin: 0; text-align: center; color: #666;">
-						Thank you for choosing Bus Basis Berlin!<br>
-						We'll send you another email when your order ships.
-					</p>
-				</div>
-			</div>
-		`;
+		return { id: data.id };
 	}
 
 	private formatPrice(amount: number, currencyCode: string): string {
