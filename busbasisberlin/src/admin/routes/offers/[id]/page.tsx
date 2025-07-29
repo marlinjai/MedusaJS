@@ -813,9 +813,9 @@ export default function OfferDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-8 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-6 space-y-6">
+        <div className="lg:col-span-8 space-y-6">
           {/* Basic Information */}
           <div className="bg-ui-bg-subtle rounded-lg p-6">
             <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
@@ -1106,113 +1106,120 @@ export default function OfferDetailPage() {
 
                     {/* Item Summary */}
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-ui-border-base">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 flex-wrap min-w-0 flex-1">
                         {item.sku && (
-                          <Text size="small" className="text-ui-fg-subtle">
-                            SKU:
-                            {item.variant_id ? (
-                              <a
-                                href={`/app/inventory?q=${encodeURIComponent(item.sku)}`}
-                                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover ml-1"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Lagerbestand für diese SKU anzeigen"
-                              >
-                                {item.sku}
-                              </a>
-                            ) : (
-                              <span className="ml-1">{item.sku}</span>
-                            )}
-                          </Text>
+                          <div className="flex-shrink-0 min-w-[120px]">
+                            <Text size="small" className="text-ui-fg-subtle">
+                              SKU:
+                              {item.variant_id ? (
+                                <a
+                                  href={`/app/inventory?q=${encodeURIComponent(item.sku)}`}
+                                  className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover ml-1"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Lagerbestand für diese SKU anzeigen"
+                                >
+                                  {item.sku}
+                                </a>
+                              ) : (
+                                <span className="ml-1">{item.sku}</span>
+                              )}
+                            </Text>
+                          </div>
                         )}
                         {item.category && (
                           <Text size="small" className="text-ui-fg-subtle">
                             Kategorie: {item.category}
                           </Text>
                         )}
-                        {(item.inventory_quantity !== undefined || getItemInventoryStatus(item.id)) && (
-                          <div className="flex items-center gap-2">
-                            <Text size="small" className="text-ui-fg-subtle">
-                              Lager:{' '}
+                        {/* ✅ Only show stock info for active offers (not completed/cancelled) */}
+                        {!['completed', 'cancelled'].includes(offer.status) &&
+                          (item.inventory_quantity !== undefined || getItemInventoryStatus(item.id)) && (
+                            <div className="flex items-center gap-2">
+                              <Text size="small" className="text-ui-fg-subtle">
+                                Lager:{' '}
+                                {(() => {
+                                  const inventoryItem = getItemInventoryStatus(item.id);
+                                  if (inventoryItem && inventoryItem.stock_status !== 'service') {
+                                    return inventoryItem.available_quantity;
+                                  }
+                                  return item.inventory_quantity ?? 'Unbekannt';
+                                })()}
+                              </Text>
                               {(() => {
                                 const inventoryItem = getItemInventoryStatus(item.id);
-                                if (inventoryItem && inventoryItem.stock_status !== 'service') {
-                                  return inventoryItem.available_quantity;
+                                if (inventoryItem) {
+                                  switch (inventoryItem.stock_status) {
+                                    case 'out_of_stock':
+                                      return (
+                                        <Badge color="red" size="small">
+                                          Nicht verfügbar
+                                        </Badge>
+                                      );
+                                    case 'low_stock':
+                                      return (
+                                        <Badge color="orange" size="small">
+                                          Niedrig
+                                        </Badge>
+                                      );
+                                    case 'available':
+                                      return (
+                                        <Badge color="green" size="small">
+                                          Verfügbar
+                                        </Badge>
+                                      );
+                                    case 'service':
+                                      return (
+                                        <Badge color="blue" size="small">
+                                          Service
+                                        </Badge>
+                                      );
+                                  }
                                 }
-                                return item.inventory_quantity ?? 'Unbekannt';
-                              })()}
-                            </Text>
-                            {(() => {
-                              const inventoryItem = getItemInventoryStatus(item.id);
-                              if (inventoryItem) {
-                                switch (inventoryItem.stock_status) {
-                                  case 'out_of_stock':
+                                // Fallback to old logic
+                                if (item.inventory_quantity !== undefined) {
+                                  if (item.inventory_quantity <= 0) {
                                     return (
                                       <Badge color="red" size="small">
                                         Nicht verfügbar
                                       </Badge>
                                     );
-                                  case 'low_stock':
+                                  }
+                                  if (item.inventory_quantity <= 5) {
                                     return (
                                       <Badge color="orange" size="small">
                                         Niedrig
                                       </Badge>
                                     );
-                                  case 'available':
-                                    return (
-                                      <Badge color="green" size="small">
-                                        Verfügbar
-                                      </Badge>
-                                    );
-                                  case 'service':
-                                    return (
-                                      <Badge color="blue" size="small">
-                                        Service
-                                      </Badge>
-                                    );
+                                  }
                                 }
-                              }
-                              // Fallback to old logic
-                              if (item.inventory_quantity !== undefined) {
-                                if (item.inventory_quantity <= 0) {
-                                  return (
-                                    <Badge color="red" size="small">
-                                      Nicht verfügbar
-                                    </Badge>
-                                  );
-                                }
-                                if (item.inventory_quantity <= 5) {
-                                  return (
-                                    <Badge color="orange" size="small">
-                                      Niedrig
-                                    </Badge>
-                                  );
-                                }
-                              }
-                              return null;
-                            })()}
-                          </div>
-                        )}
+                                return null;
+                              })()}
+                            </div>
+                          )}
                         {item.variant_title && (
                           <Text size="small" className="text-ui-fg-subtle">
                             Variante:
                             {item.variant_id && item.product_id ? (
                               <a
                                 href={`/app/products/${item.product_id}/variants/${item.variant_id}`}
-                                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover ml-1"
+                                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover ml-1 truncate max-w-[360px] inline-block"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                title={item.variant_title}
                               >
                                 {item.variant_title}
                               </a>
                             ) : (
-                              <span className="ml-1">{item.variant_title}</span>
+                              <span className="ml-1 truncate max-w-[100px] inline-block" title={item.variant_title}>
+                                {item.variant_title}
+                              </span>
                             )}
                           </Text>
                         )}
                       </div>
-                      <div className="flex items-center gap-4">
-                        <Text size="small" weight="plus">
+                      <div className="flex items-center gap-4 flex-shrink-0 min-w-[150px]">
+                        <Text size="small" weight="plus" className="whitespace-nowrap">
                           Summe: {(calculateItemTotal(item) / 100).toFixed(2)} €
                         </Text>
                         {editing && (
@@ -1267,7 +1274,7 @@ export default function OfferDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 lg:col-span-4">
           {/* Customer Information */}
           <div className="bg-ui-bg-subtle rounded-lg p-6">
             <Text size="large" weight="plus" className="text-ui-fg-base mb-4">
