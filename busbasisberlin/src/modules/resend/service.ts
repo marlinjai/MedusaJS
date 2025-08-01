@@ -9,6 +9,7 @@ import {
 } from '@medusajs/framework/utils';
 import { CreateEmailOptions, Resend } from 'resend';
 import { orderPlacedEmail } from './emails/order-placed';
+import { passwordResetEmail } from './emails/reset-password';
 
 type ResendOptions = {
 	api_key: string;
@@ -42,6 +43,7 @@ enum Templates {
 const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
 	{
 		[Templates.ORDER_PLACED]: orderPlacedEmail,
+		[Templates.PASSWORD_RESET]: passwordResetEmail,
 	};
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -93,6 +95,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 		switch (template) {
 			case Templates.ORDER_PLACED:
 				return 'Order Confirmation';
+			case Templates.PASSWORD_RESET:
+				return 'Reset Your Password';
 			default:
 				return 'New Email';
 		}
