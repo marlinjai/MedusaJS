@@ -6,6 +6,7 @@
 import {
 	ContainerRegistrationKeys,
 	MedusaService,
+	Modules,
 	getVariantAvailability,
 } from '@medusajs/framework/utils';
 
@@ -194,6 +195,15 @@ class OfferService extends MedusaService({
 				changed_by_name: 'System',
 			},
 		]);
+
+		// Emit offer created event for subscribers (PDF generation, email notifications)
+		await this.emitOfferEvent('offer.created', {
+			offer_id: createdOffer.id,
+			offer_number: createdOffer.offer_number,
+			status: createdOffer.status,
+			customer_email: createdOffer.customer_email,
+			customer_name: createdOffer.customer_name,
+		});
 
 		// Return the complete offer with items
 		const offerWithDetails = await this.getOfferWithDetails(createdOffer.id);
@@ -675,6 +685,31 @@ class OfferService extends MedusaService({
 	 * ✅ REMOVED: Inventory reduction moved to fulfillOfferReservationsWorkflow
 	 * This method is now handled by the workflow for proper transaction safety
 	 */
+
+	/**
+	 * Emit offer events for subscribers (PDF generation, email notifications)
+	 */
+	private async emitOfferEvent(eventName: string, data: any): Promise<void> {
+		try {
+			// Try to resolve the Event Module service
+			const eventModuleService = this.container_.resolve(Modules.EVENT_BUS);
+
+			await eventModuleService.emit({
+				name: eventName,
+				data,
+			});
+
+			this.logger_.info(
+				`[OFFER-EVENTS] Emitted event: ${eventName} for offer ${data.offer_id || data.offer_number}`,
+			);
+		} catch (error) {
+			// Log error but don't fail the main operation
+			this.logger_.error(
+				`[OFFER-EVENTS] Failed to emit event ${eventName}:`,
+				error,
+			);
+		}
+	}
 }
 
 export default OfferService;

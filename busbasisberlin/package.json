@@ -32,6 +32,7 @@
 		"cleanup:database": "medusa exec ./src/scripts/cleanup-database.ts"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.859.0",
 		"@hello-pangea/dnd": "^16.6.0",
 		"@medusajs/admin-sdk": "^2.6.1",
 		"@medusajs/cli": "2.6.1",

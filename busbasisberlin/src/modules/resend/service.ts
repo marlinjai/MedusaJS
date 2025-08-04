@@ -8,6 +8,10 @@ import {
 	MedusaError,
 } from '@medusajs/framework/utils';
 import { CreateEmailOptions, Resend } from 'resend';
+import { offerAcceptedEmail } from './emails/offer-accepted';
+import { offerActiveEmail } from './emails/offer-active';
+import { offerCancelledEmail } from './emails/offer-cancelled';
+import { offerCompletedEmail } from './emails/offer-completed';
 import { orderPlacedEmail } from './emails/order-placed';
 import { passwordResetEmail } from './emails/reset-password';
 
@@ -38,12 +42,23 @@ enum Templates {
 	WELCOME = 'welcome',
 	VERIFICATION = 'verification',
 	ORDER_CONFIRMATION = 'order-confirmation',
+	// Offer templates
+	OFFER_ACTIVE = 'offer-active',
+	OFFER_ACCEPTED = 'offer-accepted',
+	OFFER_COMPLETED = 'offer-completed',
+	OFFER_CANCELLED = 'offer-cancelled',
+	OFFER_NOTIFICATION = 'offer-notification',
 }
 
 const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
 	{
 		[Templates.ORDER_PLACED]: orderPlacedEmail,
 		[Templates.PASSWORD_RESET]: passwordResetEmail,
+		// Offer templates
+		[Templates.OFFER_ACTIVE]: offerActiveEmail,
+		[Templates.OFFER_ACCEPTED]: offerAcceptedEmail,
+		[Templates.OFFER_COMPLETED]: offerCompletedEmail,
+		[Templates.OFFER_CANCELLED]: offerCancelledEmail,
 	};
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -97,6 +112,16 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 				return 'Order Confirmation';
 			case Templates.PASSWORD_RESET:
 				return 'Reset Your Password';
+			case Templates.OFFER_ACTIVE:
+				return 'Ihr Angebot ist bereit';
+			case Templates.OFFER_ACCEPTED:
+				return 'Angebot angenommen - Bestätigung';
+			case Templates.OFFER_COMPLETED:
+				return 'Angebot erfolgreich abgeschlossen';
+			case Templates.OFFER_CANCELLED:
+				return 'Angebot storniert';
+			case Templates.OFFER_NOTIFICATION:
+				return 'Angebot Update';
 			default:
 				return 'New Email';
 		}
@@ -131,6 +156,47 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 				...commonOptions,
 				react: template(notification.data),
 			};
+		}
+
+		// Add attachment support
+		if (notification.attachments && notification.attachments.length > 0) {
+			emailOptions.attachments = await Promise.all(
+				notification.attachments.map(async attachment => {
+					// Handle different attachment formats
+					if ('url' in attachment && attachment.url) {
+						// For S3 URLs, fetch the content
+						try {
+							const response = await fetch(attachment.url as string);
+							if (!response.ok) {
+								throw new Error(
+									`Failed to fetch attachment: ${response.statusText}`,
+								);
+							}
+							const arrayBuffer = await response.arrayBuffer();
+							const buffer = Buffer.from(arrayBuffer);
+
+							return {
+								filename: attachment.filename || 'attachment.pdf',
+								content: buffer,
+							};
+						} catch (error) {
+							this.logger.error(
+								`Failed to fetch attachment from ${(attachment as any).url}:`,
+								error,
+							);
+							throw error;
+						}
+					} else if ('content' in attachment && attachment.content) {
+						// Direct content (Buffer or string)
+						return {
+							filename: attachment.filename || 'attachment.pdf',
+							content: attachment.content,
+						};
+					} else {
+						throw new Error('Attachment must have either url or content');
+					}
+				}),
+			);
 		}
 
 		const { data, error } = await this.resendClient.emails.send(emailOptions);

@@ -9,7 +9,7 @@
  * - Accepted → Completed: Fulfill reservations
  */
 
-import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import {
 	createStep,
 	createWorkflow,
@@ -311,6 +311,7 @@ const updateOfferStatusStep = createStep(
 		input: {
 			offer_id: string;
 			new_status: string;
+			previous_status: string;
 			user_id?: string;
 		},
 		{ container },
@@ -320,6 +321,11 @@ const updateOfferStatusStep = createStep(
 
 		logger.info(
 			`[OFFER-TRANSITION] Updating offer ${input.offer_id} status to ${input.new_status}`,
+		);
+
+		// Get offer details before updating for event emission
+		const offerBeforeUpdate = await offerService.getOfferWithDetails(
+			input.offer_id,
 		);
 
 		// Update offer status with appropriate timestamps
@@ -338,6 +344,32 @@ const updateOfferStatusStep = createStep(
 		}
 
 		await offerService.updateOffers([updateData]);
+
+		// Emit status changed event for subscribers (PDF generation, email notifications)
+		try {
+			const eventModuleService = container.resolve(Modules.EVENT_BUS);
+
+			if (offerBeforeUpdate) {
+				await eventModuleService.emit({
+					name: 'offer.status_changed',
+					data: {
+						offer_id: input.offer_id,
+						offer_number: offerBeforeUpdate.offer_number,
+						previous_status: input.previous_status,
+						new_status: input.new_status,
+						customer_email: offerBeforeUpdate.customer_email,
+						customer_name: offerBeforeUpdate.customer_name,
+						user_id: input.user_id,
+					},
+				});
+
+				logger.info(
+					`[OFFER-EVENTS] Emitted status change event: ${input.previous_status} → ${input.new_status} for offer ${offerBeforeUpdate.offer_number}`,
+				);
+			}
+		} catch (error) {
+			logger.error(`[OFFER-EVENTS] Failed to emit status change event:`, error);
+		}
 
 		return new StepResponse(
 			{
@@ -452,6 +484,7 @@ export const transitionOfferStatusWorkflow = createWorkflow(
 		const statusUpdate = updateOfferStatusStep({
 			offer_id: input.offer_id,
 			new_status: input.new_status,
+			previous_status: validation.previous_status,
 			user_id: input.user_id,
 		});
 
