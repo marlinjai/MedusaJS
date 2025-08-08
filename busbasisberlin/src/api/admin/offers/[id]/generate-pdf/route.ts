@@ -10,6 +10,7 @@
 
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
+import { resolveOfferService } from '../../../../../types/services';
 import { generateOfferPdfBuffer } from '../../../../../utils/pdf-generator';
 
 const OFFER_MODULE = 'offer';
@@ -26,7 +27,7 @@ export async function POST(
 	req: MedusaRequest<OfferParams>,
 	res: MedusaResponse,
 ): Promise<void> {
-	const offerService = req.scope.resolve(OFFER_MODULE);
+	const offerService = resolveOfferService(req.scope);
 	const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
 
 	try {

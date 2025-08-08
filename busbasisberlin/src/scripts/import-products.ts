@@ -17,6 +17,7 @@ import {
 import { parse } from 'csv-parse/sync';
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveSupplierService } from '../types/services';
 
 interface ImageMapping {
 	[filename: string]: {
@@ -222,7 +223,7 @@ export default async function importProducts({ container }: ExecArgs) {
 	const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
 	const query = container.resolve(ContainerRegistrationKeys.QUERY);
 	const productService = container.resolve(Modules.PRODUCT);
-	const supplierService = container.resolve('supplier');
+	const supplierService = resolveSupplierService(container);
 	const stockLocationService = container.resolve(Modules.STOCK_LOCATION);
 	const salesChannelService = container.resolve(Modules.SALES_CHANNEL);
 

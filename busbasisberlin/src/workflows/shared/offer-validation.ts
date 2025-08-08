@@ -6,7 +6,7 @@
 import type { Logger } from '@medusajs/framework/types';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
-import { OFFER_MODULE } from '../../modules/offer';
+import { resolveOfferService } from '../../types/services';
 
 // Helper: Safe logger resolution
 export const getLogger = (container: any): Logger => {
@@ -22,7 +22,7 @@ export const validateOfferStep = createStep(
 	'validate-offer-for-inventory',
 	async (input: { offer_id: string; operation: string }, { container }) => {
 		const logger = getLogger(container);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 
 		// Get offer with full details
 		const offer = await offerService.getOfferWithDetails(input.offer_id);

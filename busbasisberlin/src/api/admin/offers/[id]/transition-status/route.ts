@@ -10,6 +10,7 @@
  */
 
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework';
+import { resolveOfferService } from '../../../../../types/services';
 import { transitionOfferStatusWorkflow } from '../../../../../workflows/transition-offer-status';
 
 // ✅ Use simple type for workflow input (no centralized type needed for this simple case)
@@ -79,7 +80,7 @@ export async function POST(
 		) {
 			try {
 				// Get the offer service to check inventory status
-				const offerService = req.scope.resolve('offer');
+				const offerService = resolveOfferService(req.scope);
 				const logger = req.scope.resolve('logger');
 				const query = req.scope.resolve('query');
 

@@ -14,8 +14,8 @@ import {
 } from '@medusajs/framework/workflows-sdk';
 import { deleteReservationsWorkflow } from '@medusajs/medusa/core-flows';
 
-import { OFFER_MODULE } from '../modules/offer';
 import { ReleaseOfferReservationsInput } from '../modules/offer/types';
+import { resolveOfferService } from '../types/services';
 import { getLogger, validateOfferStep } from './shared/offer-validation';
 
 // Step: Release all reservations for offer product items
@@ -26,7 +26,7 @@ const releaseOfferReservationsStep = createStep(
 		{ container },
 	) => {
 		const logger = getLogger(container);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 
 		const releasedReservations: string[] = [];
 

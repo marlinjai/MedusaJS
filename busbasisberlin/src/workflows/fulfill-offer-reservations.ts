@@ -15,6 +15,7 @@ import {
 	StepResponse,
 	WorkflowResponse,
 } from '@medusajs/framework/workflows-sdk';
+import { resolveOfferService } from '../types/services';
 import { releaseOfferReservationsWorkflow } from './release-offer-reservations';
 
 // Module constant for service resolution
@@ -25,7 +26,7 @@ const validateFulfillmentStep = createStep(
 	'validate-fulfillment',
 	async (input: { offer_id: string }, { container }) => {
 		const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 
 		logger.info(
 			`[OFFER-FULFILLMENT] Validating fulfillment for offer ${input.offer_id}`,
@@ -263,7 +264,7 @@ const updateOfferStatusStep = createStep(
 	'update-offer-status-completed',
 	async (input: { offer_id: string }, { container }) => {
 		const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 
 		logger.info(
 			`[OFFER-FULFILLMENT] Updating offer ${input.offer_id} status to completed`,
@@ -291,7 +292,7 @@ const updateOfferStatusStep = createStep(
 	},
 	async (compensationData, { container }) => {
 		const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 
 		logger.info(
 			`[OFFER-FULFILLMENT] Compensating: Reverting status to accepted`,

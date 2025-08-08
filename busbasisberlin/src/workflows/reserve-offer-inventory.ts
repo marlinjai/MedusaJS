@@ -15,11 +15,11 @@ import {
 } from '@medusajs/framework/workflows-sdk';
 import { createReservationsWorkflow } from '@medusajs/medusa/core-flows';
 
-import { OFFER_MODULE } from '../modules/offer';
 import {
 	CreatedReservation,
 	ReserveOfferInventoryInput,
 } from '../modules/offer/types';
+import { resolveOfferService } from '../types/services';
 import { getLogger, validateOfferStep } from './shared/offer-validation';
 
 // Step: Create reservations for all product items in offer
@@ -28,7 +28,7 @@ const createOfferReservationsStep = createStep(
 	async (input: { offer: any; productItems: any[] }, { container }) => {
 		const logger = getLogger(container);
 		const inventoryService = container.resolve(Modules.INVENTORY);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 
 		if (input.productItems.length === 0) {
 			logger.info('[RESERVE-WORKFLOW] No product items to reserve');

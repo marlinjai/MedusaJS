@@ -19,8 +19,8 @@ import {
 	updateReservationsWorkflow,
 } from '@medusajs/medusa/core-flows';
 
-import { OFFER_MODULE } from '../modules/offer';
 import { UpdateOfferReservationsInput } from '../modules/offer/types';
+import { resolveOfferService } from '../types/services';
 import { getLogger } from './shared/offer-validation';
 
 // Step 1: Remove reservations for deleted items
@@ -31,7 +31,7 @@ const removeReservationsStep = createStep(
 		{ container },
 	) => {
 		const logger = getLogger(container);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 		const inventoryService = container.resolve(Modules.INVENTORY);
 
 		let removedCount = 0;
@@ -113,7 +113,7 @@ const updateReservationsStep = createStep(
 		{ container },
 	) => {
 		const logger = getLogger(container);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 		const inventoryService = container.resolve(Modules.INVENTORY);
 
 		let updatedCount = 0;
@@ -218,7 +218,7 @@ const createReservationsStep = createStep(
 		{ container },
 	) => {
 		const logger = getLogger(container);
-		const offerService = container.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(container);
 		const inventoryService = container.resolve(Modules.INVENTORY);
 
 		let createdCount = 0;

@@ -6,6 +6,7 @@
 
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { resolveOfferService } from '../../../../../types/services';
 
 const OFFER_MODULE = 'offer';
 
@@ -36,7 +37,7 @@ export async function GET(
 		}
 
 		// Get offer with PDF URL from database
-		const offerService = req.scope.resolve(OFFER_MODULE);
+		const offerService = resolveOfferService(req.scope);
 		const offer = await offerService.getOfferWithDetails(offerId);
 
 		if (!offer) {

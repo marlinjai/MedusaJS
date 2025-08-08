@@ -2,6 +2,7 @@ import { ExecArgs } from '@medusajs/framework/types';
 import { parse } from 'csv-parse/sync';
 import fs from 'fs';
 import path from 'path';
+import { resolveSupplierService } from '../types/services';
 
 // Helper to safely get a field or null
 const safe = (row: any, key: string) =>
@@ -28,7 +29,7 @@ export default async function importSuppliers({ container, args }: ExecArgs) {
 		return;
 	}
 
-	const supplierService = container.resolve('supplier');
+	const supplierService = resolveSupplierService(container);
 	const csvContent = fs.readFileSync(csvPath, 'utf-8');
 	const records = parse(csvContent, {
 		columns: true,
