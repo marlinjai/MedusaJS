@@ -42,6 +42,21 @@ PROJECT_DIR="/opt/medusa-app"
 mkdir -p $PROJECT_DIR
 chown $SUDO_USER:$SUDO_USER $PROJECT_DIR
 
+# Clone repository if it doesn't exist
+echo "📥 Cloning repository..."
+if [ ! -d "$PROJECT_DIR/.git" ]; then
+    cd $PROJECT_DIR
+    git clone https://github.com/marlinjai/MedusaJS.git .
+    chown -R $SUDO_USER:$SUDO_USER $PROJECT_DIR
+    echo "✅ Repository cloned successfully"
+else
+    echo "✅ Repository already exists"
+fi
+
+# Make scripts executable
+echo "🔧 Making scripts executable..."
+chmod +x $PROJECT_DIR/scripts/*.sh
+
 # Configure firewall (optional)
 echo "🔥 Configuring firewall..."
 ufw allow ssh
@@ -221,11 +236,8 @@ Go to your GitHub repository → Settings → Secrets and add:
 - `MEDUSA_BACKEND_URL`: Your backend URL
 - `NEXT_PUBLIC_MEDUSA_BACKEND_URL`: Your backend URL
 
-### 2. Clone Repository
-```bash
-cd /opt/medusa-app
-git clone YOUR_REPOSITORY_URL .
-```
+### 2. Repository Already Cloned
+The setup script has already cloned your repository to `/opt/medusa-app`.
 
 ### 3. Test Deployment
 Push to main branch or manually trigger GitHub Actions workflow.
