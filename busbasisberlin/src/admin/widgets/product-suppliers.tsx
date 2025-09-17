@@ -51,12 +51,6 @@ interface ProductSupplier {
 	notes: string | null;
 }
 
-interface ProductVariant {
-	id: string;
-	title: string;
-	sku: string;
-}
-
 interface GroupedSupplierRelationship {
 	supplier: {
 		id: string;
@@ -319,7 +313,7 @@ const ProductSuppliersWidget = ({
 			].includes(editingCell.field) &&
 			newValue
 		) {
-			processedValue = Math.round(parseFloat(newValue) * 100); // Convert to cents
+			processedValue = parseFloat(newValue); // Store as euros, not cents
 		} else if (
 			[
 				'supplier_lead_time',
@@ -346,7 +340,7 @@ const ProductSuppliersWidget = ({
 
 	const formatPrice = (price: number | null) => {
 		if (!price) return '';
-		return (price / 100).toFixed(2);
+		return price.toFixed(2); // Price is already in euros
 	};
 
 	const formatVatRate = (vatRate: number | null) => {

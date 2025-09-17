@@ -2,9 +2,18 @@ import { defineConfig, loadEnv } from '@medusajs/framework/utils';
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd());
 
-module.exports = defineConfig({
-	projectConfig: {
+// Environment-specific configuration
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Build project configuration based on environment
+const getProjectConfig = () => {
+	const baseConfig = {
 		databaseUrl: process.env.DATABASE_URL,
+		databaseDriverOptions: {
+			ssl: false,
+			sslmode: 'disable',
+		},
 		http: {
 			storeCors: process.env.STORE_CORS!,
 			adminCors: process.env.ADMIN_CORS!,
@@ -12,8 +21,57 @@ module.exports = defineConfig({
 			jwtSecret: process.env.JWT_SECRET || 'supersecret',
 			cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
 		},
-	},
-	modules: [
+	};
+
+	// Add production-specific config
+	if (isProduction) {
+		return {
+			...baseConfig,
+			workerMode: process.env.MEDUSA_WORKER_MODE as
+				| 'shared'
+				| 'worker'
+				| 'server',
+			redisUrl: process.env.REDIS_URL,
+		};
+	}
+
+	return baseConfig;
+};
+
+// Environment-specific modules
+const getModules = () => {
+	const modules: any[] = [];
+
+	// Redis modules only for production
+	if (isProduction && process.env.REDIS_URL) {
+		modules.push(
+			{
+				resolve: '@medusajs/medusa/cache-redis',
+				options: {
+					redisUrl: process.env.REDIS_URL,
+				},
+			},
+			{
+				resolve: '@medusajs/medusa/event-bus-redis',
+				options: {
+					redisUrl: process.env.REDIS_URL,
+				},
+			},
+			{
+				resolve: '@medusajs/medusa/workflow-engine-redis',
+				options: {
+					redis: {
+						url: process.env.REDIS_URL,
+					},
+				},
+			},
+		);
+	}
+	// Development uses in-memory alternatives (default Medusa behavior)
+
+	// Common modules for all environments
+	modules.push(
+		// Authentication module
 		{
 			resolve: '@medusajs/medusa/auth',
 			options: {
@@ -28,6 +86,7 @@ module.exports = defineConfig({
 				],
 			},
 		},
+		// File storage module
 		{
 			resolve: '@medusajs/medusa/file',
 			options: {
@@ -50,6 +109,7 @@ module.exports = defineConfig({
 				],
 			},
 		},
+		// Notification module
 		{
 			resolve: '@medusajs/medusa/notification',
 			options: {
@@ -66,6 +126,7 @@ module.exports = defineConfig({
 				],
 			},
 		},
+		// Custom modules
 		{
 			resolve: './src/modules/supplier',
 		},
@@ -78,5 +139,17 @@ module.exports = defineConfig({
 		{
 			resolve: './src/modules/manual-customer',
 		},
-	],
+	);
+
+	return modules;
+};
+
+module.exports = defineConfig({
+	projectConfig: getProjectConfig(),
+	// Admin configuration
+	admin: {
+		disable: process.env.DISABLE_MEDUSA_ADMIN === 'true',
+		backendUrl: process.env.MEDUSA_BACKEND_URL,
+	},
+	modules: getModules(),
 });

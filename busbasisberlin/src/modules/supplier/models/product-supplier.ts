@@ -22,9 +22,9 @@ const productSupplier = model.define('product_supplier', {
 	is_primary: model.boolean().default(false), // Ist Standardlieferant
 
 	// ENHANCED: Separate netto and brutto pricing for better accuracy
-	supplier_price_netto: model.number().nullable(), // EK Netto (supplier net price) - in cents
-	supplier_price_brutto: model.number().nullable(), // EK Brutto (supplier gross price) - in cents
-	supplier_price: model.number().nullable(), // Legacy field, keep for backward compatibility
+	supplier_price_netto: model.bigNumber().nullable(), // EK Netto (supplier net price) - in euros
+	supplier_price_brutto: model.bigNumber().nullable(), // EK Brutto (supplier gross price) - in euros
+	supplier_price: model.bigNumber().nullable(), // Legacy field, keep for backward compatibility
 
 	supplier_sku: model.text().nullable(), // Lieferanten-Art.Nr.
 	supplier_product_name: model.text().nullable(), // Lieferanten Artikelname

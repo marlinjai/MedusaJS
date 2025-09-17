@@ -5,16 +5,19 @@
  */
 
 import OfferService from '../modules/offer/service';
+import ServiceService from '../modules/service/service';
 import SupplierService from '../modules/supplier/service';
 
 // Export service types for use in API routes, workflows, and scripts
 export type ResolvedOfferService = OfferService;
 export type ResolvedSupplierService = SupplierService;
+export type ResolvedServiceService = ServiceService;
 
 // Service module keys - these match the module names used in req.scope.resolve()
 export const SERVICE_MODULES = {
 	OFFER: 'offer',
 	SUPPLIER: 'supplier',
+	SERVICE: 'service',
 } as const;
 
 // Helper type for service resolution
@@ -33,4 +36,10 @@ export function resolveSupplierService(
 	container: ServiceContainer,
 ): ResolvedSupplierService {
 	return container.resolve<ResolvedSupplierService>(SERVICE_MODULES.SUPPLIER);
+}
+
+export function resolveServiceService(
+	container: ServiceContainer,
+): ResolvedServiceService {
+	return container.resolve<ResolvedServiceService>(SERVICE_MODULES.SERVICE);
 }

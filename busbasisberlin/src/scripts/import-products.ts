@@ -13,11 +13,15 @@ import {
 	createInventoryLevelsWorkflow,
 	createProductCategoriesWorkflow,
 	createProductsWorkflow,
+	createSalesChannelsWorkflow,
 } from '@medusajs/medusa/core-flows';
 import { parse } from 'csv-parse/sync';
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveSupplierService } from '../types/services';
+import {
+	resolveServiceService,
+	resolveSupplierService,
+} from '../types/services';
 
 interface ImageMapping {
 	[filename: string]: {
@@ -153,6 +157,51 @@ const createHandle = (name: string): string => {
 	return handle;
 };
 
+// Helper function to determine product type and sales channel assignment
+const determineProductType = (categoryLevel1: string | null) => {
+	if (!categoryLevel1) {
+		return {
+			type: 'product',
+			salesChannel: 'public',
+			tags: ['public'],
+			shouldImportAsProduct: true,
+		};
+	}
+
+	const category = categoryLevel1.toLowerCase().trim();
+
+	// Services that should be imported to service module
+	if (category === 'arbeitspositionen' || category === 'verein') {
+		return {
+			type: 'service',
+			salesChannel: 'service',
+			tags: ['service', category],
+			shouldImportAsProduct: false,
+		};
+	}
+
+	// Internal materials that should be products but not visible in public store
+	if (
+		category === 'verbrauchsstoffe werkstatt' ||
+		category === 'verbrauchsstoffe versand'
+	) {
+		return {
+			type: 'product',
+			salesChannel: 'internal',
+			tags: ['internal', 'verbrauchsstoffe'],
+			shouldImportAsProduct: true,
+		};
+	}
+
+	// Regular products for public e-commerce
+	return {
+		type: 'product',
+		salesChannel: 'public',
+		tags: ['public'],
+		shouldImportAsProduct: true,
+	};
+};
+
 // Build category tree from CSV data
 const buildCategoryTree = (articles: any[]): CategoryNode => {
 	const root = {
@@ -222,8 +271,10 @@ const flattenCategoryTree = (root: CategoryNode): CategoryNode[] => {
 export default async function importProducts({ container }: ExecArgs) {
 	const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
 	const query = container.resolve(ContainerRegistrationKeys.QUERY);
+	const link = container.resolve(ContainerRegistrationKeys.LINK);
 	const productService = container.resolve(Modules.PRODUCT);
 	const supplierService = resolveSupplierService(container);
+	const serviceService = resolveServiceService(container);
 	const stockLocationService = container.resolve(Modules.STOCK_LOCATION);
 	const salesChannelService = container.resolve(Modules.SALES_CHANNEL);
 
@@ -231,26 +282,103 @@ export default async function importProducts({ container }: ExecArgs) {
 		'🚀 Starting comprehensive product import with hierarchical categories...',
 	);
 
-	// Get default sales channel for product association
-	let defaultSalesChannel: any = null;
+	// Setup sales channels for different product types
+	logger.info('🏪 Setting up sales channels...');
+
+	let publicSalesChannel: any = null;
+	let internalSalesChannel: any = null;
+	let serviceSalesChannel: any = null;
+
 	try {
-		const salesChannels = await salesChannelService.listSalesChannels();
-		if (salesChannels.length > 0) {
-			defaultSalesChannel = salesChannels[0];
+		const existingSalesChannels = await salesChannelService.listSalesChannels();
+
+		// Find or create public sales channel (for regular e-commerce products)
+		publicSalesChannel = existingSalesChannels.find(
+			sc => sc.name === 'Public Store' || sc.name === 'Default Sales Channel',
+		);
+
+		if (!publicSalesChannel) {
+			const { result: publicChannelResult } = await createSalesChannelsWorkflow(
+				container,
+			).run({
+				input: {
+					salesChannelsData: [
+						{
+							name: 'Public Store',
+							description: 'Public e-commerce storefront for customers',
+							is_disabled: false,
+						},
+					],
+				},
+			});
+			publicSalesChannel = publicChannelResult[0];
 			logger.info(
-				`🏪 Using sales channel: ${defaultSalesChannel.name} (${defaultSalesChannel.id})`,
+				`✅ Created public sales channel: ${publicSalesChannel.name}`,
 			);
 		} else {
-			logger.error(
-				'❌ No sales channels found! Products will not be visible in storefront.',
-			);
 			logger.info(
-				'💡 Create a sales channel in the admin panel to enable product visibility.',
+				`✅ Using existing public sales channel: ${publicSalesChannel.name}`,
 			);
-			return;
+		}
+
+		// Find or create internal sales channel (for internal products like Verbrauchsstoffe)
+		internalSalesChannel = existingSalesChannels.find(
+			sc => sc.name === 'Internal Operations',
+		);
+
+		if (!internalSalesChannel) {
+			const { result: internalChannelResult } =
+				await createSalesChannelsWorkflow(container).run({
+					input: {
+						salesChannelsData: [
+							{
+								name: 'Internal Operations',
+								description:
+									'Internal channel for workshop materials and shipping supplies',
+								is_disabled: false,
+							},
+						],
+					},
+				});
+			internalSalesChannel = internalChannelResult[0];
+			logger.info(
+				`✅ Created internal sales channel: ${internalSalesChannel.name}`,
+			);
+		} else {
+			logger.info(
+				`✅ Using existing internal sales channel: ${internalSalesChannel.name}`,
+			);
+		}
+
+		// Find or create service sales channel (for services like Arbeitspositionen, Verein)
+		serviceSalesChannel = existingSalesChannels.find(
+			sc => sc.name === 'Service Operations',
+		);
+
+		if (!serviceSalesChannel) {
+			const { result: serviceChannelResult } =
+				await createSalesChannelsWorkflow(container).run({
+					input: {
+						salesChannelsData: [
+							{
+								name: 'Service Operations',
+								description: 'Channel for services and labor positions',
+								is_disabled: false,
+							},
+						],
+					},
+				});
+			serviceSalesChannel = serviceChannelResult[0];
+			logger.info(
+				`✅ Created service sales channel: ${serviceSalesChannel.name}`,
+			);
+		} else {
+			logger.info(
+				`✅ Using existing service sales channel: ${serviceSalesChannel.name}`,
+			);
 		}
 	} catch (error) {
-		logger.error(`❌ Failed to fetch sales channels: ${error.message}`);
+		logger.error(`❌ Failed to setup sales channels: ${error.message}`);
 		return;
 	}
 
@@ -625,8 +753,10 @@ export default async function importProducts({ container }: ExecArgs) {
 			console.log(`  "${handle}" => ${id}`);
 		});
 
-		// PHASE 3: Product import with proper category assignment
-		logger.info('📦 Phase 3: Importing products with category assignments...');
+		// PHASE 3B: Product import with proper category assignment and sales channel linking
+		logger.info(
+			'📦 Phase 3B: Importing products with category assignments and sales channel linking...',
+		);
 		logger.info(`📦 Parsed ${articles.length} articles from CSV`);
 
 		// DIAGNOSTIC: Check for SKU duplicates in CSV data
@@ -714,8 +844,135 @@ export default async function importProducts({ container }: ExecArgs) {
 			);
 		});
 
-		// Convert to array for batch processing
-		const productSkus = Array.from(productGroups.keys());
+		// Separate products and services based on category
+		const allSkus = Array.from(productGroups.keys());
+		const serviceSkus: string[] = [];
+		const productSkus: string[] = [];
+
+		allSkus.forEach(sku => {
+			const productRows = productGroups.get(sku);
+			if (productRows && productRows.length > 0) {
+				const baseArticle = productRows[0];
+				const categoryLevel1 = safe(baseArticle, 'Kategorie Level 1');
+				const productType = determineProductType(categoryLevel1);
+
+				if (productType.shouldImportAsProduct) {
+					productSkus.push(sku);
+				} else {
+					serviceSkus.push(sku);
+				}
+			}
+		});
+
+		logger.info(
+			`📊 Split items: ${serviceSkus.length} services, ${productSkus.length} products`,
+		);
+
+		// PHASE 3A: Import services to service module
+		if (serviceSkus.length > 0) {
+			logger.info('🔧 Phase 3A: Importing services to service module...');
+			let serviceSuccessCount = 0;
+			let serviceErrorCount = 0;
+
+			for (const sku of serviceSkus) {
+				try {
+					const serviceRows = productGroups.get(sku);
+					if (!serviceRows || serviceRows.length === 0) continue;
+
+					const baseService = serviceRows[0];
+					const title = safe(baseService, 'Artikelname');
+					const categoryLevel1 = safe(baseService, 'Kategorie Level 1');
+
+					if (!title) {
+						logger.warn(`⚠️  Skipping service without title: ${sku}`);
+						continue;
+					}
+
+					// Parse pricing for service
+					const parsePrice = (priceStr: string): number => {
+						if (!priceStr) return 0;
+						let cleaned = priceStr.replace(/[^\d,.-]/g, '');
+						if (cleaned.includes(',')) {
+							if (cleaned.includes('.')) {
+								cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+							} else {
+								cleaned = cleaned.replace(',', '.');
+							}
+						}
+						const parsed = parseFloat(cleaned);
+						return isNaN(parsed) ? 0 : parsed; // Return in euros
+					};
+
+					const basePrice = parsePrice(
+						safe(baseService, 'Std. VK Brutto') || '0',
+					);
+					const hourlyRate = parsePrice(
+						safe(baseService, 'Std. VK Netto') || '0',
+					);
+
+					// Create service in service module
+					const serviceData = {
+						title: title,
+						description: safe(baseService, 'Druck Beschreibung') || undefined,
+						short_description:
+							safe(baseService, 'Druck Kurzbeschreibung') || undefined,
+						category: categoryLevel1,
+						service_type:
+							categoryLevel1 === 'arbeitspositionen' ? 'Stunden' : 'Pauschal',
+						base_price: basePrice > 0 ? basePrice : undefined,
+						hourly_rate: hourlyRate > 0 ? hourlyRate : undefined,
+						currency_code: 'EUR',
+						estimated_duration:
+							parseInt(
+								safe(
+									baseService,
+									'Beschaffungszeit manuell ermitteln (Tage)',
+								) || '0',
+							) * 60 || undefined, // Convert days to minutes
+						is_active: safe(baseService, 'Aktiv') === 'Y',
+						is_featured: safe(baseService, 'Top Artikel') === 'Y',
+						requires_vehicle: false,
+						requires_diagnosis: categoryLevel1 === 'arbeitspositionen',
+						requires_approval: true,
+						requirements: safe(baseService, 'Anmerkung'),
+						notes: `Imported from CSV - SKU: ${sku}, Internal Key: ${safe(baseService, 'Interner Schlüssel')}`,
+						status: safe(baseService, 'Aktiv') === 'Y' ? 'active' : 'inactive',
+					};
+
+					// Check if service already exists
+					const existingServices = await serviceService.listServices({ title });
+					let createdService;
+
+					if (existingServices.length > 0) {
+						// Update existing service
+						const [updatedService] = await serviceService.updateServices([
+							{
+								id: existingServices[0].id,
+								...serviceData,
+							},
+						]);
+						createdService = updatedService;
+						logger.info(`🔄 Updated service: ${title} (${categoryLevel1})`);
+					} else {
+						// Create new service
+						const [newService] = await serviceService.createServices([
+							serviceData,
+						]);
+						createdService = newService;
+						logger.info(`✅ Created service: ${title} (${categoryLevel1})`);
+					}
+
+					serviceSuccessCount++;
+				} catch (error) {
+					logger.error(`❌ Failed to import service ${sku}: ${error.message}`);
+					serviceErrorCount++;
+				}
+			}
+
+			logger.info(
+				`🔧 Service import completed: ${serviceSuccessCount} success, ${serviceErrorCount} errors`,
+			);
+		}
 
 		// Process products in smaller batches to prevent database connection issues
 		const BATCH_SIZE = 5; // Reduced from 25 to prevent connection pool exhaustion
@@ -778,7 +1035,7 @@ export default async function importProducts({ container }: ExecArgs) {
 					}
 
 					// Parse pricing - handle German number format (comma as decimal separator)
-					// Note: All prices should be stored in cents for consistency with Medusa
+					// Note: Medusa expects prices in cents for consistency
 					const parsePrice = (
 						priceStr: string,
 						forSupplier: boolean = false,
@@ -804,12 +1061,12 @@ export default async function importProducts({ container }: ExecArgs) {
 						const parsed = parseFloat(cleaned);
 						if (isNaN(parsed)) return 0;
 
-						// Always convert to cents for consistency with Medusa
-						const result = Math.round(parsed * 100);
+						// Return price in euros (base currency unit) - no conversion needed
+						const result = parsed;
 
 						// Debug log to verify price parsing
 						console.log(
-							`Price parsing: "${priceStr}" -> "${cleaned}" -> ${parsed} -> ${result} cents (${(result / 100).toFixed(2)}€)`,
+							`Price parsing: "${priceStr}" -> "${cleaned}" -> ${parsed} -> ${result}€`,
 						);
 
 						return result;
@@ -819,15 +1076,15 @@ export default async function importProducts({ container }: ExecArgs) {
 					const nettoPrice = parsePrice(
 						safe(baseArticle, 'Std. VK Netto') || '0',
 						false,
-					); // Customer selling price (cents)
+					); // Customer selling price (euros)
 					const bruttoPrice = parsePrice(
 						safe(baseArticle, 'Std. VK Brutto') || '0',
 						false,
-					); // Customer selling price (cents)
+					); // Customer selling price (euros)
 					const supplierPrice = parsePrice(
-						safe(baseArticle, 'EK Netto (für GLD)') || '0',
+						safe(baseArticle, 'EK Brutto') || '0',
 						true,
-					); // Supplier purchase price (cents)
+					); // Supplier purchase price (euros)
 
 					// Parse dimensions and weight
 					const parseNumber = (value: string): number => {
@@ -880,9 +1137,29 @@ export default async function importProducts({ container }: ExecArgs) {
 					// Get product images
 					const images = productImageMapping[sku] || [];
 
+					// Determine product type and sales channel
+					const categoryLevel1 = safe(baseArticle, 'Kategorie Level 1');
+					const productTypeInfo = determineProductType(categoryLevel1);
+
+					// Select appropriate sales channel
+					let selectedSalesChannel;
+					switch (productTypeInfo.salesChannel) {
+						case 'internal':
+							selectedSalesChannel = internalSalesChannel;
+							break;
+						case 'service':
+							selectedSalesChannel = serviceSalesChannel;
+							break;
+						default:
+							selectedSalesChannel = publicSalesChannel;
+					}
+
 					// Log pricing information for debugging
 					logger.info(
-						`💰 Product ${sku}: Selling Price (Brutto): €${(bruttoPrice / 100).toFixed(2)}, Selling Price (Netto): €${(nettoPrice / 100).toFixed(2)}, Supplier Price: €${(supplierPrice / 100).toFixed(2)}, Stock: ${stock}`,
+						`💰 Product ${sku}: Selling Price (Brutto): €${bruttoPrice.toFixed(2)}, Selling Price (Netto): €${nettoPrice.toFixed(2)}, Supplier Price: €${supplierPrice.toFixed(2)}, Stock: ${stock}`,
+					);
+					logger.info(
+						`🏪 Product ${sku}: Type: ${productTypeInfo.type}, Sales Channel: ${selectedSalesChannel.name}, Tags: [${productTypeInfo.tags.join(', ')}]`,
 					);
 
 					// Log supplier information
@@ -945,11 +1222,11 @@ export default async function importProducts({ container }: ExecArgs) {
 						category_ids: categoryId ? [categoryId] : [],
 						type_id: undefined,
 						collection_id: undefined,
-						tags: [],
+						tags: [], // Tags will be created after product creation
 						images: images.map((imagePath: string) => ({ url: imagePath })),
 						sales_channels: [
 							{
-								id: defaultSalesChannel.id,
+								id: selectedSalesChannel.id,
 							},
 						],
 						options: [
@@ -1093,7 +1370,68 @@ export default async function importProducts({ container }: ExecArgs) {
 								`✅ Updated existing product: ${sku} - ${safe(baseArticle, 'Artikelname')} (Category: ${categoryPath || 'None'})`,
 							);
 
-							// Sales channel association is handled during product creation
+							// Create explicit sales channel link using Link API if not already linked
+							try {
+								await link.create({
+									[Modules.PRODUCT]: { product_id: existingProduct.id },
+									[Modules.SALES_CHANNEL]: {
+										sales_channel_id: selectedSalesChannel.id,
+									},
+								});
+								logger.info(
+									`🔗 Linked existing product ${sku} to sales channel: ${selectedSalesChannel.name}`,
+								);
+							} catch (linkError) {
+								// Link might already exist, which is fine
+								if (!linkError.message.includes('already exists')) {
+									logger.warn(
+										`⚠️  Failed to create sales channel link for ${sku}: ${linkError.message}`,
+									);
+								}
+							}
+
+							// Create and assign tags if not already present
+							try {
+								const currentTags = existingProduct.tags || [];
+								const currentTagValues = currentTags.map(t => t.value);
+								const currentTagIds = currentTags.map(t => t.id);
+
+								for (const tagValue of productTypeInfo.tags) {
+									if (!currentTagValues.includes(tagValue)) {
+										// Check if tag exists
+										const existingTags = await productService.listProductTags({
+											value: tagValue,
+										});
+										let tag;
+
+										if (existingTags.length > 0) {
+											tag = existingTags[0];
+										} else {
+											// Create new tag
+											const [newTag] = await productService.createProductTags([
+												{ value: tagValue },
+											]);
+											tag = newTag;
+											logger.info(`🏷️  Created tag: ${tagValue}`);
+										}
+
+										currentTagIds.push(tag.id);
+									}
+								}
+
+								// Associate all tags with product using tag_ids
+								await productService.updateProducts(existingProduct.id, {
+									tag_ids: currentTagIds,
+								});
+
+								logger.info(
+									`🏷️  Tagged existing product ${sku} with: [${productTypeInfo.tags.join(', ')}]`,
+								);
+							} catch (tagError) {
+								logger.warn(
+									`⚠️  Failed to create/assign tags for ${sku}: ${tagError.message}`,
+								);
+							}
 
 							// Create enhanced supplier relationships for ALL suppliers mentioned in the grouped rows
 							for (const article of productRows) {
@@ -1137,11 +1475,11 @@ export default async function importProducts({ container }: ExecArgs) {
 										const supplierNettoPrice = parsePrice(
 											safe(article, 'EK Netto') || '0',
 											true,
-										); // Supplier netto price (cents)
+										); // Supplier netto price (euros)
 										const supplierBruttoPrice = parsePrice(
 											safe(article, 'EK Brutto') || '0',
 											true,
-										); // Supplier brutto price (cents)
+										); // Supplier brutto price (euros)
 										const supplierVatRate =
 											parseFloat(safe(article, 'USt. in %') || '0') || null; // Supplier VAT rate
 
@@ -1280,7 +1618,62 @@ export default async function importProducts({ container }: ExecArgs) {
 							`✅ Created new product: ${sku} - ${safe(baseArticle, 'Artikelname')} (Category: ${categoryPath || 'None'})`,
 						);
 
-						// Sales channel association is handled during product creation
+						// Create explicit sales channel link using Link API
+						try {
+							await link.create({
+								[Modules.PRODUCT]: { product_id: createdProduct.id },
+								[Modules.SALES_CHANNEL]: {
+									sales_channel_id: selectedSalesChannel.id,
+								},
+							});
+							logger.info(
+								`🔗 Linked product ${sku} to sales channel: ${selectedSalesChannel.name}`,
+							);
+						} catch (linkError) {
+							logger.warn(
+								`⚠️  Failed to create sales channel link for ${sku}: ${linkError.message}`,
+							);
+						}
+
+						// Create and assign tags
+						try {
+							const tagIds: string[] = [];
+
+							for (const tagValue of productTypeInfo.tags) {
+								// Check if tag exists
+								const existingTags = await productService.listProductTags({
+									value: tagValue,
+								});
+								let tag;
+
+								if (existingTags.length > 0) {
+									tag = existingTags[0];
+								} else {
+									// Create new tag
+									const [newTag] = await productService.createProductTags([
+										{ value: tagValue },
+									]);
+									tag = newTag;
+									logger.info(`🏷️  Created tag: ${tagValue}`);
+								}
+
+								tagIds.push(tag.id);
+							}
+
+							// Associate tags with product using tag_ids
+							if (tagIds.length > 0) {
+								await productService.updateProducts(createdProduct.id, {
+									tag_ids: tagIds,
+								});
+							}
+							logger.info(
+								`🏷️  Tagged product ${sku} with: [${productTypeInfo.tags.join(', ')}]`,
+							);
+						} catch (tagError) {
+							logger.warn(
+								`⚠️  Failed to create/assign tags for ${sku}: ${tagError.message}`,
+							);
+						}
 
 						// Create enhanced supplier relationships for ALL suppliers mentioned in the grouped rows
 						for (const article of productRows) {
@@ -1322,11 +1715,11 @@ export default async function importProducts({ container }: ExecArgs) {
 									const supplierNettoPrice = parsePrice(
 										safe(article, 'EK Netto') || '0',
 										true,
-									); // Supplier netto price (cents)
+									); // Supplier netto price (euros)
 									const supplierBruttoPrice = parsePrice(
 										safe(article, 'EK Brutto') || '0',
 										true,
-									); // Supplier brutto price (cents)
+									); // Supplier brutto price (euros)
 									const supplierVatRate =
 										parseFloat(safe(article, 'USt. in %') || '0') || null; // Supplier VAT rate
 
