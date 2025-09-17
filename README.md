@@ -45,6 +45,88 @@ cd busbasisberlin-storefront
 npm run dev
 ```
 
+## 🌐 Production Deployment
+
+### One-Command VPS Setup
+
+**Step 1: Setup VPS (One Command)**
+```bash
+# Copy and run setup script (handles everything!)
+scp scripts/setup-server.sh root@YOUR_VPS_IP:/tmp/ && ssh root@YOUR_VPS_IP "chmod +x /tmp/setup-server.sh && /tmp/setup-server.sh"
+```
+
+This single command will:
+- ✅ Install Docker & Docker Compose
+- ✅ Create `/opt/medusa-app` directory
+- ✅ Clone your repository
+- ✅ Make scripts executable
+- ✅ Set up firewall
+- ✅ Create monitoring & backup scripts
+- ✅ Generate SSH key for GitHub Actions
+- ✅ Set up systemd service
+
+**Step 2: Configure GitHub Secrets**
+```bash
+# Set all required secrets
+gh secret set HOST --body "YOUR_VPS_IP"
+gh secret set SSH_USER --body "root"
+gh secret set PROJECT_PATH --body "/opt/medusa-app"
+gh secret set POSTGRES_PASSWORD --body "your-secure-password"
+gh secret set REDIS_PASSWORD --body "your-secure-password"
+gh secret set JWT_SECRET --body "your-super-secure-jwt-secret-min-32-chars"
+gh secret set COOKIE_SECRET --body "your-super-secure-cookie-secret-min-32-chars"
+gh secret set STORE_CORS --body "https://yourdomain.com"
+gh secret set ADMIN_CORS --body "https://yourdomain.com"
+gh secret set AUTH_CORS --body "https://yourdomain.com"
+gh secret set MEDUSA_BACKEND_URL --body "https://yourdomain.com"
+gh secret set NEXT_PUBLIC_MEDUSA_BACKEND_URL --body "https://yourdomain.com"
+# S3 and Email secrets (set to empty if not using)
+gh secret set S3_FILE_URL --body ""
+gh secret set S3_ACCESS_KEY_ID --body ""
+gh secret set S3_SECRET_ACCESS_KEY --body ""
+gh secret set S3_REGION --body ""
+gh secret set S3_BUCKET --body ""
+gh secret set S3_ENDPOINT --body ""
+gh secret set RESEND_API_KEY --body ""
+gh secret set RESEND_FROM_EMAIL --body ""
+```
+
+**Step 3: Deploy**
+```bash
+# Push to trigger automated deployment
+git push
+```
+
+**Step 4: Import Data (After Successful Deployment)**
+```bash
+# SSH into VPS
+ssh root@YOUR_VPS_IP
+
+# Copy data files
+scp -r data/ root@YOUR_VPS_IP:/opt/medusa-app/
+
+# Run import scripts
+cd /opt/medusa-app
+docker-compose exec medusa-server-green npx medusa exec ./src/scripts/import-suppliers.ts
+docker-compose exec medusa-server-green npx medusa exec ./src/scripts/import-products.ts
+docker-compose exec medusa-server-green npx medusa exec ./src/scripts/import-manual-customers.ts
+
+# Create admin user
+docker-compose exec medusa-server-green npx medusa user -e admin@yourdomain.com -p secure-password
+```
+
+### Access Your Application
+- **Storefront**: `https://yourdomain.com`
+- **Admin Dashboard**: `https://yourdomain.com/app`
+- **API Health**: `https://yourdomain.com/api/health`
+
+### Blue-Green Deployment
+The system automatically uses blue-green deployment for zero-downtime updates:
+- Push to `main` branch triggers automatic deployment
+- Health checks ensure new environment is working
+- Traffic switches seamlessly between blue/green environments
+- Automatic rollback if deployment fails
+
 ## 🎨 Code Formatting & Linting
 
 ### Auto-Format on Save
@@ -140,5 +222,4 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 
 ---
 
-*Built with ❤️ for BusBasisBerlin*# Deployment trigger Wed Sep 17 21:07:46 CEST 2025
-# VPS deployment ready Wed Sep 17 21:15:35 CEST 2025
+*Built with ❤️ for BusBasisBerlin*
