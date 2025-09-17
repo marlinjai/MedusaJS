@@ -29,7 +29,12 @@ rm get-docker.sh
 
 # Add user to docker group
 echo "👤 Adding user to docker group..."
-usermod -aG docker $SUDO_USER
+if [ -n "$SUDO_USER" ]; then
+    usermod -aG docker $SUDO_USER
+    echo "✅ Added $SUDO_USER to docker group"
+else
+    echo "ℹ️ Running as root - skipping user group addition"
+fi
 
 # Install Docker Compose
 echo "🐳 Installing Docker Compose..."
