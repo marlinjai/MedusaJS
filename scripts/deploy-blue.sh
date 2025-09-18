@@ -7,9 +7,11 @@ set -e
 
 echo "🚀 Starting Blue Deployment..."
 
-# Load environment variables
+# Load environment variables (safely handle special characters)
 if [ -f .env.docker ]; then
-    export $(cat .env.docker | grep -v '^#' | xargs)
+    set -o allexport
+    source .env.docker
+    set +o allexport
 fi
 
 # Build and start blue services
