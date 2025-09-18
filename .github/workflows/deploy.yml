@@ -194,6 +194,21 @@ jobs:
           while [ $counter -lt $timeout ]; do
             if curl -f $HEALTH_CHECK_URL >/dev/null 2>&1; then
               echo "✅ $TARGET_ENV services are healthy!"
+
+              # Switch traffic to the healthy target environment
+              echo "🔄 Switching traffic to $TARGET_ENV instance..."
+              if [ "$TARGET_ENV" = "green" ]; then
+                sed -i 's/proxy_pass http:\/\/medusa_blue/proxy_pass http:\/\/medusa_green/g' nginx/nginx.conf
+                sed -i 's/proxy_pass http:\/\/medusa_blue_health/proxy_pass http:\/\/medusa_green_health/g' nginx/nginx.conf
+              else
+                sed -i 's/proxy_pass http:\/\/medusa_green/proxy_pass http:\/\/medusa_blue/g' nginx/nginx.conf
+                sed -i 's/proxy_pass http:\/\/medusa_green_health/proxy_pass http:\/\/medusa_blue_health/g' nginx/nginx.conf
+              fi
+
+              # Reload nginx configuration
+              docker-compose exec nginx nginx -s reload
+              echo "✅ Traffic switched to $TARGET_ENV instance"
+
               break
             fi
 
@@ -254,6 +269,16 @@ jobs:
           # Run database migrations if needed
           echo "🗄️ Running database migrations..."
           docker-compose exec $CONTAINER_PREFIX npm run predeploy || true
+
+          # Stop old environment after successful deployment
+          echo "🛑 Stopping old environment..."
+          if [ "$TARGET_ENV" = "green" ]; then
+            docker-compose stop medusa-server-blue medusa-worker-blue
+            echo "🛑 Blue environment stopped"
+          else
+            docker-compose stop medusa-server-green medusa-worker-green
+            echo "🛑 Green environment stopped"
+          fi
 
           echo "🎉 Deployment to $TARGET_ENV completed successfully!"
           echo "🌐 Medusa Backend is now running on $TARGET_ENV environment"

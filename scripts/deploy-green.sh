@@ -39,12 +39,18 @@ if [ $counter -ge $timeout ]; then
     exit 1
 fi
 
-# Nginx configuration is static - using nginx/nginx.conf file
-echo "🔄 Using static Nginx configuration (backend only)..."
+# Switch nginx traffic to green instance
+echo "🔄 Switching traffic to green instance..."
+sed -i 's/proxy_pass http:\/\/medusa_blue/proxy_pass http:\/\/medusa_green/g' nginx/nginx.conf
+sed -i 's/proxy_pass http:\/\/medusa_blue_health/proxy_pass http:\/\/medusa_green_health/g' nginx/nginx.conf
 
-# Reload Nginx configuration
+# Reload Nginx configuration to apply changes
 echo "🔄 Reloading Nginx configuration..."
 docker-compose exec nginx nginx -s reload
+
+# Stop blue services after successful switch
+echo "🛑 Stopping blue services..."
+docker-compose stop medusa-server-blue medusa-worker-blue
 
 echo "✅ Green deployment completed successfully!"
 echo "🌐 Application is now running on green instance"
