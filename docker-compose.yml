@@ -282,7 +282,6 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - medusa-server-blue
-      - storefront-blue
     networks:
       - medusa-network
 
