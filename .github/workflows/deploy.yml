@@ -82,26 +82,26 @@ jobs:
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}
 
-          # Company Information
-          COMPANY_NAME=${{ secrets.COMPANY_NAME }}
-          COMPANY_ADDRESS=${{ secrets.COMPANY_ADDRESS }}
-          COMPANY_POSTAL_CODE=${{ secrets.COMPANY_POSTAL_CODE }}
-          COMPANY_CITY=${{ secrets.COMPANY_CITY }}
-          COMPANY_EMAIL=${{ secrets.COMPANY_EMAIL }}
-          COMPANY_PHONE=${{ secrets.COMPANY_PHONE }}
-          COMPANY_WEBSITE=${{ secrets.COMPANY_WEBSITE }}
-          COMPANY_TAX_ID=${{ secrets.COMPANY_TAX_ID }}
-          COMPANY_BANK_INFO=${{ secrets.COMPANY_BANK_INFO }}
+          # Company Information (properly quoted)
+          COMPANY_NAME="${{ secrets.COMPANY_NAME }}"
+          COMPANY_ADDRESS="${{ secrets.COMPANY_ADDRESS }}"
+          COMPANY_POSTAL_CODE="${{ secrets.COMPANY_POSTAL_CODE }}"
+          COMPANY_CITY="${{ secrets.COMPANY_CITY }}"
+          COMPANY_EMAIL="${{ secrets.COMPANY_EMAIL }}"
+          COMPANY_PHONE="${{ secrets.COMPANY_PHONE }}"
+          COMPANY_WEBSITE="${{ secrets.COMPANY_WEBSITE }}"
+          COMPANY_TAX_ID="${{ secrets.COMPANY_TAX_ID }}"
+          COMPANY_BANK_INFO="${{ secrets.COMPANY_BANK_INFO }}"
 
-          # PDF Template Customization
-          PDF_LOGO_URL=${{ secrets.PDF_LOGO_URL }}
-          PDF_FOOTER_TEXT=${{ secrets.PDF_FOOTER_TEXT }}
-          PDF_TERMS_CONDITIONS=${{ secrets.PDF_TERMS_CONDITIONS }}
-          PDF_PRIVACY_POLICY=${{ secrets.PDF_PRIVACY_POLICY }}
+          # PDF Template Customization (properly quoted)
+          PDF_LOGO_URL="${{ secrets.PDF_LOGO_URL }}"
+          PDF_FOOTER_TEXT="${{ secrets.PDF_FOOTER_TEXT }}"
+          PDF_TERMS_CONDITIONS="${{ secrets.PDF_TERMS_CONDITIONS }}"
+          PDF_PRIVACY_POLICY="${{ secrets.PDF_PRIVACY_POLICY }}"
 
-          # Email Template Customization
-          EMAIL_SIGNATURE=${{ secrets.EMAIL_SIGNATURE }}
-          EMAIL_FOOTER=${{ secrets.EMAIL_FOOTER }}
+          # Email Template Customization (properly quoted)
+          EMAIL_SIGNATURE="${{ secrets.EMAIL_SIGNATURE }}"
+          EMAIL_FOOTER="${{ secrets.EMAIL_FOOTER }}"
 
           # Next.js Storefront Configuration
           NEXT_PUBLIC_MEDUSA_BACKEND_URL=${{ secrets.NEXT_PUBLIC_MEDUSA_BACKEND_URL }}
