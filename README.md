@@ -29,6 +29,7 @@ MedusaJS/
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - PostgreSQL
 - Redis
@@ -50,12 +51,14 @@ npm run dev
 ### One-Command VPS Setup
 
 **Step 1: Setup VPS (One Command)**
+
 ```bash
 # Copy and run setup script (handles everything!)
 scp scripts/setup-server.sh root@YOUR_VPS_IP:/tmp/ && ssh root@YOUR_VPS_IP "chmod +x /tmp/setup-server.sh && /tmp/setup-server.sh"
 ```
 
 This single command will:
+
 - ✅ Install Docker & Docker Compose
 - ✅ Create `/opt/medusa-app` directory
 - ✅ Clone your repository
@@ -66,6 +69,7 @@ This single command will:
 - ✅ Set up systemd service
 
 **Step 2: Configure GitHub Secrets**
+
 ```bash
 # Set all required secrets
 gh secret set HOST --body "YOUR_VPS_IP"
@@ -92,12 +96,14 @@ gh secret set RESEND_FROM_EMAIL --body ""
 ```
 
 **Step 3: Deploy**
+
 ```bash
 # Push to trigger automated deployment
 git push
 ```
 
 **Step 4: Import Data (After Successful Deployment)**
+
 ```bash
 # SSH into VPS
 ssh root@YOUR_VPS_IP
@@ -116,12 +122,15 @@ docker-compose exec medusa-server-green npx medusa user -e admin@yourdomain.com 
 ```
 
 ### Access Your Application
+
 - **Storefront**: `https://yourdomain.com`
 - **Admin Dashboard**: `https://yourdomain.com/app`
 - **API Health**: `https://yourdomain.com/api/health`
 
 ### Blue-Green Deployment
+
 The system automatically uses blue-green deployment for zero-downtime updates:
+
 - Push to `main` branch triggers automatic deployment
 - Health checks ensure new environment is working
 - Traffic switches seamlessly between blue/green environments
@@ -130,6 +139,7 @@ The system automatically uses blue-green deployment for zero-downtime updates:
 ## 🎨 Code Formatting & Linting
 
 ### Auto-Format on Save
+
 VSCode is configured to automatically format files when you save them. This works across the entire monorepo.
 
 ### Manual Formatting Commands
@@ -175,6 +185,7 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 ## 🛠️ Tech Stack
 
 ### Backend (MedusaJS)
+
 - MedusaJS v2
 - TypeScript
 - PostgreSQL
@@ -182,6 +193,7 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 - Stripe (payments)
 
 ### Frontend (Next.js)
+
 - Next.js 14 (App Router)
 - TypeScript
 - Tailwind CSS
@@ -190,28 +202,30 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 ## 📦 Custom Modules
 
 ### Supplier Management
+
 - Complete CRUD operations
 - Comprehensive supplier information tracking
 - Admin UI integration
 
 ### Blog System
+
 - Content management
 - SEO optimization
 - Admin interface
 
 ## 🔗 Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run format` | Format entire monorepo |
-| `npm run format:backend` | Format backend only |
-| `npm run format:frontend` | Format frontend only |
-| `npm run lint` | Lint entire monorepo |
-| `npm run format:all` | Format + lint everything |
-| `npm run dev:backend` | Start backend dev server |
-| `npm run dev:frontend` | Start frontend dev server |
-| `npm run build:backend` | Build backend |
-| `npm run build:frontend` | Build frontend |
+| Command                   | Description               |
+| ------------------------- | ------------------------- |
+| `npm run format`          | Format entire monorepo    |
+| `npm run format:backend`  | Format backend only       |
+| `npm run format:frontend` | Format frontend only      |
+| `npm run lint`            | Lint entire monorepo      |
+| `npm run format:all`      | Format + lint everything  |
+| `npm run dev:backend`     | Start backend dev server  |
+| `npm run dev:frontend`    | Start frontend dev server |
+| `npm run build:backend`   | Build backend             |
+| `npm run build:frontend`  | Build frontend            |
 
 ## 📝 Development Workflow
 
@@ -222,4 +236,4 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 
 ---
 
-*Built with ❤️ for BusBasisBerlin*
+_Built with ❤️ for BusBasisBerlin_

@@ -14,7 +14,7 @@ fi
 
 # Build and start blue services
 echo "📦 Building and starting blue services..."
-docker-compose up -d --build medusa-server-blue medusa-worker-blue
+docker-compose up -d --build medusa-server-blue medusa-worker-blue storefront-blue
 
 # Wait for blue services to be healthy
 echo "⏳ Waiting for blue services to be healthy..."
@@ -58,9 +58,14 @@ http {
         server medusa-server-green:9002 max_fails=3 fail_timeout=30s;
     }
 
-    # Upstream for Storefront
-    upstream storefront {
-        server storefront:8000 max_fails=3 fail_timeout=30s;
+    # Upstream for Storefront (Blue instance)
+    upstream storefront_blue {
+        server storefront-blue:8000 max_fails=3 fail_timeout=30s;
+    }
+
+    # Upstream for Storefront (Green instance)
+    upstream storefront_green {
+        server storefront-green:8000 max_fails=3 fail_timeout=30s;
     }
 
     # Rate limiting
@@ -95,11 +100,11 @@ http {
         listen 80;
         server_name localhost;
 
-        # Storefront routes
+        # Storefront routes (Blue instance active)
         location / {
             limit_req zone=storefront burst=20 nodelay;
 
-            proxy_pass http://storefront;
+            proxy_pass http://storefront_blue;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -109,7 +114,7 @@ http {
             location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
                 expires 1y;
                 add_header Cache-Control "public, immutable";
-                proxy_pass http://storefront;
+                proxy_pass http://storefront_blue;
             }
         }
 

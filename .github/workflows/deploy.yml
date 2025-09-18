@@ -4,23 +4,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deploy to environment'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-          - staging
 
 env:
-  DEPLOYMENT_TIMEOUT: 300 # 5 minutes timeout for deployment
+  DEPLOYMENT_TIMEOUT: 900 # 15 minutes timeout for deployment
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'production' }}
+    environment: production
 
     steps:
       - name: Checkout code
@@ -52,14 +43,7 @@ jobs:
           echo "📥 Pulling latest changes..."
           git pull origin main
 
-          # Copy environment file if it doesn't exist
-          if [ ! -f .env.docker ]; then
-            echo "📋 Setting up environment file..."
-            cp env.docker.example .env.docker
-            # Note: Environment variables should be set via GitHub Secrets
-          fi
-
-          # Update environment variables from GitHub Secrets
+          # Create environment variables from GitHub Secrets
           echo "🔧 Updating environment variables..."
           cat > .env.docker << 'ENV_EOF'
           # Database Configuration
@@ -98,8 +82,34 @@ jobs:
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}
 
+          # Company Information
+          COMPANY_NAME=${{ secrets.COMPANY_NAME }}
+          COMPANY_ADDRESS=${{ secrets.COMPANY_ADDRESS }}
+          COMPANY_POSTAL_CODE=${{ secrets.COMPANY_POSTAL_CODE }}
+          COMPANY_CITY=${{ secrets.COMPANY_CITY }}
+          COMPANY_EMAIL=${{ secrets.COMPANY_EMAIL }}
+          COMPANY_PHONE=${{ secrets.COMPANY_PHONE }}
+          COMPANY_WEBSITE=${{ secrets.COMPANY_WEBSITE }}
+          COMPANY_TAX_ID=${{ secrets.COMPANY_TAX_ID }}
+          COMPANY_BANK_INFO=${{ secrets.COMPANY_BANK_INFO }}
+
+          # PDF Template Customization
+          PDF_LOGO_URL=${{ secrets.PDF_LOGO_URL }}
+          PDF_FOOTER_TEXT=${{ secrets.PDF_FOOTER_TEXT }}
+          PDF_TERMS_CONDITIONS=${{ secrets.PDF_TERMS_CONDITIONS }}
+          PDF_PRIVACY_POLICY=${{ secrets.PDF_PRIVACY_POLICY }}
+
+          # Email Template Customization
+          EMAIL_SIGNATURE=${{ secrets.EMAIL_SIGNATURE }}
+          EMAIL_FOOTER=${{ secrets.EMAIL_FOOTER }}
+
           # Next.js Storefront Configuration
           NEXT_PUBLIC_MEDUSA_BACKEND_URL=${{ secrets.NEXT_PUBLIC_MEDUSA_BACKEND_URL }}
+          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_DEFAULT_REGION=${{ secrets.NEXT_PUBLIC_DEFAULT_REGION }}
+          NEXT_PUBLIC_STRIPE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_KEY }}
+          REVALIDATE_SECRET=${{ secrets.REVALIDATE_SECRET }}
           NODE_ENV=production
 
           # Port Configuration
@@ -156,9 +166,9 @@ jobs:
           # Build and deploy to target environment
           echo "📦 Building and deploying to $TARGET_ENV..."
           if [ "$TARGET_ENV" = "green" ]; then
-            docker-compose --profile green up -d --build medusa-server-green medusa-worker-green storefront nginx
+            docker-compose --profile green up -d --build medusa-server-green medusa-worker-green storefront-green nginx
           else
-            docker-compose up -d --build medusa-server-blue medusa-worker-blue storefront nginx
+            docker-compose up -d --build medusa-server-blue medusa-worker-blue storefront-blue nginx
           fi
 
           # Wait for target environment to be healthy
@@ -183,9 +193,9 @@ jobs:
 
             # Stop target environment
             if [ "$TARGET_ENV" = "green" ]; then
-              docker-compose stop medusa-server-green medusa-worker-green
+              docker-compose stop medusa-server-green medusa-worker-green storefront-green
             else
-              docker-compose stop medusa-server-blue medusa-worker-blue
+              docker-compose stop medusa-server-blue medusa-worker-blue storefront-blue
             fi
 
             exit 1
@@ -239,9 +249,9 @@ jobs:
           # Clean up old environment (optional - keep for quick rollback)
           echo "🧹 Cleaning up old environment..."
           if [ "$TARGET_ENV" = "green" ]; then
-            docker-compose stop medusa-server-blue medusa-worker-blue || true
+            docker-compose stop medusa-server-blue medusa-worker-blue storefront-blue || true
           else
-            docker-compose stop medusa-server-green medusa-worker-green || true
+            docker-compose stop medusa-server-green medusa-worker-green storefront-green || true
           fi
 
           EOF
