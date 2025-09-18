@@ -197,17 +197,39 @@ jobs:
 
               # Switch traffic to the healthy target environment
               echo "🔄 Switching traffic to $TARGET_ENV instance..."
+
+              # Wait for nginx to be fully ready
+              sleep 5
+
+              # Create backup of current nginx config
+              cp nginx/nginx.conf nginx/nginx.conf.backup
+
               if [ "$TARGET_ENV" = "green" ]; then
+                # Force switch to green regardless of current state
                 sed -i 's/proxy_pass http:\/\/medusa_blue/proxy_pass http:\/\/medusa_green/g' nginx/nginx.conf
                 sed -i 's/proxy_pass http:\/\/medusa_blue_health/proxy_pass http:\/\/medusa_green_health/g' nginx/nginx.conf
               else
+                # Force switch to blue regardless of current state
                 sed -i 's/proxy_pass http:\/\/medusa_green/proxy_pass http:\/\/medusa_blue/g' nginx/nginx.conf
                 sed -i 's/proxy_pass http:\/\/medusa_green_health/proxy_pass http:\/\/medusa_blue_health/g' nginx/nginx.conf
               fi
 
-              # Reload nginx configuration
-              docker-compose exec nginx nginx -s reload
-              echo "✅ Traffic switched to $TARGET_ENV instance"
+              # Test nginx configuration before reloading
+              if docker-compose exec nginx nginx -t; then
+                # Configuration is valid, reload nginx
+                echo "✅ Nginx configuration is valid, reloading..."
+                docker-compose exec nginx nginx -s reload || {
+                  echo "❌ Nginx reload failed, restoring backup..."
+                  cp nginx/nginx.conf.backup nginx/nginx.conf
+                  docker-compose exec nginx nginx -s reload
+                  exit 1
+                }
+                echo "✅ Traffic switched to $TARGET_ENV instance"
+              else
+                echo "❌ Invalid nginx configuration, restoring backup..."
+                cp nginx/nginx.conf.backup nginx/nginx.conf
+                exit 1
+              fi
 
               break
             fi

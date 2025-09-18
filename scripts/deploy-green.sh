@@ -41,12 +41,33 @@ fi
 
 # Switch nginx traffic to green instance
 echo "🔄 Switching traffic to green instance..."
+
+# Wait for nginx to be fully ready
+sleep 5
+
+# Create backup of current nginx config
+cp nginx/nginx.conf nginx/nginx.conf.backup
+
+# Force switch to green regardless of current state
 sed -i 's/proxy_pass http:\/\/medusa_blue/proxy_pass http:\/\/medusa_green/g' nginx/nginx.conf
 sed -i 's/proxy_pass http:\/\/medusa_blue_health/proxy_pass http:\/\/medusa_green_health/g' nginx/nginx.conf
 
-# Reload Nginx configuration to apply changes
-echo "🔄 Reloading Nginx configuration..."
-docker-compose exec nginx nginx -s reload
+# Test nginx configuration before reloading
+if docker-compose exec nginx nginx -t; then
+  # Configuration is valid, reload nginx
+  echo "✅ Nginx configuration is valid, reloading..."
+  docker-compose exec nginx nginx -s reload || {
+    echo "❌ Nginx reload failed, restoring backup..."
+    cp nginx/nginx.conf.backup nginx/nginx.conf
+    docker-compose exec nginx nginx -s reload
+    exit 1
+  }
+  echo "✅ Traffic switched to green instance"
+else
+  echo "❌ Invalid nginx configuration, restoring backup..."
+  cp nginx/nginx.conf.backup nginx/nginx.conf
+  exit 1
+fi
 
 # Stop blue services after successful switch
 echo "🛑 Stopping blue services..."

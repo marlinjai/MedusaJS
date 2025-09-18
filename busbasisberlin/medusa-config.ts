@@ -65,6 +65,21 @@ const getModules = () => {
 					},
 				},
 			},
+			{
+				resolve: '@medusajs/medusa/locking',
+				options: {
+					providers: [
+						{
+							resolve: '@medusajs/medusa/locking-redis',
+							id: 'locking-redis',
+							is_default: true,
+							options: {
+								redisUrl: process.env.REDIS_URL,
+							},
+						},
+					],
+				},
+			},
 		);
 	}
 	// Development uses in-memory alternatives (default Medusa behavior)
