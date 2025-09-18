@@ -165,11 +165,26 @@ jobs:
 
           # Build and deploy to target environment
           echo "📦 Building and deploying to $TARGET_ENV..."
+          echo "DEBUG: About to start container build process..."
+
           if [ "$TARGET_ENV" = "green" ]; then
+            echo "DEBUG: Starting green environment containers..."
             docker-compose --profile green up -d --build medusa-server-green medusa-worker-green storefront-green nginx
+            BUILD_EXIT_CODE=$?
           else
+            echo "DEBUG: Starting blue environment containers..."
             docker-compose up -d --build medusa-server-blue medusa-worker-blue storefront-blue nginx
+            BUILD_EXIT_CODE=$?
           fi
+
+          echo "DEBUG: Container build completed with exit code: $BUILD_EXIT_CODE"
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "❌ Container build failed with exit code $BUILD_EXIT_CODE"
+            exit 1
+          fi
+
+          echo "DEBUG: Checking container status..."
+          docker-compose ps
 
           # Wait for target environment to be healthy
           echo "⏳ Waiting for $TARGET_ENV services to be healthy..."
@@ -256,8 +271,16 @@ jobs:
 
           EOF
 
-          # Execute deployment script
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.HOST }} 'bash -s' < deploy.sh
+          # Copy deployment script to server
+          echo "📋 Copying deployment script to server..."
+          scp deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.HOST }}:/opt/medusa-app/deploy.sh
+
+          # Make script executable
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.HOST }} "chmod +x /opt/medusa-app/deploy.sh"
+
+          # Execute deployment script from server
+          echo "🚀 Executing deployment script on server..."
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.HOST }} "/opt/medusa-app/deploy.sh"
 
       - name: Notify deployment status
         if: always()
