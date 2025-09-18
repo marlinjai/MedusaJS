@@ -169,11 +169,11 @@ jobs:
 
           if [ "$TARGET_ENV" = "green" ]; then
             echo "DEBUG: Starting green environment containers..."
-            docker-compose --profile green up -d --build medusa-server-green medusa-worker-green storefront-green nginx
+            docker-compose --profile green up -d --build medusa-server-green medusa-worker-green nginx
             BUILD_EXIT_CODE=$?
           else
             echo "DEBUG: Starting blue environment containers..."
-            docker-compose up -d --build medusa-server-blue medusa-worker-blue storefront-blue nginx
+            docker-compose up -d --build medusa-server-blue medusa-worker-blue nginx
             BUILD_EXIT_CODE=$?
           fi
 
@@ -206,12 +206,12 @@ jobs:
             echo "❌ $TARGET_ENV services failed to become healthy within $timeout seconds"
             echo "🔄 Rolling back deployment..."
 
-            # Stop target environment
-            if [ "$TARGET_ENV" = "green" ]; then
-              docker-compose stop medusa-server-green medusa-worker-green storefront-green
-            else
-              docker-compose stop medusa-server-blue medusa-worker-blue storefront-blue
-            fi
+          # Stop target environment
+          if [ "$TARGET_ENV" = "green" ]; then
+            docker-compose stop medusa-server-green medusa-worker-green
+          else
+            docker-compose stop medusa-server-blue medusa-worker-blue
+          fi
 
             exit 1
           fi
@@ -256,17 +256,17 @@ jobs:
           docker-compose exec $CONTAINER_PREFIX npm run predeploy || true
 
           echo "🎉 Deployment to $TARGET_ENV completed successfully!"
-          echo "🌐 Application is now running on $TARGET_ENV environment"
-          echo "📊 Health check: http://localhost/health"
-          echo "🛍️ Storefront: http://localhost"
+          echo "🌐 Medusa Backend is now running on $TARGET_ENV environment"
+          echo "📊 Health check: http://localhost/api/health"
           echo "⚙️ Admin: http://localhost/app"
+          echo "🛍️ Storefront: Deploy separately to Vercel"
 
           # Clean up old environment (optional - keep for quick rollback)
           echo "🧹 Cleaning up old environment..."
           if [ "$TARGET_ENV" = "green" ]; then
-            docker-compose stop medusa-server-blue medusa-worker-blue storefront-blue || true
+            docker-compose stop medusa-server-blue medusa-worker-blue || true
           else
-            docker-compose stop medusa-server-green medusa-worker-green storefront-green || true
+            docker-compose stop medusa-server-green medusa-worker-green || true
           fi
 
           EOF

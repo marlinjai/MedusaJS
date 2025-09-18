@@ -266,71 +266,8 @@ services:
     profiles:
       - green
 
-  # Next.js Storefront (Blue Instance)
-  storefront-blue:
-    build:
-      context: ./busbasisberlin-storefront
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-https://localhost}
-        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://localhost}
-        NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-de}
-        NEXT_PUBLIC_STRIPE_KEY: ${NEXT_PUBLIC_STRIPE_KEY}
-    container_name: medusa-storefront-blue
-    restart: unless-stopped
-    environment:
-      NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-https://localhost}
-      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://localhost}
-      NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-de}
-      NEXT_PUBLIC_STRIPE_KEY: ${NEXT_PUBLIC_STRIPE_KEY}
-      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-supersecret}
-      NODE_ENV: production
-    ports:
-      - '8000:8000'
-    depends_on:
-      - medusa-server-blue
-    networks:
-      - medusa-network
-    volumes:
-      - ./busbasisberlin-storefront:/app
-      - /app/node_modules
-      - /app/.next
-
-  # Next.js Storefront (Green Instance)
-  storefront-green:
-    build:
-      context: ./busbasisberlin-storefront
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-https://localhost}
-        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://localhost}
-        NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-de}
-        NEXT_PUBLIC_STRIPE_KEY: ${NEXT_PUBLIC_STRIPE_KEY}
-    container_name: medusa-storefront-green
-    restart: 'no'
-    environment:
-      NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-https://localhost}
-      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://localhost}
-      NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-de}
-      NEXT_PUBLIC_STRIPE_KEY: ${NEXT_PUBLIC_STRIPE_KEY}
-      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-supersecret}
-      NODE_ENV: production
-    ports:
-      - '8001:8000'
-    depends_on:
-      - medusa-server-green
-    networks:
-      - medusa-network
-    volumes:
-      - ./busbasisberlin-storefront:/app
-      - /app/node_modules
-      - /app/.next
-    profiles:
-      - green
+  # Storefront now deployed separately to Vercel
+  # Following Medusa best practices for separate deployments
 
   # Nginx Reverse Proxy for Blue-Green Deployment
   nginx:
