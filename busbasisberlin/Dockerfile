@@ -51,9 +51,6 @@ RUN npm install
 # Copy startup script to the built directory
 COPY --from=builder /server/start.sh ./
 
-# Copy the built application to the production directory
-COPY --from=builder /server/.env ./.env.production
-
 # Change ownership to app user
 RUN chown -R medusa:nodejs /server
 
