@@ -21,19 +21,14 @@ const getProjectConfig = () => {
 			jwtSecret: process.env.JWT_SECRET || 'supersecret',
 			cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
 		},
+		// Worker mode configuration for production deployment
+		workerMode: process.env.MEDUSA_WORKER_MODE as
+			| 'shared'
+			| 'worker'
+			| 'server',
+		// Redis URL for production (required for worker mode)
+		redisUrl: process.env.REDIS_URL,
 	};
-
-	// Add production-specific config
-	if (isProduction) {
-		return {
-			...baseConfig,
-			workerMode: process.env.MEDUSA_WORKER_MODE as
-				| 'shared'
-				| 'worker'
-				| 'server',
-			redisUrl: process.env.REDIS_URL,
-		};
-	}
 
 	return baseConfig;
 };
@@ -42,8 +37,8 @@ const getProjectConfig = () => {
 const getModules = () => {
 	const modules: any[] = [];
 
-	// Redis modules only for production
-	if (isProduction && process.env.REDIS_URL) {
+	// Redis modules for production deployment (always include if REDIS_URL is available)
+	if (process.env.REDIS_URL) {
 		modules.push(
 			{
 				resolve: '@medusajs/medusa/cache-redis',
@@ -82,7 +77,7 @@ const getModules = () => {
 			},
 		);
 	}
-	// Development uses in-memory alternatives (default Medusa behavior)
+	// Development uses in-memory alternatives (default Medusa behavior) when REDIS_URL is not available
 
 	// Common modules for all environments
 	modules.push(

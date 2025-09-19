@@ -1,20 +1,27 @@
 #!/bin/sh
+# Medusa Docker Startup Script
+# Handles migrations and starts the Medusa server
+# Following official Medusa deployment guide
 
-# Medusa Production Startup Script
-# Based on official Medusa Docker recommendations
-# Runs from .medusa/server directory as per official docs
+set -e
 
-echo "Starting Medusa production server from .medusa/server directory..."
+echo "🚀 Starting Medusa application..."
 
-# Use NODE_ENV from environment (defaults to production if not set)
-export NODE_ENV=${NODE_ENV:-production}
+# Wait for database to be ready
+echo "⏳ Waiting for database connection..."
+until pg_isready -h postgres -p 5432 -U postgres; do
+  echo "Database is unavailable - sleeping"
+  sleep 2
+done
 
-# Run migrations (from built directory)
-echo "Running database migrations..."
-npx medusa db:migrate || {
-    echo "Migration failed, but continuing..."
-}
+echo "✅ Database is ready!"
 
-# Start the production server (using npm run start as per official docs)
-echo "Starting Medusa server..."
-npm run start
+# Run migrations before starting the server
+echo "🔄 Running database migrations..."
+npx medusa db:migrate
+
+echo "✅ Migrations completed!"
+
+# Start the Medusa server
+echo "🎯 Starting Medusa server..."
+exec npm run start

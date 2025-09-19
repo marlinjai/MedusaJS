@@ -1,0 +1,82 @@
+# docker-compose.base.yml
+# Base configuration for persistent services (database, redis, nginx)
+# These services remain running during blue-green deployments
+
+services:
+  # Nginx SSL Proxy Service - handles blue/green routing
+  nginx:
+    image: nginx:alpine
+    container_name: medusa_nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - medusa_network
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost/health',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database Service - persistent across deployments
+  postgres:
+    image: postgres:15-alpine
+    container_name: medusa_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medusa-store
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medusa_password}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - medusa_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Database Service - persistent across deployments
+  redis:
+    image: redis:7-alpine
+    container_name: medusa_redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - medusa_network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  medusa_network:
+    name: busbasisberlin_medusa_network
+    driver: bridge

@@ -33,14 +33,15 @@ RUN adduser -S medusa -u 1001
 # Set working directory (following official Medusa recommendation)
 WORKDIR /server
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install required packages for health checks and database connection
+RUN apk add --no-cache curl postgresql-client
 
 # Copy built application from builder stage (following official Medusa docs)
 COPY --from=builder /server/.medusa ./.medusa
 
-# Copy the built application to the production directory
-COPY --from=builder /server ./
+# Copy only necessary files for production
+COPY --from=builder /server/package.json ./
+COPY --from=builder /server/start.sh ./
 
 # Change to the built application directory (official Medusa recommendation)
 WORKDIR /server/.medusa/server
@@ -48,8 +49,9 @@ WORKDIR /server/.medusa/server
 # Install production dependencies in the built directory
 RUN npm install
 
-# Copy startup script to the built directory
+# Copy startup script to the built directory and make it executable
 COPY --from=builder /server/start.sh ./
+RUN chmod +x ./start.sh
 
 # Change ownership to app user
 RUN chown -R medusa:nodejs /server
