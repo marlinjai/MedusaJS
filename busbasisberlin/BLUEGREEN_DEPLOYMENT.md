@@ -427,4 +427,4 @@ docker run --rm -v redis_data:/data -v $(pwd):/backup alpine tar czf /backup/red
 - Monitor system resources
 - Review deployment logs
 
-This blue-green deployment system provides zero-downtime deployments while maintaining data persistence and allowing for quick rollbacks when needed.
+This blue-green deployment system provides zero-downtime deployments while maintaining data persistence and allowing for quick rollbacks when needed
