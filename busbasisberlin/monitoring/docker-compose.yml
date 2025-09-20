@@ -1,4 +1,4 @@
-# Minimal monitoring stack - Portainer + Uptime Kuma only
+# Monitoring stack with port access (no SSL issues)
 version: '3.8'
 
 services:
@@ -6,25 +6,22 @@ services:
     image: portainer/portainer-ce:latest
     container_name: portainer
     restart: unless-stopped
+    ports:
+      - "9443:9443"
+      - "9000:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
-    networks:
-      - monitoring_network
 
   uptime-kuma:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
     restart: unless-stopped
+    ports:
+      - "3001:3001"
     volumes:
       - uptime_kuma_data:/app/data
-    networks:
-      - monitoring_network
 
 volumes:
   portainer_data:
   uptime_kuma_data:
-
-networks:
-  monitoring_network:
-    driver: bridge
