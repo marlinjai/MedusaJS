@@ -53,24 +53,24 @@ validate_environment() {
     local ssl_dir="${PROJECT_ROOT}/nginx/ssl"
     local cert_file="${ssl_dir}/${SSL_CERT_NAME}.pem"
     local key_file="${ssl_dir}/${SSL_KEY_NAME}.pem"
-    
+
     if [[ ! -f "$cert_file" ]] || [[ ! -f "$key_file" ]]; then
         warn "SSL certificates not found, creating self-signed certificates..."
-        
+
         # Create SSL directory if it doesn't exist
         mkdir -p "$ssl_dir"
-        
+
         # Generate self-signed certificate
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout "$key_file" \
             -out "$cert_file" \
             -subj "/C=DE/ST=Berlin/L=Berlin/O=BusBasisBerlin/CN=${DOMAIN_NAME}" \
             -addext "subjectAltName=DNS:${DOMAIN_NAME},DNS:portainer.${DOMAIN_NAME},DNS:uptime.${DOMAIN_NAME}"
-        
+
         # Set proper permissions
         chmod 600 "$cert_file" "$key_file"
         chown deploy:deploy "$cert_file" "$key_file" 2>/dev/null || true
-        
+
         warn "⚠️  Using self-signed certificates. For production, run:"
         warn "   certbot certonly --standalone -d ${DOMAIN_NAME} -d portainer.${DOMAIN_NAME} -d uptime.${DOMAIN_NAME}"
         warn "   cp /etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem ${cert_file}"
@@ -103,12 +103,22 @@ setup_infrastructure() {
 
     cd "$SCRIPT_DIR"
 
+    # Stop system nginx if running (to free up port 80/443)
+    log "🛑 Stopping system nginx service..."
+    sudo systemctl stop nginx 2>/dev/null || true
+    sudo systemctl disable nginx 2>/dev/null || true
+
     # Stop any existing infrastructure
     log "🛑 Stopping existing infrastructure..."
     docker compose -f docker-compose.infrastructure.yml down --remove-orphans || true
 
     # Clean up any orphaned containers
     docker container prune -f || true
+
+    # Kill any processes using port 80/443
+    log "🔍 Checking for processes using ports 80/443..."
+    sudo fuser -k 80/tcp 2>/dev/null || true
+    sudo fuser -k 443/tcp 2>/dev/null || true
 
     # Start infrastructure services
     log "🚀 Starting infrastructure services..."

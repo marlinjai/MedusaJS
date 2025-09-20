@@ -82,6 +82,10 @@ else
     log "Deploy user already exists"
 fi
 
+# Allow deploy user to run sudo without password
+echo "${DEPLOY_USER} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/${DEPLOY_USER}"
+chmod 440 "/etc/sudoers.d/${DEPLOY_USER}"
+
 # Setup SSH for deploy user
 log "🔑 Setting up SSH access..."
 mkdir -p "/home/${DEPLOY_USER}/.ssh"
