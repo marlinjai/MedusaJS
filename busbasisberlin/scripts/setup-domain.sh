@@ -73,7 +73,12 @@ envsubst '${DOMAIN_NAME} ${SSL_CERT_NAME} ${SSL_KEY_NAME}' < nginx/nginx-blue.te
 log_info "Generating nginx-green.conf..."
 envsubst '${DOMAIN_NAME} ${SSL_CERT_NAME} ${SSL_KEY_NAME}' < nginx/nginx-green.template > nginx/nginx-green.conf
 
+# Update main nginx.conf to use blue deployment by default
+log_info "Setting main nginx.conf to blue deployment..."
+cp nginx/nginx-blue.conf nginx/nginx.conf
+
 log_success "Nginx configurations generated successfully!"
+log_info "Main nginx.conf is now set to BLUE deployment"
 
 # Show next steps
 echo ""
