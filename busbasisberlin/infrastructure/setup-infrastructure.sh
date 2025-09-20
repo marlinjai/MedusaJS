@@ -49,13 +49,32 @@ validate_environment() {
         fi
     done
 
-    # Check SSL certificates exist
-    if [[ ! -f "${PROJECT_ROOT}/nginx/ssl/${SSL_CERT_NAME}.pem" ]]; then
-        error "SSL certificate not found: ${PROJECT_ROOT}/nginx/ssl/${SSL_CERT_NAME}.pem"
-    fi
-
-    if [[ ! -f "${PROJECT_ROOT}/nginx/ssl/${SSL_KEY_NAME}.pem" ]]; then
-        error "SSL private key not found: ${PROJECT_ROOT}/nginx/ssl/${SSL_KEY_NAME}.pem"
+    # Check SSL certificates exist, create self-signed if missing
+    local ssl_dir="${PROJECT_ROOT}/nginx/ssl"
+    local cert_file="${ssl_dir}/${SSL_CERT_NAME}.pem"
+    local key_file="${ssl_dir}/${SSL_KEY_NAME}.pem"
+    
+    if [[ ! -f "$cert_file" ]] || [[ ! -f "$key_file" ]]; then
+        warn "SSL certificates not found, creating self-signed certificates..."
+        
+        # Create SSL directory if it doesn't exist
+        mkdir -p "$ssl_dir"
+        
+        # Generate self-signed certificate
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout "$key_file" \
+            -out "$cert_file" \
+            -subj "/C=DE/ST=Berlin/L=Berlin/O=BusBasisBerlin/CN=${DOMAIN_NAME}" \
+            -addext "subjectAltName=DNS:${DOMAIN_NAME},DNS:portainer.${DOMAIN_NAME},DNS:uptime.${DOMAIN_NAME}"
+        
+        # Set proper permissions
+        chmod 600 "$cert_file" "$key_file"
+        chown deploy:deploy "$cert_file" "$key_file" 2>/dev/null || true
+        
+        warn "⚠️  Using self-signed certificates. For production, run:"
+        warn "   certbot certonly --standalone -d ${DOMAIN_NAME} -d portainer.${DOMAIN_NAME} -d uptime.${DOMAIN_NAME}"
+        warn "   cp /etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem ${cert_file}"
+        warn "   cp /etc/letsencrypt/live/${DOMAIN_NAME}/privkey.pem ${key_file}"
     fi
 
     log "✅ Environment validation passed"
