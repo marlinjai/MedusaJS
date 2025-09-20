@@ -39,9 +39,9 @@ get_domain() {
 # Setup direct port access
 setup_direct_access() {
     local domain=$(get_domain)
-    
+
     log_info "Setting up direct port access for monitoring tools..."
-    
+
     # Open firewall ports
     log_info "Opening firewall ports..."
     sudo ufw allow 9443/tcp comment "Portainer HTTPS"
@@ -49,9 +49,9 @@ setup_direct_access() {
     sudo ufw allow 3001/tcp comment "Uptime Kuma"
     sudo ufw allow 8080/tcp comment "Dozzle"
     sudo ufw allow 8081/tcp comment "Nginx Proxy Manager"
-    
+
     log_success "Firewall ports opened successfully!"
-    
+
     echo ""
     echo "📊 Direct Access URLs:"
     echo "┌─────────────────────────────────────────────────────────────┐"
@@ -65,41 +65,41 @@ setup_direct_access() {
 # Setup subdomain access with Nginx
 setup_subdomain_access() {
     local domain=$(get_domain)
-    
+
     log_info "Setting up subdomain access with Nginx reverse proxy..."
-    
+
     # Copy monitoring sites configuration
     log_info "Installing Nginx configuration for monitoring subdomains..."
     sudo cp ../nginx/monitoring-sites.conf /etc/nginx/sites-available/
     sudo ln -sf /etc/nginx/sites-available/monitoring-sites.conf /etc/nginx/sites-enabled/
-    
+
     # Test Nginx configuration
     log_info "Testing Nginx configuration..."
     sudo nginx -t
-    
+
     if [[ $? -eq 0 ]]; then
         log_success "Nginx configuration is valid"
-        
+
         # Reload Nginx
         log_info "Reloading Nginx..."
         sudo systemctl reload nginx
-        
+
         log_success "Nginx reloaded successfully!"
     else
         log_error "Nginx configuration test failed"
         return 1
     fi
-    
+
     # Setup SSL certificates for subdomains
     log_info "Setting up SSL certificates for monitoring subdomains..."
-    
+
     subdomains=("portainer" "status" "logs" "admin")
-    
+
     for subdomain in "${subdomains[@]}"; do
         log_info "Setting up SSL for $subdomain.$domain..."
         sudo certbot --nginx -d "$subdomain.$domain" --non-interactive --agree-tos --email "admin@$domain" || log_warning "SSL setup failed for $subdomain.$domain"
     done
-    
+
     echo ""
     log_success "🎉 Subdomain access configured successfully!"
     echo ""
@@ -111,7 +111,7 @@ setup_subdomain_access() {
     echo "│ 🔧 Admin Panel: https://admin.$domain                       │"
     echo "└─────────────────────────────────────────────────────────────┘"
     echo ""
-    
+
     log_warning "📝 DNS Setup Required:"
     echo "Add these A records to your DNS:"
     echo "- portainer.$domain → Your VPS IP"
@@ -123,14 +123,14 @@ setup_subdomain_access() {
 # Setup authentication (optional)
 setup_auth() {
     log_info "Setting up basic authentication for admin tools..."
-    
+
     read -p "Enter username for admin access: " username
     read -s -p "Enter password: " password
     echo
-    
+
     # Create htpasswd file
     sudo htpasswd -cb /etc/nginx/.htpasswd "$username" "$password"
-    
+
     log_success "Authentication configured for user: $username"
     log_info "Uncomment auth_basic lines in monitoring-sites.conf to enable"
 }
@@ -138,20 +138,20 @@ setup_auth() {
 # Display current access status
 show_access_status() {
     local domain=$(get_domain)
-    
+
     echo ""
     log_info "🔍 Current Monitoring Access Status:"
     echo ""
-    
+
     # Check if ports are open
     echo "🔥 Firewall Status:"
     sudo ufw status | grep -E "(9000|9443|3001|8080|8081)" || echo "No monitoring ports found in firewall rules"
     echo ""
-    
+
     # Check if monitoring containers are running
     echo "🐳 Container Status:"
     containers=("portainer" "uptime-kuma" "dozzle" "nginx-proxy-manager")
-    
+
     for container in "${containers[@]}"; do
         if docker ps --filter "name=$container" --filter "status=running" | grep -q "$container"; then
             echo "✅ $container is running"
@@ -160,7 +160,7 @@ show_access_status() {
         fi
     done
     echo ""
-    
+
     # Check Nginx configuration
     echo "🌐 Nginx Configuration:"
     if [[ -f /etc/nginx/sites-enabled/monitoring-sites.conf ]]; then

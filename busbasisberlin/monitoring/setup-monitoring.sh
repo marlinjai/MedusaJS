@@ -90,7 +90,7 @@ setup_monitoring() {
     echo "1. Direct Port Access (Quick): ./monitoring/setup-monitoring-access.sh direct"
     echo "2. Subdomain Access (Professional): ./monitoring/setup-monitoring-access.sh subdomain"
     echo ""
-    
+
     # Auto-setup direct access if running in automated mode
     if [[ -n "$AUTO_SETUP_ACCESS" ]]; then
         log_info "Auto-setting up direct port access..."
