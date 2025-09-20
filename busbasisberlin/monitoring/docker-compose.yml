@@ -1,0 +1,30 @@
+# Minimal monitoring stack - Portainer + Uptime Kuma only
+version: '3.8'
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - monitoring_network
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - monitoring_network
+
+volumes:
+  portainer_data:
+  uptime_kuma_data:
+
+networks:
+  monitoring_network:
+    driver: bridge
