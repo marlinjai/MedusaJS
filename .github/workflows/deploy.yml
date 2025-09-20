@@ -101,22 +101,9 @@ jobs:
           echo "🎯 Running blue-green deployment..."
           ./scripts/deploy-with-domain.sh
 
-          # Deploy monitoring stack with subdomains
-          echo "📊 Deploying monitoring stack..."
-          cd monitoring
-          docker compose up -d
-          cd ..
-
-          # Configure nginx for monitoring subdomains
-          echo "🔧 Configuring monitoring subdomains..."
-          docker cp monitoring/nginx-monitoring.conf medusa_nginx:/etc/nginx/conf.d/monitoring.conf
-          docker exec medusa_nginx nginx -t && docker exec medusa_nginx nginx -s reload
-
           echo "🎉 Deployment completed successfully!"
           echo "🌐 Application is now running at https://${{ secrets.DOMAIN_NAME }}"
           echo "⚙️ Admin: https://${{ secrets.DOMAIN_NAME }}/app"
-          echo "📊 Portainer: https://portainer.${{ secrets.DOMAIN_NAME }}"
-          echo "📈 Uptime Kuma: https://status.${{ secrets.DOMAIN_NAME }}"
 
           EOF
 
