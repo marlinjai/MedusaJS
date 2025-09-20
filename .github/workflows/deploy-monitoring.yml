@@ -17,7 +17,7 @@ on:
 jobs:
   deploy-monitoring:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,34 +38,34 @@ jobs:
           cat > deploy-monitoring.sh << 'EOF'
           #!/bin/bash
           set -e
-          
+
           echo "🚀 Deploying monitoring stack..."
-          
+
           # Navigate to project directory
           cd /home/deploy/medusa/busbasisberlin
-          
+
           # Pull latest changes (monitoring files)
           echo "📥 Pulling latest monitoring configuration..."
           git pull origin main
-          
+
           # Make setup script executable
           chmod +x monitoring/setup-monitoring.sh
-          
+
           # Export domain name for monitoring setup
           export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
-          
+
           # Run monitoring setup
           echo "📊 Setting up monitoring stack..."
           ./monitoring/setup-monitoring.sh ${{ github.event.inputs.action }}
-          
+
           echo "✅ Monitoring deployment completed!"
-          
+
           # Show running containers
           echo "🐳 Running containers:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-          
+
           EOF
-          
+
           # Execute monitoring deployment on VPS
           ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' < deploy-monitoring.sh
 
