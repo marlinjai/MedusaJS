@@ -49,3 +49,8 @@ out/
 # Temporary folders
 tmp/
 temp/
+# Prevent sensitive files
+.medusa-secrets/
+*.env.production-secrets
+*.pem
+*.key
