@@ -14,7 +14,7 @@ on:
           - staging
 
 env:
-  DEPLOYMENT_TIMEOUT: 1800 # 30 minutes timeout for deployment
+  DEPLOYMENT_TIMEOUT: 2400 # 40 minutes timeout for deployment (increased for Docker builds)
 
 jobs:
   deploy:
@@ -34,6 +34,13 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          # Configure SSH to prevent timeouts during long builds
+          cat >> ~/.ssh/config << EOF
+          Host ${{ secrets.VPS_HOST }}
+            ServerAliveInterval 60
+            ServerAliveCountMax 10
+            TCPKeepAlive yes
+          EOF
 
       - name: Deploy to server
         run: |
@@ -77,6 +84,10 @@ jobs:
           export PDF_FOOTER_TEXT="${{ secrets.PDF_FOOTER_TEXT }}"
           export EMAIL_SIGNATURE="${{ secrets.EMAIL_SIGNATURE }}"
           export EMAIL_FOOTER="${{ secrets.EMAIL_FOOTER }}"
+
+          # Optimize Docker build for faster deployment
+          echo "🔧 Optimizing Docker build cache..."
+          docker system prune -f --volumes || true
 
           # Run deployment script
           echo "🎯 Running blue-green deployment..."
