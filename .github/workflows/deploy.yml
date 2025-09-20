@@ -14,7 +14,7 @@ on:
           - staging
 
 env:
-  DEPLOYMENT_TIMEOUT: 900 # 15 minutes timeout for deployment
+  DEPLOYMENT_TIMEOUT: 1800 # 30 minutes timeout for deployment
 
 jobs:
   deploy:
