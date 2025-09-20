@@ -1,0 +1,84 @@
+name: Deploy Monitoring Stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Monitoring action'
+        required: true
+        default: 'setup'
+        type: choice
+        options:
+          - setup
+          - health
+          - stop
+          - restart
+
+jobs:
+  deploy-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy monitoring stack
+        run: |
+          # Create monitoring deployment script
+          cat > deploy-monitoring.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "🚀 Deploying monitoring stack..."
+          
+          # Navigate to project directory
+          cd /home/deploy/medusa/busbasisberlin
+          
+          # Pull latest changes (monitoring files)
+          echo "📥 Pulling latest monitoring configuration..."
+          git pull origin main
+          
+          # Make setup script executable
+          chmod +x monitoring/setup-monitoring.sh
+          
+          # Export domain name for monitoring setup
+          export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
+          
+          # Run monitoring setup
+          echo "📊 Setting up monitoring stack..."
+          ./monitoring/setup-monitoring.sh ${{ github.event.inputs.action }}
+          
+          echo "✅ Monitoring deployment completed!"
+          
+          # Show running containers
+          echo "🐳 Running containers:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          
+          EOF
+          
+          # Execute monitoring deployment on VPS
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' < deploy-monitoring.sh
+
+      - name: Display access information
+        if: github.event.inputs.action == 'setup'
+        run: |
+          echo "🎉 Monitoring stack deployed successfully!"
+          echo ""
+          echo "📊 Access your monitoring tools:"
+          echo "🐳 Portainer (Docker Management): https://${{ secrets.DOMAIN_NAME }}:9443"
+          echo "📈 Uptime Kuma (Service Monitoring): http://${{ secrets.DOMAIN_NAME }}:3001"
+          echo "📋 Dozzle (Docker Logs): http://${{ secrets.DOMAIN_NAME }}:8080"
+          echo "🔧 Nginx Proxy Manager: http://${{ secrets.DOMAIN_NAME }}:8081"
+          echo ""
+          echo "🔥 Make sure these ports are open on your VPS:"
+          echo "sudo ufw allow 9443,9000,3001,8080,8081/tcp"
