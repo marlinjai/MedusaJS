@@ -110,7 +110,21 @@ start_deployment() {
 
     # Clean up any existing containers for the target deployment
     log_info "Cleaning up existing $target containers..."
+    
+    # Force stop and remove any existing containers for this deployment
     docker compose -f "docker-compose.$target.yml" down --remove-orphans 2>/dev/null || true
+    
+    # Force remove any orphaned containers that might conflict
+    log_info "Removing any orphaned containers..."
+    docker container prune -f 2>/dev/null || true
+    
+    # Remove any containers with conflicting names specifically
+    for container in "medusa_backend_server_$target" "medusa_backend_worker_$target"; do
+        if docker ps -a --format '{{.Names}}' | grep -q "^$container$"; then
+            log_info "Force removing conflicting container: $container"
+            docker rm -f "$container" 2>/dev/null || true
+        fi
+    done
 
     # Start the target deployment
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
