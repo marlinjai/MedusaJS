@@ -87,7 +87,7 @@ generate_certificates() {
     local domains=(
         "$DOMAIN_NAME"
         "portainer.${DOMAIN_NAME}"
-        "uptime.${DOMAIN_NAME}"
+        "status.${DOMAIN_NAME}"
     )
 
     local domain_args=""
