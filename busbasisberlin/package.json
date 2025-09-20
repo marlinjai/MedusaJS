@@ -1,7 +1,7 @@
 {
 	"name": "busbasisberlin",
 	"version": "0.0.1",
-	"description": "A starter for Medusa projects.",
+	"description": "MedusaJS backend for Bus Basis Berlin e-commerce platform - Production Ready",
 	"author": "Medusa (https://medusajs.com)",
 	"license": "MIT",
 	"keywords": [
