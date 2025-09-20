@@ -35,12 +35,10 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
           # Configure SSH to prevent timeouts during long builds
-          cat >> ~/.ssh/config << EOF
-          Host ${{ secrets.VPS_HOST }}
-            ServerAliveInterval 60
-            ServerAliveCountMax 10
-            TCPKeepAlive yes
-          EOF
+          echo "Host ${{ secrets.VPS_HOST }}" >> ~/.ssh/config
+          echo "  ServerAliveInterval 60" >> ~/.ssh/config
+          echo "  ServerAliveCountMax 10" >> ~/.ssh/config
+          echo "  TCPKeepAlive yes" >> ~/.ssh/config
 
       - name: Deploy to server
         run: |
