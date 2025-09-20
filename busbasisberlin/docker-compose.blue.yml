@@ -57,9 +57,7 @@ services:
       - ./tmp:/app/tmp
     networks:
       - medusa_network
-    depends_on:
-      - medusa_postgres
-      - medusa_redis
+    # Infrastructure services run separately - no depends_on needed
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:9000/health']
       interval: 30s
@@ -125,9 +123,7 @@ services:
       - ./tmp:/app/tmp
     networks:
       - medusa_network
-    depends_on:
-      - medusa_postgres
-      - medusa_redis
+    # Infrastructure services run separately - no depends_on needed
     healthcheck:
       test: ['CMD', 'ps', 'aux', '|', 'grep', 'worker']
       interval: 30s
