@@ -257,7 +257,7 @@ show_status() {
     log "   Admin Panel: https://${DOMAIN_NAME}/app"
     log "   Health Check: https://${DOMAIN_NAME}/health"
     log "   Portainer: https://portainer.${DOMAIN_NAME}"
-    log "   Uptime Kuma: https://uptime.${DOMAIN_NAME}"
+    log "   Uptime Kuma: https://status.${DOMAIN_NAME}"
     echo ""
 }
 

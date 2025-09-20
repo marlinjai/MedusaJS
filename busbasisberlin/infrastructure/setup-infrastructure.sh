@@ -178,7 +178,7 @@ show_service_info() {
     log "   PostgreSQL: localhost:5432 (medusa/medusa)"
     log "   Redis: localhost:6379"
     log "   Portainer: https://portainer.${DOMAIN_NAME}"
-    log "   Uptime Kuma: https://uptime.${DOMAIN_NAME}"
+    log "   Uptime Kuma: https://status.${DOMAIN_NAME}"
     echo ""
 
     # Show logs command
