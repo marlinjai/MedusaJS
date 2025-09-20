@@ -1,0 +1,145 @@
+# infrastructure/docker-compose.infrastructure.yml
+# Persistent infrastructure services that run continuously
+# These services are shared between blue and green deployments
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database - Shared between deployments
+  postgres:
+    image: postgres:15-alpine
+    container_name: medusa_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medusa
+      POSTGRES_USER: medusa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - medusa_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medusa -d medusa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache - Shared between deployments
+  redis:
+    image: redis:7-alpine
+    container_name: medusa_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-medusa_redis_pass}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - medusa_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Nginx Load Balancer - Routes traffic between blue/green
+  nginx:
+    image: nginx:alpine
+    container_name: medusa_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - medusa_network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Portainer - Container Management UI
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: medusa_portainer
+    restart: unless-stopped
+    ports:
+      - "3000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    environment:
+      - PORTAINER_HTTP_ENABLED=true
+    networks:
+      - medusa_network
+      - monitoring_network
+
+  # Uptime Kuma - Service Monitoring
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: medusa_uptime_kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - uptime_data:/app/data
+    networks:
+      - medusa_network
+      - monitoring_network
+
+  # Nginx Monitoring Proxy - SSL termination for monitoring services
+  nginx-monitoring:
+    image: nginx:alpine
+    container_name: medusa_nginx_monitoring
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx-monitoring.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - portainer
+      - uptime-kuma
+    networks:
+      - monitoring_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  portainer_data:
+    driver: local
+  uptime_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  medusa_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  monitoring_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

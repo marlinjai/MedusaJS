@@ -1,72 +1,145 @@
 # docker-compose.green.yml
-# Green deployment configuration for Medusa services
-# Used for blue-green deployments
+# Green deployment configuration
+# Uses ports 9002-9003 and green container names
+
+version: '3.8'
 
 services:
-  # Medusa Backend Service (Server Mode) - Green
-  medusa-server-green:
-    build: .
+  # Medusa Backend Server - Green
+  medusa_backend_server_green:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
     container_name: medusa_backend_server_green
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-medusa_password}@postgres:5432/medusa-store
-      - REDIS_URL=redis://redis:6379
-      - MEDUSA_WORKER_MODE=server
-      - DISABLE_MEDUSA_ADMIN=false
-      - PORT=9002
-    env_file:
-      - .env.docker
+      # Database Configuration
+      DATABASE_URL: postgresql://medusa:${POSTGRES_PASSWORD}@medusa_postgres:5432/medusa
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medusa_redis_pass}@medusa_redis:6379
+
+      # Application Configuration
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+
+      # Email Configuration
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+
+      # S3 Configuration
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_FILE_URL: ${S3_FILE_URL}
+
+      # Company Information
+      COMPANY_NAME: ${COMPANY_NAME}
+      COMPANY_ADDRESS: ${COMPANY_ADDRESS}
+      COMPANY_POSTAL_CODE: ${COMPANY_POSTAL_CODE}
+      COMPANY_CITY: ${COMPANY_CITY}
+      COMPANY_EMAIL: ${COMPANY_EMAIL}
+      COMPANY_PHONE: ${COMPANY_PHONE}
+      COMPANY_TAX_ID: ${COMPANY_TAX_ID}
+      COMPANY_BANK_INFO: ${COMPANY_BANK_INFO}
+      PDF_FOOTER_TEXT: ${PDF_FOOTER_TEXT}
+      EMAIL_SIGNATURE: ${EMAIL_SIGNATURE}
+      EMAIL_FOOTER: ${EMAIL_FOOTER}
+
+      # Deployment Identification
+      DEPLOYMENT_COLOR: green
+      DEPLOYMENT_VERSION: ${GITHUB_SHA:-latest}
+    ports:
+      - '9002:9000'
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./tmp:/app/tmp
     networks:
       - medusa_network
+    depends_on:
+      - medusa_postgres
+      - medusa_redis
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9002/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/health']
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
 
-  # Medusa Worker Service (Worker Mode) - Green
-  medusa-worker-green:
-    build: .
-    container_name: medusa_backend_worker_green
+  # Medusa Worker - Green
+  medusa_worker_green:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: medusa_worker_green
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    command: ['npm', 'run', 'worker']
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-medusa_password}@postgres:5432/medusa-store
-      - REDIS_URL=redis://redis:6379
-      - MEDUSA_WORKER_MODE=worker
-      - DISABLE_MEDUSA_ADMIN=true
-      - PORT=9003
-    env_file:
-      - .env.docker
+      # Database Configuration
+      DATABASE_URL: postgresql://medusa:${POSTGRES_PASSWORD}@medusa_postgres:5432/medusa
+      REDIS_URL: redis://:${REDIS_PASSWORD:-medusa_redis_pass}@medusa_redis:6379
+
+      # Application Configuration
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+
+      # Email Configuration
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+
+      # S3 Configuration
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_FILE_URL: ${S3_FILE_URL}
+
+      # Company Information
+      COMPANY_NAME: ${COMPANY_NAME}
+      COMPANY_ADDRESS: ${COMPANY_ADDRESS}
+      COMPANY_POSTAL_CODE: ${COMPANY_POSTAL_CODE}
+      COMPANY_CITY: ${COMPANY_CITY}
+      COMPANY_EMAIL: ${COMPANY_EMAIL}
+      COMPANY_PHONE: ${COMPANY_PHONE}
+      COMPANY_TAX_ID: ${COMPANY_TAX_ID}
+      COMPANY_BANK_INFO: ${COMPANY_BANK_INFO}
+      PDF_FOOTER_TEXT: ${PDF_FOOTER_TEXT}
+      EMAIL_SIGNATURE: ${EMAIL_SIGNATURE}
+      EMAIL_FOOTER: ${EMAIL_FOOTER}
+
+      # Deployment Identification
+      DEPLOYMENT_COLOR: green
+      DEPLOYMENT_VERSION: ${GITHUB_SHA:-latest}
+    ports:
+      - '9003:9001'
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./tmp:/app/tmp
     networks:
       - medusa_network
+    depends_on:
+      - medusa_postgres
+      - medusa_redis
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9003/health']
+      test: ['CMD', 'ps', 'aux', '|', 'grep', 'worker']
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
 
-# Use shared network (will be created by base compose or reused if exists)
 networks:
   medusa_network:
-    name: busbasisberlin_medusa_network
     external: true
