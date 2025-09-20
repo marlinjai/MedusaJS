@@ -17,10 +17,10 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd /home/deploy/medusa/busbasisberlin
-            
+
             # Pull latest code
             git pull origin main
-            
+
             # Export ALL environment variables from GitHub Secrets
             export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
             export SSL_CERT_NAME="${{ secrets.SSL_CERT_NAME }}"
@@ -47,6 +47,6 @@ jobs:
             export PDF_FOOTER_TEXT="${{ secrets.PDF_FOOTER_TEXT }}"
             export EMAIL_SIGNATURE="${{ secrets.EMAIL_SIGNATURE }}"
             export EMAIL_FOOTER="${{ secrets.EMAIL_FOOTER }}"
-            
+
             # Run deployment script
             ./scripts/deploy-with-domain.sh
