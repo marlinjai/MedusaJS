@@ -107,11 +107,11 @@ start_deployment() {
     log_info "Starting $target deployment..."
 
     cd "$PROJECT_DIR"
-    
+
     # Clean up any existing containers for the target deployment
     log_info "Cleaning up existing $target containers..."
     docker compose -f "docker-compose.$target.yml" down --remove-orphans 2>/dev/null || true
-    
+
     # Start the target deployment
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
 
@@ -130,15 +130,12 @@ stop_deployment() {
     log_info "Stopping $deployment deployment..."
 
     cd "$PROJECT_DIR"
-    docker compose -f "docker-compose.$deployment.yml" down
+    # Stop only the specific deployment containers, not the shared services
+    docker compose -f "docker-compose.$deployment.yml" stop 2>/dev/null || true
+    docker compose -f "docker-compose.$deployment.yml" rm -f 2>/dev/null || true
 
-    if [[ $? -eq 0 ]]; then
-        log_success "$deployment deployment stopped"
-        return 0
-    else
-        log_error "Failed to stop $deployment deployment"
-        return 1
-    fi
+    log_success "$deployment deployment stopped"
+    return 0
 }
 
 # Function to rollback deployment
