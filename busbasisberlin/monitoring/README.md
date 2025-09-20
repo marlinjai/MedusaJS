@@ -5,6 +5,7 @@ This monitoring stack provides **ArgoCD-like visualization** for your Docker-bas
 ## 🎯 What You Get
 
 ### 🐳 **Portainer** - Your "ArgoCD for Docker"
+
 - **Visual deployment management** similar to ArgoCD's UI
 - **Real-time container status** and health monitoring
 - **Blue-green deployment visualization**
@@ -12,18 +13,21 @@ This monitoring stack provides **ArgoCD-like visualization** for your Docker-bas
 - **Stack management and rollback capabilities**
 
 ### 📈 **Uptime Kuma** - Service Health Dashboard
+
 - **Beautiful status pages** for your services
 - **Real-time uptime monitoring**
 - **Alert notifications** (Slack, email, etc.)
 - **Response time tracking**
 
 ### 📋 **Dozzle** - Live Container Logs
+
 - **Real-time log streaming** from all containers
 - **Multi-container log aggregation**
 - **Search and filter capabilities**
 - **Zero configuration required**
 
 ### 🔧 **Nginx Proxy Manager** (Optional)
+
 - **SSL certificate management**
 - **Reverse proxy configuration**
 - **Access control and authentication**
@@ -73,7 +77,7 @@ Add these monitors in Uptime Kuma:
    - Type: HTTP(s)
    - Interval: 60 seconds
 
-2. Admin Panel Health  
+2. Admin Panel Health
    - URL: https://basiscamp-berlin.de/app
    - Type: HTTP(s)
    - Interval: 60 seconds
@@ -129,6 +133,7 @@ sudo ufw allow 8081/tcp  # Nginx Proxy Manager
 ### Alert Configuration
 
 Set up alerts for:
+
 - Container failures
 - High resource usage
 - Deployment health check failures

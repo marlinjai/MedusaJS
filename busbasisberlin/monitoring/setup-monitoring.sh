@@ -39,21 +39,21 @@ get_domain() {
 # Main setup function
 setup_monitoring() {
     local domain=$(get_domain)
-    
+
     log_info "Setting up monitoring stack for domain: $domain"
-    
+
     # Create monitoring directory if it doesn't exist
     mkdir -p monitoring
     cd monitoring
-    
+
     # Start monitoring stack
     log_info "Starting monitoring services..."
     docker compose -f docker-compose.monitoring.yml up -d
-    
+
     # Wait for services to be ready
     log_info "Waiting for services to start..."
     sleep 30
-    
+
     # Display access information
     echo ""
     log_success "🎉 Monitoring stack deployed successfully!"
@@ -74,7 +74,7 @@ setup_monitoring() {
     echo "│    http://$domain:8081                                      │"
     echo "└─────────────────────────────────────────────────────────────┘"
     echo ""
-    
+
     # Setup instructions
     echo "🚀 Next Steps:"
     echo "1. Access Portainer and create admin account"
@@ -84,24 +84,29 @@ setup_monitoring() {
     echo "   - https://$domain/health (API Health)"
     echo "3. Use Dozzle to monitor real-time container logs"
     echo ""
-    
-    # Firewall reminder
-    log_warning "🔥 Firewall Reminder:"
-    echo "Make sure these ports are open on your VPS:"
-    echo "- 9443, 9000 (Portainer)"
-    echo "- 3001 (Uptime Kuma)"
-    echo "- 8080 (Dozzle)"
-    echo "- 8081 (Nginx Proxy Manager)"
+
+    # Access setup options
+    echo "🔧 Access Setup Options:"
+    echo "1. Direct Port Access (Quick): ./monitoring/setup-monitoring-access.sh direct"
+    echo "2. Subdomain Access (Professional): ./monitoring/setup-monitoring-access.sh subdomain"
     echo ""
-    echo "Run: sudo ufw allow 9443,9000,3001,8080,8081/tcp"
+    
+    # Auto-setup direct access if running in automated mode
+    if [[ -n "$AUTO_SETUP_ACCESS" ]]; then
+        log_info "Auto-setting up direct port access..."
+        ./monitoring/setup-monitoring-access.sh direct
+    else
+        log_warning "🔥 Manual Setup Required:"
+        echo "Run one of the access setup commands above to configure access to your monitoring tools"
+    fi
 }
 
 # Health check function
 check_monitoring_health() {
     log_info "Checking monitoring services health..."
-    
+
     services=("portainer" "uptime-kuma" "dozzle" "nginx-proxy-manager")
-    
+
     for service in "${services[@]}"; do
         if docker ps --filter "name=$service" --filter "status=running" | grep -q "$service"; then
             log_success "$service is running"
