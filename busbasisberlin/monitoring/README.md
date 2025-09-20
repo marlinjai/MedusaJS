@@ -5,6 +5,7 @@ This directory contains the monitoring stack for the MedusaJS application with S
 ## Services
 
 - **Portainer**: Docker container management UI
+
   - URL: https://portainer.basiscamp-berlin.de
   - Purpose: Manage Docker containers, images, networks, and volumes
 
