@@ -259,3 +259,4 @@ _Built with ❤️ for BusBasisBerlin_
 # Nginx container fixed Sat Sep 20 20:12:57 CEST 2025
 
 # 🚀 Production deployment test with clean VPS - Sat Sep 20 22:25:00 CEST 2025
+# 🔧 Fixed sudo permissions and zombie process investigation - Sat Sep 20 22:45:00 CEST 2025
