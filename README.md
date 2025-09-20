@@ -239,3 +239,4 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 _Built with ❤️ for BusBasisBerlin_
 # Test SSH connection - Sat Sep 20 17:11:37 CEST 2025
 # Test with SSL certificates - Sat Sep 20 17:28:11 CEST 2025
+# Test with correct SSL certificate paths - Sat Sep 20 17:30:33 CEST 2025
