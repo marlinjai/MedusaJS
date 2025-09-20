@@ -107,6 +107,12 @@ start_deployment() {
     log_info "Starting $target deployment..."
 
     cd "$PROJECT_DIR"
+    
+    # Clean up any existing containers for the target deployment
+    log_info "Cleaning up existing $target containers..."
+    docker compose -f "docker-compose.$target.yml" down --remove-orphans 2>/dev/null || true
+    
+    # Start the target deployment
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
 
     if [[ $? -eq 0 ]]; then
