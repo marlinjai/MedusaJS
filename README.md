@@ -238,25 +238,20 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 
 _Built with ❤️ for BusBasisBerlin_
 
-# Test SSH connection - Sat Sep 20 17:11:37 CEST 2025
+## 🚀 Production Deployment
 
-# Test with SSL certificates - Sat Sep 20 17:28:11 CEST 2025
+This repository includes a complete production-ready deployment system with:
 
-# Test with correct SSL certificate paths - Sat Sep 20 17:30:33 CEST 2025
+- **Blue-Green Deployment**: Zero-downtime deployments
+- **Automated CI/CD**: GitHub Actions integration
+- **SSL/TLS**: Automatic certificate management
+- **Monitoring**: Portainer + Uptime Kuma
+- **High Availability**: Load balancing and health checks
 
-# Fix SSL certificate path issue - Sat Sep 20 17:38:31 CEST 2025
+### Quick Start
 
-# Complete SSL certificate fix deployment - Sat Sep 20 17:50:15 CEST 2025
+1. **Setup VPS**: Run `curl -sSL https://raw.githubusercontent.com/marlinjai/MedusaJS/main/scripts/vps-setup.sh | bash`
+2. **Configure Secrets**: Add GitHub repository secrets
+3. **Deploy**: Push to main branch
 
-# Final deployment test with container cleanup fix - Sat Sep 20 18:20:13 CEST 2025
-
-# Fix deployment after monitoring stack addition - Sat Sep 20 19:27:31 CEST 2025
-
-# Trigger deployment Sat Sep 20 20:05:17 CEST 2025
-
-# SSL certificates restored Sat Sep 20 20:08:53 CEST 2025
-
-# Nginx container fixed Sat Sep 20 20:12:57 CEST 2025
-
-# 🚀 Production deployment test with clean VPS - Sat Sep 20 22:25:00 CEST 2025
-# 🔧 Fixed sudo permissions and zombie process investigation - Sat Sep 20 22:45:00 CEST 2025
+📖 **[Complete Production Guide →](PRODUCTION_GUIDE.md)**

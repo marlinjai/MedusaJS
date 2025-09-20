@@ -65,14 +65,14 @@ validate_environment() {
             -keyout "$key_file" \
             -out "$cert_file" \
             -subj "/C=DE/ST=Berlin/L=Berlin/O=BusBasisBerlin/CN=${DOMAIN_NAME}" \
-            -addext "subjectAltName=DNS:${DOMAIN_NAME},DNS:portainer.${DOMAIN_NAME},DNS:uptime.${DOMAIN_NAME}"
+            -addext "subjectAltName=DNS:${DOMAIN_NAME},DNS:portainer.${DOMAIN_NAME},DNS:status.${DOMAIN_NAME}"
 
         # Set proper permissions
         chmod 600 "$cert_file" "$key_file"
         chown deploy:deploy "$cert_file" "$key_file" 2>/dev/null || true
 
         warn "⚠️  Using self-signed certificates. For production, run:"
-        warn "   certbot certonly --standalone -d ${DOMAIN_NAME} -d portainer.${DOMAIN_NAME} -d uptime.${DOMAIN_NAME}"
+        warn "   certbot certonly --standalone -d ${DOMAIN_NAME} -d portainer.${DOMAIN_NAME} -d status.${DOMAIN_NAME}"
         warn "   cp /etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem ${cert_file}"
         warn "   cp /etc/letsencrypt/live/${DOMAIN_NAME}/privkey.pem ${key_file}"
     fi
