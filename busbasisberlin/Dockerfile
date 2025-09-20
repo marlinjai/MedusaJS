@@ -62,12 +62,12 @@ USER medusa
 # Set environment (will be overridden by docker-compose env vars)
 ENV NODE_ENV=${NODE_ENV:-production}
 
-# Expose port
-EXPOSE 9000
+# Expose port (will be overridden by docker-compose PORT env var)
+EXPOSE 9000 9001 9002 9003
 
-# Health check
+# Health check (uses PORT environment variable, defaults to 9000)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:9000/health || exit 1
+  CMD curl -f http://localhost:${PORT:-9000}/health || exit 1
 
 # Start the application with migrations (following official Medusa approach)
 CMD ["./start.sh"]

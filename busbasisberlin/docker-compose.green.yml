@@ -19,7 +19,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - MEDUSA_WORKER_MODE=server
       - DISABLE_MEDUSA_ADMIN=false
-      - PORT=9000
+      - PORT=9002
     env_file:
       - .env.docker
     volumes:
@@ -28,7 +28,7 @@ services:
     networks:
       - medusa_network
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:9002/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -50,7 +50,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - MEDUSA_WORKER_MODE=worker
       - DISABLE_MEDUSA_ADMIN=true
-      - PORT=9001
+      - PORT=9003
     env_file:
       - .env.docker
     volumes:
@@ -59,7 +59,7 @@ services:
     networks:
       - medusa_network
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9001/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:9003/health']
       interval: 30s
       timeout: 10s
       retries: 3

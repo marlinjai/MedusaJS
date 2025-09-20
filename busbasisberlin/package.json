@@ -32,6 +32,8 @@
 		"bluegreen:setup": "docker compose -f docker-compose.base.yml up -d",
 		"bluegreen:blue": "docker compose -f docker-compose.base.yml -f docker-compose.blue.yml up -d --build",
 		"bluegreen:green": "docker compose -f docker-compose.base.yml -f docker-compose.green.yml up -d --build",
+		"domain:setup": "./scripts/setup-domain.sh",
+		"deploy:domain": "./scripts/deploy-with-domain.sh",
 		"test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
 		"test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
 		"test:unit": "TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
