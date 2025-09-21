@@ -45,14 +45,23 @@ chmod +x /usr/local/bin/docker-compose
 echo "📁 Creating project directory..."
 PROJECT_DIR="/opt/medusa-app"
 mkdir -p $PROJECT_DIR
-chown $SUDO_USER:$SUDO_USER $PROJECT_DIR
+if [ -n "$SUDO_USER" ]; then
+    chown $SUDO_USER:$SUDO_USER $PROJECT_DIR
+else
+    # Running as root, keep root ownership
+    chown root:root $PROJECT_DIR
+fi
 
 # Clone repository if it doesn't exist
 echo "📥 Cloning repository..."
 if [ ! -d "$PROJECT_DIR/.git" ]; then
     cd $PROJECT_DIR
     git clone https://github.com/marlinjai/MedusaJS.git .
-    chown -R $SUDO_USER:$SUDO_USER $PROJECT_DIR
+    if [ -n "$SUDO_USER" ]; then
+        chown -R $SUDO_USER:$SUDO_USER $PROJECT_DIR
+    else
+        chown -R root:root $PROJECT_DIR
+    fi
     echo "✅ Repository cloned successfully"
 else
     echo "✅ Repository already exists"
@@ -60,7 +69,7 @@ fi
 
 # Make scripts executable
 echo "🔧 Making scripts executable..."
-chmod +x $PROJECT_DIR/scripts/*.sh
+chmod +x $PROJECT_DIR/busbasisberlin/scripts/*.sh
 
 # Configure firewall (optional)
 echo "🔥 Configuring firewall..."
@@ -186,15 +195,37 @@ echo "⏰ Setting up backup cron job..."
 
 # Create SSH key for GitHub Actions
 echo "🔑 Setting up SSH key for GitHub Actions..."
-if [ ! -f /home/$SUDO_USER/.ssh/id_rsa ]; then
-    sudo -u $SUDO_USER ssh-keygen -t rsa -b 4096 -f /home/$SUDO_USER/.ssh/id_rsa -N ""
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME="/home/$SUDO_USER"
+    SSH_USER="$SUDO_USER"
+else
+    USER_HOME="/root"
+    SSH_USER="root"
+fi
+
+# Ensure .ssh directory exists
+mkdir -p "$USER_HOME/.ssh"
+if [ -n "$SUDO_USER" ]; then
+    chown $SUDO_USER:$SUDO_USER "$USER_HOME/.ssh"
+fi
+
+if [ ! -f "$USER_HOME/.ssh/id_rsa" ]; then
+    if [ -n "$SUDO_USER" ]; then
+        sudo -u $SUDO_USER ssh-keygen -t rsa -b 4096 -f "$USER_HOME/.ssh/id_rsa" -N ""
+    else
+        ssh-keygen -t rsa -b 4096 -f "$USER_HOME/.ssh/id_rsa" -N ""
+    fi
     echo "✅ SSH key generated"
-    echo "📋 Public key (add this to GitHub repository secrets as SSH_PRIVATE_KEY):"
+    echo "📋 Private key (add this to GitHub repository secrets as SSH_PRIVATE_KEY):"
     echo "=========================================="
-    cat /home/$SUDO_USER/.ssh/id_rsa
+    cat "$USER_HOME/.ssh/id_rsa"
     echo "=========================================="
 else
     echo "✅ SSH key already exists"
+    echo "📋 Private key (add this to GitHub repository secrets as SSH_PRIVATE_KEY):"
+    echo "=========================================="
+    cat "$USER_HOME/.ssh/id_rsa"
+    echo "=========================================="
 fi
 
 # Create deployment user (optional)
@@ -205,78 +236,6 @@ usermod -aG docker medusa-deploy
 # Set up sudo access for deployment user
 echo "medusa-deploy ALL=(ALL) NOPASSWD: /usr/local/bin/docker-compose, /usr/bin/docker" >> /etc/sudoers
 
-# Create deployment instructions
-echo "📋 Creating deployment instructions..."
-cat > /opt/medusa-app/DEPLOYMENT_INSTRUCTIONS.md << 'EOF'
-# VPS Setup Complete! 🎉
-
-## Next Steps:
-
-### 1. Add GitHub Secrets
-Go to your GitHub repository → Settings → Secrets and add:
-
-**Required Secrets:**
-- `HOST`: Your VPS IP address
-- `SSH_USER`: Your VPS username (or medusa-deploy)
-- `SSH_PRIVATE_KEY`: The SSH private key (see above)
-- `PROJECT_PATH`: /opt/medusa-app
-
-**Environment Secrets:**
-- `POSTGRES_PASSWORD`: Secure PostgreSQL password
-- `REDIS_PASSWORD`: Secure Redis password
-- `JWT_SECRET`: Secure JWT secret
-- `COOKIE_SECRET`: Secure cookie secret
-- `S3_ACCESS_KEY_ID`: Your S3 access key
-- `S3_SECRET_ACCESS_KEY`: Your S3 secret key
-- `S3_BUCKET`: Your S3 bucket name
-- `S3_REGION`: Your S3 region
-- `S3_ENDPOINT`: Your S3 endpoint
-- `RESEND_API_KEY`: Your Resend API key
-- `RESEND_FROM_EMAIL`: Your sender email
-
-**CORS Settings:**
-- `STORE_CORS`: Your storefront URL
-- `ADMIN_CORS`: Your admin URL
-- `AUTH_CORS`: Your auth URLs
-- `MEDUSA_BACKEND_URL`: Your backend URL
-- `NEXT_PUBLIC_MEDUSA_BACKEND_URL`: Your backend URL
-
-### 2. Repository Already Cloned
-The setup script has already cloned your repository to `/opt/medusa-app`.
-
-### 3. Test Deployment
-Push to main branch or manually trigger GitHub Actions workflow.
-
-### 4. Monitor Deployment
-- Check logs: `docker-compose logs -f`
-- Monitor health: `curl http://localhost/health`
-- View backups: `ls /opt/medusa-backups`
-
-### 5. Useful Commands
-```bash
-# View all logs
-docker-compose logs -f
-
-# Restart services
-docker-compose restart
-
-# View resource usage
-docker stats
-
-# Create manual backup
-./backup.sh
-
-# Check monitoring logs
-tail -f /var/log/medusa/monitor.log
-```
-
-## Security Notes:
-- Change default passwords
-- Configure SSL certificates
-- Set up firewall rules
-- Regular security updates
-- Monitor access logs
-EOF
 
 echo "✅ Server setup completed successfully!"
 echo ""
