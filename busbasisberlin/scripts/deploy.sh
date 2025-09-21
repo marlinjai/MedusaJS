@@ -152,7 +152,8 @@ stop_deployment() {
     log_info "Stopping $deployment deployment..."
 
     cd "$PROJECT_DIR"
-    docker compose -f "docker-compose.$deployment.yml" down
+    # Include base compose file to avoid dependency issues
+    docker compose -f docker-compose.base.yml -f "docker-compose.$deployment.yml" down --remove-orphans
 
     if [[ $? -eq 0 ]]; then
         log_success "$deployment deployment stopped"
