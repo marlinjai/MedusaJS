@@ -74,7 +74,7 @@ services:
     container_name: portainer
     restart: unless-stopped
     ports:
-      - '9000:9000'
+      - '127.0.0.1:9000:9000'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -87,7 +87,7 @@ services:
     container_name: uptime-kuma
     restart: unless-stopped
     ports:
-      - '3001:3001'
+      - '127.0.0.1:3001:3001'
     volumes:
       - uptime_kuma_data:/app/data
     networks:
