@@ -73,8 +73,8 @@ services:
     image: portainer/portainer-ce:latest
     container_name: portainer
     restart: unless-stopped
-    ports:
-      - '127.0.0.1:9000:9000'
+    expose:
+      - '9000'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -86,8 +86,8 @@ services:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma
     restart: unless-stopped
-    ports:
-      - '127.0.0.1:3001:3001'
+    expose:
+      - '3001'
     volumes:
       - uptime_kuma_data:/app/data
     networks:
