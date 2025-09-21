@@ -49,11 +49,11 @@ jobs:
 
           # Manual cleanup first (before pulling new cleanup script)
           echo "🧹 Running initial cleanup..."
-          
+
           # Stop all running containers
           docker stop $(docker ps -q) 2>/dev/null || true
           docker rm $(docker ps -aq) 2>/dev/null || true
-          
+
           # Fix permissions and clean git repository
           sudo chown -R deploy:deploy /home/deploy/medusa/busbasisberlin 2>/dev/null || true
           git clean -fd 2>/dev/null || sudo git clean -fd 2>/dev/null || true
@@ -62,10 +62,10 @@ jobs:
           echo "📥 Pulling latest changes..."
           git fetch origin main
           git reset --hard origin/main
-          
+
           # Ensure proper ownership after git operations
           sudo chown -R deploy:deploy /home/deploy/medusa/busbasisberlin
-          
+
           # Now run the comprehensive cleanup script
           echo "🧹 Running comprehensive cleanup..."
           chmod +x ./scripts/cleanup-server.sh
