@@ -68,11 +68,40 @@ services:
       timeout: 5s
       retries: 5
 
+  # Portainer - Container Management UI
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - '9000:9000'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - medusa_network
+
+  # Uptime Kuma - Status Monitoring
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - medusa_network
+
 # Named volumes for data persistence
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  portainer_data:
+    driver: local
+  uptime_kuma_data:
     driver: local
 
 # Custom network for service communication

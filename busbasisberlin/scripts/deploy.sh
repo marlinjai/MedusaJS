@@ -168,9 +168,20 @@ deploy() {
     log_info "Current deployment: $current"
     log_info "Target deployment: $target"
 
-    # Ensure base services are running
+    # Ensure base services are running (cold start handling)
     log_info "Ensuring base services (postgres, redis, nginx) are running..."
     cd "$PROJECT_DIR"
+
+    # Check if this is a cold start (no containers running)
+    if ! docker ps --format "{{.Names}}" | grep -q "medusa_"; then
+        log_info "Cold start detected - initializing all base services..."
+        # Generate initial nginx config if none exists
+        if [[ ! -f "nginx/nginx.conf" ]]; then
+            log_info "Creating initial nginx configuration..."
+            cp "nginx/nginx-$target.conf" "nginx/nginx.conf"
+        fi
+    fi
+
     docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment

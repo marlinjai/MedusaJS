@@ -33,38 +33,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to create environment file from secrets
-create_env_file() {
-    cat > .env.docker << EOF
-# Database
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/medusa-store
-
-# Application
-NODE_ENV=production
-JWT_SECRET=${JWT_SECRET}
-COOKIE_SECRET=${COOKIE_SECRET}
-
-# Redis
-REDIS_URL=redis://redis:6379
-
-# Email
-RESEND_API_KEY=${RESEND_API_KEY}
-RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
-
-# Supabase S3-Compatible Storage
-S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
-S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
-S3_REGION=${S3_REGION}
-S3_BUCKET=${S3_BUCKET}
-S3_ENDPOINT=${S3_ENDPOINT}
-S3_FILE_URL=${S3_FILE_URL}
-
-# Domain
-MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
-MEDUSA_ADMIN_URL=https://${DOMAIN_NAME}/app
-EOF
-}
 
 # Function to generate nginx configurations
 generate_nginx_configs() {
@@ -128,8 +96,6 @@ generate_nginx_configs
 # Verify SSL certificates
 verify_ssl_certs
 
-# Create environment file
-create_env_file
-
 # Deploy using the main deployment script
+# Note: Environment variables are inherited from GitHub Actions
 ./scripts/deploy.sh deploy

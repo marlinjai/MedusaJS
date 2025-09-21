@@ -13,6 +13,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # No external ports - accessed via nginx proxy
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-medusa_password}@postgres:5432/medusa-store
@@ -20,8 +21,22 @@ services:
       - MEDUSA_WORKER_MODE=server
       - DISABLE_MEDUSA_ADMIN=false
       - PORT=9000
-    env_file:
-      - .env.docker
+      # Application secrets
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      # Email configuration
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+      # S3 Storage
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - S3_REGION=${S3_REGION}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_FILE_URL=${S3_FILE_URL}
+      # Domain configuration
+      - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
+      - MEDUSA_ADMIN_URL=https://${DOMAIN_NAME}/app
     volumes:
       - .:/app
       - /app/node_modules
@@ -44,6 +59,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # No external ports - worker doesn't need external access
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-medusa_password}@postgres:5432/medusa-store
@@ -51,8 +67,19 @@ services:
       - MEDUSA_WORKER_MODE=worker
       - DISABLE_MEDUSA_ADMIN=true
       - PORT=9001
-    env_file:
-      - .env.docker
+      # Application secrets
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      # Email configuration
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+      # S3 Storage
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - S3_REGION=${S3_REGION}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_FILE_URL=${S3_FILE_URL}
     volumes:
       - .:/app
       - /app/node_modules

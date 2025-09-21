@@ -49,3 +49,5 @@ out/
 # Temporary folders
 tmp/
 temp/
+
+.secrets
