@@ -115,9 +115,9 @@ start_deployment() {
     # Remove any specific target containers that might still exist
     docker ps -a --filter "name=medusa_.*_$target" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
 
-    # Start the target deployment with progress output
+    # Start the target deployment
     log_info "Building and starting $target containers (this may take several minutes)..."
-    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build --progress=plain
+    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
 
     if [[ $? -eq 0 ]]; then
         log_success "$target deployment started"

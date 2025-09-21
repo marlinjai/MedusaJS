@@ -69,20 +69,20 @@ jobs:
           # Ensure proper ownership after git operations
           sudo chown -R deploy:deploy /home/deploy/medusa/busbasisberlin
 
+          # Export ALL environment variables from GitHub Secrets FIRST
+          export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
+          export SSL_CERT_NAME="${{ secrets.SSL_CERT_NAME }}"
+          export SSL_KEY_NAME="${{ secrets.SSL_KEY_NAME }}"
+
           # Now run the comprehensive cleanup script
           echo "🧹 Running comprehensive cleanup..."
           chmod +x ./scripts/cleanup-server.sh
           ./scripts/cleanup-server.sh
 
-          # Set up SSL certificates
+          # Set up SSL certificates (with proper environment variables)
           echo "🔒 Setting up SSL certificates..."
           chmod +x ./scripts/setup-ssl.sh
           ./scripts/setup-ssl.sh
-
-          # Export ALL environment variables from GitHub Secrets
-          export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
-          export SSL_CERT_NAME="${{ secrets.SSL_CERT_NAME }}"
-          export SSL_KEY_NAME="${{ secrets.SSL_KEY_NAME }}"
           export POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
           export JWT_SECRET="${{ secrets.JWT_SECRET }}"
           export COOKIE_SECRET="${{ secrets.COOKIE_SECRET }}"
