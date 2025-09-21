@@ -112,6 +112,9 @@ start_deployment() {
     log_info "Cleaning up existing $target containers..."
     docker compose -f "docker-compose.$target.yml" down --remove-orphans 2>/dev/null || true
 
+    # Remove any specific target containers that might still exist
+    docker ps -a --filter "name=medusa_.*_$target" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
+
     # Start the target deployment
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
 
@@ -171,9 +174,17 @@ deploy() {
     log_info "Current deployment: $current"
     log_info "Target deployment: $target"
 
-    # Ensure base services are running
-    log_info "Ensuring base services (postgres, redis, nginx) are running..."
+    # Clean up any existing containers and ensure base services are running
+    log_info "Cleaning up existing containers and ensuring base services are running..."
     cd "$PROJECT_DIR"
+
+    # Stop and remove all existing containers (including orphans)
+    docker compose -f docker-compose.base.yml -f docker-compose.blue.yml -f docker-compose.green.yml down --remove-orphans 2>/dev/null || true
+
+    # Remove any dangling containers with our naming pattern
+    docker ps -a --filter "name=medusa_" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
+
+    # Start base services
     docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment
