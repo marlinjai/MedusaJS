@@ -120,6 +120,11 @@ setup_infrastructure() {
     sudo fuser -k 80/tcp 2>/dev/null || true
     sudo fuser -k 443/tcp 2>/dev/null || true
 
+    # Create Docker networks if they don't exist
+    log "🌐 Creating Docker networks..."
+    docker network create medusa_network 2>/dev/null || log "medusa_network already exists"
+    docker network create monitoring_network 2>/dev/null || log "monitoring_network already exists"
+
     # Start infrastructure services
     log "🚀 Starting infrastructure services..."
     docker compose -f docker-compose.infrastructure.yml up -d
