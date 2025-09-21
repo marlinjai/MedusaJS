@@ -42,7 +42,7 @@ jobs:
           #!/bin/bash
           set -e
 
-          echo "🚀 Starting automated deployment..."
+          echo "🚀 Starting automated deployment with fixed workflow order..."
 
           # Navigate to project directory
           cd /home/deploy/medusa/busbasisberlin
