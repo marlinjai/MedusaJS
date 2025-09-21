@@ -80,6 +80,7 @@ jobs:
 
           # Run deployment script
           echo "🎯 Running blue-green deployment..."
+          chmod +x ./scripts/deploy-with-domain.sh
           ./scripts/deploy-with-domain.sh
 
           echo "🎉 Deployment completed successfully!"

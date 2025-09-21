@@ -132,4 +132,5 @@ verify_ssl_certs
 create_env_file
 
 # Deploy using the main deployment script
+chmod +x ./scripts/deploy.sh
 ./scripts/deploy.sh deploy
