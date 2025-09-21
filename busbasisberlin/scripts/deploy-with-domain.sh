@@ -97,5 +97,31 @@ generate_nginx_configs
 verify_ssl_certs
 
 # Deploy using the main deployment script
-# Note: Environment variables are inherited from GitHub Actions
-./scripts/deploy.sh deploy
+# Pass environment variables explicitly to the deployment script
+env DOMAIN_NAME="$DOMAIN_NAME" \
+    SSL_CERT_NAME="$SSL_CERT_NAME" \
+    SSL_KEY_NAME="$SSL_KEY_NAME" \
+    POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+    JWT_SECRET="$JWT_SECRET" \
+    COOKIE_SECRET="$COOKIE_SECRET" \
+    RESEND_API_KEY="$RESEND_API_KEY" \
+    RESEND_FROM_EMAIL="$RESEND_FROM_EMAIL" \
+    S3_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID" \
+    S3_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY" \
+    S3_REGION="$S3_REGION" \
+    S3_BUCKET="$S3_BUCKET" \
+    S3_ENDPOINT="$S3_ENDPOINT" \
+    S3_FILE_URL="$S3_FILE_URL" \
+    COMPANY_NAME="$COMPANY_NAME" \
+    COMPANY_ADDRESS="$COMPANY_ADDRESS" \
+    COMPANY_POSTAL_CODE="$COMPANY_POSTAL_CODE" \
+    COMPANY_CITY="$COMPANY_CITY" \
+    COMPANY_EMAIL="$COMPANY_EMAIL" \
+    COMPANY_PHONE="$COMPANY_PHONE" \
+    COMPANY_TAX_ID="$COMPANY_TAX_ID" \
+    COMPANY_BANK_INFO="$COMPANY_BANK_INFO" \
+    PDF_FOOTER_TEXT="$PDF_FOOTER_TEXT" \
+    EMAIL_SIGNATURE="$EMAIL_SIGNATURE" \
+    EMAIL_FOOTER="$EMAIL_FOOTER" \
+    MEDUSA_BACKEND_URL="$MEDUSA_BACKEND_URL" \
+    ./scripts/deploy.sh deploy
