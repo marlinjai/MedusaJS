@@ -2,6 +2,18 @@
 
 A full-stack e-commerce application built with MedusaJS (backend) and Next.js (frontend).
 
+## 🚀 Production Deployment
+
+For complete production deployment instructions, see **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
+
+**Quick Deploy:**
+1. Set up VPS with Ubuntu 24.04
+2. Configure GitHub secrets using `./setup-deployment/set-github-secrets.sh`
+3. Push to `main` branch - automatic deployment via GitHub Actions
+4. Set up SSL certificates with Let's Encrypt
+
+**Live Application:** https://basiscamp-berlin.de
+
 ## 🏗️ Project Structure
 
 ```
