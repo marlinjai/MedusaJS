@@ -11,17 +11,20 @@ WORKDIR /server
 # Install dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
-COPY package.json ./
+# Copy package files first (for better Docker layer caching)
+COPY package.json yarn.lock ./
 
-# Install dependencies
-RUN npm install
+# Install ALL dependencies first (needed for build)
+RUN yarn install --frozen-lockfile --silent
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npx medusa build
+RUN yarn build
+
+# Remove dev dependencies after build
+RUN yarn install --frozen-lockfile --production --silent && yarn cache clean
 
 # Production stage
 FROM node:20-alpine AS production

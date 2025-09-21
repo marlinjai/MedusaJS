@@ -36,6 +36,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to server
+        timeout-minutes: 45
         run: |
           # Create deployment script
           cat > deploy.sh << 'EOF'
@@ -49,7 +50,7 @@ jobs:
 
           # Manual cleanup first (before pulling new cleanup script)
           echo "🧹 Running initial cleanup..."
-          
+
           # Stop only application containers (preserve infrastructure)
           docker stop medusa_backend_server_blue medusa_backend_worker_blue 2>/dev/null || true
           docker stop medusa_backend_server_green medusa_backend_worker_green 2>/dev/null || true
@@ -105,10 +106,13 @@ jobs:
           export EMAIL_SIGNATURE="${{ secrets.EMAIL_SIGNATURE }}"
           export EMAIL_FOOTER="${{ secrets.EMAIL_FOOTER }}"
 
-          # Run deployment script
+          # Run deployment script with timeout and progress
           echo "🎯 Running blue-green deployment..."
           chmod +x ./scripts/deploy-with-domain.sh
-          ./scripts/deploy-with-domain.sh
+          timeout 2400 ./scripts/deploy-with-domain.sh || {
+            echo "❌ Deployment timed out after 40 minutes"
+            exit 1
+          }
 
           echo "🎉 Deployment completed successfully!"
           echo "🌐 Application is now running at https://${{ secrets.DOMAIN_NAME }}"
@@ -116,8 +120,8 @@ jobs:
 
           EOF
 
-          # Execute deployment script
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' < deploy.sh
+          # Execute deployment script with SSH keep-alive
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=10 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' < deploy.sh
 
       - name: Notify deployment status
         if: always()
