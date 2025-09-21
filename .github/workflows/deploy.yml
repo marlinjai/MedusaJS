@@ -49,6 +49,34 @@ jobs:
             # Pull latest code with proper authentication
             git pull origin main
 
+            # Export environment variables explicitly
+            export DOMAIN_NAME="$DOMAIN_NAME"
+            export SSL_CERT_NAME="$SSL_CERT_NAME"
+            export SSL_KEY_NAME="$SSL_KEY_NAME"
+            export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+            export JWT_SECRET="$JWT_SECRET"
+            export COOKIE_SECRET="$COOKIE_SECRET"
+            export RESEND_API_KEY="$RESEND_API_KEY"
+            export RESEND_FROM_EMAIL="$RESEND_FROM_EMAIL"
+            export S3_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID"
+            export S3_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY"
+            export S3_REGION="$S3_REGION"
+            export S3_BUCKET="$S3_BUCKET"
+            export S3_ENDPOINT="$S3_ENDPOINT"
+            export S3_FILE_URL="$S3_FILE_URL"
+            export COMPANY_NAME="$COMPANY_NAME"
+            export COMPANY_ADDRESS="$COMPANY_ADDRESS"
+            export COMPANY_POSTAL_CODE="$COMPANY_POSTAL_CODE"
+            export COMPANY_CITY="$COMPANY_CITY"
+            export COMPANY_EMAIL="$COMPANY_EMAIL"
+            export COMPANY_PHONE="$COMPANY_PHONE"
+            export COMPANY_TAX_ID="$COMPANY_TAX_ID"
+            export COMPANY_BANK_INFO="$COMPANY_BANK_INFO"
+            export PDF_FOOTER_TEXT="$PDF_FOOTER_TEXT"
+            export EMAIL_SIGNATURE="$EMAIL_SIGNATURE"
+            export EMAIL_FOOTER="$EMAIL_FOOTER"
+            export MEDUSA_BACKEND_URL="$MEDUSA_BACKEND_URL"
+
             # Make sure script is executable
             chmod +x ./scripts/deploy-with-domain.sh
 
