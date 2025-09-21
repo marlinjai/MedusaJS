@@ -89,16 +89,37 @@ switch_nginx() {
     # Copy the appropriate nginx config
     cp "$PROJECT_DIR/nginx/nginx-$target.conf" "$PROJECT_DIR/nginx/nginx.conf"
 
-    # Reload nginx configuration
-    docker exec medusa_nginx nginx -s reload
+    # Wait for nginx container to be running
+    local attempts=0
+    local max_attempts=30
+    while [[ $attempts -lt $max_attempts ]]; do
+        if docker exec medusa_nginx nginx -s reload 2>/dev/null; then
+            log_success "Nginx switched to $target deployment"
+            return 0
+        fi
 
-    if [[ $? -eq 0 ]]; then
-        log_success "Nginx switched to $target deployment"
-        return 0
-    else
-        log_error "Failed to switch nginx to $target deployment"
-        return 1
-    fi
+        # If reload failed, check if container is restarting
+        local container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null)
+        if [[ "$container_state" == "restarting" ]]; then
+            log_info "Nginx container is restarting, waiting..."
+            sleep 2
+            attempts=$((attempts + 1))
+            continue
+        elif [[ "$container_state" != "running" ]]; then
+            log_warning "Nginx container not running, attempting to start..."
+            docker start medusa_nginx
+            sleep 2
+            attempts=$((attempts + 1))
+            continue
+        fi
+
+        # Container is running but reload failed, try again
+        sleep 1
+        attempts=$((attempts + 1))
+    done
+
+    log_error "Failed to switch nginx to $target deployment after $max_attempts attempts"
+    return 1
 }
 
 # Function to start deployment
@@ -113,7 +134,7 @@ start_deployment() {
     export COMPANY_NAME COMPANY_ADDRESS COMPANY_POSTAL_CODE COMPANY_CITY COMPANY_EMAIL
     export COMPANY_PHONE COMPANY_TAX_ID COMPANY_BANK_INFO PDF_FOOTER_TEXT EMAIL_SIGNATURE EMAIL_FOOTER
     export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
-    
+
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
 
     if [[ $? -eq 0 ]]; then
@@ -195,7 +216,7 @@ deploy() {
     export COMPANY_NAME COMPANY_ADDRESS COMPANY_POSTAL_CODE COMPANY_CITY COMPANY_EMAIL
     export COMPANY_PHONE COMPANY_TAX_ID COMPANY_BANK_INFO PDF_FOOTER_TEXT EMAIL_SIGNATURE EMAIL_FOOTER
     export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
-    
+
     docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment
