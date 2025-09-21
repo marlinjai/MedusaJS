@@ -46,11 +46,11 @@ if [[ -f "$cert_file" && -f "$key_file" ]]; then
     log_success "SSL certificates already exist"
     log_info "Certificate: $cert_file"
     log_info "Private Key: $key_file"
-    
+
     # Fix permissions
     sudo chown deploy:deploy "$cert_file" "$key_file" 2>/dev/null || true
     chmod 600 "$cert_file" "$key_file" 2>/dev/null || true
-    
+
     log_success "SSL certificates are ready"
     exit 0
 fi
@@ -77,13 +77,13 @@ log_info ""
 if [[ "${NODE_ENV:-}" != "production" ]]; then
     log_warning "Creating self-signed certificates for development..."
     log_warning "⚠️  These are NOT secure for production use!"
-    
+
     openssl req -x509 -newkey rsa:4096 -keyout "$key_file" -out "$cert_file" -days 365 -nodes -subj "/CN=$DOMAIN_NAME" 2>/dev/null
-    
+
     # Fix permissions
     sudo chown deploy:deploy "$cert_file" "$key_file" 2>/dev/null || true
     chmod 600 "$cert_file" "$key_file" 2>/dev/null || true
-    
+
     log_success "Self-signed certificates created for development"
     log_warning "⚠️  Replace with proper certificates for production!"
 else
