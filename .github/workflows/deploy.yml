@@ -46,7 +46,7 @@ jobs:
           script: |
             cd /opt/medusa-app/busbasisberlin
 
-            # Pull latest code
+            # Pull latest code with proper authentication
             git pull origin main
 
             # Make sure script is executable
