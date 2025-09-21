@@ -51,3 +51,4 @@ tmp/
 temp/
 
 .secrets
+setup-deployment/

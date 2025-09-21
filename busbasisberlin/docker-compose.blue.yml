@@ -36,7 +36,6 @@ services:
       - S3_FILE_URL=${S3_FILE_URL}
       # Domain configuration
       - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
-      - MEDUSA_ADMIN_URL=https://${DOMAIN_NAME}/app
     volumes:
       - .:/app
       - /app/node_modules

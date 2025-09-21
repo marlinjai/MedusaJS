@@ -33,6 +33,7 @@ jobs:
       PDF_FOOTER_TEXT: ${{ secrets.PDF_FOOTER_TEXT }}
       EMAIL_SIGNATURE: ${{ secrets.EMAIL_SIGNATURE }}
       EMAIL_FOOTER: ${{ secrets.EMAIL_FOOTER }}
+      MEDUSA_BACKEND_URL: ${{ secrets.MEDUSA_BACKEND_URL }}
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.5
