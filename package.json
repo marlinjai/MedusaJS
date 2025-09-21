@@ -34,6 +34,7 @@
   "license": "MIT",
   "dependencies": {
     "ajv": "^8.17.1",
+    "csv-parse": "^6.1.0",
     "csv-parser": "^3.2.0",
     "csv-writer": "^1.6.0",
     "gemeindeverzeichnis": "^0.1.0",
@@ -41,6 +42,7 @@
     "node-fetch": "^3.3.2",
     "openai": "^5.9.0",
     "p-limit": "^6.2.0",
+    "pg": "^8.16.3",
     "postal-codes-js": "^2.5.2"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"

@@ -50,6 +50,7 @@ async function importManualCustomers(csvFilePath?: string) {
 			columns: true,
 			skip_empty_lines: true,
 			trim: true,
+			delimiter: ';', // German CSV uses semicolon delimiter
 		});
 
 		console.log(`Found ${records.length} records in CSV`);
