@@ -73,3 +73,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 # Deployment trigger: Sun Sep 21 22:57:05 CEST 2025
+# Storefront fix: Updated publishable key - Sun Sep 21 23:19:46 CEST 2025
