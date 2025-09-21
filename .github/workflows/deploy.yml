@@ -47,11 +47,18 @@ jobs:
           # Navigate to project directory
           cd /home/deploy/medusa/busbasisberlin
 
-          # Clean up any local changes and pull latest
+          # Run cleanup script first
+          echo "🧹 Running server cleanup..."
+          chmod +x ./scripts/cleanup-server.sh
+          ./scripts/cleanup-server.sh
+
+          # Pull latest changes
           echo "📥 Pulling latest changes..."
-          git clean -fd
           git fetch origin main
           git reset --hard origin/main
+          
+          # Ensure proper ownership after git operations
+          sudo chown -R deploy:deploy /home/deploy/medusa/busbasisberlin
 
           # Export ALL environment variables from GitHub Secrets
           export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"

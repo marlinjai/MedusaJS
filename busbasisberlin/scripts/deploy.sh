@@ -178,13 +178,26 @@ deploy() {
     log_info "Cleaning up existing containers and ensuring base services are running..."
     cd "$PROJECT_DIR"
 
-    # Stop and remove all existing containers (including orphans)
-    docker compose -f docker-compose.base.yml -f docker-compose.blue.yml -f docker-compose.green.yml down --remove-orphans 2>/dev/null || true
+    # Complete Docker cleanup
+    log_info "Performing complete Docker cleanup..."
 
-    # Remove any dangling containers with our naming pattern
-    docker ps -a --filter "name=medusa_" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
+    # Stop all containers
+    docker stop $(docker ps -q) 2>/dev/null || true
+
+    # Remove all containers
+    docker rm $(docker ps -aq) 2>/dev/null || true
+
+    # Remove unused networks (but keep our custom network)
+    docker network prune -f 2>/dev/null || true
+
+    # Remove unused volumes (but keep our data volumes)
+    docker volume prune -f 2>/dev/null || true
+
+    # Remove unused images
+    docker image prune -f 2>/dev/null || true
 
     # Start base services
+    log_info "Starting base services..."
     docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment
