@@ -152,16 +152,12 @@ stop_deployment() {
     log_info "Stopping $deployment deployment..."
 
     cd "$PROJECT_DIR"
-    # Include base compose file to avoid dependency issues
-    docker compose -f docker-compose.base.yml -f "docker-compose.$deployment.yml" down --remove-orphans
+    # Stop only the deployment-specific containers, not base services
+    docker stop "medusa_backend_server_$deployment" "medusa_backend_worker_$deployment" 2>/dev/null || true
+    docker rm "medusa_backend_server_$deployment" "medusa_backend_worker_$deployment" 2>/dev/null || true
 
-    if [[ $? -eq 0 ]]; then
-        log_success "$deployment deployment stopped"
-        return 0
-    else
-        log_error "Failed to stop $deployment deployment"
-        return 1
-    fi
+    log_success "$deployment deployment stopped"
+    return 0
 }
 
 # Function to rollback deployment
