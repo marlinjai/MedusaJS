@@ -37,9 +37,9 @@ services:
       # Domain configuration
       - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
       # CORS configuration
-      - STORE_CORS=https://medusa-js-busbasisberlin-storefront-3488arydm.vercel.app,https://medusa-js-busbasisberlin-store-git-3ecfc6-marlin-jais-projects.vercel.app
+      - STORE_CORS=https://medusa-js-busbasisberlin-storefront.vercel.app/,https://medusa-js-busbasisberlin-storefront.vercel.app/
       - ADMIN_CORS=https://${DOMAIN_NAME}
-      - AUTH_CORS=https://${DOMAIN_NAME},https://medusa-js-busbasisberlin-storefront-3488arydm.vercel.app
+      - AUTH_CORS=https://${DOMAIN_NAME},https://medusa-js-busbasisberlin-storefront.vercel.app
     volumes:
       - .:/app
       - /app/node_modules
