@@ -2,6 +2,8 @@
 
 This guide documents the complete process to deploy MedusaJS with blue-green deployment on a fresh VPS.
 
+<!-- Test deployment: 2025-09-21 17:28 -->
+
 ## Prerequisites
 
 - Fresh Ubuntu 24.04 VPS
