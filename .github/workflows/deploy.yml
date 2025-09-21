@@ -49,10 +49,12 @@ jobs:
 
           # Manual cleanup first (before pulling new cleanup script)
           echo "🧹 Running initial cleanup..."
-
-          # Stop all running containers
-          docker stop $(docker ps -q) 2>/dev/null || true
-          docker rm $(docker ps -aq) 2>/dev/null || true
+          
+          # Stop only application containers (preserve infrastructure)
+          docker stop medusa_backend_server_blue medusa_backend_worker_blue 2>/dev/null || true
+          docker stop medusa_backend_server_green medusa_backend_worker_green 2>/dev/null || true
+          docker rm medusa_backend_server_blue medusa_backend_worker_blue 2>/dev/null || true
+          docker rm medusa_backend_server_green medusa_backend_worker_green 2>/dev/null || true
 
           # Fix permissions and clean git repository
           sudo chown -R deploy:deploy /home/deploy/medusa/busbasisberlin 2>/dev/null || true

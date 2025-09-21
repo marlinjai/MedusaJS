@@ -33,19 +33,21 @@ log_info "🧹 Starting complete server cleanup..."
 # Navigate to project directory
 cd /home/deploy/medusa/busbasisberlin
 
-# Stop all Docker containers
-log_info "Stopping all Docker containers..."
-docker stop $(docker ps -q) 2>/dev/null || true
+# Stop only application containers (preserve infrastructure)
+log_info "Stopping application containers (preserving infrastructure)..."
+docker stop medusa_backend_server_blue medusa_backend_worker_blue 2>/dev/null || true
+docker stop medusa_backend_server_green medusa_backend_worker_green 2>/dev/null || true
 
-# Remove all Docker containers
-log_info "Removing all Docker containers..."
-docker rm $(docker ps -aq) 2>/dev/null || true
+# Remove only application containers
+log_info "Removing application containers..."
+docker rm medusa_backend_server_blue medusa_backend_worker_blue 2>/dev/null || true
+docker rm medusa_backend_server_green medusa_backend_worker_green 2>/dev/null || true
 
-# Remove all Docker networks (except default ones)
-log_info "Cleaning up Docker networks..."
-docker network ls --filter "name=busbasisberlin" --format "{{.Name}}" | xargs -r docker network rm 2>/dev/null || true
+# Clean up unused Docker networks (but preserve our shared network)
+log_info "Cleaning up unused Docker networks..."
+docker network prune -f 2>/dev/null || true
 
-# Clean up Docker volumes (preserve data volumes)
+# Clean up unused Docker volumes (but preserve data volumes)
 log_info "Cleaning up unused Docker volumes..."
 docker volume prune -f 2>/dev/null || true
 

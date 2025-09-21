@@ -178,26 +178,20 @@ deploy() {
     log_info "Cleaning up existing containers and ensuring base services are running..."
     cd "$PROJECT_DIR"
 
-    # Complete Docker cleanup
-    log_info "Performing complete Docker cleanup..."
+    # Clean up only application containers (preserve infrastructure)
+    log_info "Cleaning up application containers (preserving infrastructure)..."
 
-    # Stop all containers
-    docker stop $(docker ps -q) 2>/dev/null || true
+    # Stop and remove only blue/green application containers
+    docker stop medusa_backend_server_blue medusa_backend_worker_blue 2>/dev/null || true
+    docker stop medusa_backend_server_green medusa_backend_worker_green 2>/dev/null || true
+    docker rm medusa_backend_server_blue medusa_backend_worker_blue 2>/dev/null || true
+    docker rm medusa_backend_server_green medusa_backend_worker_green 2>/dev/null || true
 
-    # Remove all containers
-    docker rm $(docker ps -aq) 2>/dev/null || true
-
-    # Remove unused networks (but keep our custom network)
-    docker network prune -f 2>/dev/null || true
-
-    # Remove unused volumes (but keep our data volumes)
-    docker volume prune -f 2>/dev/null || true
-
-    # Remove unused images
+    # Remove unused images (but keep base images)
     docker image prune -f 2>/dev/null || true
 
-    # Start base services
-    log_info "Starting base services..."
+    # Ensure base services are running (start if not already running)
+    log_info "Ensuring base services are running..."
     docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment
