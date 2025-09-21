@@ -91,11 +91,15 @@ verify_ssl_certs() {
 
     if [[ ! -f "$cert_file" ]]; then
         log_error "SSL certificate not found: $cert_file"
+        log_warning "Please upload your SSL certificate to: $cert_file"
+        log_warning "You can get SSL certificates from Let's Encrypt:"
+        log_warning "  certbot certonly --standalone -d $DOMAIN_NAME"
         return 1
     fi
 
     if [[ ! -f "$key_file" ]]; then
         log_error "SSL private key not found: $key_file"
+        log_warning "Please upload your SSL private key to: $key_file"
         return 1
     fi
 

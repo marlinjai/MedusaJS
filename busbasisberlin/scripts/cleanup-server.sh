@@ -67,9 +67,10 @@ log_info "Removing temporary files..."
 rm -rf tmp/* 2>/dev/null || true
 rm -rf node_modules/.cache 2>/dev/null || true
 
-# Clean up any leftover SSL files that might have permission issues
-log_info "Cleaning up SSL files..."
-sudo rm -rf nginx/ssl/*.pem 2>/dev/null || true
+# Fix SSL file permissions (but don't delete certificates)
+log_info "Fixing SSL file permissions..."
+sudo chown -R deploy:deploy nginx/ssl/ 2>/dev/null || true
+sudo chmod 600 nginx/ssl/*.pem 2>/dev/null || true
 
 log_success "✅ Server cleanup completed!"
 log_info "You can now run a fresh deployment."

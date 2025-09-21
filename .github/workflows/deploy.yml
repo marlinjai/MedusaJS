@@ -71,6 +71,11 @@ jobs:
           chmod +x ./scripts/cleanup-server.sh
           ./scripts/cleanup-server.sh
 
+          # Set up SSL certificates
+          echo "🔒 Setting up SSL certificates..."
+          chmod +x ./scripts/setup-ssl.sh
+          ./scripts/setup-ssl.sh
+
           # Export ALL environment variables from GitHub Secrets
           export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
           export SSL_CERT_NAME="${{ secrets.SSL_CERT_NAME }}"
