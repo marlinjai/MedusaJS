@@ -107,6 +107,13 @@ start_deployment() {
     log_info "Starting $target deployment..."
 
     cd "$PROJECT_DIR"
+    # Ensure environment variables are available to Docker Compose
+    export POSTGRES_PASSWORD JWT_SECRET COOKIE_SECRET RESEND_API_KEY RESEND_FROM_EMAIL
+    export S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_REGION S3_BUCKET S3_ENDPOINT S3_FILE_URL
+    export COMPANY_NAME COMPANY_ADDRESS COMPANY_POSTAL_CODE COMPANY_CITY COMPANY_EMAIL
+    export COMPANY_PHONE COMPANY_TAX_ID COMPANY_BANK_INFO PDF_FOOTER_TEXT EMAIL_SIGNATURE EMAIL_FOOTER
+    export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
+    
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
 
     if [[ $? -eq 0 ]]; then
@@ -182,6 +189,13 @@ deploy() {
         fi
     fi
 
+    # Ensure environment variables are available to Docker Compose
+    export POSTGRES_PASSWORD JWT_SECRET COOKIE_SECRET RESEND_API_KEY RESEND_FROM_EMAIL
+    export S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_REGION S3_BUCKET S3_ENDPOINT S3_FILE_URL
+    export COMPANY_NAME COMPANY_ADDRESS COMPANY_POSTAL_CODE COMPANY_CITY COMPANY_EMAIL
+    export COMPANY_PHONE COMPANY_TAX_ID COMPANY_BANK_INFO PDF_FOOTER_TEXT EMAIL_SIGNATURE EMAIL_FOOTER
+    export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
+    
     docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment
