@@ -12,19 +12,19 @@ WORKDIR /server
 RUN apk add --no-cache python3 make g++
 
 # Copy package files first (for better Docker layer caching)
-COPY package.json yarn.lock ./
+COPY package.json ./
 
 # Install ALL dependencies first (needed for build)
-RUN yarn install --frozen-lockfile --silent
+RUN npm install --silent --no-audit --no-fund
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN yarn build
+RUN npm run build
 
 # Remove dev dependencies after build
-RUN yarn install --frozen-lockfile --production --silent && yarn cache clean
+RUN npm prune --production && npm cache clean --force
 
 # Production stage
 FROM node:20-alpine AS production
