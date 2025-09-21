@@ -47,9 +47,11 @@ jobs:
           # Navigate to project directory
           cd /home/deploy/medusa/busbasisberlin
 
-          # Pull latest changes
+          # Clean up any local changes and pull latest
           echo "📥 Pulling latest changes..."
-          git pull origin main
+          git clean -fd
+          git fetch origin main
+          git reset --hard origin/main
 
           # Export ALL environment variables from GitHub Secrets
           export DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
