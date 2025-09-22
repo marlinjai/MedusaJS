@@ -4,6 +4,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Prevent multiple deployments from running simultaneously
+# Let previous deployment finish instead of canceling it
+concurrency:
+  group: deploy-to-vps
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
