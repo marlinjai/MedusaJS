@@ -113,3 +113,13 @@ temp
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Exclude storefront from backend deployment
+../busbasisberlin-storefront
+../data
+../instructions
+../setup-deployment
+../.git
+../package.json
+../package-lock.json
+../README.md
