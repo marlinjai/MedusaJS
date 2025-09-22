@@ -135,7 +135,7 @@ start_deployment() {
     export COMPANY_PHONE COMPANY_TAX_ID COMPANY_BANK_INFO PDF_FOOTER_TEXT EMAIL_SIGNATURE EMAIL_FOOTER
     export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
 
-    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build --remove-orphans
+    docker compose -f "docker-compose.$target.yml" up -d --build --remove-orphans
 
     if [[ $? -eq 0 ]]; then
         log_success "$target deployment started"
@@ -214,7 +214,7 @@ deploy() {
     export COMPANY_PHONE COMPANY_TAX_ID COMPANY_BANK_INFO PDF_FOOTER_TEXT EMAIL_SIGNATURE EMAIL_FOOTER
     export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
 
-    docker compose -f docker-compose.base.yml up -d --remove-orphans
+    docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment
     if ! start_deployment "$target"; then
