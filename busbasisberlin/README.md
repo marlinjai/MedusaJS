@@ -72,3 +72,5 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [Twitter](https://twitter.com/medusajs)
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
+
+<!-- Deployment trigger: Sun Sep 22 11:30:00 CEST 2025 - Fixed deployment dependencies -->
