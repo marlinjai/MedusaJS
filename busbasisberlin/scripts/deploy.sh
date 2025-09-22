@@ -38,10 +38,25 @@ log_error() {
 
 # Function to get current deployment state
 get_current_deployment() {
+    # First check what the state file says
+    local file_state="blue"
     if [[ -f "$CURRENT_STATE_FILE" ]]; then
-        cat "$CURRENT_STATE_FILE"
+        file_state=$(cat "$CURRENT_STATE_FILE")
+    fi
+
+    # Check if containers for that deployment are actually running
+    local blue_running=$(docker ps --filter "name=medusa_backend_server_blue" --filter "status=running" --quiet)
+    local green_running=$(docker ps --filter "name=medusa_backend_server_green" --filter "status=running" --quiet)
+
+    # Return the deployment that actually has running containers
+    if [[ -n "$blue_running" ]]; then
+        echo "blue"
+    elif [[ -n "$green_running" ]]; then
+        echo "green"
     else
-        echo "blue"  # Default to blue if no state file exists
+        # No containers running - return file state but log warning
+        log_warning "No deployment containers are currently running (file says: $file_state)"
+        echo "$file_state"
     fi
 }
 
@@ -184,8 +199,101 @@ rollback() {
     fi
 }
 
+# Function to analyze and fix current VPS state
+analyze_and_fix_state() {
+    log_info "Analyzing current VPS state..."
+
+    # Check base services
+    local postgres_running=$(docker ps --filter "name=medusa_postgres" --filter "status=running" --quiet)
+    local redis_running=$(docker ps --filter "name=medusa_redis" --filter "status=running" --quiet)
+    local nginx_running=$(docker ps --filter "name=medusa_nginx" --filter "status=running" --quiet)
+
+    # Check deployment containers
+    local blue_running=$(docker ps --filter "name=medusa_backend_server_blue" --filter "status=running" --quiet)
+    local green_running=$(docker ps --filter "name=medusa_backend_server_green" --filter "status=running" --quiet)
+
+    # Get file state vs actual state
+    local file_state="blue"
+    if [[ -f "$CURRENT_STATE_FILE" ]]; then
+        file_state=$(cat "$CURRENT_STATE_FILE")
+    fi
+
+    log_info "State Analysis:"
+    log_info "  File says: $file_state"
+    log_info "  Blue containers running: $([ -n "$blue_running" ] && echo "YES" || echo "NO")"
+    log_info "  Green containers running: $([ -n "$green_running" ] && echo "YES" || echo "NO")"
+    log_info "  Base services: Postgres=$([ -n "$postgres_running" ] && echo "UP" || echo "DOWN") Redis=$([ -n "$redis_running" ] && echo "UP" || echo "DOWN") Nginx=$([ -n "$nginx_running" ] && echo "UP" || echo "DOWN")"
+
+    # Determine corrective action
+    if [[ -z "$postgres_running" || -z "$redis_running" || -z "$nginx_running" ]]; then
+        log_warning "Base services are down - starting them first"
+        start_base_services
+    fi
+
+    # Handle deployment container state
+    if [[ -n "$blue_running" && -n "$green_running" ]]; then
+        log_warning "Both deployments running - this shouldn't happen! Stopping older one based on file state"
+        if [[ "$file_state" == "blue" ]]; then
+            log_info "Keeping blue (current), stopping green"
+            stop_deployment "green"
+        else
+            log_info "Keeping green (current), stopping blue"
+            stop_deployment "blue"
+        fi
+    elif [[ -z "$blue_running" && -z "$green_running" ]]; then
+        log_warning "No deployment containers running - starting $file_state deployment"
+        start_deployment "$file_state"
+
+        # Wait for health check
+        if check_health "$file_state"; then
+            switch_nginx "$file_state"
+            log_success "Restored $file_state deployment successfully"
+        else
+            log_error "Failed to restore $file_state deployment"
+            return 1
+        fi
+    elif [[ -n "$blue_running" && "$file_state" == "green" ]]; then
+        log_warning "Blue is running but file says green - correcting state file"
+        echo "blue" > "$CURRENT_STATE_FILE"
+        switch_nginx "blue"
+    elif [[ -n "$green_running" && "$file_state" == "blue" ]]; then
+        log_warning "Green is running but file says blue - correcting state file"
+        echo "green" > "$CURRENT_STATE_FILE"
+        switch_nginx "green"
+    fi
+
+    return 0
+}
+
+# Function to start base services
+start_base_services() {
+    log_info "Starting base services..."
+    cd "$PROJECT_DIR"
+
+    # Export environment variables for base services
+    export POSTGRES_PASSWORD JWT_SECRET COOKIE_SECRET RESEND_API_KEY RESEND_FROM_EMAIL
+    export S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_REGION S3_BUCKET S3_ENDPOINT S3_FILE_URL
+    export COMPANY_NAME COMPANY_ADDRESS COMPANY_POSTAL_CODE COMPANY_CITY COMPANY_EMAIL
+    export COMPANY_PHONE COMPANY_TAX_ID COMPANY_BANK_INFO PDF_FOOTER_TEXT EMAIL_SIGNATURE EMAIL_FOOTER
+    export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
+
+    docker compose -f docker-compose.base.yml up -d
+
+    # Wait for base services to be healthy
+    log_info "Waiting for base services to be ready..."
+    sleep 10
+
+    return 0
+}
+
 # Main deployment function
 deploy() {
+    # First, analyze and fix any inconsistent state
+    if ! analyze_and_fix_state; then
+        log_error "Failed to analyze and fix VPS state"
+        return 1
+    fi
+
     local current=$(get_current_deployment)
     local target=$(get_target_deployment)
 
@@ -252,13 +360,62 @@ deploy() {
 
 # Function to show current status
 status() {
-    local current=$(get_current_deployment)
-    echo "Current deployment: $current"
-
-    # Show container status
+    echo "=== VPS Deployment Status ==="
     echo ""
-    echo "Container Status:"
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(medusa|postgres|redis|nginx)"
+
+    # Check file state
+    local file_state="blue"
+    if [[ -f "$CURRENT_STATE_FILE" ]]; then
+        file_state=$(cat "$CURRENT_STATE_FILE")
+    fi
+    echo "📄 State File: $file_state"
+
+    # Check actual running containers
+    local blue_running=$(docker ps --filter "name=medusa_backend_server_blue" --filter "status=running" --quiet)
+    local green_running=$(docker ps --filter "name=medusa_backend_server_green" --filter "status=running" --quiet)
+
+    echo "🔵 Blue Deployment: $([ -n "$blue_running" ] && echo "RUNNING" || echo "STOPPED")"
+    echo "🟢 Green Deployment: $([ -n "$green_running" ] && echo "RUNNING" || echo "STOPPED")"
+
+    # Determine actual current deployment
+    local actual_current=$(get_current_deployment)
+    echo "✅ Actual Current: $actual_current"
+
+    # Check base services
+    echo ""
+    echo "=== Base Services ==="
+    local postgres_running=$(docker ps --filter "name=medusa_postgres" --filter "status=running" --quiet)
+    local redis_running=$(docker ps --filter "name=medusa_redis" --filter "status=running" --quiet)
+    local nginx_running=$(docker ps --filter "name=medusa_nginx" --filter "status=running" --quiet)
+
+    echo "🐘 Postgres: $([ -n "$postgres_running" ] && echo "UP" || echo "DOWN")"
+    echo "🔴 Redis: $([ -n "$redis_running" ] && echo "UP" || echo "DOWN")"
+    echo "🌐 Nginx: $([ -n "$nginx_running" ] && echo "UP" || echo "DOWN")"
+
+    # Show nginx config
+    echo ""
+    echo "=== Nginx Configuration ==="
+    if [[ -f "$PROJECT_DIR/nginx/nginx.conf" ]]; then
+        local nginx_target=$(grep -o "medusa_backend_server_[a-z]*" "$PROJECT_DIR/nginx/nginx.conf" | head -1 | sed 's/medusa_backend_server_//')
+        echo "🔀 Nginx points to: $nginx_target"
+    else
+        echo "❌ No nginx.conf found"
+    fi
+
+    # Show all medusa containers
+    echo ""
+    echo "=== All Containers ==="
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(medusa|postgres|redis|nginx|portainer|uptime)"
+
+    # Health check
+    echo ""
+    echo "=== Health Status ==="
+    if [[ -n "$blue_running" ]]; then
+        echo "🔵 Blue Health: $(curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/health 2>/dev/null || echo "UNREACHABLE")"
+    fi
+    if [[ -n "$green_running" ]]; then
+        echo "🟢 Green Health: $(curl -s -o /dev/null -w "%{http_code}" http://localhost:9002/health 2>/dev/null || echo "UNREACHABLE")"
+    fi
 }
 
 # Function to show help
@@ -269,12 +426,30 @@ show_help() {
     echo "  deploy    - Perform blue-green deployment"
     echo "  rollback  - Rollback to previous deployment"
     echo "  status    - Show current deployment status"
+    echo "  repair    - Analyze and fix inconsistent deployment state"
     echo "  help      - Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 deploy     # Deploy new version"
     echo "  $0 rollback   # Rollback to previous version"
     echo "  $0 status     # Check current status"
+    echo "  $0 repair     # Fix inconsistent state"
+}
+
+# Function to repair inconsistent state
+repair() {
+    log_info "🔧 Repairing VPS deployment state..."
+
+    if ! analyze_and_fix_state; then
+        log_error "Failed to repair VPS state"
+        return 1
+    fi
+
+    log_success "VPS state repair completed!"
+
+    # Show final status
+    echo ""
+    status
 }
 
 # Main script logic
@@ -287,6 +462,9 @@ case "${1:-}" in
         ;;
     status)
         status
+        ;;
+    repair)
+        repair
         ;;
     help|--help|-h)
         show_help
