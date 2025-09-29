@@ -1,7 +1,14 @@
-name: Deploy to VPS with Domain
+name: Deploy Backend to VPS with Domain
 on:
   push:
     branches: [main]
+    paths:
+      - "busbasisberlin/**"
+      - ".github/workflows/deploy.yml"
+      - "scripts/**"
+      - "init-db.sql"
+      - "package.json"
+      - "package-lock.json"
   workflow_dispatch:
 
 # Prevent multiple deployments from running simultaneously
