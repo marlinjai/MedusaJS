@@ -19,7 +19,7 @@ export default async function inviteCreatedHandler({
 	const backend_url =
 		config.admin.backendUrl !== '/'
 			? config.admin.backendUrl
-			: 'http://localhost:9000';
+			: process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000';
 	const adminPath = config.admin.path;
 
 	await notificationModuleService.createNotifications({
@@ -27,7 +27,7 @@ export default async function inviteCreatedHandler({
 		template: 'user-invited',
 		channel: 'email',
 		data: {
-			invite_url: `${process.env.MEDUSA_BACKEND_URL}${adminPath}/invite?token=${invite.token}`,
+			invite_url: `${backend_url}${adminPath}/invite?token=${invite.token}`,
 		},
 	});
 }
