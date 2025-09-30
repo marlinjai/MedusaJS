@@ -14,6 +14,7 @@ import { offerCancelledEmail } from './emails/offer-cancelled';
 import { offerCompletedEmail } from './emails/offer-completed';
 import { orderPlacedEmail } from './emails/order-placed';
 import { passwordResetEmail } from './emails/reset-password';
+import { userInvitedEmail } from './emails/user-invited';
 
 type ResendOptions = {
 	api_key: string;
@@ -48,6 +49,8 @@ enum Templates {
 	OFFER_COMPLETED = 'offer-completed',
 	OFFER_CANCELLED = 'offer-cancelled',
 	OFFER_NOTIFICATION = 'offer-notification',
+	// User management templates
+	USER_INVITED = 'user-invited',
 }
 
 const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
@@ -59,6 +62,8 @@ const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
 		[Templates.OFFER_ACCEPTED]: offerAcceptedEmail,
 		[Templates.OFFER_COMPLETED]: offerCompletedEmail,
 		[Templates.OFFER_CANCELLED]: offerCancelledEmail,
+		// User management templates
+		[Templates.USER_INVITED]: userInvitedEmail,
 	};
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -122,6 +127,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 				return 'Angebot storniert';
 			case Templates.OFFER_NOTIFICATION:
 				return 'Angebot Update';
+			case Templates.USER_INVITED:
+				return 'Sie wurden zu unserem Team eingeladen';
 			default:
 				return 'New Email';
 		}
