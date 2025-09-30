@@ -1,16 +1,16 @@
 // src/modules/resend/emails/user-invited.tsx
 import {
-	Text,
+	Body,
+	Button,
 	Container,
+	Head,
 	Heading,
 	Html,
+	Link,
+	Preview,
 	Section,
 	Tailwind,
-	Head,
-	Preview,
-	Body,
-	Link,
-	Button,
+	Text,
 } from '@react-email/components';
 
 type UserInvitedEmailProps = {
