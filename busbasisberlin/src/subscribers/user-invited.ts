@@ -27,7 +27,7 @@ export default async function inviteCreatedHandler({
 		template: 'user-invited',
 		channel: 'email',
 		data: {
-			invite_url: `${backend_url}${adminPath}/invite?token=${invite.token}`,
+			invite_url: `${process.env.MEDUSA_BACKEND_URL}${adminPath}/invite?token=${invite.token}`,
 		},
 	});
 }
