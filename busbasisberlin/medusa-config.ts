@@ -136,6 +136,22 @@ const getModules = () => {
 				],
 			},
 		},
+		// Payment module
+		{
+			resolve: '@medusajs/medusa/payment',
+			options: {
+				providers: [
+					{
+						resolve: '@medusajs/medusa/payment-stripe',
+						id: 'stripe',
+						options: {
+							apiKey: process.env.STRIPE_API_KEY,
+							webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+						},
+					},
+				],
+			},
+		},
 		// Custom modules
 		{
 			resolve: './src/modules/supplier',

@@ -50,6 +50,8 @@ jobs:
       STORE_CORS: ${{ secrets.STORE_CORS }}
       ADMIN_CORS: ${{ secrets.ADMIN_CORS }}
       AUTH_CORS: ${{ secrets.AUTH_CORS }}
+      STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.5
@@ -96,6 +98,8 @@ jobs:
             export STORE_CORS="$STORE_CORS"
             export ADMIN_CORS="$ADMIN_CORS"
             export AUTH_CORS="$AUTH_CORS"
+            export STRIPE_API_KEY="$STRIPE_API_KEY"
+            export STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"
 
             # Make sure script is executable
             chmod +x ./scripts/deploy-with-domain.sh
