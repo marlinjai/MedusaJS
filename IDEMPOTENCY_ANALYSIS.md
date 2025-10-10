@@ -11,9 +11,22 @@
 
 ## Executive Summary
 
-The import script for manual customers is **PARTIALLY IDEMPOTENT** with significant limitations. It will only be idempotent if all CSV rows contain a valid `customer_number` field. Records without customer numbers will create duplicates on subsequent runs.
+**STATUS: ✅ FIXED - Now FULLY IDEMPOTENT**
 
-**Risk Level:** 🟡 MEDIUM - Safe for re-imports if customer numbers are present, but risky otherwise
+The import script for manual customers has been upgraded from **PARTIALLY IDEMPOTENT** to **FULLY IDEMPOTENT**. The implementation now includes:
+- Multi-key duplicate detection (customer_number, internal_key, email, legacy_customer_id)
+- Pre-import validation
+- Dry-run mode
+- Comprehensive warnings and error handling
+- Timestamp-based import references
+
+**Previous Risk Level:** 🟡 MEDIUM - Safe for re-imports if customer numbers are present, but risky otherwise
+
+**Current Risk Level:** 🟢 LOW - Safe for re-imports with comprehensive safeguards and validation
+
+**Implementation Date:** 2025-10-10
+
+See `IMPLEMENTATION_SUMMARY.md` for complete details.
 
 ---
 

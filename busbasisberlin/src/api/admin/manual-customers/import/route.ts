@@ -15,14 +15,19 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 	);
 
 	try {
-		const { csvData, fieldMapping } = req.body as {
+		const { csvData, fieldMapping, options } = req.body as {
 			csvData: any[];
 			fieldMapping: Record<string, string>;
+			options?: {
+				dryRun?: boolean;
+				strictMode?: boolean;
+				validate?: boolean;
+			};
 		};
 
 		console.log(
-			`Import request received: ${csvData?.length || 0} rows, field mapping:`,
-			fieldMapping,
+			`Import request received: ${csvData?.length || 0} rows, options:`,
+			options,
 		);
 
 		// Validate input
@@ -46,17 +51,43 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 		// Log first few rows for debugging
 		console.log('Sample CSV data (first 2 rows):', csvData.slice(0, 2));
 
-		// Perform the import
+		// If validate-only mode, run validation and return
+		if (options?.validate) {
+			console.log('Running validation only...');
+			const validation = await manualCustomerService.validateImport(
+				csvData,
+				fieldMapping,
+			);
+
+			return res.json({
+				validation,
+				message: validation.valid
+					? 'Validation passed. Ready to import.'
+					: 'Validation failed. Please fix errors before importing.',
+			});
+		}
+
+		// Perform the import (with optional dry-run)
 		const results = await manualCustomerService.importFromCSV(
 			csvData,
 			fieldMapping,
+			options,
 		);
 
 		console.log('Import completed successfully:', results);
 
+		// Build response message
+		let message = options?.dryRun
+			? `Dry-run completed. Would import ${results.imported} customers and update ${results.updated} existing customers.`
+			: `Import completed. ${results.imported} customers imported, ${results.updated} updated, ${results.skipped} skipped.`;
+
+		if (results.warnings && results.warnings.length > 0) {
+			message += ` ${results.warnings.length} warnings.`;
+		}
+
 		res.json({
 			results,
-			message: `Import completed. ${results.imported} customers imported, ${results.updated} updated, ${results.skipped} skipped.`,
+			message,
 		});
 	} catch (error) {
 		console.error('Critical error during import:', error);

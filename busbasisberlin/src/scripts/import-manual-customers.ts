@@ -71,9 +71,83 @@ async function importManualCustomers(csvFilePath?: string) {
 			console.log(`  "${csvField}" -> ${dbField}`);
 		});
 
+		// Step 1: Run validation first
+		console.log('\n🔍 Step 1: Validating CSV data...');
+		const validationData = {
+			csvData: records,
+			fieldMapping: DEFAULT_FIELD_MAPPING,
+			options: { validate: true },
+		};
+
+		const validationResponse = await fetch(
+			'http://localhost:9000/admin/manual-customers/import',
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(validationData),
+			},
+		);
+
+		const validationResult = await validationResponse.json();
+
+		if (!validationResponse.ok) {
+			console.error('\n❌ Validation request failed:', validationResult.message);
+			return;
+		}
+
+		const validation = validationResult.validation;
+
+		// Display validation results
+		console.log('\n📊 Validation Results:');
+		console.log(`   Total rows: ${validation.totalRows}`);
+		console.log(`   Will create: ${validation.summary.willCreate} new customers`);
+		console.log(
+			`   Will update: ${validation.summary.willUpdate} existing customers`,
+		);
+		console.log(`   Will skip: ${validation.summary.willSkip} invalid rows`);
+		console.log(
+			`   Missing identifiers: ${validation.missingIdentifiers} rows (risk of duplicates on re-import)`,
+		);
+
+		// Show warnings if any
+		if (validation.warnings.length > 0) {
+			console.log(`\n⚠️  Warnings (${validation.warnings.length}):`);
+			validation.warnings.slice(0, 10).forEach((warning: string) => {
+				console.log(`   - ${warning}`);
+			});
+			if (validation.warnings.length > 10) {
+				console.log(
+					`   ... and ${validation.warnings.length - 10} more warnings`,
+				);
+			}
+		}
+
+		// Show errors if any
+		if (validation.errors.length > 0) {
+			console.log(`\n❌ Errors (${validation.errors.length}):`);
+			validation.errors.forEach((error: string) => {
+				console.log(`   - ${error}`);
+			});
+			console.log(
+				'\n⛔ Cannot proceed with import due to validation errors. Please fix the data and try again.',
+			);
+			return;
+		}
+
+		// Show idempotency status
+		if (validation.summary.willUpdate > 0) {
+			console.log(
+				`\n✅ Idempotency Check: ${validation.summary.willUpdate} existing customers will be updated (no duplicates will be created)`,
+			);
+		} else {
+			console.log('\n✅ Idempotency Check: All records are new');
+		}
+
 		// Ask for confirmation
 		const response = await askForConfirmation(
-			'\nDo you want to proceed with the import using the default mapping? (y/n): ',
+			'\n🚀 Do you want to proceed with the import? (y/n): ',
 		);
 
 		if (response.toLowerCase() !== 'y') {
@@ -81,14 +155,14 @@ async function importManualCustomers(csvFilePath?: string) {
 			return;
 		}
 
-		// Prepare data for API
+		// Step 2: Perform actual import
+		console.log('\n📥 Step 2: Importing customers...');
 		const importData = {
 			csvData: records,
 			fieldMapping: DEFAULT_FIELD_MAPPING,
+			options: { strictMode: false },
 		};
 
-		// Make API call to import endpoint
-		console.log('\nStarting import...');
 		const apiResponse = await fetch(
 			'http://localhost:9000/admin/manual-customers/import',
 			{
@@ -105,16 +179,33 @@ async function importManualCustomers(csvFilePath?: string) {
 		if (apiResponse.ok) {
 			console.log('\n✅ Import completed successfully!');
 			console.log(`📊 Results:`);
-			console.log(`   - Imported: ${result.results.imported} customers`);
-			console.log(`   - Skipped: ${result.results.skipped} customers`);
+			console.log(`   - Imported: ${result.results.imported} new customers`);
+			console.log(`   - Updated: ${result.results.updated} existing customers`);
+			console.log(`   - Skipped: ${result.results.skipped} rows`);
+
+			if (result.results.warnings && result.results.warnings.length > 0) {
+				console.log(`\n⚠️  Warnings (${result.results.warnings.length}):`);
+				result.results.warnings.slice(0, 5).forEach((warning: string) => {
+					console.log(`   - ${warning}`);
+				});
+				if (result.results.warnings.length > 5) {
+					console.log(
+						`   ... and ${result.results.warnings.length - 5} more warnings`,
+					);
+				}
+			}
 
 			if (result.results.errors && result.results.errors.length > 0) {
-				console.log(`   - Errors: ${result.results.errors.length}`);
-				console.log('\n❌ Errors:');
+				console.log(`\n❌ Errors (${result.results.errors.length}):`);
 				result.results.errors.forEach((error: string) => {
 					console.log(`   - ${error}`);
 				});
 			}
+
+			// Show idempotency confirmation
+			console.log(
+				'\n💡 Tip: You can safely re-run this import. Existing customers will be updated instead of creating duplicates.',
+			);
 		} else {
 			console.error('\n❌ Import failed:', result.message);
 			if (result.error) {

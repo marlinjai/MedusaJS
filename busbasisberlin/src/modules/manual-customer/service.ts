@@ -178,25 +178,47 @@ class ManualCustomerService extends MedusaService({
 	 * Import customers from CSV data with idempotent behavior
 	 * @param csvData - Array of CSV row objects
 	 * @param fieldMapping - Mapping of CSV columns to customer fields
+	 * @param options - Import options (dryRun, strictMode)
 	 * @returns Import results with counts and errors
 	 */
 	async importFromCSV(
 		csvData: CSVCustomerRow[],
 		fieldMapping: Record<string, string>,
+		options?: {
+			dryRun?: boolean;
+			strictMode?: boolean;
+		},
 	): Promise<{
 		imported: number;
 		updated: number;
 		skipped: number;
 		errors: string[];
+		warnings: string[];
+		potentialDuplicates?: Array<{
+			row: number;
+			reason: string;
+			existingCustomer?: any;
+		}>;
 	}> {
 		const results = {
 			imported: 0,
 			updated: 0,
 			skipped: 0,
 			errors: [] as string[],
+			warnings: [] as string[],
+			potentialDuplicates: [] as Array<{
+				row: number;
+				reason: string;
+				existingCustomer?: any;
+			}>,
 		};
 
-		console.log(`Starting CSV import for ${csvData.length} rows`);
+		// Generate timestamp for this import batch
+		const importTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+		console.log(
+			`Starting CSV import for ${csvData.length} rows${options?.dryRun ? ' (DRY RUN)' : ''}`,
+		);
 
 		for (let i = 0; i < csvData.length; i++) {
 			const row = csvData[i];
@@ -231,29 +253,53 @@ class ManualCustomerService extends MedusaService({
 					}
 				});
 
-				// Set import metadata
+				// Set import metadata with timestamp
 				customerData.source = 'csv-import';
-				customerData.import_reference = `csv-row-${i + 1}`;
+				customerData.import_reference = `import-${importTimestamp}-row-${i + 1}`;
 
-				// Check if customer already exists by customer_number (idempotent behavior)
-				const customerNumber = customerData.customer_number;
-				let existingCustomer: ManualCustomer | null = null;
-
-				if (customerNumber) {
-					existingCustomer = await this.findByCustomerNumber(customerNumber);
-				}
+				// Multi-key duplicate detection (idempotent behavior)
+				const existingCustomer = await this.findExistingCustomer(customerData);
 
 				if (existingCustomer) {
-					// Update existing customer
-					await this.updateCustomerWithContactTracking(
-						existingCustomer.id,
-						customerData,
-					);
+					// Found existing customer - update instead of create
+					if (options?.dryRun) {
+						results.potentialDuplicates.push({
+							row: i + 1,
+							reason: `Would update existing customer: ${existingCustomer.customer_number || existingCustomer.email || existingCustomer.id}`,
+							existingCustomer: {
+								id: existingCustomer.id,
+								customer_number: existingCustomer.customer_number,
+								name: `${existingCustomer.first_name || ''} ${existingCustomer.last_name || ''}`.trim(),
+								email: existingCustomer.email,
+								company: existingCustomer.company,
+							},
+						});
+					} else {
+						// Update existing customer
+						await this.updateCustomerWithContactTracking(
+							existingCustomer.id,
+							customerData,
+						);
+					}
 					results.updated++;
 				} else {
-					// Create new customer
-					await this.createManualCustomerFromCSV(customerData);
+					// No existing customer found - create new one
+					if (!options?.dryRun) {
+						await this.createManualCustomerFromCSV(customerData);
+					}
 					results.imported++;
+				}
+
+				// Warn if no unique identifiers present
+				if (
+					!customerData.customer_number &&
+					!customerData.internal_key &&
+					!customerData.email &&
+					!customerData.legacy_customer_id
+				) {
+					results.warnings.push(
+						`Row ${i + 1}: No unique identifier found (customer_number, internal_key, email, or legacy_customer_id). This may cause duplicates on re-import.`,
+					);
 				}
 			} catch (error) {
 				results.skipped++;
@@ -269,13 +315,180 @@ class ManualCustomerService extends MedusaService({
 					`Row ${i + 1} (Customer: ${customerNumber}): ${errorMessage}`,
 				);
 				console.error(`Import error on row ${i + 1}:`, error);
+
+				// In strict mode, stop on first error
+				if (options?.strictMode) {
+					console.error('Strict mode enabled - stopping import on first error');
+					break;
+				}
 			}
 		}
 
 		console.log(
-			`CSV import completed: ${results.imported} imported, ${results.updated} updated, ${results.skipped} skipped`,
+			`CSV import completed: ${results.imported} imported, ${results.updated} updated, ${results.skipped} skipped, ${results.warnings.length} warnings`,
 		);
 		return results;
+	}
+
+	/**
+	 * Validate CSV import data before actual import
+	 * Checks for potential duplicates and data issues
+	 * @param csvData - Array of CSV row objects
+	 * @param fieldMapping - Mapping of CSV columns to customer fields
+	 * @returns Validation results with warnings and potential issues
+	 */
+	async validateImport(
+		csvData: CSVCustomerRow[],
+		fieldMapping: Record<string, string>,
+	): Promise<{
+		valid: boolean;
+		totalRows: number;
+		potentialDuplicates: number;
+		missingIdentifiers: number;
+		warnings: string[];
+		errors: string[];
+		summary: {
+			willCreate: number;
+			willUpdate: number;
+			willSkip: number;
+		};
+	}> {
+		console.log(`Validating CSV import for ${csvData.length} rows`);
+
+		const warnings: string[] = [];
+		const errors: string[] = [];
+		let potentialDuplicates = 0;
+		let missingIdentifiers = 0;
+		let willCreate = 0;
+		let willUpdate = 0;
+		let willSkip = 0;
+
+		for (let i = 0; i < csvData.length; i++) {
+			const row = csvData[i];
+			try {
+				// Map CSV fields
+				const customerData: Partial<ManualCustomer> = {};
+				Object.entries(fieldMapping).forEach(([csvField, customerField]) => {
+					const value = row[csvField];
+					if (value !== undefined && value !== '') {
+						customerData[customerField] = value;
+					}
+				});
+
+				// Check for existing customer
+				const existingCustomer = await this.findExistingCustomer(customerData);
+
+				if (existingCustomer) {
+					potentialDuplicates++;
+					willUpdate++;
+					warnings.push(
+						`Row ${i + 1}: Will update existing customer "${existingCustomer.customer_number || existingCustomer.email || 'Unknown'}"`,
+					);
+				} else {
+					willCreate++;
+				}
+
+				// Check for missing identifiers
+				if (
+					!customerData.customer_number &&
+					!customerData.internal_key &&
+					!customerData.email &&
+					!customerData.legacy_customer_id
+				) {
+					missingIdentifiers++;
+					warnings.push(
+						`Row ${i + 1}: No unique identifier. Re-importing this row will create duplicates.`,
+					);
+				}
+
+				// Validate required fields
+				if (
+					!customerData.customer_number &&
+					!customerData.first_name &&
+					!customerData.last_name &&
+					!customerData.company &&
+					!customerData.email
+				) {
+					errors.push(
+						`Row ${i + 1}: Missing all identifying fields. At least one of: customer_number, first_name, last_name, company, or email is required.`,
+					);
+					willSkip++;
+					willCreate--;
+				}
+			} catch (error) {
+				errors.push(
+					`Row ${i + 1}: Validation error - ${error instanceof Error ? error.message : 'Unknown error'}`,
+				);
+				willSkip++;
+			}
+		}
+
+		const valid = errors.length === 0;
+
+		console.log(
+			`Validation complete: ${valid ? 'PASSED' : 'FAILED'} - ${errors.length} errors, ${warnings.length} warnings`,
+		);
+
+		return {
+			valid,
+			totalRows: csvData.length,
+			potentialDuplicates,
+			missingIdentifiers,
+			warnings,
+			errors,
+			summary: {
+				willCreate,
+				willUpdate,
+				willSkip,
+			},
+		};
+	}
+
+	/**
+	 * Find existing customer using multiple keys (for idempotent imports)
+	 * Checks in priority order: customer_number > internal_key > legacy_customer_id > email
+	 * @param customerData - Customer data to check
+	 * @returns Existing customer if found, null otherwise
+	 */
+	private async findExistingCustomer(
+		customerData: Partial<ManualCustomer>,
+	): Promise<ManualCustomer | null> {
+		// Priority 1: Customer number (most reliable unique identifier)
+		if (customerData.customer_number?.trim()) {
+			const existing = await this.findByCustomerNumber(
+				customerData.customer_number.trim(),
+			);
+			if (existing) return existing;
+		}
+
+		// Priority 2: Internal key (system-generated unique key)
+		if (customerData.internal_key?.trim()) {
+			const existing = await this.findByInternalKey(
+				customerData.internal_key.trim(),
+			);
+			if (existing) return existing;
+		}
+
+		// Priority 3: Legacy customer ID (for migrated data)
+		if (customerData.legacy_customer_id?.trim()) {
+			const existing = await this.findByLegacyCustomerId(
+				customerData.legacy_customer_id.trim(),
+			);
+			if (existing) return existing;
+		}
+
+		// Priority 4: Email (reliable for business customers)
+		// Only use email matching for business or legacy customers with email
+		if (
+			customerData.email?.trim() &&
+			(customerData.customer_type === 'business' ||
+				customerData.customer_type === 'legacy')
+		) {
+			const existing = await this.findByEmail(customerData.email.trim());
+			if (existing) return existing;
+		}
+
+		return null;
 	}
 
 	/**
@@ -524,6 +737,53 @@ class ManualCustomerService extends MedusaService({
 		return (
 			allCustomers.find(
 				customer => customer.customer_number === customerNumber,
+			) || null
+		);
+	}
+
+	/**
+	 * Find manual customer by internal key
+	 * @param internalKey - The internal key to find
+	 * @returns Manual customer if found, null otherwise
+	 */
+	async findByInternalKey(
+		internalKey: string,
+	): Promise<ManualCustomer | null> {
+		const allCustomers = await this.listManualCustomers({});
+		return (
+			allCustomers.find(customer => customer.internal_key === internalKey) ||
+			null
+		);
+	}
+
+	/**
+	 * Find manual customer by email
+	 * @param email - The email to find
+	 * @returns Manual customer if found, null otherwise
+	 */
+	async findByEmail(email: string): Promise<ManualCustomer | null> {
+		const allCustomers = await this.listManualCustomers({});
+		const normalizedEmail = email.toLowerCase().trim();
+		return (
+			allCustomers.find(
+				customer =>
+					customer.email && customer.email.toLowerCase().trim() === normalizedEmail,
+			) || null
+		);
+	}
+
+	/**
+	 * Find manual customer by legacy customer ID
+	 * @param legacyCustomerId - The legacy customer ID to find
+	 * @returns Manual customer if found, null otherwise
+	 */
+	async findByLegacyCustomerId(
+		legacyCustomerId: string,
+	): Promise<ManualCustomer | null> {
+		const allCustomers = await this.listManualCustomers({});
+		return (
+			allCustomers.find(
+				customer => customer.legacy_customer_id === legacyCustomerId,
 			) || null
 		);
 	}
