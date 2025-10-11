@@ -221,28 +221,67 @@ class ManualCustomerService extends MedusaService({
 			`🚀 Starting HIGH-PERFORMANCE CSV import for ${csvData.length} rows${options?.dryRun ? ' (DRY RUN)' : ''}`,
 		);
 
-		// ✅ PERFORMANCE OPTIMIZATION: Bulk lookup all customer numbers at once
-		const customerNumbers = csvData
-			.map((row, i) => {
-				const customerNumber =
-					row[
-						Object.keys(fieldMapping).find(
-							key => fieldMapping[key] === 'customer_number',
-						) || ''
-					];
-				return customerNumber ? String(customerNumber).trim() : null;
-			})
-			.filter((num): num is string => Boolean(num));
+		// ✅ PERFORMANCE OPTIMIZATION: Bulk lookup ALL identifiers at once
+		const customerNumbers: string[] = [];
+		const internalKeys: string[] = [];
+		const emails: string[] = [];
+		const legacyIds: string[] = [];
+
+		// Extract all identifiers for bulk lookup
+		csvData.forEach((row, i) => {
+			const customerNumber =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'customer_number',
+					) || ''
+				];
+			const internalKey =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'internal_key',
+					) || ''
+				];
+			const email =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'email',
+					) || ''
+				];
+			const legacyId =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'legacy_customer_id',
+					) || ''
+				];
+
+			if (customerNumber?.trim())
+				customerNumbers.push(String(customerNumber).trim());
+			if (internalKey?.trim()) internalKeys.push(String(internalKey).trim());
+			if (email?.trim()) emails.push(String(email).trim());
+			if (legacyId?.trim()) legacyIds.push(String(legacyId).trim());
+		});
 
 		console.log(
-			`📊 Bulk lookup for ${customerNumbers.length} customer numbers...`,
+			`📊 Bulk lookup: ${customerNumbers.length} customer numbers, ${internalKeys.length} internal keys, ${emails.length} emails, ${legacyIds.length} legacy IDs...`,
 		);
-		const existingCustomersMap =
-			customerNumbers.length > 0
-				? await this.findByCustomerNumbers(customerNumbers)
-				: new Map<string, ManualCustomer>();
+
+		// Perform all bulk lookups in parallel
+		const [customerNumberMap, internalKeyMap, emailMap, legacyIdMap] =
+			await Promise.all([
+				customerNumbers.length > 0
+					? this.findByCustomerNumbers(customerNumbers)
+					: new Map(),
+				internalKeys.length > 0
+					? this.findByInternalKeys(internalKeys)
+					: new Map(),
+				emails.length > 0 ? this.findByEmails(emails) : new Map(),
+				legacyIds.length > 0
+					? this.findByLegacyCustomerIds(legacyIds)
+					: new Map(),
+			]);
+
 		console.log(
-			`✅ Found ${existingCustomersMap.size} existing customers in database`,
+			`✅ Found existing customers: ${customerNumberMap.size} by number, ${internalKeyMap.size} by internal key, ${emailMap.size} by email, ${legacyIdMap.size} by legacy ID`,
 		);
 
 		// ✅ PERFORMANCE OPTIMIZATION: Prepare bulk operations
@@ -287,11 +326,52 @@ class ManualCustomerService extends MedusaService({
 				customerData.source = 'csv-import';
 				customerData.import_reference = `import-${importTimestamp}-row-${i + 1}`;
 
-				// ✅ PERFORMANCE OPTIMIZATION: Use bulk lookup result (no individual queries)
-				const customerNumber = customerData.customer_number;
-				const existingCustomer = customerNumber
-					? existingCustomersMap.get(customerNumber)
-					: null;
+				// ✅ PERFORMANCE OPTIMIZATION: Multi-key lookup using bulk results (no individual queries)
+				let existingCustomer: ManualCustomer | null = null;
+
+				// Priority 1: Check by customer_number (highest priority)
+				if (customerData.customer_number?.trim()) {
+					existingCustomer =
+						customerNumberMap.get(customerData.customer_number.trim()) || null;
+				}
+
+				// Priority 2: Check by internal_key if no customer_number match
+				if (!existingCustomer && customerData.internal_key?.trim()) {
+					existingCustomer =
+						internalKeyMap.get(customerData.internal_key.trim()) || null;
+					if (existingCustomer) {
+						results.warnings.push(
+							`Row ${i + 1}: Found existing customer by internal_key (${customerData.internal_key}) but different customer_number`,
+						);
+					}
+				}
+
+				// Priority 3: Check by legacy_customer_id
+				if (!existingCustomer && customerData.legacy_customer_id?.trim()) {
+					existingCustomer =
+						legacyIdMap.get(customerData.legacy_customer_id.trim()) || null;
+					if (existingCustomer) {
+						results.warnings.push(
+							`Row ${i + 1}: Found existing customer by legacy_customer_id (${customerData.legacy_customer_id})`,
+						);
+					}
+				}
+
+				// Priority 4: Check by email for business/legacy customers
+				if (
+					!existingCustomer &&
+					customerData.email?.trim() &&
+					(customerData.customer_type === 'business' ||
+						customerData.customer_type === 'legacy')
+				) {
+					existingCustomer =
+						emailMap.get(customerData.email.toLowerCase().trim()) || null;
+					if (existingCustomer) {
+						results.warnings.push(
+							`Row ${i + 1}: Found existing business customer by email (${customerData.email})`,
+						);
+					}
+				}
 
 				if (existingCustomer) {
 					// Found existing customer - update instead of create
@@ -831,49 +911,108 @@ class ManualCustomerService extends MedusaService({
 	}
 
 	/**
-	 * Find manual customer by internal key
+	 * Find multiple customers by internal keys in one query (BULK OPTIMIZED)
+	 * @param internalKeys - Array of internal keys to find
+	 * @returns Map of internal_key -> ManualCustomer
+	 */
+	async findByInternalKeys(
+		internalKeys: string[],
+	): Promise<Map<string, ManualCustomer>> {
+		const customers = await this.listManualCustomers({
+			internal_key: internalKeys,
+		});
+
+		const customerMap = new Map<string, ManualCustomer>();
+		customers.forEach(customer => {
+			if (customer.internal_key) {
+				customerMap.set(customer.internal_key, customer);
+			}
+		});
+
+		return customerMap;
+	}
+
+	/**
+	 * Find multiple customers by emails in one query (BULK OPTIMIZED)
+	 * @param emails - Array of emails to find
+	 * @returns Map of email -> ManualCustomer
+	 */
+	async findByEmails(emails: string[]): Promise<Map<string, ManualCustomer>> {
+		const customers = await this.listManualCustomers({
+			email: emails,
+		});
+
+		const customerMap = new Map<string, ManualCustomer>();
+		customers.forEach(customer => {
+			if (customer.email) {
+				customerMap.set(customer.email.toLowerCase().trim(), customer);
+			}
+		});
+
+		return customerMap;
+	}
+
+	/**
+	 * Find multiple customers by legacy customer IDs in one query (BULK OPTIMIZED)
+	 * @param legacyIds - Array of legacy customer IDs to find
+	 * @returns Map of legacy_customer_id -> ManualCustomer
+	 */
+	async findByLegacyCustomerIds(
+		legacyIds: string[],
+	): Promise<Map<string, ManualCustomer>> {
+		const customers = await this.listManualCustomers({
+			legacy_customer_id: legacyIds,
+		});
+
+		const customerMap = new Map<string, ManualCustomer>();
+		customers.forEach(customer => {
+			if (customer.legacy_customer_id) {
+				customerMap.set(customer.legacy_customer_id, customer);
+			}
+		});
+
+		return customerMap;
+	}
+
+	/**
+	 * Find manual customer by internal key (OPTIMIZED)
 	 * @param internalKey - The internal key to find
 	 * @returns Manual customer if found, null otherwise
 	 */
 	async findByInternalKey(internalKey: string): Promise<ManualCustomer | null> {
-		const allCustomers = await this.listManualCustomers({});
-		return (
-			allCustomers.find(customer => customer.internal_key === internalKey) ||
-			null
-		);
+		// ✅ PERFORMANCE FIX: Use filtered query instead of loading all customers
+		const customers = await this.listManualCustomers({
+			internal_key: internalKey,
+		});
+		return customers.length > 0 ? customers[0] : null;
 	}
 
 	/**
-	 * Find manual customer by email
+	 * Find manual customer by email (OPTIMIZED)
 	 * @param email - The email to find
 	 * @returns Manual customer if found, null otherwise
 	 */
 	async findByEmail(email: string): Promise<ManualCustomer | null> {
-		const allCustomers = await this.listManualCustomers({});
-		const normalizedEmail = email.toLowerCase().trim();
-		return (
-			allCustomers.find(
-				customer =>
-					customer.email &&
-					customer.email.toLowerCase().trim() === normalizedEmail,
-			) || null
-		);
+		// ✅ PERFORMANCE FIX: Use filtered query instead of loading all customers
+		const customers = await this.listManualCustomers({
+			email: email.toLowerCase().trim(),
+		});
+		return customers.length > 0 ? customers[0] : null;
 	}
 
 	/**
-	 * Find manual customer by legacy customer ID
+	 * Find manual customer by legacy customer ID (OPTIMIZED)
 	 * @param legacyCustomerId - The legacy customer ID to find
 	 * @returns Manual customer if found, null otherwise
 	 */
 	async findByLegacyCustomerId(
 		legacyCustomerId: string,
 	): Promise<ManualCustomer | null> {
-		const allCustomers = await this.listManualCustomers({});
-		return (
-			allCustomers.find(
-				customer => customer.legacy_customer_id === legacyCustomerId,
-			) || null
-		);
+		// ✅ PERFORMANCE FIX: Use filtered query instead of loading all customers
+		const customers = await this.listManualCustomers({
+			legacy_customer_id: legacyCustomerId,
+		});
+		return customers.length > 0 ? customers[0] : null;
 	}
 
 	/**

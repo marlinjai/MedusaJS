@@ -38,6 +38,36 @@ const CSVImportPage = () => {
 	});
 	const [results, setResults] = useState<ImportResults | null>(null);
 
+	// ✅ RELIABILITY FIX: Retry utility for failed network requests
+	const fetchWithRetry = async (
+		url: string,
+		options: RequestInit,
+		maxRetries: number = 3,
+	): Promise<Response> => {
+		let lastError: Error | null = null;
+
+		for (let attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				const response = await fetch(url, {
+					...options,
+					signal: AbortSignal.timeout(120000), // 2 minute timeout per request
+				});
+				return response;
+			} catch (error) {
+				lastError = error as Error;
+				console.warn(`Attempt ${attempt}/${maxRetries} failed:`, error);
+
+				if (attempt < maxRetries) {
+					// Exponential backoff: 1s, 2s, 4s
+					const delay = Math.pow(2, attempt - 1) * 1000;
+					await new Promise(resolve => setTimeout(resolve, delay));
+				}
+			}
+		}
+
+		throw lastError || new Error('Max retries exceeded');
+	};
+
 	// Available fields for mapping - matching actual ManualCustomer model
 	const availableFields = {
 		// Basic identification
@@ -357,7 +387,7 @@ const CSVImportPage = () => {
 		toast.info('Validiere Beispieldaten...');
 		try {
 			const sampleData = csvData.slice(0, 10);
-			const response = await fetch('/admin/manual-customers/import', {
+			const response = await fetchWithRetry('/admin/manual-customers/import', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -409,16 +439,20 @@ const CSVImportPage = () => {
 					const endIndex = Math.min(startIndex + BATCH_SIZE, csvData.length);
 					const batchData = csvData.slice(startIndex, endIndex);
 
-					const batchPromise = fetch('/admin/manual-customers/import', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
+					const batchPromise = this.fetchWithRetry(
+						'/admin/manual-customers/import',
+						{
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({
+								csvData: batchData,
+								fieldMapping,
+							}),
 						},
-						body: JSON.stringify({
-							csvData: batchData,
-							fieldMapping,
-						}),
-					}).then(async response => {
+						3,
+					).then(async response => {
 						if (!response.ok) {
 							const errorText = await response.text();
 							throw new Error(
@@ -492,9 +526,9 @@ const CSVImportPage = () => {
 					});
 				}
 
-				// Small delay between batch groups to avoid overwhelming the server
+				// Delay between batch groups to allow server to process bulk operations
 				if (i + PARALLEL_BATCHES < totalBatches) {
-					await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay due to bulk optimizations
+					await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay for bulk processing
 				}
 			}
 
