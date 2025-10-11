@@ -10,6 +10,7 @@ import {
 } from '@medusajs/framework/utils';
 
 import OfferService from '../../../../../modules/offer/service';
+import { getDefaultSalesChannelIdFromQuery } from '../../../../../utils/sales-channel-helper';
 
 // Module constant for service resolution
 const OFFER_MODULE = 'offer';
@@ -53,8 +54,11 @@ export async function GET(
 		// Get the query module for inventory checks
 		const query = req.scope.resolve('query');
 
-		// Hardcoded sales channel ID for this customer's use case
-		const sales_channel_id = 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8';
+		// Get the default sales channel ID dynamically
+		const sales_channel_id = await getDefaultSalesChannelIdFromQuery(query);
+		logger.info(
+			`[INVENTORY-CHECK] Using sales channel ID: ${sales_channel_id}`,
+		);
 
 		// Filter product items that have variant_id
 		const productItems = offer.items.filter(
