@@ -257,7 +257,7 @@ class ManualCustomerService extends MedusaService({
 			if (customerNumber?.trim())
 				customerNumbers.push(String(customerNumber).trim());
 			if (internalKey?.trim()) internalKeys.push(String(internalKey).trim());
-			if (email?.trim()) emails.push(String(email).trim());
+			if (email?.trim()) emails.push(String(email).toLowerCase().trim());
 			if (legacyId?.trim()) legacyIds.push(String(legacyId).trim());
 		});
 
@@ -549,7 +549,7 @@ class ManualCustomerService extends MedusaService({
 			if (customerNumber?.trim())
 				customerNumbers.push(String(customerNumber).trim());
 			if (internalKey?.trim()) internalKeys.push(String(internalKey).trim());
-			if (email?.trim()) emails.push(String(email).trim());
+			if (email?.trim()) emails.push(String(email).toLowerCase().trim());
 			if (legacyId?.trim()) legacyIds.push(String(legacyId).trim());
 		});
 
@@ -1034,8 +1034,9 @@ class ManualCustomerService extends MedusaService({
 	 * @returns Map of email -> ManualCustomer
 	 */
 	async findByEmails(emails: string[]): Promise<Map<string, ManualCustomer>> {
+		// ✅ CASING FIX: Query with lowercase emails for consistent case-insensitive matching
 		const customers = await this.listManualCustomers({
-			email: emails,
+			email: emails, // emails array now contains lowercase values
 		});
 
 		const customerMap = new Map<string, ManualCustomer>();
@@ -1090,6 +1091,7 @@ class ManualCustomerService extends MedusaService({
 	 */
 	async findByEmail(email: string): Promise<ManualCustomer | null> {
 		// ✅ PERFORMANCE FIX: Use filtered query instead of loading all customers
+		// ✅ CASING FIX: Query with lowercase email for consistent case-insensitive matching
 		const customers = await this.listManualCustomers({
 			email: email.toLowerCase().trim(),
 		});
