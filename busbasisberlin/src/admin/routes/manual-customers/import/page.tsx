@@ -38,6 +38,36 @@ const CSVImportPage = () => {
 	});
 	const [results, setResults] = useState<ImportResults | null>(null);
 
+	// ✅ RELIABILITY FIX: Retry utility for failed network requests
+	const fetchWithRetry = async (
+		url: string,
+		options: RequestInit,
+		maxRetries: number = 3,
+	): Promise<Response> => {
+		let lastError: Error | null = null;
+
+		for (let attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				const response = await fetch(url, {
+					...options,
+					signal: AbortSignal.timeout(120000), // 2 minute timeout per request
+				});
+				return response;
+			} catch (error) {
+				lastError = error as Error;
+				console.warn(`Attempt ${attempt}/${maxRetries} failed:`, error);
+
+				if (attempt < maxRetries) {
+					// Exponential backoff: 1s, 2s, 4s
+					const delay = Math.pow(2, attempt - 1) * 1000;
+					await new Promise(resolve => setTimeout(resolve, delay));
+				}
+			}
+		}
+
+		throw lastError || new Error('Max retries exceeded');
+	};
+
 	// Available fields for mapping - matching actual ManualCustomer model
 	const availableFields = {
 		// Basic identification
@@ -353,12 +383,39 @@ const CSVImportPage = () => {
 			return;
 		}
 
-		setImporting(true);
-		setImportProgress({ current: 0, total: 0 });
+		// Quick validation on first 10 rows only (sample validation)
+		toast.info('Validiere Beispieldaten...');
+		try {
+			const sampleData = csvData.slice(0, 10);
+			const response = await fetchWithRetry('/admin/manual-customers/import', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					csvData: sampleData,
+					fieldMapping,
+					options: { validate: true },
+				}),
+			});
 
-		// Configuration for batching
-		const BATCH_SIZE = 100; // Process 100 customers per batch (safe payload size)
-		const PARALLEL_BATCHES = 3; // Process 3 batches in parallel for better performance
+			if (!response.ok) {
+				toast.error('Validierung fehlgeschlagen');
+				return;
+			}
+
+			await response.json();
+			toast.success('Beispieldaten validiert - Import wird gestartet...');
+		} catch (error) {
+			toast.error(
+				'Validierung fehlgeschlagen - Import wird trotzdem gestartet',
+			);
+		}
+
+		setImporting(true);
+		setImportProgress({ current: 0, total: csvData.length }); // Show CUSTOMER progress, not batch progress
+
+		// Configuration for batching - optimized for performance with bulk operations
+		const BATCH_SIZE = 50; // Process 50 customers per batch (optimized with bulk operations)
+		const PARALLEL_BATCHES = 3; // Process 3 batches in parallel for better throughput
 		const totalBatches = Math.ceil(csvData.length / BATCH_SIZE);
 		const cumulativeResults: ImportResults = {
 			imported: 0,
@@ -366,8 +423,6 @@ const CSVImportPage = () => {
 			skipped: 0,
 			errors: [],
 		};
-
-		setImportProgress({ current: 0, total: totalBatches });
 
 		try {
 			// Process batches in parallel groups for better performance
@@ -382,16 +437,20 @@ const CSVImportPage = () => {
 					const endIndex = Math.min(startIndex + BATCH_SIZE, csvData.length);
 					const batchData = csvData.slice(startIndex, endIndex);
 
-					const batchPromise = fetch('/admin/manual-customers/import', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
+					const batchPromise = fetchWithRetry(
+						'/admin/manual-customers/import',
+						{
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({
+								csvData: batchData,
+								fieldMapping,
+							}),
 						},
-						body: JSON.stringify({
-							csvData: batchData,
-							fieldMapping,
-						}),
-					}).then(async response => {
+						3,
+					).then(async (response: Response) => {
 						if (!response.ok) {
 							const errorText = await response.text();
 							throw new Error(
@@ -408,46 +467,68 @@ const CSVImportPage = () => {
 				}
 
 				// Process current group of batches in parallel
-				const batchGroupText =
-					currentBatchGroup === 1
-						? `Batch ${i + 1}`
-						: `Batches ${i + 1}-${i + currentBatchGroup}`;
+				const startCustomer = i * BATCH_SIZE + 1;
+				const endCustomer = Math.min(
+					(i + currentBatchGroup) * BATCH_SIZE,
+					csvData.length,
+				);
 
-				toast.info(`Verarbeite ${batchGroupText} von ${totalBatches}...`);
+				toast.info(
+					`Verarbeite Kunden ${startCustomer}-${endCustomer} von ${csvData.length}...`,
+				);
 
 				try {
 					const batchResults = await Promise.all(batchPromises);
 
 					// Accumulate results from all batches in this group
-					batchResults.forEach(({ result }) => {
-						const batchResults = result.results;
-						cumulativeResults.imported += batchResults.imported;
-						cumulativeResults.updated += batchResults.updated;
-						cumulativeResults.skipped += batchResults.skipped;
-						cumulativeResults.errors.push(...batchResults.errors);
+					batchResults.forEach(
+						({ result }: { result: { results: ImportResults } }) => {
+							const batchResults = result.results;
+							cumulativeResults.imported += batchResults.imported;
+							cumulativeResults.updated += batchResults.updated;
+							cumulativeResults.skipped += batchResults.skipped;
+							cumulativeResults.errors.push(...batchResults.errors);
+						},
+					);
+
+					// Update progress (count completed CUSTOMERS, not batches)
+					const customersProcessed = (i + currentBatchGroup) * BATCH_SIZE;
+					const actualCustomersProcessed = Math.min(
+						customersProcessed,
+						csvData.length,
+					);
+					setImportProgress({
+						current: actualCustomersProcessed,
+						total: csvData.length,
 					});
 
-					// Update progress (count completed batches)
-					setImportProgress({
-						current: i + currentBatchGroup,
-						total: totalBatches,
-					});
+					// Better user feedback
+					toast.info(
+						`${actualCustomersProcessed}/${csvData.length} Kunden verarbeitet • ${cumulativeResults.imported} neu, ${cumulativeResults.updated} aktualisiert`,
+					);
 				} catch (error) {
 					// If any batch in the group fails, add to errors but continue
 					const errorMessage =
 						error instanceof Error ? error.message : 'Unbekannter Fehler';
 					cumulativeResults.errors.push(
-						`Batch-Gruppe ${i + 1}-${i + currentBatchGroup}: ${errorMessage}`,
+						`Kunden ${startCustomer}-${endCustomer}: ${errorMessage}`,
+					);
+
+					// Still update progress even on error
+					const customersProcessed = (i + currentBatchGroup) * BATCH_SIZE;
+					const actualCustomersProcessed = Math.min(
+						customersProcessed,
+						csvData.length,
 					);
 					setImportProgress({
-						current: i + currentBatchGroup,
-						total: totalBatches,
+						current: actualCustomersProcessed,
+						total: csvData.length,
 					});
 				}
 
-				// Small delay between batch groups to avoid overwhelming the server
+				// Delay between batch groups to allow server to process bulk operations
 				if (i + PARALLEL_BATCHES < totalBatches) {
-					await new Promise(resolve => setTimeout(resolve, 200));
+					await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay for bulk processing
 				}
 			}
 
@@ -603,24 +684,36 @@ const CSVImportPage = () => {
 											Import Fortschritt
 										</Text>
 										<Text size="small" className="text-ui-fg-subtle">
-											{importProgress.current} von {importProgress.total}{' '}
-											Batches • 3 parallel
+											{importProgress.current} von {importProgress.total} Kunden
 										</Text>
 									</div>
-									<div className="w-full bg-ui-bg-subtle rounded-full h-2">
+									<div className="w-full bg-ui-bg-subtle rounded-full h-3">
 										<div
-											className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+											className="bg-blue-500 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
 											style={{
 												width: `${Math.round((importProgress.current / importProgress.total) * 100)}%`,
 											}}
-										/>
+										>
+											<Text size="xsmall" className="text-white font-medium">
+												{Math.round(
+													(importProgress.current / importProgress.total) * 100,
+												)}
+												%
+											</Text>
+										</div>
 									</div>
-									<Text size="xsmall" className="text-ui-fg-subtle mt-1">
-										{Math.round(
-											(importProgress.current / importProgress.total) * 100,
-										)}
-										% abgeschlossen
-									</Text>
+									<div className="flex justify-between items-center mt-2">
+										<Text size="xsmall" className="text-ui-fg-subtle">
+											Verarbeitet: {importProgress.current} • Verbleibend:{' '}
+											{importProgress.total - importProgress.current}
+										</Text>
+										<Text size="xsmall" className="text-ui-fg-subtle">
+											{Math.round(
+												(importProgress.current / importProgress.total) * 100,
+											)}
+											% abgeschlossen
+										</Text>
+									</div>
 								</div>
 							)}
 
@@ -632,7 +725,7 @@ const CSVImportPage = () => {
 									size="large"
 								>
 									{importing
-										? `Verarbeite Batch ${importProgress.current}/${importProgress.total}...`
+										? `Verarbeite ${importProgress.current}/${importProgress.total} Kunden...`
 										: `${csvData.length} Kunden importieren`}
 								</Button>
 							</div>
