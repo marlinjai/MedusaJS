@@ -424,8 +424,6 @@ const CSVImportPage = () => {
 			errors: [],
 		};
 
-		setImportProgress({ current: 0, total: totalBatches });
-
 		try {
 			// Process batches in parallel groups for better performance
 			for (let i = 0; i < totalBatches; i += PARALLEL_BATCHES) {

@@ -480,6 +480,7 @@ class ManualCustomerService extends MedusaService({
 	/**
 	 * Validate CSV import data before actual import
 	 * Checks for potential duplicates and data issues
+	 * ✅ PERFORMANCE OPTIMIZED: Uses bulk lookups instead of individual queries
 	 * @param csvData - Array of CSV row objects
 	 * @param fieldMapping - Mapping of CSV columns to customer fields
 	 * @returns Validation results with warnings and potential issues
@@ -500,7 +501,9 @@ class ManualCustomerService extends MedusaService({
 			willSkip: number;
 		};
 	}> {
-		console.log(`Validating CSV import for ${csvData.length} rows`);
+		console.log(
+			`🔍 Validating CSV import for ${csvData.length} rows (BULK OPTIMIZED)`,
+		);
 
 		const warnings: string[] = [];
 		const errors: string[] = [];
@@ -510,6 +513,70 @@ class ManualCustomerService extends MedusaService({
 		let willUpdate = 0;
 		let willSkip = 0;
 
+		// ✅ PERFORMANCE FIX: Extract all identifiers for bulk lookup (same as importFromCSV)
+		const customerNumbers: string[] = [];
+		const internalKeys: string[] = [];
+		const emails: string[] = [];
+		const legacyIds: string[] = [];
+
+		// Extract all identifiers for bulk lookup
+		csvData.forEach((row, i) => {
+			const customerNumber =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'customer_number',
+					) || ''
+				];
+			const internalKey =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'internal_key',
+					) || ''
+				];
+			const email =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'email',
+					) || ''
+				];
+			const legacyId =
+				row[
+					Object.keys(fieldMapping).find(
+						key => fieldMapping[key] === 'legacy_customer_id',
+					) || ''
+				];
+
+			if (customerNumber?.trim())
+				customerNumbers.push(String(customerNumber).trim());
+			if (internalKey?.trim()) internalKeys.push(String(internalKey).trim());
+			if (email?.trim()) emails.push(String(email).trim());
+			if (legacyId?.trim()) legacyIds.push(String(legacyId).trim());
+		});
+
+		console.log(
+			`📊 Bulk validation lookup: ${customerNumbers.length} customer numbers, ${internalKeys.length} internal keys, ${emails.length} emails, ${legacyIds.length} legacy IDs...`,
+		);
+
+		// ✅ PERFORMANCE FIX: Perform all bulk lookups in parallel (same as importFromCSV)
+		const [customerNumberMap, internalKeyMap, emailMap, legacyIdMap] =
+			await Promise.all([
+				customerNumbers.length > 0
+					? this.findByCustomerNumbers(customerNumbers)
+					: new Map(),
+				internalKeys.length > 0
+					? this.findByInternalKeys(internalKeys)
+					: new Map(),
+				emails.length > 0 ? this.findByEmails(emails) : new Map(),
+				legacyIds.length > 0
+					? this.findByLegacyCustomerIds(legacyIds)
+					: new Map(),
+			]);
+
+		console.log(
+			`✅ Validation lookups completed: ${customerNumberMap.size} by number, ${internalKeyMap.size} by internal key, ${emailMap.size} by email, ${legacyIdMap.size} by legacy ID`,
+		);
+
+		// Process each row using bulk lookup results
 		for (let i = 0; i < csvData.length; i++) {
 			const row = csvData[i];
 			try {
@@ -522,8 +589,37 @@ class ManualCustomerService extends MedusaService({
 					}
 				});
 
-				// Check for existing customer
-				const existingCustomer = await this.findExistingCustomer(customerData);
+				// ✅ PERFORMANCE FIX: Use bulk lookup results instead of individual queries
+				let existingCustomer: ManualCustomer | null = null;
+
+				// Priority 1: Check by customer_number (highest priority)
+				if (customerData.customer_number?.trim()) {
+					existingCustomer =
+						customerNumberMap.get(customerData.customer_number.trim()) || null;
+				}
+
+				// Priority 2: Check by internal_key if no customer_number match
+				if (!existingCustomer && customerData.internal_key?.trim()) {
+					existingCustomer =
+						internalKeyMap.get(customerData.internal_key.trim()) || null;
+				}
+
+				// Priority 3: Check by legacy_customer_id
+				if (!existingCustomer && customerData.legacy_customer_id?.trim()) {
+					existingCustomer =
+						legacyIdMap.get(customerData.legacy_customer_id.trim()) || null;
+				}
+
+				// Priority 4: Check by email for business/legacy customers
+				if (
+					!existingCustomer &&
+					customerData.email?.trim() &&
+					(customerData.customer_type === 'business' ||
+						customerData.customer_type === 'legacy')
+				) {
+					existingCustomer =
+						emailMap.get(customerData.email.toLowerCase().trim()) || null;
+				}
 
 				if (existingCustomer) {
 					potentialDuplicates++;
@@ -573,7 +669,7 @@ class ManualCustomerService extends MedusaService({
 		const valid = errors.length === 0;
 
 		console.log(
-			`Validation complete: ${valid ? 'PASSED' : 'FAILED'} - ${errors.length} errors, ${warnings.length} warnings`,
+			`✅ Bulk validation complete: ${valid ? 'PASSED' : 'FAILED'} - ${errors.length} errors, ${warnings.length} warnings`,
 		);
 
 		return {
