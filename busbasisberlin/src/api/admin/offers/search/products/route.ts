@@ -9,6 +9,8 @@ import {
 	getVariantAvailability,
 } from '@medusajs/framework/utils';
 
+import { getDefaultSalesChannelIdFromQuery } from '../../../../../utils/sales-channel-helper';
+
 interface SearchProductsQuery {
 	q?: string;
 	limit?: string;
@@ -36,12 +38,14 @@ export async function GET(
 			currency_code = 'eur',
 		} = req.query as Record<string, string>;
 
-		// Hardcoded sales channel ID for this customer's use case
-		const sales_channel_id = 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8';
 		const take = parseInt(limit);
 
 		// Get the query module
 		const query = req.scope.resolve('query');
+
+		// Get the default sales channel ID dynamically
+		const sales_channel_id = await getDefaultSalesChannelIdFromQuery(query);
+		logger.info(`[DEBUG] Using sales channel ID: ${sales_channel_id}`);
 
 		// Build search filters
 		const filters: any = {};
@@ -96,7 +100,7 @@ export async function GET(
 
 		if (allVariantIds.length > 0) {
 			logger.info(
-				`[DEBUG] Looking up inventory for ${allVariantIds.length} variants with hardcoded sales_channel_id: ${sales_channel_id}`,
+				`[DEBUG] Looking up inventory for ${allVariantIds.length} variants with sales_channel_id: ${sales_channel_id}`,
 			);
 
 			try {

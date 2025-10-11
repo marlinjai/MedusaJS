@@ -11,6 +11,7 @@
 
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework';
 import { resolveOfferService } from '../../../../../types/services';
+import { getDefaultSalesChannelIdFromQuery } from '../../../../../utils/sales-channel-helper';
 import { transitionOfferStatusWorkflow } from '../../../../../workflows/transition-offer-status';
 
 // ✅ Use simple type for workflow input (no centralized type needed for this simple case)
@@ -92,7 +93,8 @@ export async function POST(
 					const {
 						getVariantAvailability,
 					} = require('@medusajs/framework/utils');
-					const sales_channel_id = 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8'; // Hardcoded for customer
+					const sales_channel_id =
+						await getDefaultSalesChannelIdFromQuery(query);
 
 					// Filter product items that have variant_id
 					const productItems = offer.items.filter(

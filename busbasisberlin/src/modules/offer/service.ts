@@ -10,6 +10,8 @@ import {
 	getVariantAvailability,
 } from '@medusajs/framework/utils';
 
+import { getDefaultSalesChannelIdFromQuery } from '../../utils/sales-channel-helper';
+
 import offer from './models/offer';
 import offerItem, { OfferItemType } from './models/offer-item';
 import offerStatusHistory from './models/offer-status-history';
@@ -259,10 +261,14 @@ class OfferService extends MedusaService({
 			offer.items.map(async (item): Promise<OfferItemWithInventory> => {
 				if (item.item_type === 'product' && item.variant_id && queryService) {
 					try {
+						// Get the default sales channel ID dynamically
+						const sales_channel_id =
+							await getDefaultSalesChannelIdFromQuery(queryService);
+
 						// Query live inventory using getVariantAvailability
 						const availability = await getVariantAvailability(queryService, {
 							variant_ids: [item.variant_id],
-							sales_channel_id: 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8', // Hardcoded for this customer
+							sales_channel_id,
 						});
 
 						const variantData = availability[item.variant_id];
@@ -570,8 +576,9 @@ class OfferService extends MedusaService({
 			throw new Error('Offer not found');
 		}
 
-		// Hardcoded sales channel ID for this customer's use case
-		const sales_channel_id = 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8';
+		// Get the default sales channel ID dynamically
+		const sales_channel_id =
+			await getDefaultSalesChannelIdFromQuery(queryService);
 
 		// Filter product items that have variant_id
 		const productItems = offer.items.filter(
