@@ -216,9 +216,39 @@ class ManualCustomerService extends MedusaService({
 		// Generate timestamp for this import batch
 		const importTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
+		const startTime = Date.now();
 		console.log(
-			`Starting CSV import for ${csvData.length} rows${options?.dryRun ? ' (DRY RUN)' : ''}`,
+			`🚀 Starting HIGH-PERFORMANCE CSV import for ${csvData.length} rows${options?.dryRun ? ' (DRY RUN)' : ''}`,
 		);
+
+		// ✅ PERFORMANCE OPTIMIZATION: Bulk lookup all customer numbers at once
+		const customerNumbers = csvData
+			.map((row, i) => {
+				const customerNumber =
+					row[
+						Object.keys(fieldMapping).find(
+							key => fieldMapping[key] === 'customer_number',
+						) || ''
+					];
+				return customerNumber ? String(customerNumber).trim() : null;
+			})
+			.filter((num): num is string => Boolean(num));
+
+		console.log(
+			`📊 Bulk lookup for ${customerNumbers.length} customer numbers...`,
+		);
+		const existingCustomersMap =
+			customerNumbers.length > 0
+				? await this.findByCustomerNumbers(customerNumbers)
+				: new Map<string, ManualCustomer>();
+		console.log(
+			`✅ Found ${existingCustomersMap.size} existing customers in database`,
+		);
+
+		// ✅ PERFORMANCE OPTIMIZATION: Prepare bulk operations
+		const customersToCreate: Partial<ManualCustomer>[] = [];
+		const customersToUpdate: { id: string; data: Partial<ManualCustomer> }[] =
+			[];
 
 		for (let i = 0; i < csvData.length; i++) {
 			const row = csvData[i];
@@ -257,8 +287,11 @@ class ManualCustomerService extends MedusaService({
 				customerData.source = 'csv-import';
 				customerData.import_reference = `import-${importTimestamp}-row-${i + 1}`;
 
-				// Multi-key duplicate detection (idempotent behavior)
-				const existingCustomer = await this.findExistingCustomer(customerData);
+				// ✅ PERFORMANCE OPTIMIZATION: Use bulk lookup result (no individual queries)
+				const customerNumber = customerData.customer_number;
+				const existingCustomer = customerNumber
+					? existingCustomersMap.get(customerNumber)
+					: null;
 
 				if (existingCustomer) {
 					// Found existing customer - update instead of create
@@ -275,17 +308,20 @@ class ManualCustomerService extends MedusaService({
 							},
 						});
 					} else {
-						// Update existing customer
-						await this.updateCustomerWithContactTracking(
-							existingCustomer.id,
-							customerData,
-						);
+						// ✅ PERFORMANCE OPTIMIZATION: Prepare for bulk update
+						customersToUpdate.push({
+							id: existingCustomer.id,
+							data: {
+								...customerData,
+								last_contact_date: new Date(),
+							},
+						});
 					}
 					results.updated++;
 				} else {
-					// No existing customer found - create new one
+					// ✅ PERFORMANCE OPTIMIZATION: Prepare for bulk create
 					if (!options?.dryRun) {
-						await this.createManualCustomerFromCSV(customerData);
+						customersToCreate.push(customerData);
 					}
 					results.imported++;
 				}
@@ -324,8 +360,39 @@ class ManualCustomerService extends MedusaService({
 			}
 		}
 
+		// ✅ PERFORMANCE OPTIMIZATION: Execute bulk operations
+		if (!options?.dryRun) {
+			const bulkStartTime = Date.now();
+
+			if (customersToCreate.length > 0) {
+				console.log(
+					`📝 Bulk creating ${customersToCreate.length} new customers...`,
+				);
+				await this.createManualCustomers(customersToCreate);
+			}
+
+			if (customersToUpdate.length > 0) {
+				console.log(
+					`📝 Bulk updating ${customersToUpdate.length} existing customers...`,
+				);
+				const updateData = customersToUpdate.map(({ id, data }) => ({
+					id,
+					...data,
+				}));
+				await this.updateManualCustomers(updateData);
+			}
+
+			const bulkTime = Date.now() - bulkStartTime;
+			console.log(`⚡ Bulk operations completed in ${bulkTime}ms`);
+		}
+
+		const totalTime = Date.now() - startTime;
+		const totalProcessed = results.imported + results.updated + results.skipped;
+		const recordsPerSecond =
+			totalProcessed > 0 ? Math.round(totalProcessed / (totalTime / 1000)) : 0;
+
 		console.log(
-			`CSV import completed: ${results.imported} imported, ${results.updated} updated, ${results.skipped} skipped, ${results.warnings.length} warnings`,
+			`🎉 CSV import completed in ${totalTime}ms: ${results.imported} imported, ${results.updated} updated, ${results.skipped} skipped, ${results.warnings.length} warnings (${recordsPerSecond} records/sec)`,
 		);
 		return results;
 	}
@@ -726,19 +793,41 @@ class ManualCustomerService extends MedusaService({
 	}
 
 	/**
-	 * Find manual customer by customer number
+	 * Find manual customer by customer number (OPTIMIZED)
 	 * @param customerNumber - The customer number to find
 	 * @returns Manual customer if found, null otherwise
 	 */
 	async findByCustomerNumber(
 		customerNumber: string,
 	): Promise<ManualCustomer | null> {
-		const allCustomers = await this.listManualCustomers({});
-		return (
-			allCustomers.find(
-				customer => customer.customer_number === customerNumber,
-			) || null
-		);
+		// ✅ PERFORMANCE FIX: Use filtered query instead of loading all customers
+		const customers = await this.listManualCustomers({
+			customer_number: customerNumber,
+		});
+		return customers.length > 0 ? customers[0] : null;
+	}
+
+	/**
+	 * Find multiple customers by customer numbers in one query (BULK OPTIMIZED)
+	 * @param customerNumbers - Array of customer numbers to find
+	 * @returns Map of customer_number -> ManualCustomer
+	 */
+	async findByCustomerNumbers(
+		customerNumbers: string[],
+	): Promise<Map<string, ManualCustomer>> {
+		// ✅ PERFORMANCE FIX: Single query for all customer numbers
+		const customers = await this.listManualCustomers({
+			customer_number: customerNumbers,
+		});
+
+		const customerMap = new Map<string, ManualCustomer>();
+		customers.forEach(customer => {
+			if (customer.customer_number) {
+				customerMap.set(customer.customer_number, customer);
+			}
+		});
+
+		return customerMap;
 	}
 
 	/**
@@ -746,9 +835,7 @@ class ManualCustomerService extends MedusaService({
 	 * @param internalKey - The internal key to find
 	 * @returns Manual customer if found, null otherwise
 	 */
-	async findByInternalKey(
-		internalKey: string,
-	): Promise<ManualCustomer | null> {
+	async findByInternalKey(internalKey: string): Promise<ManualCustomer | null> {
 		const allCustomers = await this.listManualCustomers({});
 		return (
 			allCustomers.find(customer => customer.internal_key === internalKey) ||
@@ -767,7 +854,8 @@ class ManualCustomerService extends MedusaService({
 		return (
 			allCustomers.find(
 				customer =>
-					customer.email && customer.email.toLowerCase().trim() === normalizedEmail,
+					customer.email &&
+					customer.email.toLowerCase().trim() === normalizedEmail,
 			) || null
 		);
 	}
