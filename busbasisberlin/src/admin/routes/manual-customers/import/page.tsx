@@ -402,7 +402,7 @@ const CSVImportPage = () => {
 				return;
 			}
 
-			const result = await response.json();
+			await response.json();
 			toast.success('Beispieldaten validiert - Import wird gestartet...');
 		} catch (error) {
 			toast.error(
@@ -439,7 +439,7 @@ const CSVImportPage = () => {
 					const endIndex = Math.min(startIndex + BATCH_SIZE, csvData.length);
 					const batchData = csvData.slice(startIndex, endIndex);
 
-					const batchPromise = this.fetchWithRetry(
+					const batchPromise = fetchWithRetry(
 						'/admin/manual-customers/import',
 						{
 							method: 'POST',
@@ -452,7 +452,7 @@ const CSVImportPage = () => {
 							}),
 						},
 						3,
-					).then(async response => {
+					).then(async (response: Response) => {
 						if (!response.ok) {
 							const errorText = await response.text();
 							throw new Error(
@@ -483,13 +483,15 @@ const CSVImportPage = () => {
 					const batchResults = await Promise.all(batchPromises);
 
 					// Accumulate results from all batches in this group
-					batchResults.forEach(({ result }) => {
-						const batchResults = result.results;
-						cumulativeResults.imported += batchResults.imported;
-						cumulativeResults.updated += batchResults.updated;
-						cumulativeResults.skipped += batchResults.skipped;
-						cumulativeResults.errors.push(...batchResults.errors);
-					});
+					batchResults.forEach(
+						({ result }: { result: { results: ImportResults } }) => {
+							const batchResults = result.results;
+							cumulativeResults.imported += batchResults.imported;
+							cumulativeResults.updated += batchResults.updated;
+							cumulativeResults.skipped += batchResults.skipped;
+							cumulativeResults.errors.push(...batchResults.errors);
+						},
+					);
 
 					// Update progress (count completed CUSTOMERS, not batches)
 					const customersProcessed = (i + currentBatchGroup) * BATCH_SIZE;
