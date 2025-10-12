@@ -6,10 +6,6 @@ import { HttpTypes } from '@medusajs/types';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
 import { getCategoryIdByHandle } from './categories';
 import { getAuthHeaders, getCacheOptions } from './cookies';
-import {
-	MeilisearchSearchFilters,
-	searchProductsWithMeilisearch,
-} from './meilisearch';
 import { getRegion, retrieveRegion } from './regions';
 
 export const listProducts = async ({
@@ -96,139 +92,11 @@ export const listProducts = async ({
  * Search products with filters using the standard Medusa SDK approach
  * Following official documentation: https://docs.medusajs.com/resources/storefront-development/products/list
  */
-/**
- * Search products using Meilisearch for advanced filtering and faceted search
- * This replaces the old searchProducts function with Meilisearch-powered search
- */
-export const searchProductsAdvanced = async ({
-	query = '',
-	page = 1,
-	limit = 20,
-	categoryId,
-	collectionId,
-	tags,
-	sortBy,
-	countryCode,
-	stockFilter,
-	priceMin,
-	priceMax,
-}: {
-	query?: string;
-	page?: number;
-	limit?: number;
-	categoryId?: string;
-	collectionId?: string;
-	tags?: string[];
-	sortBy?: SortOptions;
-	countryCode: string;
-	stockFilter?: string;
-	priceMin?: number;
-	priceMax?: number;
-}): Promise<{
-	products: HttpTypes.StoreProduct[];
-	count: number;
-	facets?: { [key: string]: { [value: string]: number } };
-}> => {
-	const region = await getRegion(countryCode);
-	if (!region) {
-		return { products: [], count: 0 };
-	}
-
-	const offset = (page - 1) * limit;
-
-	// Build Meilisearch filters
-	const filters: MeilisearchSearchFilters = {};
-
-	// Category filtering
-	if (categoryId) {
-		// Check if it's an ID or handle and convert accordingly
-		if (categoryId.startsWith('pcat_')) {
-			filters.categoryIds = [categoryId];
-		} else {
-			// It's a handle, convert to ID
-			const categoryIdFromHandle = await getCategoryIdByHandle(categoryId);
-			if (categoryIdFromHandle) {
-				filters.categoryIds = [categoryIdFromHandle];
-			}
-		}
-	}
-
-	// Collection filtering
-	if (collectionId) {
-		filters.collectionIds = [collectionId];
-	}
-
-	// Tags filtering
-	if (tags && tags.length > 0) {
-		filters.tags = tags;
-	}
-
-	// Stock filtering
-	if (stockFilter && stockFilter !== 'all') {
-		filters.stockStatus = stockFilter as 'in_stock' | 'out_of_stock';
-	}
-
-	// Price filtering
-	if (priceMin !== undefined) {
-		filters.priceMin = priceMin;
-	}
-	if (priceMax !== undefined) {
-		filters.priceMax = priceMax;
-	}
-
-	// Sales channel filtering (get current sales channel)
-	// TODO: Add sales channel detection based on region/country
-	// filters.salesChannelIds = [region.sales_channel_id];
-
-	try {
-		const response = await searchProductsWithMeilisearch({
-			query,
-			limit,
-			offset,
-			filters,
-			regionId: region.id,
-			currencyCode: region.currency_code,
-			language: 'de', // TODO: Make this dynamic based on country
-		});
-
-		return {
-			products: response.hits,
-			count: response.estimatedTotalHits,
-			facets: response.facetDistribution,
-		};
-	} catch (error) {
-		console.error(
-			'Meilisearch search error, falling back to standard search:',
-			error,
-		);
-		// Fallback to standard search if Meilisearch fails
-		const fallbackResult = await searchProductsFallback({
-			query,
-			page,
-			limit,
-			categoryId,
-			collectionId,
-			tags,
-			sortBy,
-			countryCode,
-			stockFilter,
-			priceMin,
-			priceMax,
-		});
-
-		return {
-			products: fallbackResult.response.products,
-			count: fallbackResult.response.count,
-			facets: {}, // No facets available in fallback
-		};
-	}
-};
 
 /**
- * Fallback search function using standard Medusa API
- * Used when Meilisearch is not available
+ * Search products using standard Medusa API
  */
-export const searchProductsFallback = async ({
+export const searchProductsWithFilters = async ({
 	query,
 	page = 1,
 	limit = 12,
@@ -412,7 +280,7 @@ export const searchProductsFallback = async ({
 };
 
 /**
- * Main search function - uses Meilisearch for advanced search and filtering
+ * Main search function - uses standard Medusa API
  * This is the primary function used by the frontend components
  */
 export const searchProducts = async ({
@@ -444,8 +312,8 @@ export const searchProducts = async ({
 	nextPage: number | null;
 	queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams;
 }> => {
-	// Use Meilisearch-powered search for better performance and faceted search
-	const searchResult = await searchProductsAdvanced({
+	// Use standard Medusa API for search
+	return await searchProductsWithFilters({
 		query,
 		page,
 		limit,
@@ -458,15 +326,4 @@ export const searchProducts = async ({
 		priceMin,
 		priceMax,
 	});
-
-	const nextPage = searchResult.count > page * limit ? page + 1 : null;
-
-	return {
-		response: {
-			products: searchResult.products,
-			count: searchResult.count,
-		},
-		nextPage,
-		queryParams: {}, // Not needed for Meilisearch
-	};
 };

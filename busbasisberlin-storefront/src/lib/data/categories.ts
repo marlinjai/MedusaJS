@@ -4,7 +4,6 @@
 import { sdk } from '@lib/config';
 import { HttpTypes } from '@medusajs/types';
 import { getAuthHeaders, getCacheOptions } from './cookies';
-import { getCategoryFacetsWithMeilisearch } from './meilisearch';
 
 export type CategoryTreeNode = {
 	id: string;
@@ -105,74 +104,6 @@ export const getCategoryByHandle = async (
 	return category || null;
 };
 
-/**
- * Get categories with product counts using Meilisearch facets
- * This provides real-time category counts based on current filters
- */
-export const getCategoriesWithProductCounts = async ({
-	query = '',
-	filters = {},
-	regionId,
-	currencyCode,
-	countryCode = 'de',
-}: {
-	query?: string;
-	filters?: any;
-	regionId?: string;
-	currencyCode?: string;
-	countryCode?: string;
-} = {}): Promise<
-	Array<{
-		category_id: string;
-		name: string;
-		handle: string;
-		count: number;
-		parent_category_id?: string;
-	}>
-> => {
-	try {
-		// Get category facets from Meilisearch
-		const facets = await getCategoryFacetsWithMeilisearch({
-			query,
-			filters,
-			regionId,
-			currencyCode,
-			language: countryCode === 'de' ? 'de' : 'en',
-		});
-
-		// Get all categories to merge with facet data
-		const allCategories = await getAllCategories();
-
-		// Merge facet counts with category data
-		const categoriesWithCounts = facets
-			.map(facet => {
-				const category = allCategories.find(
-					cat => cat.id === facet.category_id,
-				);
-				return {
-					category_id: facet.category_id,
-					name: category?.name || facet.name || 'Unknown',
-					handle: category?.handle || facet.handle || 'unknown',
-					count: facet.count,
-					parent_category_id: category?.parent_category_id,
-				};
-			})
-			.filter(cat => cat.count > 0); // Only show categories with products
-
-		return categoriesWithCounts;
-	} catch (error) {
-		console.error('Error getting categories with product counts:', error);
-		// Fallback to basic categories without counts
-		const categories = await getAllCategories();
-		return categories.map(cat => ({
-			category_id: cat.id,
-			name: cat.name,
-			handle: cat.handle,
-			count: 0, // No count available in fallback
-			parent_category_id: cat.parent_category_id,
-		}));
-	}
-};
 
 /**
  * Get categories that actually have products (filtered by sales channel)

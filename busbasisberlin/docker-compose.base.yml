@@ -9,8 +9,8 @@ services:
     container_name: medusa_nginx
     restart: unless-stopped
     ports:
-      - '80:80'
-      - '443:443'
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
@@ -19,12 +19,12 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'wget',
-          '--no-verbose',
-          '--tries=1',
-          '--spider',
-          'http://127.0.0.1/health',
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1/health",
         ]
       interval: 30s
       timeout: 10s
@@ -40,13 +40,13 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medusa_password}
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - medusa_network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,13 +57,13 @@ services:
     container_name: medusa_redis
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
       - medusa_network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,7 +74,7 @@ services:
     container_name: portainer
     restart: unless-stopped
     expose:
-      - '9000'
+      - "9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -87,36 +87,12 @@ services:
     container_name: uptime-kuma
     restart: unless-stopped
     expose:
-      - '3001'
+      - "3001"
     volumes:
       - uptime_kuma_data:/app/data
     networks:
       - medusa_network
 
-  # Meilisearch Service - persistent across deployments
-  meilisearch:
-    image: getmeili/meilisearch:v1.5
-    container_name: medusa_meilisearch
-    restart: unless-stopped
-    environment:
-      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
-      - MEILI_ENV=${MEILISEARCH_ENV:-production}
-      - MEILI_HTTP_ADDR=0.0.0.0:7700
-      - MEILI_DB_PATH=/meili_data
-      - MEILI_DUMP_DIR=/meili_data/dumps
-      - MEILI_SNAPSHOT_DIR=/meili_data/snapshots
-    ports:
-      - '7700:7700'
-    volumes:
-      - meilisearch_data:/meili_data
-    networks:
-      - medusa_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
 # Named volumes for data persistence
 volumes:
@@ -127,8 +103,6 @@ volumes:
   portainer_data:
     driver: local
   uptime_kuma_data:
-    driver: local
-  meilisearch_data:
     driver: local
 
 # Custom network for service communication
