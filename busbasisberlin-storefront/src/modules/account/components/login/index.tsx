@@ -1,3 +1,4 @@
+// src/modules/account/components/login/index.tsx
 import { login } from '@lib/data/customer';
 import { LOGIN_VIEW } from '@modules/account/templates/login-template';
 import ErrorMessage from '@modules/checkout/components/error-message';
@@ -18,23 +19,23 @@ const Login = ({ setCurrentView }: Props) => {
 			className="max-w-sm w-full flex flex-col items-center"
 			data-testid="login-page"
 		>
-			<h1 className="text-large-semi uppercase mb-6">Welcome back</h1>
-			<p className="text-center text-base-regular text-ui-fg-base mb-8">
-				Sign in to access an enhanced shopping experience.
+			<h1 className="text-2xl font-bold text-white mb-6">Willkommen zurück</h1>
+			<p className="text-center text-neutral-400 mb-8">
+				Melden Sie sich an, um ein verbessertes Einkaufserlebnis zu erhalten.
 			</p>
 			<form className="w-full" action={formAction}>
-				<div className="flex flex-col w-full gap-y-2">
+				<div className="flex flex-col gap-y-4 w-full">
 					<Input
-						label="Email"
+						label="E-Mail"
 						name="email"
 						type="email"
-						title="Enter a valid email address."
+						title="Geben Sie eine gültige E-Mail-Adresse ein."
 						autoComplete="email"
 						required
 						data-testid="email-input"
 					/>
 					<Input
-						label="Password"
+						label="Passwort"
 						name="password"
 						type="password"
 						autoComplete="current-password"
@@ -43,33 +44,35 @@ const Login = ({ setCurrentView }: Props) => {
 					/>
 				</div>
 				<ErrorMessage error={message} data-testid="login-error-message" />
-				<SubmitButton data-testid="sign-in-button" className="w-full mt-6">
-					Sign in
+				<SubmitButton
+					data-testid="sign-in-button"
+					className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
+				>
+					Anmelden
 				</SubmitButton>
 			</form>
 
 			{/* Passwort vergessen Link */}
-			<div className="text-center mt-4">
+			<div className="text-center mt-6">
 				<LocalizedClientLink
 					href="/request-reset"
-					className="text-small-regular text-ui-fg-base hover:text-ui-fg-interactive underline"
+					className="text-sm text-neutral-400 hover:text-white underline transition-colors"
 					data-testid="forgot-password-link"
 				>
 					Passwort vergessen?
 				</LocalizedClientLink>
 			</div>
 
-			<span className="text-center text-ui-fg-base text-small-regular mt-6">
-				Not a member?{' '}
+			<div className="text-center text-neutral-400 text-sm mt-6">
+				Noch kein Mitglied?{' '}
 				<button
 					onClick={() => setCurrentView(LOGIN_VIEW.REGISTER)}
-					className="underline"
+					className="text-blue-400 hover:text-blue-300 underline transition-colors"
 					data-testid="register-button"
 				>
-					Join us
+					Jetzt registrieren
 				</button>
-				.
-			</span>
+			</div>
 		</div>
 	);
 };

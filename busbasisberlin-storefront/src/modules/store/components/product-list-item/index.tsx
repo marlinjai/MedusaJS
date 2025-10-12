@@ -1,9 +1,10 @@
+// src/modules/store/components/product-list-item/index.tsx
 import { getProductPrice } from '@lib/util/get-product-price';
 import { HttpTypes } from '@medusajs/types';
 import { Text } from '@medusajs/ui';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
-import Thumbnail from '../thumbnail';
-import PreviewPrice from './price';
+import PreviewPrice from '@modules/products/components/product-preview/price';
+import Thumbnail from '@modules/products/components/thumbnail';
 
 // Helper to build category breadcrumb path (up to 4 levels)
 const getCategoryPath = (
@@ -27,13 +28,11 @@ const getCategoryPath = (
 	return path;
 };
 
-export default async function ProductPreview({
+export default async function ProductListItem({
 	product,
-	isFeatured,
 	region,
 }: {
 	product: HttpTypes.StoreProduct;
-	isFeatured?: boolean;
 	region: HttpTypes.StoreRegion;
 }) {
 	const { cheapestPrice } = getProductPrice({
@@ -51,8 +50,12 @@ export default async function ProductPreview({
 
 	return (
 		<LocalizedClientLink href={`/products/${product.handle}`} className="group">
-			<div data-testid="product-wrapper">
-				<div className="relative">
+			<div
+				data-testid="product-wrapper"
+				className="flex gap-6 items-center bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-6 hover:bg-neutral-800 hover:border-neutral-600 transition-all duration-300 hover:shadow-xl"
+			>
+				{/* Product Image */}
+				<div className="w-32 h-32 flex-shrink-0 relative">
 					<Thumbnail
 						thumbnail={product.thumbnail}
 						images={product.images}
@@ -60,36 +63,45 @@ export default async function ProductPreview({
 					/>
 					{/* Out of Stock Badge */}
 					{isOutOfStock && (
-						<div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+						<div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
 							Ausverkauft
 						</div>
 					)}
 				</div>
-				<div className="flex flex-col gap-2 mt-4">
-					{/* Category Breadcrumb - compact for grid view */}
+
+				{/* Product Info */}
+				<div className="flex-1 min-w-0">
+					<Text
+						className="text-white text-lg font-medium mb-2 group-hover:text-blue-400 transition-colors"
+						data-testid="product-title"
+					>
+						{product.title}
+					</Text>
+
+					{/* Category Breadcrumb */}
 					{categoryPath.length > 0 && (
-						<div className="flex items-center gap-1 text-xs text-neutral-500">
-							{categoryPath.slice(-2).map((cat, index) => (
-								<span key={index} className="flex items-center gap-1">
-									{index > 0 && <span>›</span>}
-									<span className="truncate">{cat}</span>
+						<div className="flex items-center gap-2 text-xs text-neutral-400 mb-2">
+							{categoryPath.map((cat, index) => (
+								<span key={index} className="flex items-center gap-2">
+									{index > 0 && <span className="text-neutral-600">›</span>}
+									<span className="hover:text-blue-400 transition-colors">
+										{cat}
+									</span>
 								</span>
 							))}
 						</div>
 					)}
 
-					{/* Product Title and Price */}
-					<div className="flex txt-compact-medium justify-between items-start gap-2">
-						<Text
-							className="text-white font-medium flex-1 line-clamp-2 group-hover:text-blue-400 transition-colors"
-							data-testid="product-title"
-						>
-							{product.title}
-						</Text>
-						<div className="flex items-center gap-x-2 flex-shrink-0">
-							{cheapestPrice && <PreviewPrice price={cheapestPrice} />}
-						</div>
-					</div>
+					{product.description && (
+						<p className="text-neutral-400 text-sm line-clamp-2">
+							{product.description}
+						</p>
+					)}
+				</div>
+
+				{/* Price */}
+				<div className="flex-shrink-0 text-right">
+					{cheapestPrice && <PreviewPrice price={cheapestPrice} />}
 				</div>
 			</div>
 		</LocalizedClientLink>

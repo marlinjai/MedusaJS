@@ -1,7 +1,7 @@
+// src/lib/data/products.ts
 'use server';
 
 import { sdk } from '@lib/config';
-import { sortProducts } from '@lib/util/sort-products';
 import { HttpTypes } from '@medusajs/types';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
 import { getAuthHeaders, getCacheOptions } from './cookies';
@@ -68,7 +68,9 @@ export const listProducts = async ({
 				},
 				headers,
 				next,
-				cache: 'no-store',
+				// Use force-cache for better performance
+				// Cache is invalidated via tags when products/inventory changes
+				cache: 'force-cache',
 			},
 		)
 		.then(({ products, count }) => {
@@ -86,57 +88,8 @@ export const listProducts = async ({
 };
 
 /**
- * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
- * It will then return the paginated products based on the page and limit parameters.
- */
-export const listProductsWithSort = async ({
-	page = 0,
-	queryParams,
-	sortBy = 'created_at',
-	countryCode,
-}: {
-	page?: number;
-	queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams;
-	sortBy?: SortOptions;
-	countryCode: string;
-}): Promise<{
-	response: { products: HttpTypes.StoreProduct[]; count: number };
-	nextPage: number | null;
-	queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams;
-}> => {
-	const limit = queryParams?.limit || 12;
-
-	const {
-		response: { products, count },
-	} = await listProducts({
-		pageParam: 0,
-		queryParams: {
-			...queryParams,
-			limit: 100,
-		},
-		countryCode,
-	});
-
-	const sortedProducts = sortProducts(products, sortBy);
-
-	const pageParam = (page - 1) * limit;
-
-	const nextPage = count > pageParam + limit ? pageParam + limit : null;
-
-	const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit);
-
-	return {
-		response: {
-			products: paginatedProducts,
-			count,
-		},
-		nextPage,
-		queryParams,
-	};
-};
-
-/**
- * Search products with a query string using Medusa's built-in search functionality
+ * Search products with filters using the standard Medusa SDK approach
+ * Following official documentation: https://docs.medusajs.com/resources/storefront-development/products/list
  */
 export const searchProducts = async ({
 	query,
@@ -144,58 +97,165 @@ export const searchProducts = async ({
 	limit = 12,
 	countryCode,
 	sortBy = 'created_at',
+	categoryId,
+	collectionId,
+	priceMin,
+	priceMax,
+	tags,
+	stockFilter,
 }: {
-	query: string;
+	query?: string;
 	page?: number;
 	limit?: number;
 	countryCode: string;
 	sortBy?: SortOptions;
+	categoryId?: string;
+	collectionId?: string;
+	priceMin?: number;
+	priceMax?: number;
+	tags?: string[];
+	stockFilter?: string;
 }): Promise<{
 	response: { products: HttpTypes.StoreProduct[]; count: number };
 	nextPage: number | null;
 }> => {
-	// Verwende die bestehende listProductsWithSort Funktion mit einem 'q' Parameter
-	const queryParams = {
-		q: query, // Suchparameter für Medusa API
-		limit: 100, // Erhöhe Limit für bessere Sortierung
+	// Calculate offset for pagination
+	const offset = (page - 1) * limit;
+
+	// Get region for pricing context
+	const region = await getRegion(countryCode);
+	if (!region) {
+		return {
+			response: { products: [], count: 0 },
+			nextPage: null,
+		};
+	}
+
+	// Build query parameters following official Medusa SDK documentation
+	const queryParams: any = {
+		limit,
+		offset,
+		region_id: region.id,
+		fields:
+			'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
 	};
 
-	const {
-		response: { products, count },
-	} = await listProductsWithSort({
-		page: 1, // Hole alle Ergebnisse für die Sortierung
-		queryParams,
-		sortBy,
-		countryCode,
+	// Add search query filter
+	if (query && query.trim()) {
+		queryParams.q = query.trim();
+	}
+
+	// Add category filter
+	if (categoryId) {
+		queryParams.category_id = [categoryId];
+	}
+
+	// Add collection filter
+	if (collectionId) {
+		queryParams.collection_id = [collectionId];
+	}
+
+	// Add tags filter
+	if (tags && tags.length > 0) {
+		queryParams.tag_id = tags;
+	}
+
+	// Add sorting - following official documentation
+	if (sortBy) {
+		switch (sortBy) {
+			case 'price_asc':
+				// Price sorting needs to be done client-side as calculated_price.amount is not sortable
+				queryParams.order = 'title'; // Fallback to title sorting
+				break;
+			case 'price_desc':
+				// Price sorting needs to be done client-side as calculated_price.amount is not sortable
+				queryParams.order = '-title'; // Fallback to title sorting
+				break;
+			case 'title_asc':
+				queryParams.order = 'title';
+				break;
+			case 'title_desc':
+				queryParams.order = '-title';
+				break;
+			case 'created_at':
+			default:
+				queryParams.order = '-created_at';
+				break;
+		}
+	}
+
+	const headers = {
+		...(await getAuthHeaders()),
+	};
+
+	const next = {
+		...(await getCacheOptions('products')),
+	};
+
+	// Use standard SDK approach as documented
+	const { products, count } = await sdk.client.fetch<{
+		products: HttpTypes.StoreProduct[];
+		count: number;
+	}>(`/store/products`, {
+		method: 'GET',
+		query: queryParams,
+		headers,
+		next,
+		cache: 'force-cache',
 	});
 
-	// Führe lokale Filterung durch, falls die API keinen 'q' Parameter unterstützt
-	const filteredProducts = query.trim()
-		? products.filter(
-				product =>
-					product.title?.toLowerCase().includes(query.toLowerCase()) ||
-					product.description?.toLowerCase().includes(query.toLowerCase()) ||
-					product.tags?.some(tag =>
-						tag.value?.toLowerCase().includes(query.toLowerCase()),
-					) ||
-					product.variants?.some(
-						variant =>
-							variant.title?.toLowerCase().includes(query.toLowerCase()) ||
-							variant.sku?.toLowerCase().includes(query.toLowerCase()),
-					),
-		  )
-		: products;
+	// Apply client-side filters for features not supported by the API
+	let filteredProducts = products;
 
-	// Paginierung
-	const startIndex = (page - 1) * limit;
-	const endIndex = page * limit;
-	const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-	const nextPage = filteredProducts.length > endIndex ? page + 1 : null;
+	// Apply stock filter if specified
+	if (stockFilter && stockFilter !== 'all') {
+		filteredProducts = products.filter(product => {
+			if (!product.variants || product.variants.length === 0) return false;
+
+			const hasStock = product.variants.some(variant => {
+				const qty = variant.inventory_quantity;
+				return qty !== null && qty !== undefined && qty > 0;
+			});
+
+			return stockFilter === 'in_stock' ? hasStock : !hasStock;
+		});
+	}
+
+	// Apply price range filter if specified (client-side for now)
+	if (priceMin !== undefined || priceMax !== undefined) {
+		filteredProducts = filteredProducts.filter(product => {
+			if (!product.variants || product.variants.length === 0) return false;
+
+			return product.variants.some(variant => {
+				if (!variant.calculated_price) return false;
+
+				const price = variant.calculated_price.calculated_amount;
+				if (price === null || price === undefined) return false;
+				if (priceMin !== undefined && price < priceMin) return false;
+				if (priceMax !== undefined && price > priceMax) return false;
+
+				return true;
+			});
+		});
+	}
+
+	// Apply client-side price sorting if needed
+	if (sortBy === 'price_asc' || sortBy === 'price_desc') {
+		filteredProducts.sort((a, b) => {
+			const priceA = a.variants?.[0]?.calculated_price?.calculated_amount || 0;
+			const priceB = b.variants?.[0]?.calculated_price?.calculated_amount || 0;
+
+			return sortBy === 'price_asc' ? priceA - priceB : priceB - priceA;
+		});
+	}
+
+	const filteredCount = filteredProducts.length;
+	const nextPage = count > offset + limit ? page + 1 : null;
 
 	return {
 		response: {
-			products: paginatedProducts,
-			count: filteredProducts.length,
+			products: filteredProducts,
+			count: filteredCount,
 		},
 		nextPage,
 	};
