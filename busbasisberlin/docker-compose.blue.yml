@@ -94,6 +94,7 @@ services:
       # Meilisearch configuration
       - MEILISEARCH_HOST=${MEILISEARCH_HOST}
       - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY}
+      - MEILISEARCH_PRODUCT_INDEX_NAME=${MEILISEARCH_PRODUCT_INDEX_NAME}
     volumes:
       - .:/app
       - /app/node_modules
