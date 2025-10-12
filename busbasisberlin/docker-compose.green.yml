@@ -13,6 +13,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     # No external ports - accessed via nginx proxy
     environment:
       - NODE_ENV=${NODE_ENV:-production}
@@ -21,6 +23,9 @@ services:
       - MEDUSA_WORKER_MODE=server
       - DISABLE_MEDUSA_ADMIN=false
       - PORT=9002
+      # Meilisearch configuration
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://meilisearch:7700}
+      - MEILISEARCH_API_KEY=${MEILISEARCH_MASTER_KEY}
       # Application secrets
       - JWT_SECRET=${JWT_SECRET}
       - COOKIE_SECRET=${COOKIE_SECRET}
@@ -65,6 +70,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     # No external ports - worker doesn't need external access
     environment:
       - NODE_ENV=${NODE_ENV:-production}
@@ -73,6 +80,9 @@ services:
       - MEDUSA_WORKER_MODE=worker
       - DISABLE_MEDUSA_ADMIN=true
       - PORT=9003
+      # Meilisearch configuration
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://meilisearch:7700}
+      - MEILISEARCH_API_KEY=${MEILISEARCH_MASTER_KEY}
       # Application secrets
       - JWT_SECRET=${JWT_SECRET}
       - COOKIE_SECRET=${COOKIE_SECRET}

@@ -93,6 +93,31 @@ services:
     networks:
       - medusa_network
 
+  # Meilisearch Service - persistent across deployments
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: medusa_meilisearch
+    restart: unless-stopped
+    environment:
+      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
+      - MEILI_ENV=${MEILISEARCH_ENV:-production}
+      - MEILI_HTTP_ADDR=0.0.0.0:7700
+      - MEILI_DB_PATH=/meili_data
+      - MEILI_DUMP_DIR=/meili_data/dumps
+      - MEILI_SNAPSHOT_DIR=/meili_data/snapshots
+    ports:
+      - '7700:7700'
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - medusa_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 # Named volumes for data persistence
 volumes:
   postgres_data:
@@ -102,6 +127,8 @@ volumes:
   portainer_data:
     driver: local
   uptime_kuma_data:
+    driver: local
+  meilisearch_data:
     driver: local
 
 # Custom network for service communication

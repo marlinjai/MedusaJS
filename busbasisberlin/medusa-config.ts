@@ -165,6 +165,153 @@ const getModules = () => {
 		{
 			resolve: './src/modules/manual-customer',
 		},
+		// Meilisearch plugin for advanced search and filtering
+		{
+			resolve: '@rokmohar/medusa-plugin-meilisearch',
+			options: {
+				config: {
+					host: process.env.MEILISEARCH_HOST || 'http://meilisearch:7700',
+					apiKey: process.env.MEILISEARCH_API_KEY || '',
+				},
+				settings: {
+					// Products index configuration
+					products: {
+						type: 'products',
+						enabled: true,
+						fields: [
+							'id',
+							'title',
+							'description',
+							'handle',
+							'status',
+							'thumbnail',
+							'created_at',
+							'updated_at',
+							'categories.id',
+							'categories.name',
+							'categories.handle',
+							'collection.id',
+							'collection.title',
+							'collection.handle',
+							'tags.id',
+							'tags.value',
+							'variants.id',
+							'variants.title',
+							'variants.sku',
+							'variants.prices.amount',
+							'variants.prices.currency_code',
+							'variants.inventory_quantity',
+						],
+						indexSettings: {
+							searchableAttributes: [
+								'title',
+								'description',
+								'handle',
+								'variants.title',
+								'variants.sku',
+								'categories.name',
+								'collection.title',
+								'tags.value',
+							],
+							displayedAttributes: ['*'],
+							filterableAttributes: [
+								'id',
+								'status',
+								'categories.id',
+								'categories.handle',
+								'collection.id',
+								'collection.handle',
+								'tags.value',
+								'variants.prices.currency_code',
+								'variants.inventory_quantity',
+							],
+							sortableAttributes: [
+								'created_at',
+								'updated_at',
+								'title',
+								'variants.prices.amount',
+							],
+							faceting: {
+								maxValuesPerFacet: 2000,
+							},
+						},
+						primaryKey: 'id',
+						// Custom transformer to include sales channel data
+						transformer: async (product, defaultTransformer, options) => {
+							const transformedProduct = await defaultTransformer(
+								product,
+								options,
+							);
+
+							// Add sales channel IDs for filtering
+							if (product.sales_channels) {
+								transformedProduct.sales_channel_ids =
+									product.sales_channels.map(sc => sc.id);
+							}
+
+							// Add category IDs for easier filtering
+							if (product.categories) {
+								transformedProduct.category_ids = product.categories.map(
+									cat => cat.id,
+								);
+								transformedProduct.category_handles = product.categories.map(
+									cat => cat.handle,
+								);
+							}
+
+							// Add stock status for filtering
+							if (product.variants && product.variants.length > 0) {
+								const hasStock = product.variants.some(
+									variant =>
+										variant.inventory_quantity &&
+										variant.inventory_quantity > 0,
+								);
+								transformedProduct.in_stock = hasStock;
+								transformedProduct.stock_status = hasStock
+									? 'in_stock'
+									: 'out_of_stock';
+							}
+
+							return transformedProduct;
+						},
+					},
+					// Categories index configuration
+					categories: {
+						type: 'categories',
+						enabled: true,
+						fields: [
+							'id',
+							'name',
+							'description',
+							'handle',
+							'is_active',
+							'parent_category_id',
+							'created_at',
+							'updated_at',
+						],
+						indexSettings: {
+							searchableAttributes: ['name', 'description'],
+							displayedAttributes: ['*'],
+							filterableAttributes: [
+								'id',
+								'handle',
+								'is_active',
+								'parent_category_id',
+							],
+							sortableAttributes: ['name', 'created_at'],
+						},
+						primaryKey: 'id',
+					},
+				},
+				// i18n configuration for future multilingual support
+				i18n: {
+					strategy: 'field-suffix',
+					languages: ['de', 'en'], // German as primary, English as secondary
+					defaultLanguage: 'de',
+					translatableFields: ['title', 'description', 'name'],
+				},
+			},
+		},
 	);
 
 	return modules;
