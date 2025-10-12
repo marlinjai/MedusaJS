@@ -327,3 +327,34 @@ export const searchProducts = async ({
 		priceMax,
 	});
 };
+
+/**
+ * Get products for build-time static generation (no cookies/auth)
+ * This version skips authentication and caching for build-time usage
+ */
+export const listProductsForBuild = async ({
+	limit = 100,
+}: {
+	limit?: number;
+} = {}): Promise<HttpTypes.StoreProduct[]> => {
+	const { sdk } = await import('@lib/config');
+	
+	try {
+		const response = await sdk.client.fetch<{
+			products: HttpTypes.StoreProduct[];
+			count: number;
+		}>(`/store/products`, {
+			method: 'GET',
+			query: {
+				limit,
+				fields: 'id,handle,title',
+			},
+			// No headers, no cache options - build-time safe
+		});
+
+		return response.products;
+	} catch (error) {
+		console.warn('Failed to fetch products for build:', error);
+		return [];
+	}
+};

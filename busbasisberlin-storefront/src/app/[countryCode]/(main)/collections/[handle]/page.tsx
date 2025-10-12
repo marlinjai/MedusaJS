@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { getCollectionByHandle, listCollections } from '@lib/data/collections';
-import { listRegions } from '@lib/data/regions';
+import { listRegionsForBuild } from '@lib/data/regions';
 import { StoreCollection, StoreRegion } from '@medusajs/types';
 import CollectionTemplate from '@modules/collections/templates';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
@@ -31,13 +31,11 @@ export async function generateStaticParams() {
 		return [];
 	}
 
-	const countryCodes = await listRegions().then(
-		(regions: StoreRegion[]) =>
-			regions
-				?.map(r => r.countries?.map(c => c.iso_2))
-				.flat()
-				.filter(Boolean) as string[],
-	);
+	const regions = await listRegionsForBuild();
+	const countryCodes = regions
+		?.map(r => r.countries?.map(c => c.iso_2))
+		.flat()
+		.filter(Boolean) as string[];
 
 	const collectionHandles = collections.map(
 		(collection: StoreCollection) => collection.handle,

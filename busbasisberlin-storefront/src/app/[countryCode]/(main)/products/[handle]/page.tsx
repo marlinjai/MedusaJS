@@ -1,5 +1,5 @@
-import { listProducts } from '@lib/data/products';
-import { getRegion, listRegions } from '@lib/data/regions';
+import { listProductsForBuild } from '@lib/data/products';
+import { getRegion, listRegionsForBuild } from '@lib/data/regions';
 import ProductTemplate from '@modules/products/templates';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -15,18 +15,16 @@ export async function generateStaticParams() {
 	}
 
 	try {
-		const countryCodes = await listRegions().then(regions =>
-			regions?.map(r => r.countries?.map(c => c.iso_2)).flat(),
-		);
+		const regions = await listRegionsForBuild();
+		const countryCodes = regions?.map(r => r.countries?.map(c => c.iso_2)).flat();
 
 		if (!countryCodes) {
 			return [];
 		}
 
-		const products = await listProducts({
-			countryCode: 'US',
-			queryParams: { fields: 'handle' },
-		}).then(({ response }) => response.products);
+		const products = await listProductsForBuild({
+			limit: 200,
+		});
 
 		return countryCodes
 			.map(countryCode =>
