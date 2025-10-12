@@ -1,4 +1,4 @@
-import { listProductsForBuild } from '@lib/data/products';
+import { listProducts, listProductsForBuild } from '@lib/data/products';
 import { getRegion, listRegionsForBuild } from '@lib/data/regions';
 import ProductTemplate from '@modules/products/templates';
 import { Metadata } from 'next';

@@ -46,7 +46,11 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 								<p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">
 									Material
 								</p>
-								<p className="text-white font-medium">{product.material}</p>
+								<p className="text-white font-medium">
+									{typeof product.material === 'string'
+										? product.material
+										: JSON.stringify(product.material)}
+								</p>
 							</div>
 						)}
 						{product.weight && (

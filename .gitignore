@@ -52,3 +52,5 @@ temp/
 
 .secrets
 setup-deployment/
+busbasisberlin-storefront/src/app/\[countryCode]/(main)/layout.tsx
+busbasisberlin-storefront/src/app/\[countryCode]/(main)/products/\[handle]/page.tsx
