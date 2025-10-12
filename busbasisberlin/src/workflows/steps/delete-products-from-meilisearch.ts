@@ -1,6 +1,7 @@
 // src/workflows/steps/delete-products-from-meilisearch.ts
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
 import { MEILISEARCH_MODULE } from '../../modules/meilisearch';
+import MeilisearchModuleService from '../../modules/meilisearch/service';
 
 export type DeleteProductsFromMeilisearchStep = {
 	ids: string[];
@@ -9,7 +10,9 @@ export type DeleteProductsFromMeilisearchStep = {
 export const deleteProductsFromMeilisearchStep = createStep(
 	'delete-products-from-meilisearch-step',
 	async ({ ids }: DeleteProductsFromMeilisearchStep, { container }) => {
-		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
+		const meilisearchModuleService = container.resolve(
+			MEILISEARCH_MODULE,
+		) as MeilisearchModuleService;
 
 		const existingRecords = await meilisearchModuleService.retrieveFromIndex(
 			ids,
@@ -26,7 +29,9 @@ export const deleteProductsFromMeilisearchStep = createStep(
 			return;
 		}
 
-		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
+		const meilisearchModuleService = container.resolve(
+			MEILISEARCH_MODULE,
+		) as MeilisearchModuleService;
 
 		await meilisearchModuleService.indexData(existingRecords, 'product');
 	},

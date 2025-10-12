@@ -2,6 +2,7 @@
 import { ProductDTO } from '@medusajs/framework/types';
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
 import { MEILISEARCH_MODULE } from '../../modules/meilisearch';
+import MeilisearchModuleService from '../../modules/meilisearch/service';
 
 export type SyncProductsStepInput = {
 	products: ProductDTO[];
@@ -10,7 +11,9 @@ export type SyncProductsStepInput = {
 export const syncProductsStep = createStep(
 	'sync-products',
 	async ({ products }: SyncProductsStepInput, { container }) => {
-		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
+		const meilisearchModuleService = container.resolve(
+			MEILISEARCH_MODULE,
+		) as MeilisearchModuleService;
 
 		const existingProducts = await meilisearchModuleService.retrieveFromIndex(
 			products.map(product => product.id),
@@ -37,7 +40,9 @@ export const syncProductsStep = createStep(
 			return;
 		}
 
-		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
+		const meilisearchModuleService = container.resolve(
+			MEILISEARCH_MODULE,
+		) as MeilisearchModuleService;
 
 		if (input.newProducts) {
 			await meilisearchModuleService.deleteFromIndex(
