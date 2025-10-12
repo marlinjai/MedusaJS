@@ -103,6 +103,7 @@ jobs:
             export MEILISEARCH_HOST="$MEILISEARCH_HOST"
             export MEILISEARCH_API_KEY="$MEILISEARCH_API_KEY"
             export MEILISEARCH_MASTER_KEY="$MEILISEARCH_MASTER_KEY"
+            export MEILISEARCH_PRODUCT_INDEX_NAME="$MEILISEARCH_PRODUCT_INDEX_NAME"
 
             # Make sure script is executable
             chmod +x ./scripts/deploy-with-domain.sh
