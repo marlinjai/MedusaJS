@@ -14,7 +14,19 @@ export default class MeilisearchModuleService {
 	private options: MeilisearchOptions;
 
 	constructor({}, options: MeilisearchOptions) {
-		if (!options.host || !options.apiKey || !options.productIndexName) {
+		console.log('Meilisearch module options received:', {
+			host: options?.host || 'MISSING',
+			apiKey: options?.apiKey ? 'SET' : 'MISSING',
+			productIndexName: options?.productIndexName || 'MISSING',
+		});
+
+		if (
+			!options ||
+			!options.host ||
+			!options.apiKey ||
+			!options.productIndexName
+		) {
+			console.error('Meilisearch options validation failed:', options);
 			throw new MedusaError(
 				MedusaError.Types.INVALID_ARGUMENT,
 				'Meilisearch options are required',

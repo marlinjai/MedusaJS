@@ -165,14 +165,6 @@ const getModules = () => {
 		{
 			resolve: './src/modules/manual-customer',
 		},
-		{
-			resolve: './src/modules/meilisearch',
-			options: {
-				host: process.env.MEILISEARCH_HOST!,
-				apiKey: process.env.MEILISEARCH_API_KEY!,
-				productIndexName: process.env.MEILISEARCH_PRODUCT_INDEX_NAME!,
-			},
-		},
 	);
 
 	return modules;
@@ -185,5 +177,16 @@ module.exports = defineConfig({
 		disable: process.env.DISABLE_MEDUSA_ADMIN === 'true',
 		backendUrl: process.env.MEDUSA_BACKEND_URL,
 	},
-	modules: getModules(),
+	modules: [
+		...getModules(),
+		// Custom Meilisearch module (separate from other modules)
+		{
+			resolve: './src/modules/meilisearch',
+			options: {
+				host: process.env.MEILISEARCH_HOST!,
+				apiKey: process.env.MEILISEARCH_API_KEY!,
+				productIndexName: process.env.MEILISEARCH_PRODUCT_INDEX_NAME!,
+			},
+		},
+	],
 });
