@@ -91,6 +91,9 @@ services:
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       # Domain configuration
       - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
+      # Meilisearch configuration
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST}
+      - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY}
     volumes:
       - .:/app
       - /app/node_modules

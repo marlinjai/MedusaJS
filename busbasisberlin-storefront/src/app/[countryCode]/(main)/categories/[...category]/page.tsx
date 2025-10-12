@@ -1,9 +1,11 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { getCategoryByHandle, listCategories } from '@lib/data/categories';
-import { listRegions } from '@lib/data/regions';
-import { StoreRegion } from '@medusajs/types';
+import {
+	getAllCategoriesForBuild,
+	getCategoryByHandle,
+} from '@lib/data/categories';
+import { listRegionsForBuild } from '@lib/data/regions';
 import CategoryTemplate from '@modules/categories/templates';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
 
@@ -21,30 +23,35 @@ export async function generateStaticParams() {
 		return [];
 	}
 
-	const categoriesResponse = await listCategories();
+	try {
+		// Use build-safe function that doesn't access cookies
+		const categories = await getAllCategoriesForBuild();
 
-	if (!categoriesResponse?.product_categories) {
+		if (!categories || categories.length === 0) {
+			return [];
+		}
+
+		const regions = await listRegionsForBuild();
+		const countryCodes = regions
+			?.map(r => r.countries?.map(c => c.iso_2))
+			.flat();
+
+		const categoryHandles = categories.map((category: any) => category.handle);
+
+		const staticParams = countryCodes
+			?.map((countryCode: string | undefined) =>
+				categoryHandles.map((handle: any) => ({
+					countryCode,
+					category: [handle],
+				})),
+			)
+			.flat();
+
+		return staticParams || [];
+	} catch (error) {
+		console.warn('Failed to generate static params for categories:', error);
 		return [];
 	}
-
-	const countryCodes = await listRegions().then((regions: StoreRegion[]) =>
-		regions?.map(r => r.countries?.map(c => c.iso_2)).flat(),
-	);
-
-	const categoryHandles = categoriesResponse.product_categories.map(
-		(category: any) => category.handle,
-	);
-
-	const staticParams = countryCodes
-		?.map((countryCode: string | undefined) =>
-			categoryHandles.map((handle: any) => ({
-				countryCode,
-				category: [handle],
-			})),
-		)
-		.flat();
-
-	return staticParams;
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {

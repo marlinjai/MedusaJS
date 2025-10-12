@@ -177,6 +177,28 @@ stop_deployment() {
     return 0
 }
 
+# Function to cleanup orphaned Docker images after deployment
+cleanup_orphaned_images() {
+    log_info "Cleaning up orphaned Docker images to prevent disk space accumulation..."
+
+    # Remove dangling images (untagged images that are no longer referenced)
+    local dangling_removed=$(docker image prune -f 2>&1 | grep "Total reclaimed space" | sed 's/.*: //' || echo "0B")
+
+    # Remove unused images that are not associated with any containers
+    # This is more aggressive but safe since we keep images for running containers
+    local unused_removed=$(docker image prune -a -f 2>&1 | grep "Total reclaimed space" | sed 's/.*: //' || echo "0B")
+
+    # Clean build cache periodically to prevent accumulation
+    local cache_removed=$(docker builder prune -f 2>&1 | grep "Total reclaimed space" | sed 's/.*: //' || echo "0B")
+
+    log_success "Docker cleanup completed:"
+    log_info "  Dangling images: $dangling_removed"
+    log_info "  Unused images: $unused_removed"
+    log_info "  Build cache: $cache_removed"
+
+    return 0
+}
+
 # Function to rollback deployment
 rollback() {
     local current=$(get_current_deployment)
@@ -359,6 +381,10 @@ deploy() {
     log_info "Stopping old $current deployment..."
     stop_deployment "$current"
 
+    # Clean up orphaned Docker images to prevent disk space accumulation
+    log_info "Cleaning up orphaned Docker images..."
+    cleanup_orphaned_images
+
     log_success "Deployment completed successfully!"
     log_success "Active deployment: $target"
 }
@@ -432,6 +458,7 @@ show_help() {
     echo "  rollback  - Rollback to previous deployment"
     echo "  status    - Show current deployment status"
     echo "  repair    - Analyze and fix inconsistent deployment state"
+    echo "  cleanup   - Clean up orphaned Docker images and build cache"
     echo "  help      - Show this help message"
     echo ""
     echo "Examples:"
@@ -439,6 +466,7 @@ show_help() {
     echo "  $0 rollback   # Rollback to previous version"
     echo "  $0 status     # Check current status"
     echo "  $0 repair     # Fix inconsistent state"
+    echo "  $0 cleanup    # Clean up Docker images and cache"
 }
 
 # Function to repair inconsistent state
@@ -470,6 +498,9 @@ case "${1:-}" in
         ;;
     repair)
         repair
+        ;;
+    cleanup)
+        cleanup_orphaned_images
         ;;
     help|--help|-h)
         show_help

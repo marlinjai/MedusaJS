@@ -83,6 +83,35 @@ export const getAllCategories = async (): Promise<
 };
 
 /**
+ * Get all categories for build-time static generation (no cookies/auth)
+ * This version skips authentication and caching for build-time usage
+ */
+export const getAllCategoriesForBuild = async (): Promise<
+	HttpTypes.StoreProductCategory[]
+> => {
+	const { sdk } = await import('@lib/config');
+
+	try {
+		const response = await sdk.client.fetch<{
+			product_categories: HttpTypes.StoreProductCategory[];
+			count: number;
+		}>(`/store/product-categories`, {
+			method: 'GET',
+			query: {
+				limit: 200,
+				fields: 'id,handle,name',
+			},
+			// No headers, no cache options - build-time safe
+		});
+
+		return response.product_categories;
+	} catch (error) {
+		console.warn('Failed to fetch categories for build:', error);
+		return [];
+	}
+};
+
+/**
  * Get category ID by handle
  */
 export const getCategoryIdByHandle = async (
@@ -103,7 +132,6 @@ export const getCategoryByHandle = async (
 	const category = categories.find(cat => cat.handle === handle);
 	return category || null;
 };
-
 
 /**
  * Get categories that actually have products (filtered by sales channel)

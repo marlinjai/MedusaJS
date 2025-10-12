@@ -100,6 +100,9 @@ jobs:
             export AUTH_CORS="$AUTH_CORS"
             export STRIPE_API_KEY="$STRIPE_API_KEY"
             export STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"
+            export MEILISEARCH_HOST="$MEILISEARCH_HOST"
+            export MEILISEARCH_API_KEY="$MEILISEARCH_API_KEY"
+            export MEILISEARCH_MASTER_KEY="$MEILISEARCH_MASTER_KEY"
 
             # Make sure script is executable
             chmod +x ./scripts/deploy-with-domain.sh
