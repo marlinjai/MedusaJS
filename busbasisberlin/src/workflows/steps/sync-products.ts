@@ -11,17 +11,16 @@ export const syncProductsStep = createStep(
 	'sync-products',
 	async ({ products }: SyncProductsStepInput, { container }) => {
 		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
-		
+
 		const existingProducts = await meilisearchModuleService.retrieveFromIndex(
 			products.map(product => product.id),
 			'product',
 		);
-		
+
 		const newProducts = products.filter(
-			product =>
-				!existingProducts.some((p: any) => p.id === product.id),
+			product => !existingProducts.some((p: any) => p.id === product.id),
 		);
-		
+
 		await meilisearchModuleService.indexData(
 			products as unknown as Record<string, unknown>[],
 			'product',

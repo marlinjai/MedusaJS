@@ -1,5 +1,8 @@
 // src/workflows/sync-products.ts
-import { createWorkflow, WorkflowResponse } from '@medusajs/framework/workflows-sdk';
+import {
+	createWorkflow,
+	WorkflowResponse,
+} from '@medusajs/framework/workflows-sdk';
 import { useQueryGraphStep } from '@medusajs/medusa/core-flows';
 import { syncProductsStep, SyncProductsStepInput } from './steps/sync-products';
 

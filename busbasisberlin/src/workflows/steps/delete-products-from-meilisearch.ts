@@ -15,7 +15,7 @@ export const deleteProductsFromMeilisearchStep = createStep(
 			ids,
 			'product',
 		);
-		
+
 		await meilisearchModuleService.deleteFromIndex(ids, 'product');
 
 		return new StepResponse(undefined, existingRecords);
@@ -25,7 +25,7 @@ export const deleteProductsFromMeilisearchStep = createStep(
 		if (!existingRecords) {
 			return;
 		}
-		
+
 		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
 
 		await meilisearchModuleService.indexData(existingRecords, 'product');

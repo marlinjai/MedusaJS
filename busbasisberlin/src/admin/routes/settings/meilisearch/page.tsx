@@ -1,8 +1,8 @@
 // src/admin/routes/settings/meilisearch/page.tsx
-import { Container, Heading, Button, toast } from '@medusajs/ui';
+import { defineRouteConfig } from '@medusajs/admin-sdk';
+import { Button, Container, Heading, toast } from '@medusajs/ui';
 import { useMutation } from '@tanstack/react-query';
 import { sdk } from '../../../lib/sdk';
-import { defineRouteConfig } from '@medusajs/admin-sdk';
 
 const MeilisearchPage = () => {
 	const { mutate, isPending } = useMutation({
