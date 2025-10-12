@@ -65,7 +65,7 @@ const ImageSection = () => {
 							className="relative h-44 lg:h-60 rounded-2xl overflow-hidden group"
 						>
 							<Image
-								src="/images/tools_I.jpg"
+								src="/images/about/tools_IV.jpg"
 								alt="Professionelle Werkzeuge"
 								fill
 								className="object-cover transition-transform duration-700 group-hover:scale-105"
