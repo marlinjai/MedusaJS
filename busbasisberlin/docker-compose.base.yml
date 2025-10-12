@@ -93,7 +93,6 @@ services:
     networks:
       - medusa_network
 
-
 # Named volumes for data persistence
 volumes:
   postgres_data:

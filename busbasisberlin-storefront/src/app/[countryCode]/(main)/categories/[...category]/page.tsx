@@ -21,9 +21,9 @@ export async function generateStaticParams() {
 		return [];
 	}
 
-	const product_categories = await listCategories();
+	const categoriesResponse = await listCategories();
 
-	if (!product_categories) {
+	if (!categoriesResponse?.product_categories) {
 		return [];
 	}
 
@@ -31,7 +31,7 @@ export async function generateStaticParams() {
 		regions?.map(r => r.countries?.map(c => c.iso_2)).flat(),
 	);
 
-	const categoryHandles = product_categories.map(
+	const categoryHandles = categoriesResponse.product_categories.map(
 		(category: any) => category.handle,
 	);
 
@@ -50,7 +50,13 @@ export async function generateStaticParams() {
 export async function generateMetadata(props: Props): Promise<Metadata> {
 	const params = await props.params;
 	try {
-		const productCategory = await getCategoryByHandle(params.category);
+		// Join category array to get the handle string
+		const categoryHandle = params.category.join('/');
+		const productCategory = await getCategoryByHandle(categoryHandle);
+
+		if (!productCategory) {
+			notFound();
+		}
 
 		const title = productCategory.name + ' | Medusa Store';
 
@@ -73,7 +79,9 @@ export default async function CategoryPage(props: Props) {
 	const params = await props.params;
 	const { sortBy, page } = searchParams;
 
-	const productCategory = await getCategoryByHandle(params.category);
+	// Join category array to get the handle string
+	const categoryHandle = params.category.join('/');
+	const productCategory = await getCategoryByHandle(categoryHandle);
 
 	if (!productCategory) {
 		notFound();
