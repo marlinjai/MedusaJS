@@ -338,7 +338,7 @@ export const listProductsForBuild = async ({
 	limit?: number;
 } = {}): Promise<HttpTypes.StoreProduct[]> => {
 	const { sdk } = await import('@lib/config');
-	
+
 	try {
 		const response = await sdk.client.fetch<{
 			products: HttpTypes.StoreProduct[];

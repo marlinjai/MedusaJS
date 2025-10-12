@@ -16,7 +16,9 @@ export async function generateStaticParams() {
 
 	try {
 		const regions = await listRegionsForBuild();
-		const countryCodes = regions?.map(r => r.countries?.map(c => c.iso_2)).flat();
+		const countryCodes = regions
+			?.map(r => r.countries?.map(c => c.iso_2))
+			.flat();
 
 		if (!countryCodes) {
 			return [];
