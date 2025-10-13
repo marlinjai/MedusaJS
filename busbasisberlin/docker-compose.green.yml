@@ -47,8 +47,8 @@ services:
       - MEILISEARCH_HOST=${MEILISEARCH_HOST}
       - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY}
       - MEILISEARCH_PRODUCT_INDEX_NAME=${MEILISEARCH_PRODUCT_INDEX_NAME}
-      # Admin frontend configuration
-      - VITE_MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
+      # Admin frontend configuration (Vite needs VITE_ prefix)
+      - VITE_MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL}
     volumes:
       - .:/app
       - /app/node_modules
