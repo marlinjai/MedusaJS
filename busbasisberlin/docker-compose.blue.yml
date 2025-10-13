@@ -43,6 +43,8 @@ services:
       - STORE_CORS=https://medusa-js-busbasisberlin-storefront.vercel.app
       - ADMIN_CORS=https://${DOMAIN_NAME}
       - AUTH_CORS=https://${DOMAIN_NAME},https://medusa-js-busbasisberlin-storefront.vercel.app
+      # Admin frontend configuration (Vite needs VITE_ prefix)
+      - VITE_MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL}
     volumes:
       - .:/app
       - /app/node_modules
