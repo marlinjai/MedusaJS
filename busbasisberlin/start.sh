@@ -2,6 +2,7 @@
 # Medusa Docker Startup Script
 # Handles migrations and starts the Medusa server
 # Following official Medusa deployment guide
+# Updated: 2025-10-13 - Restored to working configuration
 
 set -e
 
