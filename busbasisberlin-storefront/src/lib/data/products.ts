@@ -138,6 +138,65 @@ export const listProductsWithSort = async ({
 /**
  * Search products with a query string using Medusa's built-in search functionality
  */
+/**
+ * Retrieve a single product by handle
+ */
+export const retrieveProduct = async ({
+	handle,
+	countryCode,
+	regionId,
+}: {
+	handle: string;
+	countryCode?: string;
+	regionId?: string;
+}): Promise<HttpTypes.StoreProduct | null> => {
+	if (!countryCode && !regionId) {
+		throw new Error('Country code or region ID is required');
+	}
+
+	let region: HttpTypes.StoreRegion | undefined | null;
+
+	if (countryCode) {
+		region = await getRegion(countryCode);
+	} else {
+		region = await retrieveRegion(regionId!);
+	}
+
+	if (!region) {
+		return null;
+	}
+
+	const headers = {
+		...(await getAuthHeaders()),
+	};
+
+	const next = {
+		...(await getCacheOptions('products')),
+	};
+
+	try {
+		const product = await sdk.client.fetch<HttpTypes.StoreProduct>(
+			`/store/products/${handle}`,
+			{
+				method: 'GET',
+				query: {
+					region_id: region?.id,
+					fields:
+						'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
+				},
+				headers,
+				next,
+				cache: 'no-store',
+			},
+		);
+
+		return product;
+	} catch (error) {
+		console.error(`Failed to retrieve product with handle ${handle}:`, error);
+		return null;
+	}
+};
+
 export const searchProducts = async ({
 	query,
 	page = 1,

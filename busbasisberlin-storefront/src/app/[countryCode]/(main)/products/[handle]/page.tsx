@@ -1,4 +1,4 @@
-import { listProducts } from '@lib/data/products';
+import { listProducts, retrieveProduct } from '@lib/data/products';
 import { getRegion, listRegions } from '@lib/data/regions';
 import ProductTemplate from '@modules/products/templates';
 import { Metadata } from 'next';
@@ -56,10 +56,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 		notFound();
 	}
 
-	const product = await listProducts({
+	const product = await retrieveProduct({
+		handle,
 		countryCode: params.countryCode,
-		queryParams: { handle },
-	}).then(({ response }) => response.products[0]);
+	});
 
 	if (!product) {
 		notFound();
@@ -84,10 +84,10 @@ export default async function ProductPage(props: Props) {
 		notFound();
 	}
 
-	const pricedProduct = await listProducts({
+	const pricedProduct = await retrieveProduct({
+		handle: params.handle,
 		countryCode: params.countryCode,
-		queryParams: { handle: params.handle },
-	}).then(({ response }) => response.products[0]);
+	});
 
 	if (!pricedProduct) {
 		notFound();
