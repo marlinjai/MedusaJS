@@ -22,6 +22,14 @@ npx medusa db:migrate
 
 echo "✅ Migrations completed!"
 
+# Build the admin application with current environment variables
+echo "🏗️ Building admin application..."
+# Force clean build to pick up environment variables
+rm -rf .medusa/admin/dist 2>/dev/null || true
+npm run build:admin
+
+echo "✅ Admin build completed!"
+
 # Start the Medusa server
 echo "🎯 Starting Medusa server..."
 exec npm run start
