@@ -18,7 +18,6 @@ type SyncCategoriesWorkflowInput = {
 export const syncCategoriesWorkflow = createWorkflow(
 	'sync-categories',
 	({ filters, limit, offset }: SyncCategoriesWorkflowInput) => {
-		// @ts-expect-error - Complex type inference issue with useQueryGraphStep
 		const { data, metadata } = useQueryGraphStep({
 			entity: 'product_category',
 			fields: [
