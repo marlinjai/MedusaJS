@@ -8,7 +8,9 @@ export type DeleteProductsFromMeilisearchStep = {
 export const deleteProductsFromMeilisearchStep = createStep(
 	'delete-products-from-meilisearch-step',
 	async ({ ids }: DeleteProductsFromMeilisearchStep, { container }) => {
-		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
+		const meilisearchModuleService = container.resolve(
+			MEILISEARCH_MODULE,
+		) as any;
 
 		const existingRecords = await meilisearchModuleService.retrieveFromIndex(
 			ids,
@@ -22,7 +24,9 @@ export const deleteProductsFromMeilisearchStep = createStep(
 		if (!existingRecords) {
 			return;
 		}
-		const meilisearchModuleService = container.resolve(MEILISEARCH_MODULE);
+		const meilisearchModuleService = container.resolve(
+			MEILISEARCH_MODULE,
+		) as any;
 
 		await meilisearchModuleService.indexData(existingRecords, 'product');
 	},

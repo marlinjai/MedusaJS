@@ -22,7 +22,7 @@ export default async function handleCollectionEvents({
 			entity: 'product',
 			fields: ['id'],
 			filters: {
-				collection_id: [data.id],
+				collection_id: [data.id] as any,
 			},
 		});
 

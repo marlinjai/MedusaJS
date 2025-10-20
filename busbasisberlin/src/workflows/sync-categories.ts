@@ -18,6 +18,7 @@ type SyncCategoriesWorkflowInput = {
 export const syncCategoriesWorkflow = createWorkflow(
 	'sync-categories',
 	({ filters, limit, offset }: SyncCategoriesWorkflowInput) => {
+		// @ts-ignore - Complex union type issue in useQueryGraphStep
 		const { data, metadata } = useQueryGraphStep({
 			entity: 'product_category',
 			fields: [
