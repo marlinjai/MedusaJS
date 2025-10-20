@@ -45,7 +45,8 @@
 		"update:suppliers": "medusa exec ./src/scripts/update-suppliers.ts",
 		"import:images": "medusa exec ./src/scripts/upload-images.ts",
 		"import:products": "medusa exec ./src/scripts/import-products.ts",
-		"cleanup:database": "medusa exec ./src/scripts/cleanup-database.ts"
+		"cleanup:database": "medusa exec ./src/scripts/cleanup-database.ts",
+		"meilisearch:import": "medusa exec ./src/scripts/meilisearch-import.ts"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.859.0",
@@ -67,6 +68,7 @@
 		"csv-parse": "^5.6.0",
 		"handlebars": "^4.7.8",
 		"lucide-react": "^0.518.0",
+		"meilisearch": "^0.53.0",
 		"pg": "^8.13.0",
 		"puppeteer": "^24.15.0",
 		"resend": "^4.7.0",

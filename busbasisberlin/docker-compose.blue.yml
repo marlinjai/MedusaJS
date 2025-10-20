@@ -45,6 +45,12 @@ services:
       - AUTH_CORS=https://${DOMAIN_NAME},https://medusa-js-busbasisberlin-storefront.vercel.app
       # Admin frontend configuration (Vite needs VITE_ prefix)
       - VITE_MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL}
+      # Meilisearch configuration
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://medusa_meilisearch:7700}
+      - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY}
+      - MEILISEARCH_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
+      - MEILISEARCH_PRODUCT_INDEX=${MEILISEARCH_PRODUCT_INDEX_NAME:-products}
+      - MEILISEARCH_CATEGORY_INDEX=${MEILISEARCH_CATEGORY_INDEX_NAME:-categories}
     volumes:
       - .:/app
       - /app/node_modules
@@ -93,6 +99,12 @@ services:
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       # Domain configuration
       - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
+      # Meilisearch configuration
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://medusa_meilisearch:7700}
+      - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY}
+      - MEILISEARCH_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
+      - MEILISEARCH_PRODUCT_INDEX=${MEILISEARCH_PRODUCT_INDEX_NAME:-products}
+      - MEILISEARCH_CATEGORY_INDEX=${MEILISEARCH_CATEGORY_INDEX_NAME:-categories}
     volumes:
       - .:/app
       - /app/node_modules

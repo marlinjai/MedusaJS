@@ -122,6 +122,8 @@ export default function OfferDetailPage() {
 			available_quantity: number;
 			is_available: boolean;
 			stock_status: string;
+			is_reserved: boolean;
+			reservation_id: string;
 		}>;
 	} | null>(null);
 	const [checkingInventory, setCheckingInventory] = useState(false);
@@ -1373,19 +1375,25 @@ export default function OfferDetailPage() {
 																		size="small"
 																		className="text-ui-fg-subtle"
 																	>
-																		Lager:{' '}
 																		{(() => {
 																			const inventoryItem =
 																				getItemInventoryStatus(item.id);
-																			if (
-																				inventoryItem &&
-																				inventoryItem.stock_status !== 'service'
-																			) {
-																				return inventoryItem.available_quantity;
+																			if (inventoryItem) {
+																				// Show different text for reserved items
+																				if (
+																					inventoryItem.stock_status ===
+																					'reserved'
+																				) {
+																					return `🔒 Reserviert (${item.quantity} Stk.)`;
+																				}
+																				if (
+																					inventoryItem.stock_status !==
+																					'service'
+																				) {
+																					return `Lager: ${inventoryItem.available_quantity}`;
+																				}
 																			}
-																			return (
-																				item.inventory_quantity ?? 'Unbekannt'
-																			);
+																			return `Lager: ${item.inventory_quantity ?? 'Unbekannt'}`;
 																		})()}
 																	</Text>
 																	{(() => {
@@ -1403,6 +1411,12 @@ export default function OfferDetailPage() {
 																					return (
 																						<Badge color="orange" size="small">
 																							Niedrig
+																						</Badge>
+																					);
+																				case 'reserved':
+																					return (
+																						<Badge color="purple" size="small">
+																							Reserviert
 																						</Badge>
 																					);
 																				case 'available':
@@ -1642,6 +1656,15 @@ export default function OfferDetailPage() {
 										</Badge>
 									</div>
 
+									{/* Show reserved items count if offer has reservations */}
+									{offer.has_reservations && (
+										<div className="p-2 bg-purple-50 border border-purple-200 rounded-md">
+											<Text size="small" className="text-purple-700">
+												🔒 Artikel sind für dieses Angebot reserviert
+											</Text>
+										</div>
+									)}
+
 									{inventoryStatus.has_out_of_stock && (
 										<div className="p-2 bg-red-50 border border-red-200 rounded-md">
 											<Text size="small" className="text-red-700">
@@ -1650,13 +1673,14 @@ export default function OfferDetailPage() {
 										</div>
 									)}
 
-									{inventoryStatus.has_low_stock && (
-										<div className="p-2 bg-orange-50 border border-orange-200 rounded-md">
-											<Text size="small" className="text-orange-700">
-												⚠️ Einige Artikel haben niedrigen Lagerbestand
-											</Text>
-										</div>
-									)}
+									{inventoryStatus.has_low_stock &&
+										!inventoryStatus.has_out_of_stock && (
+											<div className="p-2 bg-orange-50 border border-orange-200 rounded-md">
+												<Text size="small" className="text-orange-700">
+													⚠️ Einige Artikel haben niedrigen Lagerbestand
+												</Text>
+											</div>
+										)}
 
 									<div className="text-xs text-ui-fg-muted">
 										Letzter Check: {new Date().toLocaleTimeString('de-DE')}

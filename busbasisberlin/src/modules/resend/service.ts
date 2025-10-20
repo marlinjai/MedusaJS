@@ -206,16 +206,29 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 			);
 		}
 
+		this.logger.info(
+			`[RESEND] Attempting to send email to ${notification.to} with template ${notification.template}`,
+		);
+
 		const { data, error } = await this.resendClient.emails.send(emailOptions);
 
 		if (error || !data) {
 			if (error) {
-				this.logger.error('Failed to send email', error);
+				this.logger.error(
+					'[RESEND] Failed to send email via Resend API:',
+					error,
+				);
 			} else {
-				this.logger.error('Failed to send email: unknown error');
+				this.logger.error('[RESEND] Failed to send email: unknown error');
 			}
-			return {};
+			throw new Error(
+				`Email send failed: ${error?.message || 'Unknown error'}`,
+			);
 		}
+
+		this.logger.info(
+			`[RESEND] Email sent successfully via Resend API. Email ID: ${data.id}`,
+		);
 
 		return { id: data.id };
 	}

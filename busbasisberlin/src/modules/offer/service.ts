@@ -528,8 +528,13 @@ class OfferService extends MedusaService({
 
 	/**
 	 * Check variant availability for offer items using real-time inventory data
+	 * @param offerId - The offer ID to check
+	 * @param queryServiceOverride - Optional query service to use (for API calls)
 	 */
-	async checkOfferInventoryAvailability(offerId: string): Promise<{
+	async checkOfferInventoryAvailability(
+		offerId: string,
+		queryServiceOverride?: any,
+	): Promise<{
 		can_complete: boolean;
 		has_out_of_stock: boolean;
 		has_low_stock: boolean;
@@ -541,8 +546,8 @@ class OfferService extends MedusaService({
 			required_quantity?: number;
 		}>;
 	}> {
-		// Try to resolve query service dynamically if not available
-		let queryService = this.query_;
+		// Use provided query service or try to resolve it
+		let queryService = queryServiceOverride || this.query_;
 		if (!queryService) {
 			try {
 				// Try to resolve query service from stored container reference
@@ -647,12 +652,21 @@ class OfferService extends MedusaService({
 				};
 			}
 
+			// ✅ FIX: If item has a reservation_id, it means inventory is already reserved
+			// Don't check raw availability - check if reservation exists
+			const hasReservation = Boolean(item.reservation_id);
 			const availableQuantity = inventoryMap[item.variant_id] || 0;
 			const requiredQuantity = item.quantity;
-			const isAvailable = availableQuantity >= requiredQuantity;
+			
+			// If there's a reservation, the item is available regardless of raw stock
+			const isAvailable =
+				hasReservation || availableQuantity >= requiredQuantity;
 
 			let stockStatus = 'available';
-			if (availableQuantity <= 0) {
+			if (hasReservation) {
+				// Item has reservation - it's available
+				stockStatus = 'reserved';
+			} else if (availableQuantity <= 0) {
 				stockStatus = 'out_of_stock';
 			} else if (availableQuantity < requiredQuantity) {
 				stockStatus = 'insufficient';
@@ -670,6 +684,7 @@ class OfferService extends MedusaService({
 		});
 
 		// Calculate overall status
+		// ✅ FIX: Don't count reserved items as out of stock
 		const hasOutOfStock = itemStatuses.some(
 			item =>
 				item.stock_status === 'out_of_stock' ||
@@ -678,7 +693,14 @@ class OfferService extends MedusaService({
 		const hasLowStock = itemStatuses.some(
 			item => item.stock_status === 'low_stock',
 		);
-		const canComplete = !hasOutOfStock;
+		// Reserved items can be completed, so check if all items are either available or reserved
+		const canComplete = itemStatuses.every(
+			item =>
+				item.stock_status === 'available' ||
+				item.stock_status === 'reserved' ||
+				item.stock_status === 'low_stock' ||
+				item.stock_status === 'service',
+		);
 
 		return {
 			can_complete: canComplete,

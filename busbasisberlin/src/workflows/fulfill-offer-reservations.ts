@@ -108,20 +108,20 @@ const reduceInventoryLevelsStep = createStep(
 							});
 
 						for (const level of inventoryLevels) {
-							// Calculate how much we can reduce
-							const availableToReduce = Math.min(
-								level.stocked_quantity - level.reserved_quantity,
+							// ✅ FIX: When fulfilling, reduce from total stocked quantity
+							// The reservation has already been accounted for, so we reduce from total stock
+							const quantityToReduce = Math.min(
+								level.stocked_quantity,
 								item.quantity,
 							);
 
-							if (availableToReduce > 0) {
+							if (quantityToReduce > 0) {
 								// Reduce the inventory level
 								await inventoryModuleService.updateInventoryLevels([
 									{
 										inventory_item_id: level.inventory_item_id,
 										location_id: level.location_id,
-										stocked_quantity:
-											level.stocked_quantity - availableToReduce,
+										stocked_quantity: level.stocked_quantity - quantityToReduce,
 									},
 								]);
 
@@ -129,11 +129,11 @@ const reduceInventoryLevelsStep = createStep(
 									inventory_item_id: inventoryItem.id,
 									variant_id: item.variant_id,
 									sku: item.sku,
-									quantity_reduced: availableToReduce,
+									quantity_reduced: quantityToReduce,
 								});
 
 								logger.info(
-									`[OFFER-FULFILLMENT] Reduced inventory for ${item.sku}: ${availableToReduce} units`,
+									`[OFFER-FULFILLMENT] Reduced inventory for ${item.sku}: ${quantityToReduce} units (from ${level.stocked_quantity} to ${level.stocked_quantity - quantityToReduce})`,
 								);
 							}
 						}
@@ -259,16 +259,25 @@ const releaseOfferReservationsStep = createStep(
 	},
 );
 
-// ✅ Step 4: Update offer status to completed
+// ✅ Step 4: Update offer status to completed and emit event for invoice/email
 const updateOfferStatusStep = createStep(
 	'update-offer-status-completed',
-	async (input: { offer_id: string }, { container }) => {
+	async (
+		input: { offer_id: string; previous_status: string },
+		{ container },
+	) => {
 		const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
 		const offerService = resolveOfferService(container);
 
 		logger.info(
 			`[OFFER-FULFILLMENT] Updating offer ${input.offer_id} status to completed`,
 		);
+
+		// Get offer details before update for event emission
+		const offer = await offerService.getOfferWithDetails(input.offer_id);
+		if (!offer) {
+			throw new Error(`Offer ${input.offer_id} not found`);
+		}
 
 		await offerService.updateOffers([
 			{
@@ -278,6 +287,33 @@ const updateOfferStatusStep = createStep(
 			},
 		]);
 
+		// ✅ Emit event to trigger invoice PDF generation and customer email
+		try {
+			const eventModuleService = container.resolve(Modules.EVENT_BUS);
+			await eventModuleService.emit({
+				name: 'offer.status_changed',
+				data: {
+					offer_id: input.offer_id,
+					offer_number: offer.offer_number,
+					previous_status: input.previous_status,
+					new_status: 'completed',
+					status: 'completed',
+					customer_email: offer.customer_email,
+					customer_name: offer.customer_name,
+				},
+			});
+
+			logger.info(
+				`[OFFER-FULFILLMENT] Emitted status change event for invoice generation: ${input.previous_status} → completed`,
+			);
+		} catch (error) {
+			logger.error(
+				`[OFFER-FULFILLMENT] Failed to emit status change event:`,
+				error,
+			);
+			// Don't fail the workflow if event emission fails
+		}
+
 		return new StepResponse(
 			{
 				status_updated: true,
@@ -286,7 +322,7 @@ const updateOfferStatusStep = createStep(
 			},
 			{
 				offer_id: input.offer_id,
-				previous_status: 'accepted', // Assuming it was accepted before
+				previous_status: input.previous_status,
 			},
 		);
 	},
@@ -338,9 +374,10 @@ export const fulfillOfferReservationsWorkflow = createWorkflow(
 			offer_id: input.offer_id,
 		});
 
-		// Step 4: Update offer status
+		// Step 4: Update offer status and trigger invoice generation
 		const statusUpdate = updateOfferStatusStep({
 			offer_id: input.offer_id,
+			previous_status: validation.offer.status,
 		});
 
 		return new WorkflowResponse({

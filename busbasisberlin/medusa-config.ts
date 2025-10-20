@@ -167,6 +167,24 @@ const getModules = () => {
 		},
 	);
 
+	// Add Meilisearch service if configured
+	if (
+		process.env.MEILISEARCH_HOST &&
+		process.env.MEILISEARCH_API_KEY &&
+		process.env.WORKER_MODE === 'worker'
+	) {
+		modules.push({
+			resolve: './src/modules/meilisearch',
+			options: {
+				host: process.env.MEILISEARCH_HOST,
+				apiKey: process.env.MEILISEARCH_API_KEY,
+				productIndexName: process.env.MEILISEARCH_PRODUCT_INDEX || 'products',
+				categoryIndexName:
+					process.env.MEILISEARCH_CATEGORY_INDEX || 'categories',
+			},
+		});
+	}
+
 	return modules;
 };
 

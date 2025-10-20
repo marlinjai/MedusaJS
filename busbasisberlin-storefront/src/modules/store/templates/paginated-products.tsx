@@ -1,5 +1,6 @@
-import { listProductsWithSort, searchProducts } from '@lib/data/products';
+import { listProductsWithSort } from '@lib/data/products';
 import { getRegion } from '@lib/data/regions';
+import { searchProducts } from '@lib/data/search';
 import ProductPreview from '@modules/products/components/product-preview';
 import { Pagination } from '@modules/store/components/pagination';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
@@ -46,7 +47,7 @@ export default async function PaginatedProducts({
 			page,
 			limit: PRODUCT_LIMIT,
 			countryCode,
-			sortBy,
+			sort: sortBy || 'created_at',
 		});
 
 		products = searchResult.response.products;
