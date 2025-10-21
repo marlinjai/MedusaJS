@@ -390,3 +390,4 @@ export default class MeilisearchModuleService {
 	}
 }
 // Updated Tue Oct 21 22:13:44 CEST 2025
+// API key updated Wed Oct 22 00:25:36 CEST 2025
