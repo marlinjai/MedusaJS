@@ -1,0 +1,8 @@
+# Ignore backend directory during storefront build
+busbasisberlin/
+data/
+instructions/
+change-docu/
+setup-deployment/
+*.md
+
