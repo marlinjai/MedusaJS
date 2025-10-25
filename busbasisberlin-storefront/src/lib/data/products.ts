@@ -140,6 +140,8 @@ export const listProductsWithSort = async ({
  */
 /**
  * Retrieve a single product by handle
+ * Uses the LIST endpoint with handle filter as recommended by MedusaJS docs
+ * @see https://docs.medusajs.com/resources/storefront-development/products/retrieve
  */
 export const retrieveProduct = async ({
 	handle,
@@ -175,22 +177,26 @@ export const retrieveProduct = async ({
 	};
 
 	try {
-		const product = await sdk.client.fetch<HttpTypes.StoreProduct>(
-			`/store/products/${handle}`,
-			{
-				method: 'GET',
-				query: {
-					region_id: region?.id,
-					fields:
-						'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
-				},
-				headers,
-				next,
-				cache: 'no-store',
+		// Use LIST endpoint with handle filter (not GET by ID)
+		// This is the correct way to retrieve products by handle in MedusaJS v2
+		const { products } = await sdk.client.fetch<{
+			products: HttpTypes.StoreProduct[];
+		}>(`/store/products`, {
+			method: 'GET',
+			query: {
+				handle, // Filter by handle
+				region_id: region?.id,
+				fields:
+					'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
+				limit: 1, // We only need one product
 			},
-		);
+			headers,
+			next,
+			cache: 'no-store',
+		});
 
-		return product;
+		// Return the first (and should be only) product, or null if not found
+		return products?.[0] || null;
 	} catch (error) {
 		console.error(`Failed to retrieve product with handle ${handle}:`, error);
 		return null;

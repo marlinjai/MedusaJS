@@ -178,37 +178,37 @@ const RealTimeSearch = ({
 							}
 						}}
 						placeholder={placeholder}
-						className="w-full px-4 py-3 pr-20 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+						className="w-full px-4 py-3 pr-20 text-sm bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
 					/>
 
-					{/* Clear button */}
+					{/* Clear button - Dark Theme */}
 					{searchTerm && (
 						<button
 							type="button"
 							onClick={clearSearch}
-							className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+							className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
 						>
 							<IoClose className="w-4 h-4" />
 						</button>
 					)}
 
-					{/* Search button */}
+					{/* Search button - Dark Theme */}
 					<button
 						type="submit"
-						className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+						className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
 					>
 						{isLoading ? (
-							<div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-500 rounded-full" />
+							<div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-blue-500 rounded-full" />
 						) : (
 							<IoSearch className="h-5 w-5" />
 						)}
 					</button>
 				</div>
 
-				{/* Search suggestions dropdown */}
+				{/* Search suggestions dropdown - Dark Theme */}
 				{showSuggestions && suggestions.length > 0 && (
-					<div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto">
-						<div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b border-gray-100">
+					<div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-80 overflow-y-auto">
+						<div className="px-3 py-2 text-xs font-medium text-gray-400 bg-gray-900/50 border-b border-gray-700">
 							Suchvorschläge
 						</div>
 						{suggestions.map((suggestion, index) => (
@@ -216,10 +216,10 @@ const RealTimeSearch = ({
 								key={index}
 								type="button"
 								onClick={() => handleSuggestionClick(suggestion)}
-								className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
+								className="w-full px-4 py-3 text-left text-sm text-gray-300 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none border-b border-gray-700 last:border-b-0 transition-colors"
 							>
 								<div className="flex items-center">
-									<IoSearch className="h-4 w-4 text-gray-400 mr-3 flex-shrink-0" />
+									<IoSearch className="h-4 w-4 text-gray-500 mr-3 flex-shrink-0" />
 									<span className="truncate">{suggestion}</span>
 								</div>
 							</button>

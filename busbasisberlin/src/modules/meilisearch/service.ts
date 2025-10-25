@@ -128,9 +128,11 @@ export default class MeilisearchModuleService {
 				'variant_count',
 			]);
 
-			// Configure pagination settings
-			await index.updatePaginationSettings({
-				maxTotalHits: 10000, // Increase from default 1000 to support large catalogs
+			// Configure pagination settings via updateSettings (Meilisearch v1.0+)
+			await index.updateSettings({
+				pagination: {
+					maxTotalHits: 10000, // Increase from default 1000 to support large catalogs
+				},
 			});
 
 			// Configure faceting settings for real-time category facets

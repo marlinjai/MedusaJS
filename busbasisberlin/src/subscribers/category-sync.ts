@@ -43,10 +43,8 @@ export default async function handleCategoryEvents({
 				entity: 'product_category',
 				fields: ['id'],
 				filters: {
-					parent_category: {
-						id: categoryId,
-					},
-				},
+					parent_category_id: categoryId,
+				} as any,
 			});
 
 			let allChildren = [categoryId];

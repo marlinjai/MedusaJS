@@ -18,18 +18,22 @@ type ProductCardProps = {
 const ProductCard = ({ product, region, isFeatured }: ProductCardProps) => {
 	const pricedProduct = getProductPrice({
 		product,
-		region,
 	});
 
 	if (!pricedProduct) {
 		return null;
 	}
 
-	// Check availability
+	// Check availability - products from Meilisearch have is_available field
+	// If not present, fall back to checking variant inventory
 	const isAvailable =
-		product.variants?.some(variant =>
-			variant.manage_inventory ? (variant.inventory_quantity || 0) > 0 : true,
-		) ?? false;
+		(product as any).is_available !== undefined
+			? (product as any).is_available
+			: product.variants?.some(variant =>
+					variant.manage_inventory
+						? (variant.inventory_quantity || 0) > 0
+						: true,
+			  ) ?? false;
 
 	const totalInventory =
 		product.variants?.reduce((sum, variant) => {
@@ -37,9 +41,9 @@ const ProductCard = ({ product, region, isFeatured }: ProductCardProps) => {
 		}, 0) || 0;
 
 	return (
-		<div className="group relative bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+		<div className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
 			{/* Product Image - Square */}
-			<div className="aspect-square relative overflow-hidden bg-gray-50">
+			<div className="aspect-square relative overflow-hidden bg-gray-100 dark:bg-gray-900">
 				<LocalizedClientLink
 					href={`/products/${product.handle}`}
 					className="absolute inset-0"
@@ -52,38 +56,38 @@ const ProductCard = ({ product, region, isFeatured }: ProductCardProps) => {
 					/>
 				</LocalizedClientLink>
 
-				{/* Availability Badge */}
-				<div className="absolute top-3 right-3">
+				{/* Availability Badge - Top Right */}
+				<div className="absolute top-2 right-2 z-10">
 					{isAvailable ? (
-						<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-							Verfügbar
+						<span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500 text-white shadow-sm">
+							Auf Lager
 						</span>
 					) : (
-						<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-							Nicht verfügbar
+						<span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500 text-white shadow-sm">
+							Anfragen
 						</span>
 					)}
 				</div>
 
-				{/* Stock Count for Available Items */}
+				{/* Stock Count Badge - Top Left (only if available and has inventory) */}
 				{isAvailable && totalInventory > 0 && (
-					<div className="absolute top-3 left-3">
-						<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-							{totalInventory} auf Lager
+					<div className="absolute top-2 left-2 z-10">
+						<span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-white backdrop-blur-sm shadow-sm">
+							{totalInventory} Stück
 						</span>
 					</div>
 				)}
 			</div>
 
 			{/* Product Info */}
-			<div className="p-4 space-y-3">
+			<div className="p-4 space-y-2.5">
 				{/* Product Title */}
-				<div className="min-h-[2.5rem]">
+				<div className="min-h-[2.8rem]">
 					<LocalizedClientLink
 						href={`/products/${product.handle}`}
 						className="block"
 					>
-						<Text className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+						<Text className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
 							{product.title}
 						</Text>
 					</LocalizedClientLink>
@@ -91,46 +95,44 @@ const ProductCard = ({ product, region, isFeatured }: ProductCardProps) => {
 
 				{/* Product Description */}
 				{product.description && (
-					<Text className="text-xs text-gray-600 line-clamp-2">
+					<Text className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
 						{product.description}
 					</Text>
 				)}
 
 				{/* Price */}
-				<div className="flex items-center justify-between">
-					<div className="flex-1">
-						{pricedProduct.cheapestPrice && (
-							<div className="text-sm font-medium text-gray-900">
-								{pricedProduct.cheapestPrice.calculated_price}
-							</div>
-						)}
-					</div>
+				<div className="flex items-baseline gap-2 pt-1">
+					{pricedProduct.cheapestPrice && (
+						<div className="text-lg font-bold text-gray-900 dark:text-white">
+							{pricedProduct.cheapestPrice.calculated_price}
+						</div>
+					)}
 				</div>
 
 				{/* Action Button */}
 				<div className="pt-2">
 					<LocalizedClientLink
 						href={`/products/${product.handle}`}
-						className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						className="w-full inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						Details ansehen
+						{isAvailable ? 'Details ansehen' : 'Anfragen'}
 					</LocalizedClientLink>
 				</div>
 
 				{/* Categories */}
 				{product.categories && product.categories.length > 0 && (
-					<div className="flex flex-wrap gap-1 pt-2">
+					<div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-100 dark:border-gray-700">
 						{product.categories.slice(0, 2).map(category => (
 							<span
 								key={category.id}
-								className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+								className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
 							>
 								{category.name}
 							</span>
 						))}
 						{product.categories.length > 2 && (
-							<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-								+{product.categories.length - 2} mehr
+							<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+								+{product.categories.length - 2}
 							</span>
 						)}
 					</div>

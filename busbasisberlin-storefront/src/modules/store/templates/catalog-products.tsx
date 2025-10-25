@@ -80,120 +80,147 @@ const CatalogProducts = async ({
 		} = catalogData;
 
 		return (
-			<div className="py-6 content-container">
-				{/* Filters Above Products */}
-				<div className="mb-8">
-					<div className="grid grid-cols-1 medium:grid-cols-3 gap-6 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
-						{/* Category Filter */}
-						<div>
-							<CategoryFilterSimple
-								categoryNames={facets.category_names}
-								categoryPaths={facets.category_paths}
-							/>
-						</div>
+			<div className="content-container py-6">
+				{/* Desktop/Tablet: Sidebar + Content Layout */}
+				<div className="flex flex-col lg:flex-row gap-8">
+					{/* Sidebar - Filters (Desktop: Left Side, Mobile: Top) */}
+					<aside className="w-full lg:w-72 flex-shrink-0">
+						<div className="space-y-4">
+							{/* Category Filter - Dark Theme */}
+							<div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+								<CategoryFilterSimple
+									categoryNames={facets.category_names}
+									categoryPaths={facets.category_paths}
+								/>
+							</div>
 
-						{/* Availability Filter */}
-						<div>
-							<AvailabilityFilter
-								value={appliedFilters.availability as any}
-								facetData={facets.is_available}
-							/>
-						</div>
+							{/* Availability Filter - Dark Theme */}
+							<div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+								<AvailabilityFilter
+									value={appliedFilters.availability as any}
+									facetData={facets.is_available}
+								/>
+							</div>
 
-						{/* Price Filter */}
-						<div>
-							<PriceFilter
-								minPrice={appliedFilters.priceRange?.min}
-								maxPrice={appliedFilters.priceRange?.max}
-							/>
+							{/* Price Filter - Dark Theme */}
+							<div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+								<PriceFilter
+									minPrice={appliedFilters.priceRange?.min}
+									maxPrice={appliedFilters.priceRange?.max}
+								/>
+							</div>
 						</div>
-					</div>
-				</div>
+					</aside>
 
-				{/* Main Content */}
-				<div className="w-full">
-					{/* Results Summary */}
-					<div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-						<div className="flex items-center space-x-4">
-							<span className="text-sm text-gray-600">
-								{totalProducts} {totalProducts === 1 ? 'Produkt' : 'Produkte'}
-								{appliedFilters.query && ` für "${appliedFilters.query}"`}
-							</span>
-							<span className="text-xs text-gray-500">
-								({processingTimeMs}ms)
-							</span>
-						</div>
-
-						{/* Active Filters Summary */}
-						{(appliedFilters.categories.length > 0 ||
-							appliedFilters.tags.length > 0 ||
-							appliedFilters.collections.length > 0 ||
-							appliedFilters.availability !== 'all' ||
-							appliedFilters.priceRange) && (
-							<div className="text-sm text-gray-500">
-								{appliedFilters.categories.length > 0 && (
-									<span className="mr-2">
-										{appliedFilters.categories.length} Kategorie
-										{appliedFilters.categories.length !== 1 ? 'n' : ''}
+					{/* Main Content Area */}
+					<main className="flex-1 min-w-0">
+						{/* Results Summary Bar - Dark Theme */}
+						<div className="bg-gray-800 rounded-lg border border-gray-700 px-6 py-4 mb-6">
+							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+								<div className="flex items-center gap-4">
+									<span className="text-base font-medium text-white">
+										{totalProducts.toLocaleString('de-DE')}{' '}
+										{totalProducts === 1 ? 'Produkt' : 'Produkte'}
 									</span>
-								)}
-								{appliedFilters.availability !== 'all' && (
-									<span className="mr-2">Verfügbarkeit</span>
-								)}
-								{appliedFilters.priceRange && (
-									<span className="mr-2">Preisfilter</span>
+									{appliedFilters.query && (
+										<span className="text-sm text-gray-400">
+											für "{appliedFilters.query}"
+										</span>
+									)}
+								</div>
+
+								{/* Active Filters Tags - Dark Theme */}
+								{(appliedFilters.categories.length > 0 ||
+									appliedFilters.availability !== 'all' ||
+									appliedFilters.priceRange) && (
+									<div className="flex flex-wrap gap-2">
+										{appliedFilters.categories.length > 0 && (
+											<span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-600 text-white">
+												{appliedFilters.categories[0]}
+											</span>
+										)}
+										{appliedFilters.availability !== 'all' && (
+											<span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-600 text-white">
+												{appliedFilters.availability === 'in_stock'
+													? 'Verfügbar'
+													: 'Nicht verfügbar'}
+											</span>
+										)}
+										{appliedFilters.priceRange && (
+											<span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-600 text-white">
+												Preisfilter
+											</span>
+										)}
+									</div>
 								)}
 							</div>
-						)}
-					</div>
-
-					{/* No results */}
-					{products.length === 0 ? (
-						<div className="text-center py-12">
-							<h3 className="text-lg font-medium text-gray-900 mb-2">
-								Keine Produkte gefunden
-							</h3>
-							{appliedFilters.query ||
-							appliedFilters.categories.length > 0 ||
-							appliedFilters.availability !== 'all' ||
-							appliedFilters.priceRange ? (
-								<div className="space-y-2">
-									<p className="text-gray-600">
-										Keine Produkte entsprechen den aktuellen Filterkriterien.
-									</p>
-									<p className="text-sm text-gray-500">
-										Versuchen Sie, einige Filter zu entfernen oder andere
-										Suchbegriffe zu verwenden.
-									</p>
-								</div>
-							) : (
-								<p className="text-gray-600">Keine Produkte verfügbar.</p>
-							)}
 						</div>
-					) : (
-						<>
-							{/* Products Grid - Squared Cards */}
-							<ul
-								className="grid grid-cols-1 small:grid-cols-2 medium:grid-cols-3 large:grid-cols-4 gap-6 mb-8"
-								data-testid="products-list"
-							>
-								{products.map(product => (
-									<li key={product.id}>
-										<ProductCard product={product} region={region} />
-									</li>
-								))}
-							</ul>
 
-							{/* Pagination */}
-							{pagination.totalPages > 1 && (
-								<Pagination
-									data-testid="product-pagination"
-									page={pagination.page}
-									totalPages={pagination.totalPages}
-								/>
-							)}
-						</>
-					)}
+						{/* No Results - Dark Theme */}
+						{products.length === 0 ? (
+							<div className="bg-gray-800 rounded-lg border border-gray-700 p-12 text-center">
+								<div className="max-w-md mx-auto">
+									<svg
+										className="mx-auto h-12 w-12 text-gray-500 mb-4"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+									<h3 className="text-lg font-semibold text-white mb-2">
+										Keine Produkte gefunden
+									</h3>
+									{appliedFilters.query ||
+									appliedFilters.categories.length > 0 ||
+									appliedFilters.availability !== 'all' ||
+									appliedFilters.priceRange ? (
+										<div className="space-y-2">
+											<p className="text-gray-400">
+												Keine Produkte entsprechen den aktuellen
+												Filterkriterien.
+											</p>
+											<p className="text-sm text-gray-500">
+												Versuchen Sie, einige Filter zu entfernen.
+											</p>
+										</div>
+									) : (
+										<p className="text-gray-400">Keine Produkte verfügbar.</p>
+									)}
+								</div>
+							</div>
+						) : (
+							<>
+								{/* Products Grid */}
+								<ul
+									className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8"
+									data-testid="products-list"
+								>
+									{products.map(product => (
+										<li key={product.id}>
+											<ProductCard product={product} region={region} />
+										</li>
+									))}
+								</ul>
+
+								{/* Pagination */}
+								{pagination.totalPages > 1 && (
+									<div className="flex justify-center mt-8">
+										<Pagination
+											data-testid="product-pagination"
+											page={pagination.page}
+											totalPages={pagination.totalPages}
+										/>
+									</div>
+								)}
+							</>
+						)}
+					</main>
 				</div>
 			</div>
 		);

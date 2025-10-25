@@ -20,6 +20,25 @@ const MeilisearchPage = () => {
 		},
 	});
 
+	const { mutate: mutateConfigure, isPending: isConfiguringPending } =
+		useMutation({
+			mutationFn: () =>
+				sdk.client.fetch('/admin/meilisearch/configure', {
+					method: 'POST',
+				}),
+			onSuccess: () => {
+				toast.success(
+					'Meilisearch index reconfigured (maxTotalHits: 10000 applied)',
+				);
+				refetchFacets();
+				refetchIndexes();
+			},
+			onError: err => {
+				console.error(err);
+				toast.error('Failed to reconfigure Meilisearch');
+			},
+		});
+
 	const { data: facetsData, refetch: refetchFacets } = useQuery({
 		queryKey: ['meilisearch-facets'],
 		queryFn: async () => {
@@ -46,17 +65,42 @@ const MeilisearchPage = () => {
 		mutate();
 	};
 
+	const handleConfigure = () => {
+		mutateConfigure();
+	};
+
 	return (
 		<Container className="divide-y p-0">
 			<div className="flex items-center justify-between px-6 py-4">
 				<Heading level="h2">Meilisearch Management</Heading>
 			</div>
 
+			{/* Configuration Section */}
+			<div className="px-6 py-8 bg-ui-bg-subtle">
+				<div className="mb-4">
+					<Heading level="h3" className="mb-2">
+						⚙️ Index Configuration
+					</Heading>
+					<Text className="text-ui-fg-subtle mb-4">
+						Reconfigure Meilisearch indexes to apply updated settings
+						(maxTotalHits: 10,000). Use this if total product count is capped at
+						1,000.
+					</Text>
+				</div>
+				<Button
+					variant="secondary"
+					onClick={handleConfigure}
+					isLoading={isConfiguringPending}
+				>
+					Reconfigure Indexes
+				</Button>
+			</div>
+
 			{/* Sync Section */}
 			<div className="px-6 py-8">
 				<div className="mb-4">
 					<Heading level="h3" className="mb-2">
-						Data Synchronization
+						📦 Data Synchronization
 					</Heading>
 					<Text className="text-ui-fg-subtle mb-4">
 						Sync products with enhanced category paths, availability, and

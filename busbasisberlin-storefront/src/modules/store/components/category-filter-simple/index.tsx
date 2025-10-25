@@ -84,12 +84,12 @@ const CategoryFilterSimple = ({
 			return (
 				<div key={nodePath} className="select-none">
 					<div
-						className={`group flex items-center py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
+						className={`group flex items-center py-2 px-2 rounded transition-all duration-150 ${
 							isSelected
-								? 'bg-blue-500 text-white shadow-md'
-								: 'hover:bg-gray-100 text-gray-700'
+								? 'bg-blue-600 text-white'
+								: 'hover:bg-gray-700 text-gray-300'
 						}`}
-						style={{ marginLeft: `${category.level * 20}px` }}
+						style={{ marginLeft: `${category.level * 16}px` }}
 					>
 						{/* Expand/Collapse Icon */}
 						{hasChildren ? (
@@ -99,7 +99,7 @@ const CategoryFilterSimple = ({
 									handleNodeToggle(nodePath);
 								}}
 								className={`mr-2 p-1 rounded transition-colors ${
-									isSelected ? 'hover:bg-blue-600' : 'hover:bg-gray-200'
+									isSelected ? 'hover:bg-blue-700' : 'hover:bg-gray-600'
 								}`}
 								aria-label={
 									isExpanded ? 'Kategorie einklappen' : 'Kategorie ausklappen'
@@ -108,13 +108,13 @@ const CategoryFilterSimple = ({
 								{isExpanded ? (
 									<IoChevronDown
 										className={`w-4 h-4 ${
-											isSelected ? 'text-white' : 'text-gray-500'
+											isSelected ? 'text-white' : 'text-gray-400'
 										}`}
 									/>
 								) : (
 									<IoChevronForward
 										className={`w-4 h-4 ${
-											isSelected ? 'text-white' : 'text-gray-500'
+											isSelected ? 'text-white' : 'text-gray-400'
 										}`}
 									/>
 								)}
@@ -123,22 +123,25 @@ const CategoryFilterSimple = ({
 							<div className="w-6 mr-2" />
 						)}
 
-						{/* Category Name & Count */}
+						{/* Category Name & Count - Clickable area for selection */}
 						<div
-							className="flex items-center justify-between flex-1 min-w-0"
-							onClick={() => handleCategoryClick(category.name)}
+							className="flex items-center justify-between flex-1 min-w-0 cursor-pointer"
+							onClick={e => {
+								e.stopPropagation(); // Prevent event bubbling
+								handleCategoryClick(category.name);
+							}}
 						>
 							<span className="text-sm font-medium truncate mr-2">
 								{category.name}
 							</span>
 
-							{/* Product Count Badge */}
+							{/* Product Count Badge - Dark Theme */}
 							{category.count > 0 && (
 								<span
-									className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+									className={`text-xs px-2 py-0.5 rounded font-medium ${
 										isSelected
-											? 'bg-blue-600 text-white'
-											: 'bg-gray-200 text-gray-600 group-hover:bg-gray-300'
+											? 'bg-blue-500 text-white'
+											: 'bg-gray-700 text-gray-300 group-hover:bg-gray-600'
 									}`}
 								>
 									{category.count.toLocaleString('de-DE')}
@@ -183,42 +186,42 @@ const CategoryFilterSimple = ({
 
 	return (
 		<div className={`${className}`}>
-			{/* Header */}
+			{/* Header - Dark Theme */}
 			<div className="flex items-center justify-between mb-3">
-				<h3 className="text-lg font-semibold text-gray-900">Kategorien</h3>
+				<h3 className="text-base font-semibold text-white">Kategorien</h3>
 				{currentCategory && (
 					<button
 						onClick={clearCategory}
-						className="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium"
+						className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium"
 					>
 						Zurücksetzen
 					</button>
 				)}
 			</div>
 
-			{/* Category Tree */}
+			{/* Category Tree - Dark Scrollbar */}
 			<div
 				className="space-y-0.5 max-h-[500px] overflow-y-auto pr-2"
 				style={{
 					scrollbarWidth: 'thin',
-					scrollbarColor: '#cbd5e1 #f1f5f9',
+					scrollbarColor: '#4b5563 #1f2937',
 				}}
 			>
 				{categoryTree.length > 0 ? (
 					categoryTree.map(category => renderCategoryNode(category))
 				) : (
-					<div className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
+					<div className="text-sm text-gray-400 text-center py-8 bg-gray-900/50 rounded">
 						Keine Kategorien verfügbar
 					</div>
 				)}
 			</div>
 
-			{/* Active Filter Display */}
+			{/* Active Filter Display - Dark Theme */}
 			{currentCategory && (
-				<div className="mt-4 pt-4 border-t border-gray-200">
+				<div className="mt-4 pt-4 border-t border-gray-700">
 					<div className="flex items-center gap-2">
 						<span className="text-xs text-gray-500">Aktiver Filter:</span>
-						<span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+						<span className="text-xs font-medium text-white bg-blue-600 px-2.5 py-1 rounded">
 							{currentCategory}
 						</span>
 					</div>

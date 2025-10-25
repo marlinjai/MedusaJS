@@ -26,6 +26,9 @@ type CatalogRequestBody = {
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
 	const logger = req.scope.resolve('logger');
 
+	// Define filters in function scope for error handling access
+	let filters: string[] = [];
+
 	try {
 		// Validate Meilisearch service availability
 		let meilisearchService: MeilisearchModuleService;
@@ -34,7 +37,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 				MEILISEARCH_MODULE,
 			) as MeilisearchModuleService;
 		} catch (moduleError) {
-			logger.warn('Meilisearch module not available:', moduleError);
+			logger.warn('Meilisearch module not available:');
 			return res.status(503).json({
 				success: false,
 				error: 'Catalog service unavailable',
@@ -63,7 +66,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 		const parsedOffset = (parsedPage - 1) * parsedLimit;
 
 		// Build comprehensive filters for catalog browsing
-		const filters: string[] = [];
+		filters = [];
 
 		// CRITICAL: Filter by Public Store sales channel only
 		// This ensures only public e-commerce products are shown, not internal or service products
@@ -165,19 +168,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 			'status',
 		];
 
-		logger.info('Catalog request:', {
-			query: query.substring(0, 50),
-			categoriesCount: categories.length,
-			availability,
-			priceRange: { min: minPrice, max: maxPrice },
-			tagsCount: tags.length,
-			collectionsCount: collections.length,
-			sortBy,
-			page: parsedPage,
-			limit: parsedLimit,
-			filtersCount: filters.length,
-			filters: filters, // Log actual filters for debugging
-		});
+		logger.info(
+			`Catalog request: query="${query.substring(0, 50)}", categories=${categories.length}, availability=${availability}, sortBy=${sortBy}, page=${parsedPage}, limit=${parsedLimit}, filters=${filters.length}`,
+		);
 
 		// Perform catalog search with comprehensive facets
 		const catalogResults = await meilisearchService.searchWithFacets(
@@ -192,10 +185,21 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 			'product',
 		);
 
-		// Calculate pagination
-		const totalPages = Math.ceil(
-			catalogResults.estimatedTotalHits / parsedLimit,
+		// Get accurate total count
+		// Meilisearch returns totalHits (exact) or estimatedTotalHits (capped at maxTotalHits setting)
+		// Priority: totalHits > estimatedTotalHits > hits.length
+		const totalCount =
+			(catalogResults as any).totalHits ??
+			catalogResults.estimatedTotalHits ??
+			catalogResults.hits.length;
+
+		// Debug: Log Meilisearch response structure
+		logger.info(
+			`Meilisearch response fields: totalHits=${(catalogResults as any).totalHits}, estimatedTotalHits=${catalogResults.estimatedTotalHits}, hits=${catalogResults.hits.length}`,
 		);
+
+		// Calculate pagination
+		const totalPages = Math.ceil(totalCount / parsedLimit);
 
 		// Extract parent categories from category_paths to include in facets
 		// This ensures parent categories appear even if they don't have direct products
@@ -208,6 +212,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 			Object.entries(enhancedFacets.category_paths).forEach(([path, count]) => {
 				const pathParts = path.split(' > ');
 
+				// Type assertion: count from facetDistribution is always a number
+				const productCount = count as number;
+
 				// Add ALL parent categories in the path (not just immediate parent)
 				// This handles 2, 3, 4+ level hierarchies
 				for (let i = 0; i < pathParts.length - 1; i++) {
@@ -216,7 +223,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 					// Count products that belong to this parent category
 					// Each parent gets the count of all its descendants
 					parentCategories[parentName] =
-						(parentCategories[parentName] || 0) + count;
+						(parentCategories[parentName] || 0) + productCount;
 				}
 			});
 
@@ -236,7 +243,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 			data: {
 				products: catalogResults.hits,
 				facets: enhancedFacets,
-				totalProducts: catalogResults.estimatedTotalHits,
+				totalProducts: totalCount,
 				appliedFilters: {
 					query: query || null,
 					categories,
@@ -250,7 +257,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 				pagination: {
 					page: parsedPage,
 					limit: parsedLimit,
-					total: catalogResults.estimatedTotalHits,
+					total: totalCount,
 					totalPages,
 					hasNextPage: parsedPage < totalPages,
 					hasPrevPage: parsedPage > 1,
@@ -259,35 +266,25 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 			},
 		};
 
-		logger.info('Catalog success:', {
-			products: catalogResults.hits.length,
-			totalProducts: catalogResults.estimatedTotalHits,
-			facetKeys: Object.keys(catalogResults.facetDistribution || {}),
-			processingTimeMs: catalogResults.processingTimeMs,
-			// Log sample facets for debugging
-			sampleFacets: {
-				category_names: Object.keys(
-					catalogResults.facetDistribution?.category_names || {},
-				).slice(0, 5),
-				sales_channel_names:
-					catalogResults.facetDistribution?.sales_channel_names || 'NOT_FOUND',
-			},
-		});
+		logger.info(
+			`Catalog success: ${catalogResults.hits.length} products, total=${totalCount}, time=${catalogResults.processingTimeMs}ms`,
+		);
 
 		res.json(response);
 	} catch (error) {
-		logger.error('Catalog error:', error);
-		logger.error('Error details:', {
-			message: error instanceof Error ? error.message : 'Unknown error',
-			stack: error instanceof Error ? error.stack : undefined,
-			filters: filters,
-		});
+		const errorMessage =
+			error instanceof Error ? error.message : 'Unknown error';
+		const errorStack = error instanceof Error ? error.stack : undefined;
+
+		logger.error(
+			`Catalog error: ${errorMessage}, filters=${filters.join(', ')}`,
+		);
 
 		res.status(500).json({
 			success: false,
 			error: 'Catalog request failed',
-			details: error instanceof Error ? error.message : 'Unknown error',
-			stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+			details: errorMessage,
+			stack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
 			filters: filters, // Include filters in error response for debugging
 		});
 	}
