@@ -1,5 +1,4 @@
 const checkEnvVariables = require('./check-env-variables');
-const path = require('path');
 
 checkEnvVariables();
 
@@ -62,17 +61,6 @@ const nextConfig = {
 				hostname: 'vnlpncljwdhvvftrecuk.supabase.co',
 			},
 		],
-	},
-	// Explicit webpack configuration for path aliases in monorepo
-	webpack: (config, { isServer }) => {
-		// Add path aliases to webpack resolve
-		config.resolve.alias = {
-			...config.resolve.alias,
-			'@lib': path.resolve(__dirname, 'src/lib'),
-			'@modules': path.resolve(__dirname, 'src/modules'),
-			'@pages': path.resolve(__dirname, 'src/pages'),
-		};
-		return config;
 	},
 };
 

@@ -1,13 +1,13 @@
 // src/modules/store/templates/catalog-products.tsx
 // Catalog products component using the new /store/catalog API
-import { getCatalogData, type CatalogFilters } from '@lib/data/catalog';
-import { getRegion } from '@lib/data/regions';
 import CategoryFilterSimple from '@modules/store/components/category-filter-simple';
 import AvailabilityFilter from '@modules/store/components/filters/availability-filter';
 import PriceFilter from '@modules/store/components/filters/price-filter';
 import { Pagination } from '@modules/store/components/pagination';
 import ProductCard from '@modules/store/components/product-card';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
+import { getCatalogData, type CatalogFilters } from '../../../lib/data/catalog';
+import { getRegion } from '../../../lib/data/regions';
 
 type StoreFilters = {
 	category?: string; // Single category instead of array
