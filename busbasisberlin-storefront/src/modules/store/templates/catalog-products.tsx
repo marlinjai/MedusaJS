@@ -2,7 +2,7 @@
 // Catalog products component using the new /store/catalog API
 import { getCatalogData, type CatalogFilters } from '@lib/data/catalog';
 import { getRegion } from '@lib/data/regions';
-import CategoryFilter from '@modules/store/components/category-filter';
+import CategoryFilterSimple from '@modules/store/components/category-filter-simple';
 import AvailabilityFilter from '@modules/store/components/filters/availability-filter';
 import PriceFilter from '@modules/store/components/filters/price-filter';
 import { Pagination } from '@modules/store/components/pagination';
@@ -10,7 +10,7 @@ import ProductCard from '@modules/store/components/product-card';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
 
 type StoreFilters = {
-	categories: string[];
+	category?: string; // Single category instead of array
 	availability: 'all' | 'in_stock' | 'out_of_stock';
 	minPrice?: number;
 	maxPrice?: number;
@@ -31,7 +31,6 @@ const CatalogProducts = async ({
 	page,
 	searchQuery,
 	filters = {
-		categories: [],
 		availability: 'all',
 		tags: [],
 		collections: [],
@@ -53,10 +52,10 @@ const CatalogProducts = async ({
 		);
 	}
 
-	// Build catalog filters
+	// Build catalog filters - convert single category to array for API
 	const catalogFilters: CatalogFilters = {
 		query: searchQuery,
-		categories: filters.categories,
+		categories: filters.category ? [filters.category] : [],
 		availability: filters.availability,
 		minPrice: filters.minPrice,
 		maxPrice: filters.maxPrice,
@@ -84,13 +83,12 @@ const CatalogProducts = async ({
 			<div className="py-6 content-container">
 				{/* Filters Above Products */}
 				<div className="mb-8">
-					<div className="grid grid-cols-1 medium:grid-cols-3 gap-6 p-6 bg-gray-50 rounded-lg border">
+					<div className="grid grid-cols-1 medium:grid-cols-3 gap-6 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
 						{/* Category Filter */}
 						<div>
-							<CategoryFilter
+							<CategoryFilterSimple
 								categoryNames={facets.category_names}
 								categoryPaths={facets.category_paths}
-								selectedCategories={appliedFilters.categories}
 							/>
 						</div>
 

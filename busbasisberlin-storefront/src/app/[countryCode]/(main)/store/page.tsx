@@ -13,7 +13,7 @@ type Params = {
 		sortBy?: SortOptions;
 		page?: string;
 		q?: string;
-		categories?: string;
+		category?: string; // Changed from categories to category (single)
 		availability?: 'all' | 'in_stock' | 'out_of_stock';
 		min_price?: string;
 		max_price?: string;
@@ -28,11 +28,11 @@ type Params = {
 export default async function StorePage(props: Params) {
 	const params = await props.params;
 	const searchParams = await props.searchParams;
-	const { 
-		sortBy, 
-		page, 
+	const {
+		sortBy,
+		page,
 		q,
-		categories,
+		category, // Single category instead of array
 		availability,
 		min_price,
 		max_price,
@@ -42,7 +42,7 @@ export default async function StorePage(props: Params) {
 
 	// Parse filter parameters
 	const filters = {
-		categories: categories ? categories.split(',').filter(Boolean) : [],
+		category: category || undefined, // Single category
 		availability: availability || 'all',
 		minPrice: min_price ? parseFloat(min_price) : undefined,
 		maxPrice: max_price ? parseFloat(max_price) : undefined,
