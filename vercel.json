@@ -1,7 +1,6 @@
 {
-  "buildCommand": "cd busbasisberlin-storefront && yarn build",
-  "devCommand": "cd busbasisberlin-storefront && yarn dev",
-  "installCommand": "cd busbasisberlin-storefront && yarn install",
-  "outputDirectory": "busbasisberlin-storefront/.next"
+	"buildCommand": "cd busbasisberlin-storefront && yarn build",
+	"devCommand": "cd busbasisberlin-storefront && yarn dev",
+	"installCommand": "cd busbasisberlin-storefront && yarn install",
+	"outputDirectory": "busbasisberlin-storefront/.next"
 }
-
