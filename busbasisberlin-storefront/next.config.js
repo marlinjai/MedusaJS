@@ -64,13 +64,20 @@ const nextConfig = {
 		],
 	},
 	// Webpack configuration for path aliases - required for monorepo builds
-	webpack: (config, { isServer }) => {
-		config.resolve.alias = {
-			...config.resolve.alias,
-			'@lib': path.resolve(__dirname, 'src/lib'),
-			'@modules': path.resolve(__dirname, 'src/modules'),
-			'@pages': path.resolve(__dirname, 'src/pages'),
-		};
+	webpack: (config, options) => {
+		// Ensure resolve.alias exists
+		if (!config.resolve) {
+			config.resolve = {};
+		}
+		if (!config.resolve.alias) {
+			config.resolve.alias = {};
+		}
+
+		// Add path aliases with absolute paths
+		config.resolve.alias['@lib'] = path.resolve(__dirname, 'src/lib');
+		config.resolve.alias['@modules'] = path.resolve(__dirname, 'src/modules');
+		config.resolve.alias['@pages'] = path.resolve(__dirname, 'src/pages');
+
 		return config;
 	},
 };
