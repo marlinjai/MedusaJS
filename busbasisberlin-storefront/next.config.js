@@ -63,20 +63,35 @@ const nextConfig = {
 			},
 		],
 	},
-	// Webpack configuration for path aliases - required for monorepo builds
-	webpack: (config, options) => {
-		// Ensure resolve.alias exists
-		if (!config.resolve) {
-			config.resolve = {};
-		}
-		if (!config.resolve.alias) {
-			config.resolve.alias = {};
-		}
+	// Experimental: Force Next.js to use tsconfig paths
+	experimental: {
+		externalDir: true,
+		esmExternals: 'loose',
+	},
+	// Alternative webpack approach for monorepo
+	webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+		// Force webpack to respect tsconfig.json paths
+		config.resolve.modules = [
+			path.resolve(__dirname, 'src'),
+			'node_modules'
+		];
+		
+		// More aggressive alias setup
+		const aliases = {
+			'@lib': path.resolve(__dirname, 'src/lib'),
+			'@modules': path.resolve(__dirname, 'src/modules'),
+			'@pages': path.resolve(__dirname, 'src/pages'),
+		};
+		
+		config.resolve.alias = {
+			...config.resolve.alias,
+			...aliases
+		};
 
-		// Add path aliases with absolute paths
-		config.resolve.alias['@lib'] = path.resolve(__dirname, 'src/lib');
-		config.resolve.alias['@modules'] = path.resolve(__dirname, 'src/modules');
-		config.resolve.alias['@pages'] = path.resolve(__dirname, 'src/pages');
+		// Debug: Log webpack aliases in development
+		if (dev) {
+			console.log('🔧 Webpack aliases:', config.resolve.alias);
+		}
 
 		return config;
 	},

@@ -2,7 +2,7 @@
 // Enhanced real-time search component with per-keystroke functionality
 'use client';
 
-import { getSearchSuggestions } from '@lib/data/search';
+import { getSearchSuggestions } from '../../../../lib/data/search';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { IoClose, IoSearch } from 'react-icons/io5';
