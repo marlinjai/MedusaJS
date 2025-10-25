@@ -31,16 +31,9 @@ export default class MeilisearchModuleService {
 	async getIndexName(type: MeilisearchIndexType) {
 		switch (type) {
 			case 'product':
-				console.log(
-					'🔍 Using product index name:',
-					this.options.productIndexName,
-				);
 				return this.options.productIndexName;
 			case 'category':
-				const categoryIndexName =
-					this.options.categoryIndexName || 'categories';
-				console.log('🔍 Using category index name:', categoryIndexName);
-				return categoryIndexName;
+				return this.options.categoryIndexName || 'categories';
 			default:
 				throw new Error(`Invalid index type: ${type}`);
 		}
@@ -59,20 +52,7 @@ export default class MeilisearchModuleService {
 			id: item.id,
 		}));
 
-		console.log(
-			`🔍 Indexing ${documents.length} documents to index: ${indexName}`,
-		);
-		if (documents.length > 0) {
-			console.log('🔍 Sample document being indexed:', {
-				id: documents[0].id,
-				title: (documents[0] as any).title,
-				category_names: (documents[0] as any).category_names,
-				category_paths: (documents[0] as any).category_paths,
-			});
-		}
-
 		const result = await index.addDocuments(documents);
-		console.log('🔍 Meilisearch indexing result:', result);
 	}
 
 	async ensureIndexConfiguration(type: MeilisearchIndexType = 'product') {
@@ -107,6 +87,10 @@ export default class MeilisearchModuleService {
 				'category_handles',
 				'category_paths',
 				'category_ids',
+				'sales_channel_ids',
+				'sales_channel_names',
+				'primary_sales_channel_id',
+				'primary_sales_channel_name',
 				'is_available',
 				'status',
 				'min_price',
@@ -144,12 +128,18 @@ export default class MeilisearchModuleService {
 				'variant_count',
 			]);
 
+			// Configure pagination settings
+			await index.updatePaginationSettings({
+				maxTotalHits: 10000, // Increase from default 1000 to support large catalogs
+			});
+
 			// Configure faceting settings for real-time category facets
 			await index.updateFaceting({
 				maxValuesPerFacet: 100,
 				sortFacetValuesBy: {
 					category_names: 'count',
 					category_paths: 'count',
+					sales_channel_names: 'count',
 					tags: 'count',
 					currencies: 'alpha',
 					is_available: 'count',
@@ -178,6 +168,8 @@ export default class MeilisearchModuleService {
 				'status',
 				'category_names',
 				'category_paths',
+				'sales_channel_names',
+				'primary_sales_channel_name',
 				'is_available',
 				'min_price',
 				'max_price',

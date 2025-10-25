@@ -38,10 +38,6 @@ export const syncProductsStep = createStep(
 		let inventoryMap: Record<string, number> = {};
 		if (allVariantIds.length > 0) {
 			try {
-				console.log(
-					`🔍 Getting inventory for ${allVariantIds.length} variants using sales channel: ${salesChannelId}`,
-				);
-
 				// @ts-ignore - Type conflict between @medusajs/types versions
 				const availability = await getVariantAvailability(query, {
 					variant_ids: allVariantIds,
@@ -71,178 +67,236 @@ export const syncProductsStep = createStep(
 		}
 
 		// Transform products for better search functionality
-		const transformedProducts = products.map(product => {
-			// Debug: Log product data to see what we're getting
-			if (products.indexOf(product) === 0) {
-				console.log('🔍 Sample product data:', {
+		const transformedProducts = await Promise.all(
+			products.map(async product => {
+				// Build category hierarchy paths
+				const categoryPaths: string[] = [];
+				const categoryNames: string[] = [];
+				const categoryHandles: string[] = [];
+				const allCategoryNamesInPath = new Set<string>(); // To avoid duplicates
+
+				if (product.categories) {
+					for (const category of product.categories) {
+						// Add leaf category
+						allCategoryNamesInPath.add(category.name);
+						categoryHandles.push(category.handle);
+
+						// Build complete hierarchy by recursively fetching all parent levels
+						const fetchCompleteHierarchy = async (
+							categoryId: string,
+							currentPath: string[] = [],
+						): Promise<string[]> => {
+							try {
+								const { data: categoryQuery } = await query.graph({
+									entity: 'product_category',
+									filters: { id: categoryId },
+									fields: [
+										'id',
+										'name',
+										'handle',
+										'parent_category.id',
+										'parent_category.name',
+										'parent_category.handle',
+									],
+									pagination: { take: 1 },
+								});
+
+								if (categoryQuery.length === 0) {
+									return currentPath;
+								}
+
+								const categoryData = categoryQuery[0];
+								const newPath = [categoryData.name, ...currentPath];
+
+								// If this category has a parent, recursively fetch it
+								if (categoryData.parent_category?.id) {
+									return await fetchCompleteHierarchy(
+										categoryData.parent_category.id,
+										newPath,
+									);
+								}
+
+								// This is the root category
+								return newPath;
+							} catch (error) {
+								console.error(
+									`Error fetching hierarchy for category ${categoryId}:`,
+									error,
+								);
+								return currentPath;
+							}
+						};
+
+						// Build complete hierarchy
+						const completePath = await fetchCompleteHierarchy(category.id);
+						const path = completePath;
+						const depth = completePath.length - 1;
+
+						const fullPath = path.join(' > ');
+
+						// Add ALL categories in the path to category_names
+						// This enables hierarchical filtering: selecting "Mercedes Benz" will match
+						// products in "Mercedes Benz > Motor > Dichtungen"
+						path.forEach(categoryNameInPath => {
+							allCategoryNamesInPath.add(categoryNameInPath);
+						});
+
+						categoryPaths.push(fullPath);
+					}
+				}
+
+				// Convert Set to Array for category_names
+				categoryNames.push(...Array.from(allCategoryNamesInPath));
+
+				// Calculate availability and pricing using real inventory data
+				let isAvailable = false;
+				let totalInventory = 0;
+				let minPrice = Infinity;
+				let maxPrice = 0;
+				let currencies: string[] = [];
+				let skus: string[] = [];
+
+				if (product.variants && product.variants.length > 0) {
+					product.variants.forEach(variant => {
+						// Collect SKUs
+						if (variant.sku) {
+							skus.push(variant.sku);
+						}
+
+						// Check availability using real inventory data
+						if (variant.id) {
+							const realInventory = inventoryMap[variant.id] || 0;
+							totalInventory += realInventory;
+
+							// Product is available if:
+							// 1. Backorders are allowed, OR
+							// 2. Inventory is not managed, OR
+							// 3. Real inventory quantity > 0
+							if (
+								variant.allow_backorder ||
+								!variant.manage_inventory ||
+								realInventory > 0
+							) {
+								isAvailable = true;
+							}
+
+							// If inventory management is undefined/null, check if we have real inventory
+							if (
+								(variant.manage_inventory === undefined ||
+									variant.manage_inventory === null) &&
+								realInventory > 0
+							) {
+								isAvailable = true;
+							}
+						}
+
+						// Process pricing
+						const variantPrices = (variant as any).prices;
+						if (variantPrices) {
+							variantPrices.forEach((price: any) => {
+								const amount = price.amount || 0;
+								if (amount > 0) {
+									minPrice = Math.min(minPrice, amount);
+									maxPrice = Math.max(maxPrice, amount);
+									if (!currencies.includes(price.currency_code)) {
+										currencies.push(price.currency_code);
+									}
+								}
+							});
+						}
+					});
+				}
+
+				// Fallback: If we have variants but no clear availability rules, check total inventory
+				if (
+					product.variants &&
+					product.variants.length > 0 &&
+					!isAvailable &&
+					totalInventory > 0
+				) {
+					isAvailable = true;
+				}
+
+				// Reset infinite values
+				if (minPrice === Infinity) minPrice = 0;
+
+				// Extract tag values
+				const tagValues = product.tags?.map(tag => tag.value) || [];
+
+				// Extract sales channel information
+				const salesChannelIds =
+					(product as any).sales_channels?.map(sc => sc.id) || [];
+				const salesChannelNames =
+					(product as any).sales_channels?.map(sc => sc.name) || [];
+
+				// Determine primary sales channel (prefer Public Store)
+				const primarySalesChannel =
+					(product as any).sales_channels?.find(
+						sc =>
+							sc.name === 'Public Store' || sc.name === 'Default Sales Channel',
+					) || (product as any).sales_channels?.[0];
+
+				return {
 					id: product.id,
 					title: product.title,
-					categories: product.categories,
-					variants: product.variants?.length,
-					tags: product.tags?.length,
-					sampleVariant: product.variants?.[0]
-						? {
-								id: product.variants[0].id,
-								manage_inventory: product.variants[0].manage_inventory,
-								allow_backorder: product.variants[0].allow_backorder,
-								inventory_quantity: (product.variants[0] as any)
-									.inventory_quantity,
-								prices: (product.variants[0] as any).prices?.length,
-							}
-						: null,
-				});
-			}
+					description: product.description,
+					handle: product.handle,
+					thumbnail: product.thumbnail,
+					status: product.status,
+					created_at: product.created_at,
+					updated_at: product.updated_at,
 
-			// Build category hierarchy paths
-			const categoryPaths: string[] = [];
-			const categoryNames: string[] = [];
-			const categoryHandles: string[] = [];
+					// Enhanced category data for faceted search
+					category_names: categoryNames,
+					category_handles: categoryHandles,
+					category_paths: categoryPaths,
+					category_ids: product.categories?.map(c => c.id) || [],
 
-			if (product.categories) {
-				product.categories.forEach(category => {
-					categoryNames.push(category.name);
-					categoryHandles.push(category.handle);
+					// Sales channel information for filtering
+					sales_channel_ids: salesChannelIds,
+					sales_channel_names: salesChannelNames,
+					primary_sales_channel_id: primarySalesChannel?.id,
+					primary_sales_channel_name: primarySalesChannel?.name,
 
-					// Build hierarchical path
-					if (category.parent_category?.name) {
-						categoryPaths.push(
-							`${category.parent_category.name} > ${category.name}`,
-						);
-					} else {
-						categoryPaths.push(category.name);
-					}
-				});
-			}
+					// Availability and inventory
+					is_available: isAvailable,
+					total_inventory: totalInventory,
+					variant_count: product.variants?.length || 0,
 
-			// Calculate availability and pricing using real inventory data
-			let isAvailable = false;
-			let totalInventory = 0;
-			let minPrice = Infinity;
-			let maxPrice = 0;
-			let currencies: string[] = [];
-			let skus: string[] = [];
+					// Pricing for filtering and sorting
+					min_price: minPrice,
+					max_price: maxPrice,
+					price_range:
+						minPrice !== maxPrice
+							? `${minPrice}-${maxPrice}`
+							: minPrice.toString(),
+					currencies: currencies,
 
-			if (product.variants && product.variants.length > 0) {
-				product.variants.forEach(variant => {
-					// Collect SKUs
-					if (variant.sku) {
-						skus.push(variant.sku);
-					}
+					// SKUs for search
+					skus: skus,
 
-					// Check availability using real inventory data
-					if (variant.id) {
-						const realInventory = inventoryMap[variant.id] || 0;
-						totalInventory += realInventory;
+					// Tags for filtering
+					tags: tagValues,
 
-						// Product is available if:
-						// 1. Backorders are allowed, OR
-						// 2. Inventory is not managed, OR
-						// 3. Real inventory quantity > 0
-						if (
-							variant.allow_backorder ||
-							!variant.manage_inventory ||
-							realInventory > 0
-						) {
-							isAvailable = true;
-						}
+					// Collection information
+					collection_id: product.collection?.id,
+					collection_title: product.collection?.title,
+					collection_handle: product.collection?.handle,
 
-						// If inventory management is undefined/null, check if we have real inventory
-						if (
-							(variant.manage_inventory === undefined ||
-								variant.manage_inventory === null) &&
-							realInventory > 0
-						) {
-							isAvailable = true;
-						}
-					}
-
-					// Process pricing
-					const variantPrices = (variant as any).prices;
-					if (variantPrices) {
-						variantPrices.forEach((price: any) => {
-							const amount = price.amount || 0;
-							if (amount > 0) {
-								minPrice = Math.min(minPrice, amount);
-								maxPrice = Math.max(maxPrice, amount);
-								if (!currencies.includes(price.currency_code)) {
-									currencies.push(price.currency_code);
-								}
-							}
-						});
-					}
-				});
-			}
-
-			// Fallback: If we have variants but no clear availability rules, check total inventory
-			if (
-				product.variants &&
-				product.variants.length > 0 &&
-				!isAvailable &&
-				totalInventory > 0
-			) {
-				isAvailable = true;
-			}
-
-			// Reset infinite values
-			if (minPrice === Infinity) minPrice = 0;
-
-			// Extract tag values
-			const tagValues = product.tags?.map(tag => tag.value) || [];
-
-			return {
-				id: product.id,
-				title: product.title,
-				description: product.description,
-				handle: product.handle,
-				thumbnail: product.thumbnail,
-				status: product.status,
-				created_at: product.created_at,
-				updated_at: product.updated_at,
-
-				// Enhanced category data for faceted search
-				category_names: categoryNames,
-				category_handles: categoryHandles,
-				category_paths: categoryPaths,
-				category_ids: product.categories?.map(c => c.id) || [],
-
-				// Availability and inventory
-				is_available: isAvailable,
-				total_inventory: totalInventory,
-				variant_count: product.variants?.length || 0,
-
-				// Pricing for filtering and sorting
-				min_price: minPrice,
-				max_price: maxPrice,
-				price_range:
-					minPrice !== maxPrice
-						? `${minPrice}-${maxPrice}`
-						: minPrice.toString(),
-				currencies: currencies,
-
-				// SKUs for search
-				skus: skus,
-
-				// Tags for filtering
-				tags: tagValues,
-
-				// Collection information
-				collection_id: product.collection?.id,
-				collection_title: product.collection?.title,
-				collection_handle: product.collection?.handle,
-
-				// Search-optimized fields
-				searchable_text: [
-					product.title,
-					product.description,
-					...categoryNames,
-					...tagValues,
-					...skus,
-					product.collection?.title,
-				]
-					.filter(Boolean)
-					.join(' '),
-			};
-		});
+					// Search-optimized fields
+					searchable_text: [
+						product.title,
+						product.description,
+						...categoryNames,
+						...tagValues,
+						...skus,
+						product.collection?.title,
+					]
+						.filter(Boolean)
+						.join(' '),
+				};
+			}),
+		);
 
 		const existingProducts = await meilisearchModuleService.retrieveFromIndex(
 			products.map(product => product.id),
@@ -252,26 +306,14 @@ export const syncProductsStep = createStep(
 			product => !existingProducts.some(p => p.id === product.id),
 		);
 
-		// Debug: Log sample transformed product
-		if (transformedProducts.length > 0) {
-			console.log('🔍 Sample transformed product:', {
-				id: transformedProducts[0].id,
-				title: transformedProducts[0].title,
-				category_names: transformedProducts[0].category_names,
-				category_paths: transformedProducts[0].category_paths,
-				is_available: transformedProducts[0].is_available,
-				total_inventory: transformedProducts[0].total_inventory,
-				variant_count: transformedProducts[0].variant_count,
-				min_price: transformedProducts[0].min_price,
-				max_price: transformedProducts[0].max_price,
-				currencies: transformedProducts[0].currencies,
-				tags: transformedProducts[0].tags,
-			});
-		}
-
 		await meilisearchModuleService.indexData(
 			transformedProducts as unknown as Record<string, unknown>[],
 			'product',
+		);
+
+		// Summary log once at the end
+		console.log(
+			`✅ Indexed ${transformedProducts.length} products to Meilisearch`,
 		);
 
 		return new StepResponse(undefined, {

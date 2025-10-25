@@ -30,22 +30,52 @@ export default async function handleCategoryEvents({
 
 		logger.info(`✅ Category ${data.id} synced to Meilisearch`);
 
-		// Also sync all products in this category
+		// Sync all products that might be affected by this category change
+		// This includes products directly in this category AND products in child categories
+		// because category hierarchy changes affect the category_paths of all descendants
 		const query = container.resolve('query');
 
+		// First, get all child categories recursively
+		const getAllChildCategories = async (
+			categoryId: string,
+		): Promise<string[]> => {
+			const { data: children } = await query.graph({
+				entity: 'product_category',
+				fields: ['id'],
+				filters: {
+					parent_category: {
+						id: categoryId,
+					},
+				},
+			});
+
+			let allChildren = [categoryId];
+			for (const child of children || []) {
+				const grandChildren = await getAllChildCategories(child.id);
+				allChildren = allChildren.concat(grandChildren);
+			}
+			return allChildren;
+		};
+
+		const allAffectedCategoryIds = await getAllChildCategories(data.id);
+		logger.info(
+			`🔍 Category change affects ${allAffectedCategoryIds.length} categories (including children)`,
+		);
+
+		// Get all products in this category and all its children
 		const { data: products } = await query.graph({
 			entity: 'product',
 			fields: ['id'],
 			filters: {
 				categories: {
-					id: [data.id],
+					id: allAffectedCategoryIds,
 				},
 			} as any,
 		});
 
 		if (products && products.length > 0) {
 			logger.info(
-				`🔄 Syncing ${products.length} products affected by category change`,
+				`🔄 Syncing ${products.length} products affected by category hierarchy change`,
 			);
 
 			// Sync products in batches
