@@ -3,7 +3,9 @@
 
 # Data folders
 data/
+# Ignore data folders but not source code data directories
 */data/
+!*/src/*/data/
 
 # Environment files
 .env
