@@ -112,8 +112,8 @@ const AvailabilityFilter = ({
 							{/* Custom radio button */}
 							<div
 								className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${
-									isSelected 
-										? 'border-white bg-white' 
+									isSelected
+										? 'border-white bg-white'
 										: 'border-gray-500 hover:border-gray-400'
 								}`}
 							>
@@ -123,11 +123,7 @@ const AvailabilityFilter = ({
 							</div>
 
 							{/* Icon */}
-							{Icon && (
-								<Icon
-									className={`w-4 h-4 mr-2 ${option.iconColor}`}
-								/>
-							)}
+							{Icon && <Icon className={`w-4 h-4 mr-2 ${option.iconColor}`} />}
 
 							{/* Label */}
 							<span className="text-sm font-medium flex-1">{option.label}</span>

@@ -18,7 +18,9 @@ const SearchSummary = ({
 	className = '',
 }: SearchSummaryProps) => {
 	return (
-		<div className={`bg-gray-800 rounded-lg border border-gray-700 px-6 py-4 ${className}`}>
+		<div
+			className={`bg-gray-800 rounded-lg border border-gray-700 px-6 py-4 ${className}`}
+		>
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div className="flex items-center gap-4">
 					<span className="text-base font-medium text-white">
@@ -26,9 +28,7 @@ const SearchSummary = ({
 						{totalResults === 1 ? 'Produkt' : 'Produkte'}
 					</span>
 					{searchQuery && (
-						<span className="text-sm text-gray-400">
-							für "{searchQuery}"
-						</span>
+						<span className="text-sm text-gray-400">für "{searchQuery}"</span>
 					)}
 				</div>
 

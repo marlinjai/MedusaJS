@@ -1,12 +1,12 @@
 // src/modules/store/templates/catalog-products.tsx
 // Simplified catalog products component using existing search functionality
+import { unifiedProductSearch } from '@lib/data/search';
 import ProductPreview from '@modules/products/components/product-preview';
 import CategoryFilterSimple from '@modules/store/components/category-filter-simple';
 import AvailabilityFilter from '@modules/store/components/filters/availability-filter';
 import { Pagination } from '@modules/store/components/pagination';
 import { SortOptions } from '@modules/store/components/refinement-list/sort-products';
 import { getRegion } from '../../../lib/data/regions';
-import { unifiedProductSearch } from '../../../lib/data/search';
 
 type StoreFilters = {
 	category?: string;
