@@ -153,7 +153,7 @@ start_deployment() {
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
 
-    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build --remove-orphans
+    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build --remove-orphans --force-recreate
 
     if [[ $? -eq 0 ]]; then
         log_success "$target deployment started"
@@ -283,7 +283,7 @@ start_base_services() {
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
 
-    docker compose -f docker-compose.base.yml up -d
+    docker compose -f docker-compose.base.yml up -d --remove-orphans
 
     # Wait for base services to be healthy
     log_info "Waiting for base services to be ready..."
@@ -330,7 +330,7 @@ deploy() {
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
 
-    docker compose -f docker-compose.base.yml up -d
+    docker compose -f docker-compose.base.yml up -d --remove-orphans
 
     # Start target deployment
     if ! start_deployment "$target"; then

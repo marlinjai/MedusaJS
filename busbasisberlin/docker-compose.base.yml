@@ -29,6 +29,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 15s
 
   # PostgreSQL Database Service - persistent across deployments
   postgres:
@@ -112,10 +113,8 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
+          "curl",
+          "-f",
           "http://localhost:7700/health",
         ]
       interval: 30s
