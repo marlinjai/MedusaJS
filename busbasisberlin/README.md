@@ -73,4 +73,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 
-<!-- Deployment trigger: Mon Oct 27 19:45:00 CET 2025 - Force rebuild with MEDUSA_BACKEND_URL build arg -->
+<!-- Deployment trigger: Mon Oct 27 20:05:00 CET 2025 - Clean rebuild after manual deploy cleanup -->
