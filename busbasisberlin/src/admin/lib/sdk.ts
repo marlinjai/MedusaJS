@@ -1,15 +1,15 @@
 // src/admin/lib/sdk.ts
 import Medusa from '@medusajs/js-sdk';
 
-// Use window.location.origin since admin and API are on the same domain
-// In development, use http://localhost:9000 (admin and API are on different ports)
+// Always use window.location.origin since admin and API are always on the same domain
+// The only exception is local development where this might be localhost:5173 -> localhost:9000
 const getBaseUrl = () => {
-	// In development, API is always on port 9000
-	if (import.meta.env.DEV) {
-		return 'http://localhost:9000';
-	}
-	// In production, admin and API are on the same domain
+	// If we're on the browser, use the current origin (works for both dev and prod)
 	if (typeof window !== 'undefined') {
+		// In local dev, Vite runs on a different port, so detect it
+		if (window.location.hostname === 'localhost' && window.location.port !== '9000') {
+			return 'http://localhost:9000';
+		}
 		return window.location.origin;
 	}
 	// SSR fallback
