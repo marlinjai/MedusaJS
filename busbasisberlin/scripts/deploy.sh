@@ -202,6 +202,16 @@ rollback() {
     fi
 }
 
+# Function to generate Nginx configuration files
+generate_nginx_configs() {
+    local color=$1
+    log_info "Generating nginx-$color.conf from template..."
+    cd "$PROJECT_DIR/nginx"
+    envsubst '${DOMAIN_NAME} ${SSL_CERT_NAME} ${SSL_KEY_NAME} ${STORE_CORS} ${ADMIN_CORS} ${AUTH_CORS} ${MEILISEARCH_HOST}' < nginx-$color.template > nginx-$color.conf
+    cd "$PROJECT_DIR"
+    return 0
+}
+
 # Function to analyze and fix current VPS state
 analyze_and_fix_state() {
     log_info "Analyzing current VPS state..."
@@ -265,6 +275,10 @@ analyze_and_fix_state() {
         switch_nginx "green"
     fi
 
+    # Always ensure nginx configs are correctly generated
+    generate_nginx_configs "blue"
+    generate_nginx_configs "green"
+
     return 0
 }
 
@@ -294,6 +308,10 @@ start_base_services() {
 
 # Main deployment function
 deploy() {
+    # Always ensure nginx configs are correctly generated before any deployment actions
+    generate_nginx_configs "blue"
+    generate_nginx_configs "green"
+
     # First, analyze and fix any inconsistent state
     if ! analyze_and_fix_state; then
         log_error "Failed to analyze and fix VPS state"
