@@ -1,15 +1,19 @@
 // src/admin/lib/sdk.ts
 import Medusa from '@medusajs/js-sdk';
 
-// Use relative URL in production (same domain), absolute URL in development
+// Use window.location.origin since admin and API are on the same domain
+// In development, use http://localhost:9000 (admin and API are on different ports)
 const getBaseUrl = () => {
-	// In development, use localhost
+	// In development, API is always on port 9000
 	if (import.meta.env.DEV) {
 		return 'http://localhost:9000';
 	}
-	// In production, use the current origin (same domain as admin)
-	// Since both admin and API are served from https://basiscamp-berlin.de
-	return typeof window !== 'undefined' ? window.location.origin : '';
+	// In production, admin and API are on the same domain
+	if (typeof window !== 'undefined') {
+		return window.location.origin;
+	}
+	// SSR fallback
+	return 'http://localhost:9000';
 };
 
 export const sdk = new Medusa({

@@ -355,6 +355,8 @@ export default class MeilisearchModuleService {
 			searchOptions.facets = [
 				'hierarchical_categories.lvl0',
 				'hierarchical_categories.lvl1',
+				'hierarchical_categories.lvl2',
+				'hierarchical_categories.lvl3',
 				'is_available',
 				'currencies',
 				'tags',

@@ -46,8 +46,6 @@ services:
       - STORE_CORS=https://medusa-js-busbasisberlin-storefront.vercel.app
       - ADMIN_CORS=https://${DOMAIN_NAME}
       - AUTH_CORS=https://${DOMAIN_NAME},https://medusa-js-busbasisberlin-storefront.vercel.app
-      # Admin frontend configuration (Vite needs VITE_ prefix)
-      - VITE_MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL}
       # Meilisearch configuration
       - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://medusa_meilisearch:7700}
       - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY}
