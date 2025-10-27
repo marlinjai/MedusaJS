@@ -56,6 +56,7 @@
 		"@medusajs/framework": "2.6.1",
 		"@medusajs/medusa": "2.6.1",
 		"@medusajs/ui": "^4.0.13",
+		"@meilisearch/instant-meilisearch": "^0.28.0",
 		"@mikro-orm/core": "6.4.3",
 		"@mikro-orm/knex": "6.4.3",
 		"@mikro-orm/migrations": "6.4.3",
@@ -71,6 +72,7 @@
 		"meilisearch": "^0.53.0",
 		"pg": "^8.13.0",
 		"puppeteer": "^24.15.0",
+		"react-instantsearch": "^7.17.0",
 		"resend": "^4.7.0",
 		"uuid": "^9.0.1"
 	},

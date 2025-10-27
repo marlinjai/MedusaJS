@@ -137,8 +137,10 @@ const MeilisearchPage = () => {
 							</Text>
 							<Text className="text-2xl font-bold">
 								{String(
-									Object.keys(facetsData.data.facets.category_names || {})
-										.length,
+									Object.keys(
+										facetsData.data.facets['hierarchical_categories.lvl0'] ||
+											{},
+									).length,
 								)}
 							</Text>
 						</div>
@@ -154,13 +156,15 @@ const MeilisearchPage = () => {
 					</div>
 
 					{/* Category Facets */}
-					{facetsData.data.facets.category_names && (
+					{facetsData.data.facets['hierarchical_categories.lvl0'] && (
 						<div className="mb-6">
 							<Heading level="h3" className="mb-3">
 								Category Distribution
 							</Heading>
 							<div className="flex flex-wrap gap-2">
-								{Object.entries(facetsData.data.facets.category_names)
+								{Object.entries(
+									facetsData.data.facets['hierarchical_categories.lvl0'],
+								)
 									.sort(([, a], [, b]) => (b as number) - (a as number))
 									.slice(0, 10)
 									.map(([category, count]) => (

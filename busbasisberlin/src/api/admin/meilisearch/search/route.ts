@@ -31,7 +31,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 				? categories
 				: [categories];
 			const categoryFilters = categoryList.map(
-				cat => `category_names = "${cat}"`,
+				cat => `category_ids = "${cat}"`,
 			);
 			if (categoryFilters.length > 1) {
 				filters.push(`(${categoryFilters.join(' OR ')})`);

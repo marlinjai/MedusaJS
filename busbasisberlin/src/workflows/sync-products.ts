@@ -14,6 +14,7 @@ type SyncProductsWorkflowInput = {
 export const syncProductsWorkflow = createWorkflow(
 	'sync-products',
 	({ filters, limit, offset }: SyncProductsWorkflowInput) => {
+		// @ts-ignore - Complex union type limitation in TypeScript
 		const { data, metadata } = useQueryGraphStep({
 			entity: 'product',
 			fields: [
@@ -28,7 +29,16 @@ export const syncProductsWorkflow = createWorkflow(
 				'categories.id',
 				'categories.name',
 				'categories.handle',
+				'categories.parent_category.id',
 				'categories.parent_category.name',
+				'categories.parent_category.parent_category.id',
+				'categories.parent_category.parent_category.name',
+				'categories.parent_category.parent_category.parent_category.id',
+				'categories.parent_category.parent_category.parent_category.name',
+				'categories.parent_category.parent_category.parent_category.parent_category.id',
+				'categories.parent_category.parent_category.parent_category.parent_category.name',
+				'categories.parent_category.parent_category.parent_category.parent_category.parent_category.id',
+				'categories.parent_category.parent_category.parent_category.parent_category.parent_category.name',
 				'tags.id',
 				'tags.value',
 				'collection.id',
@@ -41,12 +51,17 @@ export const syncProductsWorkflow = createWorkflow(
 				'variants.allow_backorder',
 				'variants.prices.amount',
 				'variants.prices.currency_code',
-			],
+				'images.url',
+				'sales_channels.id',
+				'sales_channels.name',
+			] as const,
 			pagination: {
 				take: limit,
 				skip: offset,
 			},
-			filters: filters || {},
+			filters: {
+				...filters,
+			},
 		});
 
 		syncProductsStep({

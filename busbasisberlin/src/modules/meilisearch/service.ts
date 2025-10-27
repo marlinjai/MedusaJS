@@ -66,8 +66,8 @@ export default class MeilisearchModuleService {
 			console.log('🔍 Sample document being indexed:', {
 				id: documents[0].id,
 				title: (documents[0] as any).title,
-				category_names: (documents[0] as any).category_names,
-				category_paths: (documents[0] as any).category_paths,
+				category_ids: (documents[0] as any).category_ids,
+				hierarchical_categories: (documents[0] as any).hierarchical_categories,
 			});
 		}
 
@@ -103,10 +103,11 @@ export default class MeilisearchModuleService {
 		try {
 			// Configure filterable attributes first (required for faceted search)
 			await index.updateFilterableAttributes([
-				'category_names',
-				'category_handles',
-				'category_paths',
 				'category_ids',
+				'hierarchical_categories.lvl0',
+				'hierarchical_categories.lvl1',
+				'hierarchical_categories.lvl2',
+				'hierarchical_categories.lvl3',
 				'is_available',
 				'status',
 				'min_price',
@@ -118,6 +119,10 @@ export default class MeilisearchModuleService {
 				'collection_handle',
 				'collection_title',
 				'variant_count',
+				'sales_channels.id',
+				'sales_channels.name',
+				'primary_sales_channel.id',
+				'primary_sales_channel.name',
 			]);
 
 			// Wait a bit for the filterable attributes to be processed
@@ -128,7 +133,10 @@ export default class MeilisearchModuleService {
 				'title',
 				'searchable_text',
 				'description',
-				'category_names',
+				'hierarchical_categories.lvl0',
+				'hierarchical_categories.lvl1',
+				'hierarchical_categories.lvl2',
+				'hierarchical_categories.lvl3',
 				'tags',
 				'skus',
 				'collection_title',
@@ -148,8 +156,8 @@ export default class MeilisearchModuleService {
 			await index.updateFaceting({
 				maxValuesPerFacet: 100,
 				sortFacetValuesBy: {
-					category_names: 'count',
-					category_paths: 'count',
+					'hierarchical_categories.lvl0': 'count',
+					'hierarchical_categories.lvl1': 'count',
 					tags: 'count',
 					currencies: 'alpha',
 					is_available: 'count',
@@ -176,8 +184,8 @@ export default class MeilisearchModuleService {
 				'handle',
 				'thumbnail',
 				'status',
-				'category_names',
-				'category_paths',
+				'category_ids',
+				'hierarchical_categories',
 				'is_available',
 				'min_price',
 				'max_price',
@@ -186,6 +194,8 @@ export default class MeilisearchModuleService {
 				'collection_title',
 				'skus',
 				'variant_count',
+				'sales_channels',
+				'primary_sales_channel',
 			]);
 
 			console.log('✅ Meilisearch index configuration completed successfully');
@@ -343,8 +353,8 @@ export default class MeilisearchModuleService {
 		} else {
 			// Default facets for category filtering
 			searchOptions.facets = [
-				'category_names',
-				'category_paths',
+				'hierarchical_categories.lvl0',
+				'hierarchical_categories.lvl1',
 				'is_available',
 				'currencies',
 				'tags',

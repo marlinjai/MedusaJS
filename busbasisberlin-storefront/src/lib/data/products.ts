@@ -175,22 +175,26 @@ export const retrieveProduct = async ({
 	};
 
 	try {
-		const product = await sdk.client.fetch<HttpTypes.StoreProduct>(
-			`/store/products/${handle}`,
-			{
-				method: 'GET',
-				query: {
-					region_id: region?.id,
-					fields:
-						'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
-				},
-				headers,
-				next,
-				cache: 'no-store',
+		// Fetch products by handle filter
+		const { products } = await sdk.client.fetch<{
+			products: HttpTypes.StoreProduct[];
+			count: number;
+		}>(`/store/products`, {
+			method: 'GET',
+			query: {
+				handle,
+				region_id: region?.id,
+				fields:
+					'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
+				limit: 1,
 			},
-		);
+			headers,
+			next,
+			cache: 'no-store',
+		});
 
-		return product;
+		// Return the first product or null if not found
+		return products.length > 0 ? products[0] : null;
 	} catch (error) {
 		console.error(`Failed to retrieve product with handle ${handle}:`, error);
 		return null;

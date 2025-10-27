@@ -5,6 +5,7 @@ import CartButton from '@modules/layout/components/cart-button';
 import MobileMenu from '@modules/layout/components/mobile-menu';
 import TransparentHeader from '@modules/layout/components/transparent-header';
 import { mainNavItems } from '@modules/layout/config/navigation';
+import SearchModal from '@modules/search/components/modal';
 import Image from 'next/image';
 import { Suspense } from 'react';
 
@@ -48,8 +49,11 @@ export default async function Nav() {
 							))}
 						</div>
 
-						{/* Right Section - Account, Cart, & Mobile Menu */}
+						{/* Right Section - Search, Account, Cart, & Mobile Menu */}
 						<div className="flex items-center gap-x-6 h-full">
+							{/* Search Modal - Hidden on Mobile */}
+							<SearchModal />
+
 							{/* Account Link - Hidden on Mobile */}
 							<div className="hidden md:flex items-center gap-x-6 h-full">
 								<LocalizedClientLink

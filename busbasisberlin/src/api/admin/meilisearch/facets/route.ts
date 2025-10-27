@@ -31,8 +31,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 			// Get facet distribution for product attributes
 			const productFacetResults = await meilisearchService.getFacetDistribution(
 				[
-					'category_names',
-					'category_paths',
+					'hierarchical_categories.lvl0',
+					'hierarchical_categories.lvl1',
+					'hierarchical_categories.lvl2',
 					'is_available',
 					'currencies',
 					'tags',
