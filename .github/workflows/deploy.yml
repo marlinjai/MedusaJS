@@ -74,6 +74,9 @@ jobs:
 
             # Pull latest code with proper authentication
             git pull origin main
+            
+            # Ensure proper file permissions for deployment scripts
+            chmod -R u+w .
 
             # Export environment variables explicitly
             export DOMAIN_NAME="$DOMAIN_NAME"
