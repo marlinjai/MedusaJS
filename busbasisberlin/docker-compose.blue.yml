@@ -5,7 +5,10 @@
 services:
   # Medusa Backend Service (Server Mode) - Blue
   medusa-server-blue:
-    build: .
+    build:
+      context: .
+      args:
+        - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
     container_name: medusa_backend_server_blue
     restart: unless-stopped
     depends_on:
@@ -65,7 +68,10 @@ services:
 
   # Medusa Worker Service (Worker Mode) - Blue
   medusa-worker-blue:
-    build: .
+    build:
+      context: .
+      args:
+        - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
     container_name: medusa_backend_worker_blue
     restart: unless-stopped
     depends_on:
