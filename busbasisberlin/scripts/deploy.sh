@@ -320,18 +320,18 @@ start_base_services() {
 # Function to cleanup disk space
 cleanup_disk() {
     log_info "Running disk cleanup to free space..."
-    
+
     # Remove unused images and build cache
     docker image prune -af 2>/dev/null || true
     docker builder prune -af 2>/dev/null || true
-    
+
     # Remove unused volumes (safe - only removes volumes with no containers attached)
     # This preserves: busbasisberlin_postgres_data, busbasisberlin_redis_data, etc.
     docker volume prune -f 2>/dev/null || true
-    
+
     # Clean system
     apt-get clean 2>/dev/null || true
-    
+
     log_success "Disk cleanup completed"
 }
 
