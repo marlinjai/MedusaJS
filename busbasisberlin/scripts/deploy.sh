@@ -287,7 +287,14 @@ analyze_and_fix_state() {
     # Always ensure nginx configs are correctly generated
     generate_nginx_configs "blue"
     generate_nginx_configs "green"
-    
+
+    # Re-copy the active config to nginx.conf
+    if [[ -f "$CURRENT_STATE_FILE" ]]; then
+        local current_state=$(cat "$CURRENT_STATE_FILE")
+        log_info "Updating active nginx.conf from $current_state config..."
+        cp "$PROJECT_DIR/nginx/nginx-$current_state.conf" "$PROJECT_DIR/nginx/nginx.conf"
+    fi
+
     # Reload nginx if it's running to pick up any config changes
     if docker ps --format '{{.Names}}' | grep -q "^medusa_nginx$"; then
         log_info "Reloading nginx to apply config changes..."
