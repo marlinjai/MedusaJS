@@ -2,6 +2,8 @@
 
 A full-stack e-commerce application built with MedusaJS (backend) and Next.js (frontend).
 
+**Features:** Search powered by Meilisearch, automatic product sync, and advanced category filtering.
+
 ## 🚀 Production Deployment
 
 For complete production deployment instructions, see **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
