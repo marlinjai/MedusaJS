@@ -252,4 +252,5 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 ---
 
 _Built with ❤️ for BusBasisBerlin_
+
 # Test deployment with re-enabled link - Mon Sep 22 13:03:16 CEST 2025

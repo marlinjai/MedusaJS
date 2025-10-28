@@ -311,10 +311,24 @@ start_base_services() {
         log_error "Meilisearch container is not running"
         return 1
     fi
-    
+
     log_success "All base services (postgres, redis, nginx, meilisearch) are running"
 
     return 0
+}
+
+# Function to cleanup disk space
+cleanup_disk() {
+    log_info "Running disk cleanup to free space..."
+    
+    # Remove unused images and build cache
+    docker image prune -af 2>/dev/null || true
+    docker builder prune -af 2>/dev/null || true
+    
+    # Clean system
+    apt-get clean 2>/dev/null || true
+    
+    log_success "Disk cleanup completed"
 }
 
 # Main deployment function
@@ -322,6 +336,9 @@ deploy() {
     # Always ensure nginx configs are correctly generated before any deployment actions
     generate_nginx_configs "blue"
     generate_nginx_configs "green"
+    
+    # Cleanup disk if it's getting full
+    cleanup_disk
 
     # First, analyze and fix any inconsistent state
     if ! analyze_and_fix_state; then
