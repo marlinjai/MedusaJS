@@ -93,8 +93,11 @@ log_info "Starting deployment for domain: $DOMAIN_NAME"
 # Generate nginx configurations
 generate_nginx_configs
 
-# Verify SSL certificates
-verify_ssl_certs
+# Verify SSL certificates (but don't fail deployment if they don't exist yet)
+if ! verify_ssl_certs; then
+    log_warning "SSL certificates not found - deployment will continue but HTTPS may not work"
+    log_warning "To set up SSL certificates, run: sudo cp /etc/letsencrypt/live/$DOMAIN_NAME/*.pem nginx/ssl/"
+fi
 
 # Deploy using the main deployment script
 # Pass environment variables explicitly to the deployment script

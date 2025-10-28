@@ -73,10 +73,22 @@ jobs:
           script: |
             cd /opt/medusa-app/busbasisberlin
 
+            # Save production SSL certificates before git operations
+            if [ -d "nginx/ssl" ] && [ -n "$(ls -A nginx/ssl/*.pem 2>/dev/null)" ]; then
+                sudo mkdir -p /tmp/ssl-backup
+                sudo cp nginx/ssl/*.pem /tmp/ssl-backup/ 2>/dev/null || true
+            fi
+
             # Pull latest code with force to handle conflicts
             git fetch --all
             git reset --hard origin/main
             git pull origin main
+
+            # Restore production SSL certificates if they existed
+            if [ -d "/tmp/ssl-backup" ] && [ -n "$(ls -A /tmp/ssl-backup/*.pem 2>/dev/null)" ]; then
+                sudo cp /tmp/ssl-backup/*.pem nginx/ssl/ 2>/dev/null || true
+                sudo rm -rf /tmp/ssl-backup
+            fi
 
             # Fix ownership and permissions of all files
             sudo chown -R deploy:deploy .
