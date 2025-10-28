@@ -97,6 +97,26 @@ curl -X POST 'http://localhost:7700/keys' \
 
 ## Maintenance Scripts
 
+### Pre-Deployment Testing
+
+**⚠️ Always run this before deploying** to catch nginx configuration issues early (saves 20+ minutes per failed deployment):
+
+```bash
+./scripts/test-nginx-config.sh
+```
+
+This validates:
+- ✅ CORS map directive exists
+- ✅ Using `$cors_origin` variable (not comma-separated list)
+- ✅ X-Meilisearch-Client header allowed
+- ✅ /search/ location properly configured
+- ✅ Nginx syntax is valid
+
+**Deployment scripts:**
+- `scripts/setup-vps.sh` - Complete VPS setup including SSL and Docker
+- `scripts/deploy.sh` - Blue-green deployment with rollback support
+- `scripts/cleanup-disk.sh` - Automated disk space management
+
 ### Cleanup Orphaned S3 Files
 
 To clean up orphaned files in your Supabase Storage that are no longer referenced by any product:
