@@ -305,6 +305,15 @@ start_base_services() {
     log_info "Waiting for base services to be ready..."
     sleep 10
 
+    # Check Meilisearch is running and healthy
+    local meilisearch_running=$(docker ps --filter "name=medusa_meilisearch" --filter "status=running" --quiet)
+    if [[ -z "$meilisearch_running" ]]; then
+        log_error "Meilisearch container is not running"
+        return 1
+    fi
+    
+    log_success "All base services (postgres, redis, nginx, meilisearch) are running"
+
     return 0
 }
 
@@ -328,7 +337,7 @@ deploy() {
     log_info "Target deployment: $target"
 
     # Ensure base services are running (cold start handling)
-    log_info "Ensuring base services (postgres, redis, nginx) are running..."
+    log_info "Ensuring base services (postgres, redis, nginx, meilisearch) are running..."
     cd "$PROJECT_DIR"
 
     # Check if this is a cold start (no containers running)
