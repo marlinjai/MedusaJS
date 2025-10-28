@@ -48,6 +48,53 @@ Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to le
 - **Automatic Product Sync**: Products sync to Meilisearch on create/update
 - **Custom Modules**: Supplier, Offer, and Service modules
 
+## Meilisearch Configuration
+
+### Required Environment Variables
+
+For the backend (Medusa server), set these in GitHub repository secrets:
+
+```bash
+# Meilisearch connection (use internal Docker network URL)
+MEILISEARCH_HOST=http://medusa_meilisearch:7700
+
+# Master key for full access (backend needs write permissions)
+MEILISEARCH_API_KEY=<your-master-key>
+MEILISEARCH_MASTER_KEY=<same-master-key>
+
+# Index names (optional, defaults to 'products' and 'categories')
+MEILISEARCH_PRODUCT_INDEX_NAME=products
+MEILISEARCH_CATEGORY_INDEX_NAME=categories
+```
+
+**Important:** `MEILISEARCH_API_KEY` and `MEILISEARCH_MASTER_KEY` must match for the backend to have full read/write access.
+
+For the storefront (Vercel), set these in Vercel environment variables:
+
+```bash
+# Public Meilisearch endpoint (use public domain)
+NEXT_PUBLIC_MEILISEARCH_HOST=https://your-domain.de/meilisearch
+
+# Read-only search API key (never use master key in frontend!)
+NEXT_PUBLIC_MEILISEARCH_API_KEY=<read-only-search-key>
+```
+
+### Creating a Search-Only API Key
+
+To create a read-only key for the storefront, run in Meilisearch container:
+
+```bash
+curl -X POST 'http://localhost:7700/keys' \
+  -H 'Authorization: Bearer <MASTER_KEY>' \
+  -H 'Content-Type: application/json' \
+  --data-binary '{
+    "description": "Search-only key for storefront",
+    "actions": ["search"],
+    "indexes": ["products", "categories"],
+    "expiresAt": null
+  }'
+```
+
 ## Maintenance Scripts
 
 ### Cleanup Orphaned S3 Files
@@ -79,4 +126,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 
-<!-- Deployment trigger: Mon Oct 27 22:50:00 CET 2025 - Fix admin SDK with VITE_MEDUSA_BACKEND_URL -->
+<!-- Deployment trigger: Tue Oct 28 16:50:00 CET 2025 - Fix Meilisearch API key configuration and add docs -->
