@@ -73,9 +73,10 @@ jobs:
           script: |
             cd /opt/medusa-app/busbasisberlin
 
-            # Force fetch and reset to latest code (handles merge conflicts and detached HEAD)
-            git fetch origin
+            # Pull latest code with force to handle conflicts
+            git fetch --all
             git reset --hard origin/main
+            git pull origin main
 
             # Export environment variables explicitly
             export DOMAIN_NAME="$DOMAIN_NAME"
