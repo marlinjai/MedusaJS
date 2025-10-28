@@ -126,4 +126,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 
-<!-- Deployment trigger: Tue Oct 28 18:10:00 CET 2025 - Fix CORS multiple origins error with nginx map -->
+<!-- Deployment trigger: Tue Oct 28 18:30:00 CET 2025 - Force nginx reload with correct CORS map config -->
