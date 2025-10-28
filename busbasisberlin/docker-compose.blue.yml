@@ -52,6 +52,8 @@ services:
       - MEILISEARCH_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
       - MEILISEARCH_PRODUCT_INDEX=${MEILISEARCH_PRODUCT_INDEX_NAME:-products}
       - MEILISEARCH_CATEGORY_INDEX=${MEILISEARCH_CATEGORY_INDEX_NAME:-categories}
+      # Admin frontend configuration (Vite needs VITE_ prefix)
+      - VITE_MEDUSA_BACKEND_URL=${VITE_MEDUSA_BACKEND_URL}
     volumes:
       - .:/app
       - /app/node_modules
@@ -109,6 +111,7 @@ services:
       - MEILISEARCH_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
       - MEILISEARCH_PRODUCT_INDEX=${MEILISEARCH_PRODUCT_INDEX_NAME:-products}
       - MEILISEARCH_CATEGORY_INDEX=${MEILISEARCH_CATEGORY_INDEX_NAME:-categories}
+      - VITE_MEDUSA_BACKEND_URL=${VITE_MEDUSA_BACKEND_URL}
     volumes:
       - .:/app
       - /app/node_modules

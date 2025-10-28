@@ -58,7 +58,7 @@ jobs:
       MEILISEARCH_API_KEY: ${{ secrets.MEILISEARCH_API_KEY }}
       MEILISEARCH_MASTER_KEY: ${{ secrets.MEILISEARCH_MASTER_KEY }}
       MEILISEARCH_PRODUCT_INDEX_NAME: ${{ secrets.MEILISEARCH_PRODUCT_INDEX_NAME }}
-
+      VITE_MEDUSA_BACKEND_URL: ${{ secrets.VITE_MEDUSA_BACKEND_URL }}
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.5
@@ -102,6 +102,7 @@ jobs:
             export EMAIL_SIGNATURE="$EMAIL_SIGNATURE"
             export EMAIL_FOOTER="$EMAIL_FOOTER"
             export MEDUSA_BACKEND_URL="$MEDUSA_BACKEND_URL"
+            export VITE_MEDUSA_BACKEND_URL="$VITE_MEDUSA_BACKEND_URL"
             export STORE_CORS="$STORE_CORS"
             export ADMIN_CORS="$ADMIN_CORS"
             export AUTH_CORS="$AUTH_CORS"

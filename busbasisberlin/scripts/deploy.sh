@@ -152,6 +152,7 @@ start_deployment() {
     export STORE_CORS ADMIN_CORS AUTH_CORS
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
+    export VITE_MEDUSA_BACKEND_URL
 
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build --remove-orphans --force-recreate
 
@@ -296,6 +297,7 @@ start_base_services() {
     export STORE_CORS ADMIN_CORS AUTH_CORS
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
+    export VITE_MEDUSA_BACKEND_URL
 
     docker compose -f docker-compose.base.yml up -d --remove-orphans
 
@@ -347,7 +349,7 @@ deploy() {
     export MEDUSA_BACKEND_URL DOMAIN_NAME NODE_ENV
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
-
+    export VITE_MEDUSA_BACKEND_URL
     docker compose -f docker-compose.base.yml up -d --remove-orphans
 
     # Start target deployment
