@@ -287,6 +287,12 @@ analyze_and_fix_state() {
     # Always ensure nginx configs are correctly generated
     generate_nginx_configs "blue"
     generate_nginx_configs "green"
+    
+    # Reload nginx if it's running to pick up any config changes
+    if docker ps --format '{{.Names}}' | grep -q "^medusa_nginx$"; then
+        log_info "Reloading nginx to apply config changes..."
+        docker exec medusa_nginx nginx -s reload 2>/dev/null || log_warning "Could not reload nginx (might not be running yet)"
+    fi
 
     return 0
 }
