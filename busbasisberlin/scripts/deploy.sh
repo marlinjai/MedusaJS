@@ -325,6 +325,10 @@ cleanup_disk() {
     docker image prune -af 2>/dev/null || true
     docker builder prune -af 2>/dev/null || true
     
+    # Remove unused volumes (safe - only removes volumes with no containers attached)
+    # This preserves: busbasisberlin_postgres_data, busbasisberlin_redis_data, etc.
+    docker volume prune -f 2>/dev/null || true
+    
     # Clean system
     apt-get clean 2>/dev/null || true
     
@@ -336,7 +340,7 @@ deploy() {
     # Always ensure nginx configs are correctly generated before any deployment actions
     generate_nginx_configs "blue"
     generate_nginx_configs "green"
-    
+
     # Cleanup disk if it's getting full
     cleanup_disk
 
