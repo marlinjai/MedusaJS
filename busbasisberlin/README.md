@@ -106,6 +106,7 @@ curl -X POST 'http://localhost:7700/keys' \
 ```
 
 This validates:
+
 - ✅ CORS map directive exists
 - ✅ Using `$cors_origin` variable (not comma-separated list)
 - ✅ X-Meilisearch-Client header allowed
@@ -113,6 +114,7 @@ This validates:
 - ✅ Nginx syntax is valid
 
 **Deployment scripts:**
+
 - `scripts/setup-vps.sh` - Complete VPS setup including SSL and Docker
 - `scripts/deploy.sh` - Blue-green deployment with rollback support
 - `scripts/cleanup-disk.sh` - Automated disk space management
@@ -146,4 +148,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 
-<!-- Deployment trigger: Tue Oct 28 18:30:00 CET 2025 - Force nginx reload with correct CORS map config -->
+<!-- Deployment trigger: Tue Oct 28 19:50:00 CET 2025 - Force git reset and nginx config regeneration -->

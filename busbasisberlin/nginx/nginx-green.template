@@ -185,8 +185,13 @@ http {
             # Rate limiting for search
             limit_req zone=api burst=50 nodelay;
 
-            # CORS for storefront - use mapped origin (only one allowed)
-            add_header Access-Control-Allow-Origin $cors_origin always;
+            # Hide Meilisearch's CORS headers (we'll set our own)
+            proxy_hide_header Access-Control-Allow-Origin;
+            proxy_hide_header Access-Control-Allow-Methods;
+            proxy_hide_header Access-Control-Allow-Headers;
+
+            # CORS for storefront - single origin only
+            add_header Access-Control-Allow-Origin "https://medusa-js-busbasisberlin-storefront.vercel.app" always;
             add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
             add_header Access-Control-Allow-Headers "Authorization, Content-Type, X-Meilisearch-Client" always;
             add_header Access-Control-Max-Age 3600 always;

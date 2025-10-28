@@ -31,11 +31,11 @@ test_failed=0
 for color in blue green; do
     echo "📋 Testing $color configuration..."
     echo ""
-    
+
     # Generate config from template
     envsubst '${DOMAIN_NAME} ${SSL_CERT_NAME} ${SSL_KEY_NAME} ${STORE_CORS} ${ADMIN_CORS} ${AUTH_CORS} ${MEILISEARCH_HOST}' \
         < "nginx-$color.template" > "nginx-$color-test.conf"
-    
+
     # Test 1: Check for CORS map directive
     echo "  🔍 Test 1: CORS map directive exists..."
     if grep -q "map.*http_origin.*cors_origin" "nginx-$color-test.conf"; then
@@ -45,7 +45,7 @@ for color in blue green; do
         echo "     ❌ FAIL: Map directive missing!"
         ((test_failed++))
     fi
-    
+
     # Test 2: Check map uses $cors_origin variable
     echo "  🔍 Test 2: Map uses \$cors_origin variable..."
     if grep -q 'Access-Control-Allow-Origin $cors_origin' "nginx-$color-test.conf"; then
@@ -55,7 +55,7 @@ for color in blue green; do
         echo "     ❌ FAIL: Not using \$cors_origin variable!"
         ((test_failed++))
     fi
-    
+
     # Test 3: Check no comma-separated origins
     echo "  🔍 Test 3: No comma-separated origins in CORS header..."
     if grep "Access-Control-Allow-Origin.*,.*," "nginx-$color-test.conf"; then
@@ -65,7 +65,7 @@ for color in blue green; do
         echo "     ✅ PASS: No comma-separated origins"
         ((test_passed++))
     fi
-    
+
     # Test 4: Check X-Meilisearch-Client header
     echo "  🔍 Test 4: X-Meilisearch-Client in allowed headers..."
     if grep -q "X-Meilisearch-Client" "nginx-$color-test.conf"; then
@@ -75,7 +75,7 @@ for color in blue green; do
         echo "     ❌ FAIL: X-Meilisearch-Client header missing!"
         ((test_failed++))
     fi
-    
+
     # Test 5: Check /search/ location exists
     echo "  🔍 Test 5: /search/ location configured..."
     if grep -q "location /search/" "nginx-$color-test.conf"; then
@@ -85,7 +85,7 @@ for color in blue green; do
         echo "     ❌ FAIL: /search/ location missing!"
         ((test_failed++))
     fi
-    
+
     # Test 6: Validate nginx syntax (will fail on host check, but catches syntax errors)
     echo "  🔍 Test 6: Nginx syntax validation..."
     if docker run --rm -v "$(pwd)/nginx-$color-test.conf:/etc/nginx/nginx.conf:ro" nginx:alpine nginx -t 2>&1 | grep -q "syntax is ok\|test failed"; then
@@ -95,7 +95,7 @@ for color in blue green; do
         echo "     ❌ FAIL: Syntax errors found!"
         ((test_failed++))
     fi
-    
+
     # Cleanup test file
     rm "nginx-$color-test.conf"
     echo ""
