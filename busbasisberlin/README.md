@@ -132,6 +132,23 @@ npx medusa exec ./src/scripts/cleanup-s3-files.ts
 
 This script scans all products for image references, compares them with files in your storage bucket, and removes any files that are no longer being used.
 
+## Deployment Sequencing
+
+To prevent frontend build failures, the deployment is sequenced:
+
+1. **Backend deploys first** (blue-green, ~30 mins)
+2. **Vercel auto-deploys after** backend completes
+
+### Setup Vercel Deploy Hook
+
+1. Go to Vercel → Project Settings → Git → Deploy Hooks
+2. Create a new deploy hook (name: "Backend Deploy Trigger")
+3. Copy the webhook URL
+4. Add to GitHub Secrets as `VERCEL_DEPLOY_HOOK`
+5. **Disable auto-deploy in Vercel:** Settings → Git → Ignored Build Step → `exit 1`
+
+This ensures frontend always builds against a stable backend.
+
 ## What is Medusa
 
 Medusa is a set of commerce modules and tools that allow you to build rich, reliable, and performant commerce applications without reinventing core commerce logic. The modules can be customized and used to build advanced ecommerce stores, marketplaces, or any product that needs foundational commerce primitives. All modules are open-source and freely available on npm.
