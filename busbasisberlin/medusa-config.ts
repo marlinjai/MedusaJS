@@ -168,13 +168,8 @@ const getModules = () => {
 	);
 
 	// Add Meilisearch service if configured
-	if (
-		(process.env.MEILISEARCH_HOST &&
-			process.env.MEILISEARCH_API_KEY &&
-			process.env.WORKER_MODE === 'worker') ||
-		(process.env.NODE_ENV === 'development' &&
-			process.env.MEDUSA_WORKER_MODE === 'shared')
-	) {
+	// Enable in development (shared mode) and production (server mode)
+	if (process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_API_KEY) {
 		modules.push({
 			resolve: './src/modules/meilisearch',
 			options: {
