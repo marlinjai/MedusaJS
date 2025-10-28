@@ -121,7 +121,7 @@ jobs:
 
             # Run deployment
             ./scripts/deploy-with-domain.sh
-      
+
       - name: Trigger Vercel Deployment
         if: success()
         run: |

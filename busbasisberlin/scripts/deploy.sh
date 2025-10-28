@@ -208,6 +208,13 @@ rollback() {
 generate_nginx_configs() {
     local color=$1
     log_info "Generating nginx-$color.conf from template..."
+    
+    # Set default for STOREFRONT_URL if not provided
+    if [ -z "$STOREFRONT_URL" ]; then
+        log_warning "STOREFRONT_URL not set, using STORE_CORS or default"
+        export STOREFRONT_URL="${STORE_CORS%%,*}"  # Use first value from STORE_CORS
+    fi
+    
     cd "$PROJECT_DIR/nginx"
     envsubst '${DOMAIN_NAME} ${SSL_CERT_NAME} ${SSL_KEY_NAME} ${STORE_CORS} ${STOREFRONT_URL} ${ADMIN_CORS} ${AUTH_CORS} ${MEILISEARCH_HOST}' < nginx-$color.template > nginx-$color.conf
     cd "$PROJECT_DIR"
