@@ -126,4 +126,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 
-<!-- Deployment trigger: Tue Oct 28 17:55:00 CET 2025 - Fix Meilisearch CORS for Vercel storefront -->
+<!-- Deployment trigger: Tue Oct 28 18:00:00 CET 2025 - Add X-Meilisearch-Client to CORS headers -->

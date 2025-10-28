@@ -180,7 +180,7 @@ http {
             # CORS for storefront
             add_header Access-Control-Allow-Origin ${STORE_CORS} always;
             add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
-            add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
+            add_header Access-Control-Allow-Headers "Authorization, Content-Type, X-Meilisearch-Client" always;
             add_header Access-Control-Max-Age 3600 always;
 
             # Handle preflight requests
