@@ -78,6 +78,11 @@ jobs:
             git reset --hard origin/main
             git pull origin main
 
+            # Fix ownership and permissions of all files
+            sudo chown -R deploy:deploy .
+            sudo chmod -R u+w .
+            sudo find . -type f -name "*.sh" -exec chmod +x {} \;
+
             # Export environment variables explicitly
             export DOMAIN_NAME="$DOMAIN_NAME"
             export SSL_CERT_NAME="$SSL_CERT_NAME"
