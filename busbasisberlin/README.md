@@ -65,6 +65,9 @@ MEILISEARCH_MASTER_KEY=<same-master-key>
 # Index names (optional, defaults to 'products' and 'categories')
 MEILISEARCH_PRODUCT_INDEX_NAME=products
 MEILISEARCH_CATEGORY_INDEX_NAME=categories
+
+# Storefront URL for Meilisearch CORS (SINGLE domain only - no commas!)
+STOREFRONT_URL=https://medusa-js-busbasisberlin-storefront.vercel.app
 ```
 
 **Important:** `MEILISEARCH_API_KEY` and `MEILISEARCH_MASTER_KEY` must match for the backend to have full read/write access.

@@ -153,6 +153,7 @@ start_deployment() {
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
     export VITE_MEDUSA_BACKEND_URL
+    export STOREFRONT_URL
 
     docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build --remove-orphans --force-recreate
 
@@ -208,7 +209,7 @@ generate_nginx_configs() {
     local color=$1
     log_info "Generating nginx-$color.conf from template..."
     cd "$PROJECT_DIR/nginx"
-    envsubst '${DOMAIN_NAME} ${SSL_CERT_NAME} ${SSL_KEY_NAME} ${STORE_CORS} ${ADMIN_CORS} ${AUTH_CORS} ${MEILISEARCH_HOST}' < nginx-$color.template > nginx-$color.conf
+    envsubst '${DOMAIN_NAME} ${SSL_CERT_NAME} ${SSL_KEY_NAME} ${STORE_CORS} ${STOREFRONT_URL} ${ADMIN_CORS} ${AUTH_CORS} ${MEILISEARCH_HOST}' < nginx-$color.template > nginx-$color.conf
     cd "$PROJECT_DIR"
     return 0
 }
@@ -298,6 +299,7 @@ start_base_services() {
     export STRIPE_API_KEY STRIPE_WEBHOOK_SECRET
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
     export VITE_MEDUSA_BACKEND_URL
+    export STOREFRONT_URL
 
     docker compose -f docker-compose.base.yml up -d --remove-orphans
 

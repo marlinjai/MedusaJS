@@ -190,8 +190,9 @@ http {
             proxy_hide_header Access-Control-Allow-Methods;
             proxy_hide_header Access-Control-Allow-Headers;
 
-            # CORS for storefront - single origin only
-            add_header Access-Control-Allow-Origin "https://medusa-js-busbasisberlin-storefront.vercel.app" always;
+            # CORS for storefront - single origin only (configurable via env var)
+            # Note: Use STOREFRONT_URL for single origin, not STORE_CORS (which has multiple values)
+            add_header Access-Control-Allow-Origin "${STOREFRONT_URL}" always;
             add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
             add_header Access-Control-Allow-Headers "Authorization, Content-Type, X-Meilisearch-Client" always;
             add_header Access-Control-Max-Age 3600 always;
