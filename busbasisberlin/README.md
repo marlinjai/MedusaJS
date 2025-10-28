@@ -42,6 +42,12 @@ Visit the [Quickstart Guide](https://docs.medusajs.com/learn/installation) to se
 
 Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to learn more about our system requirements.
 
+## Features
+
+- **Meilisearch Integration**: Advanced product search with category faceting
+- **Automatic Product Sync**: Products sync to Meilisearch on create/update
+- **Custom Modules**: Supplier, Offer, and Service modules
+
 ## Maintenance Scripts
 
 ### Cleanup Orphaned S3 Files
