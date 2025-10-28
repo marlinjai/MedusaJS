@@ -168,4 +168,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 
-<!-- Deployment trigger: Tue Oct 28 19:50:00 CET 2025 - Force git reset and nginx config regeneration -->
+<!-- Deployment trigger: Tue Oct 28 21:00:00 CET 2025 - Test STOREFRONT_URL fallback and CORS fix -->

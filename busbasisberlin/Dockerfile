@@ -20,10 +20,6 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Accept build arguments for admin configuration
-ARG MEDUSA_BACKEND_URL
-ENV MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL}
-
 # Build the application
 RUN npx medusa build
 
