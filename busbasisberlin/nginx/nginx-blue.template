@@ -36,14 +36,6 @@ http {
         application/xml+rss
         application/json;
 
-    # CORS origin mapping - only allow one origin per request
-    map $http_origin $cors_origin {
-        default "";
-        "~^https://medusa-js-busbasisberlin-storefront\.vercel\.app$" $http_origin;
-        "~^http://localhost:8000$" $http_origin;
-        "~^https://localhost$" $http_origin;
-    }
-
     # Rate limiting
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
 
