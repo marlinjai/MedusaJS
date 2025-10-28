@@ -36,6 +36,14 @@ http {
         application/xml+rss
         application/json;
 
+    # CORS origin mapping - only allow one origin per request
+    map $http_origin $cors_origin {
+        default "";
+        "~^https://medusa-js-busbasisberlin-storefront\.vercel\.app$" $http_origin;
+        "~^http://localhost:8000$" $http_origin;
+        "~^https://localhost$" $http_origin;
+    }
+
     # Rate limiting
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
 
@@ -177,8 +185,8 @@ http {
             # Rate limiting for search
             limit_req zone=api burst=50 nodelay;
 
-            # CORS for storefront
-            add_header Access-Control-Allow-Origin ${STORE_CORS} always;
+            # CORS for storefront - use mapped origin (only one allowed)
+            add_header Access-Control-Allow-Origin $cors_origin always;
             add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
             add_header Access-Control-Allow-Headers "Authorization, Content-Type, X-Meilisearch-Client" always;
             add_header Access-Control-Max-Age 3600 always;
