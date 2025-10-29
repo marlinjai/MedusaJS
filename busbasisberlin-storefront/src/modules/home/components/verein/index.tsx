@@ -32,7 +32,10 @@ const Verein = () => {
 	};
 
 	return (
-		<section className="py-24 px-4 md:px-8 bg-gradient-to-b from-neutral-900 to-black">
+		<section
+			id="verein"
+			className="py-24 px-4 md:px-8 bg-gradient-to-b from-neutral-900 to-black"
+		>
 			<div className="max-w-7xl mx-auto">
 				{/* Header */}
 				<div className="text-center mb-16">
