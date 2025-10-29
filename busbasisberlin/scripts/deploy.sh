@@ -370,7 +370,8 @@ start_base_services() {
     export VITE_MEDUSA_BACKEND_URL
     export STOREFRONT_URL
 
-    docker compose -f docker-compose.base.yml up -d --remove-orphans
+    # Don't use --remove-orphans - it stops blue/green deployment containers
+    docker compose -f docker-compose.base.yml up -d
 
     # Wait for base services to be healthy
     log_info "Waiting for base services to be ready..."
@@ -452,7 +453,8 @@ deploy() {
     export MEILISEARCH_HOST MEILISEARCH_API_KEY MEILISEARCH_MASTER_KEY MEILISEARCH_PRODUCT_INDEX_NAME
     export VITE_MEDUSA_BACKEND_URL
     export STOREFRONT_URL
-    docker compose -f docker-compose.base.yml up -d --remove-orphans
+    # Don't use --remove-orphans - it stops blue/green deployment containers
+    docker compose -f docker-compose.base.yml up -d
 
     # Start target deployment
     if ! start_deployment "$target"; then
