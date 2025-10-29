@@ -101,39 +101,63 @@ switch_nginx() {
     local target=$1
     log_info "Switching nginx to $target deployment..."
 
+    # Validate nginx config syntax before using it (use absolute path)
+    local nginx_config_path="$(cd "$PROJECT_DIR/nginx" && pwd)"
+    if ! docker run --rm -v "${nginx_config_path}:/etc/nginx:ro" nginx:alpine nginx -t 2>&1 | grep -q "syntax is ok"; then
+        log_error "Nginx configuration for $target may be invalid!"
+        log_warning "Proceeding anyway - will check logs if it fails..."
+        # Don't return 1 here, let it try to load and show actual error
+    fi
+
     # Copy the appropriate nginx config
     cp "$PROJECT_DIR/nginx/nginx-$target.conf" "$PROJECT_DIR/nginx/nginx.conf"
+
+    # Check current container state
+    local container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
+    
+    # If container is restarting or doesn't exist, restart it
+    if [[ "$container_state" == "restarting" ]] || [[ "$container_state" == "not-exists" ]]; then
+        log_info "Nginx container needs to be restarted..."
+        docker restart medusa_nginx 2>/dev/null || docker-compose -f docker-compose.base.yml up -d medusa_nginx
+    fi
 
     # Wait for nginx container to be running
     local attempts=0
     local max_attempts=30
     while [[ $attempts -lt $max_attempts ]]; do
-        if docker exec medusa_nginx nginx -s reload 2>/dev/null; then
-            log_success "Nginx switched to $target deployment"
-            return 0
-        fi
-
-        # If reload failed, check if container is restarting
-        local container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null)
-        if [[ "$container_state" == "restarting" ]]; then
+        container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
+        
+        if [[ "$container_state" == "running" ]]; then
+            # Container is running, try to reload config
+            if docker exec medusa_nginx nginx -s reload 2>/dev/null; then
+                log_success "Nginx switched to $target deployment"
+                return 0
+            else
+                # Reload failed, check logs
+                if [[ $attempts -eq 5 ]]; then
+                    log_warning "Nginx reload failed, checking logs..."
+                    docker logs --tail 20 medusa_nginx 2>&1 | head -10
+                fi
+            fi
+        elif [[ "$container_state" == "restarting" ]]; then
+            # Show logs if container keeps restarting
+            if [[ $attempts -eq 10 ]]; then
+                log_warning "Nginx container is stuck restarting, checking logs..."
+                docker logs --tail 30 medusa_nginx 2>&1 | grep -i error || docker logs --tail 30 medusa_nginx 2>&1 | head -20
+            fi
             log_info "Nginx container is restarting, waiting..."
-            sleep 2
-            attempts=$((attempts + 1))
-            continue
         elif [[ "$container_state" != "running" ]]; then
-            log_warning "Nginx container not running, attempting to start..."
-            docker start medusa_nginx
-            sleep 2
-            attempts=$((attempts + 1))
-            continue
+            log_warning "Nginx container state: $container_state, attempting to restart..."
+            docker restart medusa_nginx 2>/dev/null || docker-compose -f docker-compose.base.yml up -d medusa_nginx
         fi
 
-        # Container is running but reload failed, try again
-        sleep 1
+        sleep 2
         attempts=$((attempts + 1))
     done
 
     log_error "Failed to switch nginx to $target deployment after $max_attempts attempts"
+    log_error "Final nginx logs:"
+    docker logs --tail 50 medusa_nginx 2>&1 | tail -20
     return 1
 }
 
