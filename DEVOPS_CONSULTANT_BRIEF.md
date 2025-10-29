@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-**Stack:** MedusaJS e-commerce platform (Node.js/TypeScript)  
-**Infrastructure:** Self-hosted VPS (Ubuntu 24.04) + Vercel (storefront)  
-**Deployment Strategy:** Blue-Green with Docker + Nginx  
+**Stack:** MedusaJS e-commerce platform (Node.js/TypeScript)
+**Infrastructure:** Self-hosted VPS (Ubuntu 24.04) + Vercel (storefront)
+**Deployment Strategy:** Blue-Green with Docker + Nginx
 **Current Status:** 90% complete, needs final review and fixes
 
 ---
@@ -12,6 +12,7 @@
 ## Architecture
 
 ### **Backend (VPS - Linode/DigitalOcean)**
+
 - **MedusaJS Server Containers:** Blue + Green instances (ports 9000/9002)
 - **MedusaJS Worker Containers:** Blue + Green instances (ports 9001/9003)
 - **Nginx:** SSL termination + blue-green traffic routing
@@ -22,6 +23,7 @@
 - **Uptime Kuma:** Service monitoring
 
 ### **Frontend (Vercel)**
+
 - Next.js storefront
 - Auto-deploys via webhook after backend success
 
@@ -50,6 +52,7 @@
 ## Recent Work Done
 
 ### **Infrastructure Setup** ✅
+
 - VPS configured with Docker + Docker Compose
 - Blue-green deployment scripts implemented
 - SSL certificates (Let's Encrypt) configured
@@ -57,6 +60,7 @@
 - All secrets configured
 
 ### **Fixes Applied** ✅
+
 - Removed aggressive flags (`--remove-orphans`, `--force-recreate`)
 - Fixed service name vs container name issues
 - Added deployment lock file
@@ -70,7 +74,9 @@
 ## Your Task
 
 ### **Goal**
+
 Review and finalize the CI/CD pipeline to ensure:
+
 1. **Guaranteed zero-downtime** on every deployment
 2. **Resilient to any VPS state** (crashed containers, partial state, etc.)
 3. **Proper blue-green switching** (both deployments can run simultaneously)
@@ -79,16 +85,19 @@ Review and finalize the CI/CD pipeline to ensure:
 ### **Specific Issues to Verify**
 
 1. **Nginx Switching Logic**
+
    - Currently: stops, removes, recreates container
    - Question: Is this the cleanest approach or should we use config reload?
    - File: `busbasisberlin/scripts/deploy.sh` lines 100-189
 
 2. **State Recovery**
+
    - Currently: `analyze_and_fix_state()` corrects inconsistencies
    - Question: Does this handle all edge cases properly?
    - File: `busbasisberlin/scripts/deploy.sh` lines 277-372
 
 3. **Rollback Strategy**
+
    - Currently: Switches nginx back to previous deployment
    - Issue: What if previous deployment was already stopped?
    - File: `busbasisberlin/scripts/deploy.sh` lines 238-268
@@ -98,6 +107,7 @@ Review and finalize the CI/CD pipeline to ensure:
    - Question: Can this be simplified/validated better?
 
 ### **Nice-to-Haves (If Time Permits)**
+
 - Add health check retries with exponential backoff
 - Implement canary deployments (10% → 100% traffic)
 - Add Slack/email notifications
@@ -108,6 +118,7 @@ Review and finalize the CI/CD pipeline to ensure:
 ## Files to Review
 
 **Critical Files:**
+
 1. `.github/workflows/deploy.yml` - GitHub Actions workflow (151 lines)
 2. `busbasisberlin/scripts/deploy.sh` - Main deployment logic (675 lines)
 3. `busbasisberlin/scripts/deploy-with-domain.sh` - Domain/SSL wrapper (144 lines)
@@ -116,6 +127,7 @@ Review and finalize the CI/CD pipeline to ensure:
 6. `busbasisberlin/nginx/nginx-{blue,green}.template` - Nginx configs (329 lines each)
 
 **Documentation:**
+
 - `change-docu/DEPLOYMENT_VERIFICATION_COMPLETE.md` - All edge cases analyzed
 - `change-docu/CICD_COMPREHENSIVE_FIXES.md` - Applied fixes & best practices
 - `change-docu/DEPLOYMENT_GUIDE.md` - Setup instructions
@@ -125,16 +137,19 @@ Review and finalize the CI/CD pipeline to ensure:
 ## Current Known Issues
 
 ### **Issue 1: Nginx not starting with correct config**
-**Symptom:** After recreating nginx, it sometimes loads old config  
-**Suspected Cause:** Docker volume mount caching  
+
+**Symptom:** After recreating nginx, it sometimes loads old config
+**Suspected Cause:** Docker volume mount caching
 **Priority:** HIGH
 
 ### **Issue 2: Base services restarting unnecessarily**
-**Status:** Fixed (removed --force-recreate) but needs verification  
+
+**Status:** Fixed (removed --force-recreate) but needs verification
 **Priority:** MEDIUM
 
 ### **Issue 3: Rollback might fail if no previous deployment**
-**Status:** Fix applied but needs testing  
+
+**Status:** Fix applied but needs testing
 **Priority:** MEDIUM
 
 ---
@@ -168,8 +183,9 @@ Review and finalize the CI/CD pipeline to ensure:
 **Estimated:** 3-4 hours (half day max)
 
 **Breakdown:**
+
 - Review codebase & docs: 1h
-- Fix critical issues: 1-2h  
+- Fix critical issues: 1-2h
 - Test deployments: 1h
 - Documentation: 30min
 
@@ -188,15 +204,17 @@ Review and finalize the CI/CD pipeline to ensure:
 
 ## Technical Context
 
-I'm a software engineer with solid fundamentals but limited DevOps experience. The deployment is **mostly working** - containers build successfully, health checks pass, but nginx switching has edge cases. 
+I'm a software engineer with solid fundamentals but limited DevOps experience. The deployment is **mostly working** - containers build successfully, health checks pass, but nginx switching has edge cases.
 
-**What's working:** 
+**What's working:**
+
 - Docker builds
 - Container orchestration
 - Health checks
 - State management
 
 **What needs expert review:**
+
 - Nginx switching reliability
 - Edge case handling
 - Error recovery
@@ -209,4 +227,3 @@ Looking for someone to give this a final professional review and ensure it's bul
 ## Contact
 
 Let me know if you need any clarification or additional access. The codebase is well-documented and deployment logs are comprehensive. Happy to jump on a call if needed.
-

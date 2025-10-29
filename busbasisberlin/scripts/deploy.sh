@@ -431,13 +431,13 @@ deploy() {
     fi
     trap "rm -f $LOCK_FILE" EXIT RETURN
     touch $LOCK_FILE
-    
+
     # Track deployment start time
     local DEPLOYMENT_START=$(date +%s)
     local DEPLOYMENT_ID="$(date +%Y%m%d_%H%M%S)"
-    
+
     log_info "=== Deployment $DEPLOYMENT_ID started ==="
-    
+
     # Always ensure nginx configs are correctly generated before any deployment actions
     generate_nginx_configs "blue"
     generate_nginx_configs "green"
@@ -518,7 +518,7 @@ deploy() {
     # Run smoke tests to verify deployment
     log_info "Running post-deployment smoke tests..."
     local smoke_test_failed=false
-    
+
     # Test 1: Health endpoint
     if ! curl -f -s -o /dev/null http://localhost:9000/health 2>/dev/null && \
        ! curl -f -s -o /dev/null http://localhost:9002/health 2>/dev/null; then
@@ -527,28 +527,28 @@ deploy() {
     else
         log_success "Smoke test passed: Health endpoint OK"
     fi
-    
+
     # Test 2: Database connectivity (via health endpoint that checks DB)
     if curl -s http://localhost:9000/health 2>/dev/null | grep -q "error\|fail" || \
        curl -s http://localhost:9002/health 2>/dev/null | grep -q "error\|fail"; then
         log_warning "Smoke test warning: Health endpoint reports issues"
     fi
-    
+
     # Calculate deployment duration
     local DEPLOYMENT_END=$(date +%s)
     local DURATION=$((DEPLOYMENT_END - DEPLOYMENT_START))
-    
+
     # Log deployment metrics
     local LOG_DIR="/var/log/medusa"
     sudo mkdir -p "$LOG_DIR" 2>/dev/null || true
     if [ -w "$LOG_DIR" ] || sudo test -w "$LOG_DIR" 2>/dev/null; then
         echo "$(date +%s)|$DEPLOYMENT_ID|$target|success|${DURATION}s|$GITHUB_SHA" | sudo tee -a "$LOG_DIR/deploy-history.log" > /dev/null 2>&1 || true
     fi
-    
+
     log_success "Deployment completed successfully!"
     log_success "Active deployment: $target"
     log_success "Deployment duration: ${DURATION}s"
-    
+
     if [ "$smoke_test_failed" = true ]; then
         log_warning "Deployment succeeded but smoke tests failed - manual verification recommended"
     fi

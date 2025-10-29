@@ -1,7 +1,7 @@
 # Complete Deployment Verification - All Edge Cases Covered
 
-**Status:** ✅ PRODUCTION READY  
-**Date:** 2025-10-29  
+**Status:** ✅ PRODUCTION READY
+**Date:** 2025-10-29
 **Verification Level:** Senior DevOps Engineer Review Complete
 
 ---
@@ -9,61 +9,73 @@
 ## ✅ ALL 12 EDGE CASES VERIFIED
 
 ### **1. Fresh VPS (Cold Start)**
+
 - State: Nothing running
 - Action: Starts target deployment (green), creates nginx
 - Result: ✅ GREEN running, serving traffic
 
-### **2. Blue Running, Nginx Down**  
+### **2. Blue Running, Nginx Down**
+
 - State: Blue UP, Nginx DOWN
 - Action: Fixes state file, starts nginx with blue config, deploys green
 - Result: ✅ GREEN running after switch
 
 ### **3. Nginx Crash Loop**
+
 - State: Nginx RESTARTING infinitely
 - Action: Stops nginx, removes container, recreates with correct config
 - Result: ✅ Nginx recovered, deployment proceeds
 
 ### **4. Both Deployments Running**
+
 - State: Blue UP, Green UP (invalid)
 - Action: Keeps current per state file, stops other
 - Result: ✅ Clean state, proceeds with deployment
 
 ### **5. Wrong State File**
+
 - State: Blue running but file says "green"
 - Action: Corrects state file to match reality
 - Result: ✅ Consistent state
 
 ### **6. Deployment Health Check Fails**
+
 - State: New deployment unhealthy after 120s
 - Action: Stops failed deployment, keeps old one running
 - Result: ✅ Zero downtime, old deployment still serving
 
 ### **7. Nginx Switch Fails**
+
 - State: New deployment healthy, nginx won't start
 - Action: Attempts rollback if previous deployment exists
 - Result: ✅ Falls back or reports manual intervention needed
 
 ### **8. No Previous Deployment (Rollback Scenario)**
+
 - State: First deployment ever, rollback requested
 - Action: Detects no previous deployment, reports error
 - Result: ✅ Clear error message, no crash
 
 ### **9. Missing SSL Certificates**
+
 - State: SSL certs don't exist
 - Action: Warns but continues, nginx may fail
 - Result: ✅ Graceful warning, instructions provided
 
 ### **10. Concurrent Deployment Attempt**
+
 - State: Deployment already running
 - Action: Lock file prevents second deployment
 - Result: ✅ No race conditions
 
 ### **11. Git Reset Removes SSL Certs**
+
 - State: Production certs in nginx/ssl/
 - Action: Backs up before git reset, restores after
 - Result: ✅ SSL certs preserved
 
 ### **12. Base Services Down Mid-Deployment**
+
 - State: Postgres/Redis crash during deployment
 - Action: start_base_services() restarts them without --remove-orphans
 - Result: ✅ Base services recover, deployment containers unaffected
@@ -73,7 +85,7 @@
 ## ✅ CRITICAL BUGS FIXED
 
 1. **`set -e` Removed** - Allows proper error handling and rollback
-2. **`--remove-orphans` Removed** - Prevents stopping deployment containers  
+2. **`--remove-orphans` Removed** - Prevents stopping deployment containers
 3. **`--force-recreate` Removed** - Prevents unnecessary base service restarts
 4. **Service Name Fix** - Uses `nginx` not `medusa_nginx` with docker-compose
 5. **Missing CORS Vars** - All environment variables now passed correctly
@@ -86,22 +98,26 @@
 ## ✅ INDUSTRY BEST PRACTICES IMPLEMENTED
 
 ### **Idempotency**
+
 - ✅ Can run multiple times safely
 - ✅ Recovers from any initial state
 - ✅ No side effects from repeated runs
 
 ### **Fail-Safe**
+
 - ✅ Explicit error handling (no `set -e`)
 - ✅ Rollback on failure
 - ✅ Old deployment kept running until new one healthy
 - ✅ Deployment lock prevents concurrent runs
 
 ### **Zero-Downtime**
+
 - ✅ New containers start alongside old
 - ✅ Traffic switches only after health checks
 - ✅ Old containers stopped only after success
 
 ### **Observability**
+
 - ✅ Deployment ID for tracking
 - ✅ Duration metrics
 - ✅ Deployment history log
@@ -109,12 +125,14 @@
 - ✅ Color-coded logging (INFO, WARNING, ERROR, SUCCESS)
 
 ### **Security**
+
 - ✅ SSL certificate preservation
 - ✅ File permissions set correctly
 - ✅ Secrets via environment variables
 - ✅ No secrets in logs
 
 ### **Resource Management**
+
 - ✅ Disk cleanup before deployment
 - ✅ Unused images pruned
 - ✅ Only necessary containers recreated
@@ -163,7 +181,7 @@
     │   ├─ Export all env vars
     │   ├─ docker compose -f base.yml up -d
     │   ├─ Starts: postgres (already UP, no-op)
-    │   ├─ Starts: redis (already UP, no-op)  
+    │   ├─ Starts: redis (already UP, no-op)
     │   ├─ Starts: meilisearch (already UP, no-op)
     │   ├─ Starts: nginx (creates with existing nginx.conf)
     │   └─ Wait 10s for health
@@ -266,7 +284,7 @@
 === RESULT ===
 ✅ Green deployment serving traffic
 ✅ Blue stopped
-✅ Nginx pointing to green  
+✅ Nginx pointing to green
 ✅ Zero downtime
 ✅ Complete in ~18-20 minutes
 ```
@@ -276,6 +294,7 @@
 ## 🛡️ FAILURE SCENARIOS HANDLED
 
 ### **Scenario A: Green Health Check Fails**
+
 ```bash
 Steps 1-31: ✓ (green starts)
 Step 32: ✗ (health check fails after 120s)
@@ -290,6 +309,7 @@ Result:
 ```
 
 ### **Scenario B: Nginx Won't Start with Green Config**
+
 ```bash
 Steps 1-32: ✓ (green healthy)
 Step 33: ✗ (nginx stuck restarting)
@@ -309,6 +329,7 @@ Result:
 ```
 
 ### **Scenario C: Both Deployments Crash**
+
 ```bash
 Rare scenario: Both blue and green fail health checks
 State: No healthy deployment available
@@ -328,6 +349,7 @@ Result:
 ## 📋 COMPLETE CHECKLIST
 
 ### **Pre-Deployment (Automated)**
+
 - [x] SSL certificates backed up
 - [x] Latest code pulled
 - [x] File ownership fixed
@@ -336,6 +358,7 @@ Result:
 - [x] Environment variables validated
 
 ### **Deployment Core**
+
 - [x] State analysis before deployment
 - [x] Deployment lock prevents concurrent runs
 - [x] Target containers start (current keeps running)
@@ -344,6 +367,7 @@ Result:
 - [x] Old containers stopped after success
 
 ### **Error Handling**
+
 - [x] Explicit error checks (no `set -e`)
 - [x] Rollback on failure
 - [x] Previous deployment verified before rollback
@@ -351,6 +375,7 @@ Result:
 - [x] Deployment history logged
 
 ### **Post-Deployment**
+
 - [x] Smoke tests verify health
 - [x] Deployment duration tracked
 - [x] GitHub Actions notifications
@@ -377,9 +402,10 @@ Result:
 **Starting State:** Blue containers healthy, nginx down (current VPS state)
 
 **Expected Flow:**
+
 ```
 1. State analysis corrects file to "blue" ✓
-2. Nginx started with blue config ✓  
+2. Nginx started with blue config ✓
 3. Green containers built (~14min) ✓
 4. Green becomes healthy (~2min) ✓
 5. Nginx switched to green (~10s) ✓
@@ -395,16 +421,19 @@ Result:
 ## 🔧 REMAINING IMPROVEMENTS (Future)
 
 ### **P1 - High Priority**
+
 - Add structured logging (JSON format)
 - Add Prometheus metrics export
 - Implement canary deployments (10% → 50% → 100%)
 
 ### **P2 - Medium Priority**
+
 - Add dependency vulnerability scanning
 - Implement blue-green for database migrations
 - Add automated performance testing
 
 ### **P3 - Low Priority**
+
 - Add Slack/email notifications
 - Implement deployment approval gates
 - Add automated rollback on error spike
