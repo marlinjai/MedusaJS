@@ -144,15 +144,13 @@ switch_nginx() {
         container_state="exited"
     fi
 
-    # Start or restart nginx with the new config
-    if [[ "$container_state" == "not-exists" ]] || [[ "$container_state" == "exited" ]]; then
-        log_info "Starting nginx with $target config..."
-        cd "$PROJECT_DIR"
-        docker-compose -f docker-compose.base.yml up -d medusa_nginx
-    else
-        log_info "Restarting nginx to apply $target config..."
-        docker restart medusa_nginx
-    fi
+    # Recreate nginx container to ensure it picks up the new config
+    # Simple approach: stop, remove, and recreate with docker-compose
+    log_info "Recreating nginx container with $target config..."
+    cd "$PROJECT_DIR"
+    docker stop medusa_nginx 2>/dev/null || true
+    docker rm medusa_nginx 2>/dev/null || true
+    docker-compose -f docker-compose.base.yml up -d medusa_nginx
 
     # Step 4: Wait for nginx to be healthy
     log_info "Waiting for nginx to become healthy..."
