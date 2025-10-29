@@ -2,7 +2,8 @@
 # deploy-with-domain.sh
 # Enhanced deployment script that handles domain configuration
 
-set -e
+# Don't use 'set -e' - handle errors explicitly for better control
+set -o pipefail
 
 # Configuration
 DOMAIN_NAME="${DOMAIN_NAME:-yourdomain.com}"
@@ -127,6 +128,9 @@ env DOMAIN_NAME="$DOMAIN_NAME" \
     EMAIL_SIGNATURE="$EMAIL_SIGNATURE" \
     EMAIL_FOOTER="$EMAIL_FOOTER" \
     MEDUSA_BACKEND_URL="$MEDUSA_BACKEND_URL" \
+    STORE_CORS="$STORE_CORS" \
+    ADMIN_CORS="$ADMIN_CORS" \
+    AUTH_CORS="$AUTH_CORS" \
     STRIPE_API_KEY="$STRIPE_API_KEY" \
     STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \
     MEILISEARCH_HOST="$MEILISEARCH_HOST" \
@@ -135,4 +139,5 @@ env DOMAIN_NAME="$DOMAIN_NAME" \
     MEILISEARCH_PRODUCT_INDEX_NAME="$MEILISEARCH_PRODUCT_INDEX_NAME" \
     VITE_MEDUSA_BACKEND_URL="$VITE_MEDUSA_BACKEND_URL" \
     STOREFRONT_URL="$STOREFRONT_URL" \
+    NODE_ENV="production" \
     ./scripts/deploy.sh deploy

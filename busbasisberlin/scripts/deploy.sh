@@ -3,7 +3,9 @@
 # Blue-Green deployment script for MedusaJS
 # Handles zero-downtime deployments by switching between blue and green environments
 
-set -e  # Exit on any error
+# Don't use 'set -e' in deployment scripts - handle errors explicitly
+# This allows graceful recovery and proper rollback logic
+set -o pipefail  # Fail on pipe errors but allow conditional checks
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -205,7 +207,10 @@ start_deployment() {
     export VITE_MEDUSA_BACKEND_URL
     export STOREFRONT_URL
 
-    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build --remove-orphans --force-recreate
+    # Only build and start the target deployment containers
+    # Don't use --remove-orphans (would stop other deployment)
+    # Don't use --force-recreate (would restart base services unnecessarily)
+    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
 
     if [[ $? -eq 0 ]]; then
         log_success "$target deployment started"
@@ -327,28 +332,34 @@ analyze_and_fix_state() {
     elif [[ -n "$blue_running" && "$file_state" == "green" ]]; then
         log_warning "Blue is running but file says green - correcting state file"
         echo "blue" > "$CURRENT_STATE_FILE"
-        switch_nginx "blue"
+        # Don't switch nginx here - will be handled by deploy() if needed
     elif [[ -n "$green_running" && "$file_state" == "blue" ]]; then
         log_warning "Green is running but file says blue - correcting state file"
         echo "green" > "$CURRENT_STATE_FILE"
-        switch_nginx "green"
+        # Don't switch nginx here - will be handled by deploy() if needed
     fi
 
     # Always ensure nginx configs are correctly generated
     generate_nginx_configs "blue"
     generate_nginx_configs "green"
 
-    # Re-copy the active config to nginx.conf
+    # Ensure nginx.conf matches the actually running deployment
     if [[ -f "$CURRENT_STATE_FILE" ]]; then
         local current_state=$(cat "$CURRENT_STATE_FILE")
-        log_info "Updating active nginx.conf from $current_state config..."
-        cp "$PROJECT_DIR/nginx/nginx-$current_state.conf" "$PROJECT_DIR/nginx/nginx.conf"
-    fi
-
-    # Reload nginx if it's running to pick up any config changes
-    if docker ps --format '{{.Names}}' | grep -q "^medusa_nginx$"; then
-        log_info "Reloading nginx to apply config changes..."
-        docker exec medusa_nginx nginx -s reload 2>/dev/null || log_warning "Could not reload nginx (might not be running yet)"
+        local nginx_needs_update=false
+        
+        # Check if nginx.conf matches current state
+        if ! grep -q "medusa_backend_server_${current_state}" "$PROJECT_DIR/nginx/nginx.conf" 2>/dev/null; then
+            log_info "nginx.conf doesn't match $current_state deployment, updating..."
+            cp "$PROJECT_DIR/nginx/nginx-$current_state.conf" "$PROJECT_DIR/nginx/nginx.conf"
+            nginx_needs_update=true
+        fi
+        
+        # Only reload/restart nginx if config was updated and nginx is running
+        if [[ "$nginx_needs_update" == "true" ]] && docker ps --format '{{.Names}}' | grep -q "^medusa_nginx$"; then
+            log_info "Restarting nginx to apply updated config..."
+            docker restart medusa_nginx 2>/dev/null || log_warning "Could not restart nginx"
+        fi
     fi
 
     return 0
