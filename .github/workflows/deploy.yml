@@ -148,3 +148,28 @@ jobs:
         run: |
           echo "✅ Backend deployment successful, triggering Vercel redeploy..."
           curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}" || echo "⚠️ Vercel deploy hook not configured"
+      
+      - name: Run Smoke Tests
+        if: success()
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          command_timeout: 2m
+          script: |
+            # Smoke test critical endpoints
+            echo "Running smoke tests..."
+            curl -f https://${{ secrets.DOMAIN_NAME }}/health || exit 1
+            echo "✅ Health endpoint OK"
+            
+      - name: Deployment Success Summary
+        if: success()
+        run: |
+          echo "::notice::✅ Deployment completed successfully to ${{ secrets.DOMAIN_NAME }}"
+          
+      - name: Deployment Failure Notification  
+        if: failure()
+        run: |
+          echo "::error::❌ Deployment failed - check logs for details"

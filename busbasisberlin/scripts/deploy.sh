@@ -147,13 +147,13 @@ switch_nginx() {
     fi
 
     # Recreate nginx container to ensure it picks up the new config
-    # Simple approach: stop, remove, and recreate with docker-compose
+    # Simple approach: stop, remove, and recreate with docker compose
     log_info "Recreating nginx container with $target config..."
     cd "$PROJECT_DIR"
     docker stop medusa_nginx 2>/dev/null || true
     docker rm medusa_nginx 2>/dev/null || true
     # Use service name 'nginx' not container name 'medusa_nginx'
-    docker-compose -f docker-compose.base.yml up -d nginx
+    docker compose -f docker-compose.base.yml up -d nginx
 
     # Step 4: Wait for nginx to be healthy
     log_info "Waiting for nginx to become healthy..."
@@ -248,13 +248,21 @@ rollback() {
 
     log_warning "Rolling back to $previous deployment..."
 
-    # Switch nginx back
+    # Check if previous deployment actually exists and is running
+    local previous_container="medusa_backend_server_${previous}"
+    if ! docker ps --format "{{.Names}}" | grep -q "^${previous_container}$"; then
+        log_error "Cannot rollback - $previous deployment is not running!"
+        log_error "No healthy deployment available. Manual intervention required."
+        return 1
+    fi
+
+    # Switch nginx back to previous deployment
     if switch_nginx "$previous"; then
         echo "$previous" > "$CURRENT_STATE_FILE"
-        log_success "Rollback completed successfully"
+        log_success "Rollback to $previous completed successfully"
         return 0
     else
-        log_error "Rollback failed"
+        log_error "Rollback to $previous failed"
         return 1
     fi
 }
@@ -318,17 +326,10 @@ analyze_and_fix_state() {
             stop_deployment "blue"
         fi
     elif [[ -z "$blue_running" && -z "$green_running" ]]; then
-        log_warning "No deployment containers running - starting $file_state deployment"
-        start_deployment "$file_state"
-
-        # Wait for health check
-        if check_health "$file_state"; then
-            switch_nginx "$file_state"
-            log_success "Restored $file_state deployment successfully"
-        else
-            log_error "Failed to restore $file_state deployment"
-            return 1
-        fi
+        log_warning "No deployment containers running"
+        log_info "Will start fresh deployment in deploy() - skipping recovery here"
+        # Don't start anything here - let deploy() handle cold start properly
+        # This prevents starting the same deployment twice
     elif [[ -n "$blue_running" && "$file_state" == "green" ]]; then
         log_warning "Blue is running but file says green - correcting state file"
         echo "blue" > "$CURRENT_STATE_FILE"
@@ -347,14 +348,14 @@ analyze_and_fix_state() {
     if [[ -f "$CURRENT_STATE_FILE" ]]; then
         local current_state=$(cat "$CURRENT_STATE_FILE")
         local nginx_needs_update=false
-        
+
         # Check if nginx.conf matches current state
         if ! grep -q "medusa_backend_server_${current_state}" "$PROJECT_DIR/nginx/nginx.conf" 2>/dev/null; then
             log_info "nginx.conf doesn't match $current_state deployment, updating..."
             cp "$PROJECT_DIR/nginx/nginx-$current_state.conf" "$PROJECT_DIR/nginx/nginx.conf"
             nginx_needs_update=true
         fi
-        
+
         # Only reload/restart nginx if config was updated and nginx is running
         if [[ "$nginx_needs_update" == "true" ]] && docker ps --format '{{.Names}}' | grep -q "^medusa_nginx$"; then
             log_info "Restarting nginx to apply updated config..."
@@ -421,6 +422,22 @@ cleanup_disk() {
 
 # Main deployment function
 deploy() {
+    # Deployment lock to prevent concurrent deployments
+    local LOCK_FILE="/tmp/medusa-deploy.lock"
+    if [ -f "$LOCK_FILE" ]; then
+        log_error "Deployment already running (lock file exists)"
+        log_error "If this is a stale lock, remove: $LOCK_FILE"
+        return 1
+    fi
+    trap "rm -f $LOCK_FILE" EXIT RETURN
+    touch $LOCK_FILE
+    
+    # Track deployment start time
+    local DEPLOYMENT_START=$(date +%s)
+    local DEPLOYMENT_ID="$(date +%Y%m%d_%H%M%S)"
+    
+    log_info "=== Deployment $DEPLOYMENT_ID started ==="
+    
     # Always ensure nginx configs are correctly generated before any deployment actions
     generate_nginx_configs "blue"
     generate_nginx_configs "green"
@@ -498,8 +515,43 @@ deploy() {
     log_info "Stopping old $current deployment..."
     stop_deployment "$current"
 
+    # Run smoke tests to verify deployment
+    log_info "Running post-deployment smoke tests..."
+    local smoke_test_failed=false
+    
+    # Test 1: Health endpoint
+    if ! curl -f -s -o /dev/null http://localhost:9000/health 2>/dev/null && \
+       ! curl -f -s -o /dev/null http://localhost:9002/health 2>/dev/null; then
+        log_warning "Smoke test failed: Health endpoint not responding"
+        smoke_test_failed=true
+    else
+        log_success "Smoke test passed: Health endpoint OK"
+    fi
+    
+    # Test 2: Database connectivity (via health endpoint that checks DB)
+    if curl -s http://localhost:9000/health 2>/dev/null | grep -q "error\|fail" || \
+       curl -s http://localhost:9002/health 2>/dev/null | grep -q "error\|fail"; then
+        log_warning "Smoke test warning: Health endpoint reports issues"
+    fi
+    
+    # Calculate deployment duration
+    local DEPLOYMENT_END=$(date +%s)
+    local DURATION=$((DEPLOYMENT_END - DEPLOYMENT_START))
+    
+    # Log deployment metrics
+    local LOG_DIR="/var/log/medusa"
+    sudo mkdir -p "$LOG_DIR" 2>/dev/null || true
+    if [ -w "$LOG_DIR" ] || sudo test -w "$LOG_DIR" 2>/dev/null; then
+        echo "$(date +%s)|$DEPLOYMENT_ID|$target|success|${DURATION}s|$GITHUB_SHA" | sudo tee -a "$LOG_DIR/deploy-history.log" > /dev/null 2>&1 || true
+    fi
+    
     log_success "Deployment completed successfully!"
     log_success "Active deployment: $target"
+    log_success "Deployment duration: ${DURATION}s"
+    
+    if [ "$smoke_test_failed" = true ]; then
+        log_warning "Deployment succeeded but smoke tests failed - manual verification recommended"
+    fi
 }
 
 # Function to show current status
