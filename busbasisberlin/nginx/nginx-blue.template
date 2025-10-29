@@ -43,11 +43,10 @@ http {
     resolver 127.0.0.11 valid=10s ipv6=off;
 
     # Upstream to Medusa backend - BLUE deployment
-    # Using backup server and DNS resolver to handle missing containers gracefully
+    # Note: Backup servers resolve at startup, so we only list the primary server
+    # The deployment script ensures the container exists before nginx starts
     upstream medusa_backend {
         server medusa_backend_server_blue:9000 max_fails=3 fail_timeout=30s;
-        # Fallback to green if blue is unavailable (for graceful transitions)
-        server medusa_backend_server_green:9002 backup;
     }
 
     # Portainer HTTPS proxy

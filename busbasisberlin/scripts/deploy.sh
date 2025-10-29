@@ -105,7 +105,7 @@ switch_nginx() {
     local backend_container="medusa_backend_server_${target}"
     local wait_count=0
     local max_wait=15
-    
+
     while ! docker ps --format "{{.Names}}" | grep -q "^${backend_container}$"; do
         if [[ $wait_count -ge $max_wait ]]; then
             log_error "Target backend container ${backend_container} does not exist after waiting!"
@@ -122,7 +122,7 @@ switch_nginx() {
 
     # Check current nginx container state and recover if needed
     local container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
-    
+
     # Recover nginx from any problematic state
     if [[ "$container_state" == "restarting" ]]; then
         log_info "Nginx is in restart loop, stopping to reset..."
@@ -132,7 +132,7 @@ switch_nginx() {
     elif [[ "$container_state" == "not-exists" ]]; then
         log_info "Nginx container doesn't exist, will create it..."
     fi
-    
+
     # If nginx is stopped or doesn't exist, start it properly
     if [[ "$container_state" != "running" ]]; then
         log_info "Starting nginx container with $target config..."
@@ -148,7 +148,7 @@ switch_nginx() {
     sleep 3  # Give nginx time to start
     while [[ $attempts -lt $max_attempts ]]; do
         container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
-        
+
         if [[ "$container_state" == "running" ]]; then
             # Container is running, verify it's actually working
             if docker exec medusa_nginx nginx -t 2>/dev/null; then
