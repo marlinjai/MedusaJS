@@ -101,90 +101,90 @@ switch_nginx() {
     local target=$1
     log_info "Switching nginx to $target deployment..."
 
-    # Ensure target backend container exists (wait for it if starting)
+    # Step 1: Ensure target backend container is running and healthy
     local backend_container="medusa_backend_server_${target}"
     local wait_count=0
-    local max_wait=15
-
-    while ! docker ps --format "{{.Names}}" | grep -q "^${backend_container}$"; do
-        if [[ $wait_count -ge $max_wait ]]; then
-            log_error "Target backend container ${backend_container} does not exist after waiting!"
-            log_error "Cannot switch nginx to $target deployment"
-            return 1
+    local max_wait=20
+    
+    log_info "Verifying $backend_container is running and healthy..."
+    while true; do
+        if docker ps --format "{{.Names}}" | grep -q "^${backend_container}$"; then
+            # Container exists, check if healthy
+            local health=$(docker inspect --format='{{.State.Health.Status}}' "$backend_container" 2>/dev/null || echo "none")
+            if [[ "$health" == "healthy" ]] || [[ "$health" == "none" ]]; then
+                log_success "$backend_container is ready"
+                break
+            fi
+            log_info "$backend_container health: $health, waiting..."
+        else
+            if [[ $wait_count -ge $max_wait ]]; then
+                log_error "Target backend container ${backend_container} does not exist after waiting!"
+                return 1
+            fi
+            log_info "Waiting for ${backend_container} to exist... ($wait_count/$max_wait)"
         fi
-        log_info "Waiting for ${backend_container} to exist... ($wait_count/$max_wait)"
-        sleep 2
+        
+        sleep 3
         wait_count=$((wait_count + 1))
     done
 
-    # Copy the appropriate nginx config
+    # Step 2: Update nginx config file
+    log_info "Updating nginx.conf to use $target deployment..."
     cp "$PROJECT_DIR/nginx/nginx-$target.conf" "$PROJECT_DIR/nginx/nginx.conf"
 
-    # Check current nginx container state and recover if needed
+    # Step 3: Handle nginx container state recovery
     local container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
-
-    # Recover nginx from any problematic state
+    log_info "Current nginx state: $container_state"
+    
+    # Stop nginx if it's in a bad state
     if [[ "$container_state" == "restarting" ]]; then
-        log_info "Nginx is in restart loop, stopping to reset..."
+        log_warning "Nginx is in restart loop, stopping it..."
         docker stop medusa_nginx 2>/dev/null || true
-        sleep 2
-        container_state="stopped"
-    elif [[ "$container_state" == "not-exists" ]]; then
-        log_info "Nginx container doesn't exist, will create it..."
+        sleep 3
+        container_state="exited"
     fi
-
-    # If nginx is stopped or doesn't exist, start it properly
-    if [[ "$container_state" != "running" ]]; then
-        log_info "Starting nginx container with $target config..."
+    
+    # Start or restart nginx with the new config
+    if [[ "$container_state" == "not-exists" ]] || [[ "$container_state" == "exited" ]]; then
+        log_info "Starting nginx with $target config..."
+        cd "$PROJECT_DIR"
         docker-compose -f docker-compose.base.yml up -d medusa_nginx
     else
-        log_info "Restarting nginx container with new config..."
+        log_info "Restarting nginx to apply $target config..."
         docker restart medusa_nginx
     fi
 
-    # Wait for nginx container to start successfully after restart
+    # Step 4: Wait for nginx to be healthy
+    log_info "Waiting for nginx to become healthy..."
     local attempts=0
-    local max_attempts=30
-    sleep 3  # Give nginx time to start
+    local max_attempts=20
+    sleep 2
+    
     while [[ $attempts -lt $max_attempts ]]; do
         container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
-
+        
         if [[ "$container_state" == "running" ]]; then
-            # Container is running, verify it's actually working
+            # Verify nginx config is valid
             if docker exec medusa_nginx nginx -t 2>/dev/null; then
-                log_success "Nginx switched to $target deployment and is running"
+                log_success "Nginx is running with $target config!"
                 return 0
-            else
-                # Config test failed
-                if [[ $attempts -ge 5 ]]; then
-                    log_warning "Nginx config test failed, checking logs..."
-                    docker exec medusa_nginx nginx -t 2>&1 || true
-                    docker logs --tail 20 medusa_nginx 2>&1 | head -10
-                fi
             fi
         elif [[ "$container_state" == "restarting" ]]; then
-            # Show logs if container keeps restarting
-            if [[ $attempts -eq 10 ]]; then
-                log_warning "Nginx container is stuck restarting, checking logs..."
-                docker logs --tail 50 medusa_nginx 2>&1 | grep -E "(error|emerg|fatal)" || docker logs --tail 30 medusa_nginx 2>&1 | tail -20
+            if [[ $attempts -eq 5 ]]; then
+                log_error "Nginx stuck in restart loop! Logs:"
+                docker logs --tail 30 medusa_nginx 2>&1 | tail -15
+                return 1
             fi
-            log_info "Nginx container is restarting, waiting..."
-        elif [[ "$container_state" == "exited" ]]; then
-            log_error "Nginx container exited, checking logs..."
-            docker logs --tail 30 medusa_nginx 2>&1 | tail -20
-            docker restart medusa_nginx 2>/dev/null || docker-compose -f docker-compose.base.yml up -d medusa_nginx
-        elif [[ "$container_state" != "running" ]]; then
-            log_warning "Nginx container state: $container_state, attempting to restart..."
-            docker restart medusa_nginx 2>/dev/null || docker-compose -f docker-compose.base.yml up -d medusa_nginx
+            log_warning "Nginx restarting, waiting... (attempt $attempts/$max_attempts)"
         fi
-
+        
         sleep 2
         attempts=$((attempts + 1))
     done
 
-    log_error "Failed to switch nginx to $target deployment after $max_attempts attempts"
-    log_error "Final nginx logs:"
-    docker logs --tail 50 medusa_nginx 2>&1 | tail -20
+    log_error "Nginx failed to start after $max_attempts attempts"
+    log_error "Final logs:"
+    docker logs --tail 30 medusa_nginx 2>&1 | tail -15
     return 1
 }
 
