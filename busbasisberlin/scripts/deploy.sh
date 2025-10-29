@@ -105,7 +105,7 @@ switch_nginx() {
     local backend_container="medusa_backend_server_${target}"
     local wait_count=0
     local max_wait=20
-    
+
     log_info "Verifying $backend_container is running and healthy..."
     while true; do
         if docker ps --format "{{.Names}}" | grep -q "^${backend_container}$"; then
@@ -123,7 +123,7 @@ switch_nginx() {
             fi
             log_info "Waiting for ${backend_container} to exist... ($wait_count/$max_wait)"
         fi
-        
+
         sleep 3
         wait_count=$((wait_count + 1))
     done
@@ -135,7 +135,7 @@ switch_nginx() {
     # Step 3: Handle nginx container state recovery
     local container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
     log_info "Current nginx state: $container_state"
-    
+
     # Stop nginx if it's in a bad state
     if [[ "$container_state" == "restarting" ]]; then
         log_warning "Nginx is in restart loop, stopping it..."
@@ -143,7 +143,7 @@ switch_nginx() {
         sleep 3
         container_state="exited"
     fi
-    
+
     # Start or restart nginx with the new config
     if [[ "$container_state" == "not-exists" ]] || [[ "$container_state" == "exited" ]]; then
         log_info "Starting nginx with $target config..."
@@ -159,10 +159,10 @@ switch_nginx() {
     local attempts=0
     local max_attempts=20
     sleep 2
-    
+
     while [[ $attempts -lt $max_attempts ]]; do
         container_state=$(docker inspect medusa_nginx --format '{{.State.Status}}' 2>/dev/null || echo "not-exists")
-        
+
         if [[ "$container_state" == "running" ]]; then
             # Verify nginx config is valid
             if docker exec medusa_nginx nginx -t 2>/dev/null; then
@@ -177,7 +177,7 @@ switch_nginx() {
             fi
             log_warning "Nginx restarting, waiting... (attempt $attempts/$max_attempts)"
         fi
-        
+
         sleep 2
         attempts=$((attempts + 1))
     done
