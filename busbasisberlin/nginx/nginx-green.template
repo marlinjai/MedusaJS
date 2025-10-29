@@ -39,9 +39,15 @@ http {
     # Rate limiting
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
 
+    # Docker DNS resolver for dynamic upstream resolution
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     # Upstream to Medusa backend - GREEN deployment
+    # Using backup server and DNS resolver to handle missing containers gracefully
     upstream medusa_backend {
-        server medusa_backend_server_green:9002;
+        server medusa_backend_server_green:9002 max_fails=3 fail_timeout=30s;
+        # Fallback to blue if green is unavailable (for graceful transitions)
+        server medusa_backend_server_blue:9000 backup;
     }
 
     # Portainer HTTPS proxy
