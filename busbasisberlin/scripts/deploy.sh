@@ -150,7 +150,8 @@ switch_nginx() {
     cd "$PROJECT_DIR"
     docker stop medusa_nginx 2>/dev/null || true
     docker rm medusa_nginx 2>/dev/null || true
-    docker-compose -f docker-compose.base.yml up -d medusa_nginx
+    # Use service name 'nginx' not container name 'medusa_nginx'
+    docker-compose -f docker-compose.base.yml up -d nginx
 
     # Step 4: Wait for nginx to be healthy
     log_info "Waiting for nginx to become healthy..."
