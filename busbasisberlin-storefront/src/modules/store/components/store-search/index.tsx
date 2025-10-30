@@ -2,19 +2,168 @@
 
 import { searchClient } from '@lib/config';
 import { createRouting } from '@lib/search-routing';
-import { useMemo } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
 import {
 	Configure,
 	HitsPerPage,
 	InstantSearch,
-	Pagination,
 	RefinementList,
 	SearchBox,
 	SortBy,
 	Stats,
+	useInstantSearch,
+	usePagination,
+	useStats,
 } from 'react-instantsearch';
 import CategoryTree from './category-tree';
 import ProductGrid from './product-grid';
+
+// Custom Pagination Component
+function CustomPagination() {
+	const { currentRefinement, refine, isFirstPage, isLastPage, createURL } =
+		usePagination();
+	const { nbHits } = useStats();
+	const { results } = useInstantSearch();
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+
+	const currentPage = currentRefinement;
+
+	// Get hits per page from results or default to 12
+	const hitsPerPage = results?.hitsPerPage || 12;
+	const totalPages = Math.ceil(nbHits / hitsPerPage);
+
+	// Prefetch adjacent pages for instant navigation
+	useEffect(() => {
+		// Prefetch previous page
+		if (currentPage > 0) {
+			const prevUrl = createURL(currentPage - 1);
+			router.prefetch(prevUrl);
+		}
+
+		// Prefetch next 2-3 pages
+		for (let i = 1; i <= 3; i++) {
+			const nextPage = currentPage + i;
+			if (nextPage < totalPages) {
+				const nextUrl = createURL(nextPage);
+				router.prefetch(nextUrl);
+			}
+		}
+	}, [currentPage, totalPages, router, createURL]);
+
+	const renderPages = () => {
+		const pages = [];
+
+		// Previous arrow
+		if (!isFirstPage) {
+			pages.push(
+				<button
+					key="prev"
+					onClick={() => refine(currentPage - 1)}
+					className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+				>
+					←
+				</button>,
+			);
+		}
+
+		// Always show first page
+		pages.push(
+			<button
+				key={0}
+				onClick={() => refine(0)}
+				className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+					currentPage === 0
+						? 'bg-blue-600 text-white border border-blue-600'
+						: 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+				}`}
+			>
+				1
+			</button>,
+		);
+
+		// Show middle pages (current +/- 2)
+		const startPage = Math.max(1, currentPage - 2);
+		const endPage = Math.min(totalPages - 1, currentPage + 2);
+
+		// Add ellipsis after first page if needed
+		if (startPage > 1) {
+			pages.push(
+				<span key="ellipsis-start" className="px-2 text-gray-500">
+					...
+				</span>,
+			);
+		}
+
+		// Add middle pages
+		for (let i = startPage; i <= endPage; i++) {
+			pages.push(
+				<button
+					key={i}
+					onClick={() => refine(i)}
+					className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+						currentPage === i
+							? 'bg-blue-600 text-white border border-blue-600'
+							: 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+					}`}
+				>
+					{i + 1}
+				</button>,
+			);
+		}
+
+		// Add ellipsis before last page if we're not near the end
+		if (endPage < totalPages - 1) {
+			pages.push(
+				<span key="ellipsis-end" className="px-2 text-gray-500">
+					...
+				</span>,
+			);
+		}
+
+		// Show last known page if it's not already shown
+		if (totalPages > 1 && endPage < totalPages - 1) {
+			pages.push(
+				<button
+					key={totalPages - 1}
+					onClick={() => refine(totalPages - 1)}
+					className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+						currentPage === totalPages - 1
+							? 'bg-blue-600 text-white border border-blue-600'
+							: 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+					}`}
+				>
+					{totalPages}
+				</button>,
+			);
+		}
+
+		// Next arrow
+		if (!isLastPage) {
+			pages.push(
+				<button
+					key="next"
+					onClick={() => refine(currentPage + 1)}
+					className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+				>
+					→
+				</button>,
+			);
+		}
+
+		return pages;
+	};
+
+	if (totalPages <= 1) return null;
+
+	return (
+		<div className="flex justify-center items-center gap-1">
+			{renderPages()}
+		</div>
+	);
+}
 
 export default function StoreSearch() {
 	// Create routing configuration client-side only
@@ -32,7 +181,7 @@ export default function StoreSearch() {
 					<aside className="w-full lg:w-80 flex-shrink-0">
 						<div className="sticky top-8 space-y-6">
 							{/* Category Tree */}
-							<div className="bg-gray-900 rounded-lg p-4">
+							<div className="bg-stone-950 rounded-lg p-4">
 								<h2 className="text-lg font-semibold text-white mb-3">
 									Kategorien
 								</h2>
@@ -40,13 +189,15 @@ export default function StoreSearch() {
 							</div>
 
 							{/* Other Filters */}
-							<div className="bg-white rounded-lg border border-gray-200 p-6">
-								<h3 className="text-lg font-bold text-gray-900 mb-6">Filter</h3>
+							<div className="bg-stone-950 rounded-lg p-4">
+								<h3 className="text-lg font-semibold text-white mb-4">
+									Filter
+								</h3>
 
 								<div className="space-y-6">
 									{/* Availability */}
 									<div>
-										<h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+										<h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
 											<svg
 												className="w-4 h-4"
 												fill="none"
@@ -75,55 +226,14 @@ export default function StoreSearch() {
 											}
 											classNames={{
 												root: 'space-y-1',
-												item: 'py-1.5',
+												item: 'py-1.5 px-2 rounded-lg hover:bg-gray-800/50 transition-colors',
 												label: 'flex items-center gap-2 cursor-pointer group',
 												checkbox:
-													'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer',
+													'h-4 w-4 rounded border-gray-600 bg-gray-800 text-gray-300 focus:ring-gray-500 cursor-pointer',
 												labelText:
-													'text-sm text-gray-700 group-hover:text-gray-900 flex-1',
+													'text-sm text-gray-300 group-hover:text-white flex-1',
 												count:
-													'text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full min-w-[32px] text-center',
-											}}
-										/>
-									</div>
-
-									{/* Tags */}
-									<div>
-										<h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-											<svg
-												className="w-4 h-4"
-												fill="none"
-												viewBox="0 0 24 24"
-												stroke="currentColor"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-												/>
-											</svg>
-											Schlagwörter
-										</h3>
-										<RefinementList
-											attribute="tags"
-											transformItems={items =>
-												items.filter(
-													item =>
-														item.label !== 'internal' &&
-														item.label !== 'verbrauchsstoffe',
-												)
-											}
-											classNames={{
-												root: 'space-y-1 max-h-[300px] overflow-y-auto',
-												item: 'py-1.5',
-												label: 'flex items-center gap-2 cursor-pointer group',
-												checkbox:
-													'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer',
-												labelText:
-													'text-sm text-gray-700 group-hover:text-gray-900 flex-1',
-												count:
-													'text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full min-w-[32px] text-center',
+													'text-xs text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded-full min-w-[32px] text-center',
 											}}
 										/>
 									</div>
@@ -145,80 +255,101 @@ export default function StoreSearch() {
 						</div>
 
 						{/* Search Box */}
-						<div className="mb-6">
+						<div className="mb-6 bg-stone-950 rounded-xl p-4">
 							<SearchBox
 								placeholder="Suche nach Produkten, Teilen oder Stichwörtern..."
+								submitIconComponent={({ classNames }) => (
+									<svg
+										className={classNames.submitIcon}
+										width="20"
+										height="20"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
+										<circle cx="11" cy="11" r="8" />
+										<path d="m21 21-4.35-4.35" />
+									</svg>
+								)}
 								classNames={{
 									root: 'relative',
 									form: 'relative',
 									input:
-										'w-full px-4 py-4 pl-12 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base',
+										'w-full px-4 py-4 pl-12 pr-12 bg-stone-800 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-gray-600 text-base text-white placeholder:text-gray-500',
 									submit:
-										'absolute left-4 top-1/2 -translate-y-1/2 p-1.5 text-gray-400',
+										'absolute left-4 top-1/2 -translate-y-1/2 p-1.5 text-gray-300 hover:text-white transition-colors',
+									submitIcon: 'w-5 h-5',
 									reset: 'hidden',
 								}}
 							/>
 						</div>
 
 						{/* Toolbar: Results Stats and Sort */}
-						<div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-							{/* Results Count */}
-							<Stats
-								translations={{
-									rootElementText({ nbHits, nbSortedHits }) {
-										const count = nbSortedHits ?? nbHits;
-										return `${count.toLocaleString('de-DE')} Produkte gefunden`;
-									},
-								}}
-								classNames={{
-									root: 'text-sm text-gray-400',
-								}}
-							/>
+						<div className="bg-stone-950 rounded-xl p-4 mb-6">
+							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+								{/* Results Count */}
+								<Stats
+									translations={{
+										rootElementText({ nbHits, nbSortedHits }) {
+											const count = nbSortedHits ?? nbHits;
+											return `${count.toLocaleString(
+												'de-DE',
+											)} Produkte gefunden`;
+										},
+									}}
+									classNames={{
+										root: 'text-sm text-gray-300',
+									}}
+								/>
 
-							{/* Sort and Display Options */}
-							<div className="flex items-center gap-6">
-								{/* Results per page */}
-								<div className="flex items-center gap-3">
-									<span className="text-sm font-medium text-gray-400">
-										Anzeigen:
-									</span>
-									<HitsPerPage
-										items={[
-											{ label: '12', value: 12, default: true },
-											{ label: '24', value: 24 },
-											{ label: '48', value: 48 },
-											{ label: '96', value: 96 },
-										]}
-										classNames={{
-											select:
-												'border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer',
-										}}
-									/>
-								</div>
+								{/* Sort and Display Options */}
+								<div className="flex flex-wrap items-center gap-4">
+									{/* Results per page */}
+									<div className="flex items-center gap-2">
+										<span className="text-sm font-medium text-gray-300">
+											Anzeigen:
+										</span>
+										<HitsPerPage
+											items={[
+												{ label: '12', value: 12, default: true },
+												{ label: '24', value: 24 },
+												{ label: '48', value: 48 },
+												{ label: '96', value: 96 },
+											]}
+											classNames={{
+												select:
+													'bg-stone-700 border border-stone-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 focus:outline-none focus:border-stone-600 cursor-pointer',
+											}}
+										/>
+									</div>
 
-								{/* Sort options */}
-								<div className="flex items-center gap-3">
-									<span className="text-sm font-medium text-gray-400">
-										Sortieren nach:
-									</span>
-									<SortBy
-										items={[
-											{ label: 'Neueste zuerst', value: 'products' },
-											{
-												label: 'Preis: Niedrig bis Hoch',
-												value: 'products:min_price:asc',
-											},
-											{
-												label: 'Preis: Hoch bis Niedrig',
-												value: 'products:max_price:desc',
-											},
-											{ label: 'Name: A-Z', value: 'products:title:asc' },
-										]}
-										classNames={{
-											select:
-												'border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer',
-										}}
-									/>
+									{/* Sort options */}
+									<div className="flex items-center gap-2">
+										<span className="text-sm font-medium text-gray-300">
+											Sortieren:
+										</span>
+										<SortBy
+											items={[
+												{ label: 'Neueste zuerst', value: 'products' },
+												{
+													label: 'Preis: Niedrig bis Hoch',
+													value: 'products:min_price:asc',
+												},
+												{
+													label: 'Preis: Hoch bis Niedrig',
+													value: 'products:max_price:desc',
+												},
+												{ label: 'Name: A-Z', value: 'products:title:asc' },
+											]}
+											classNames={{
+												select:
+													'bg-stone-700 border border-stone-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 focus:outline-none focus:border-stone-600 cursor-pointer',
+											}}
+										/>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -227,21 +358,8 @@ export default function StoreSearch() {
 						<ProductGrid />
 
 						{/* Pagination */}
-						<div className="mt-12 flex justify-center">
-							<Pagination
-								classNames={{
-									root: 'flex justify-center items-center gap-1',
-									list: 'flex gap-1',
-									item: 'inline-flex',
-									link: 'px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors',
-									selectedItem:
-										'bg-blue-600 text-white border-blue-600 hover:bg-blue-700',
-								}}
-								showFirst
-								showPrevious
-								showNext
-								showLast
-							/>
+						<div className="mt-12">
+							<CustomPagination />
 						</div>
 
 						{/* Configure filters to exclude internal products */}

@@ -8,6 +8,7 @@ import ImageSection from '@modules/home/components/image-section';
 import Services from '@modules/home/components/services';
 import Team from '@modules/home/components/team';
 import Verein from '@modules/home/components/verein';
+import StorePrefetch from '@modules/home/components/store-prefetch';
 
 export const metadata: Metadata = {
 	title: 'BusBasis Berlin - Ihr Spezialist für Mercedes-Transporter',
@@ -30,6 +31,7 @@ export default async function Home(props: {
 
 	return (
 		<>
+			<StorePrefetch />
 			<Hero />
 			<Services />
 			<ImageSection />

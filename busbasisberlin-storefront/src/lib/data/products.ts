@@ -63,7 +63,7 @@ export const listProducts = async ({
 					offset,
 					region_id: region?.id,
 					fields:
-						'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
+						'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags,+shipping_profile.*',
 					...queryParams,
 				},
 				headers,
@@ -185,7 +185,7 @@ export const retrieveProduct = async ({
 				handle,
 				region_id: region?.id,
 				fields:
-					'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags',
+					'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags,+shipping_profile.*',
 				limit: 1,
 			},
 			headers,

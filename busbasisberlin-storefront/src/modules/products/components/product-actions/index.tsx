@@ -140,7 +140,20 @@ export default function ProductActions({
 
         <ProductPrice product={product} variant={selectedVariant} />
 
-        <Button
+        {/* Stock Status */}
+        <div className="mb-4">
+          {!inStock || !isValidVariant ? (
+            <div className="px-4 py-3 bg-red-600/10 border border-red-600/20 rounded-lg">
+              <span className="text-red-600 font-semibold">Nicht verfügbar</span>
+            </div>
+          ) : (
+            <div className="px-4 py-3 bg-green-600/10 border border-green-600/20 rounded-lg">
+              <span className="text-green-600 font-semibold">● Verfügbar</span>
+            </div>
+          )}
+        </div>
+
+        <button
           onClick={handleAddToCart}
           disabled={
             !inStock ||
@@ -149,17 +162,17 @@ export default function ProductActions({
             isAdding ||
             !isValidVariant
           }
-          variant="primary"
-          className="w-full h-10"
-          isLoading={isAdding}
+          className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
           data-testid="add-product-button"
         >
-          {!selectedVariant && !options
-            ? "Select variant"
-            : !inStock || !isValidVariant
-              ? "Out of stock"
-              : "Add to cart"}
-        </Button>
+          {isAdding
+            ? "Wird hinzugefügt..."
+            : !selectedVariant && !options
+              ? "Variante wählen"
+              : !inStock || !isValidVariant
+                ? "Ausverkauft"
+                : "In den Warenkorb"}
+        </button>
         <MobileActions
           product={product}
           variant={selectedVariant}
