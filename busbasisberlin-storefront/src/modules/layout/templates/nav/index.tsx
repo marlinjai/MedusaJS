@@ -17,7 +17,7 @@ export default async function Nav() {
 			<TransparentHeader />
 			<div className="fixed top-0 inset-x-0 z-50 group">
 				<header className="nav-header relative py-4 mx-auto">
-					<nav className="content-container txt-xsmall-plus text-white flex items-center justify-between w-full h-full text-small-regular">
+					<nav className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 txt-xsmall-plus text-white flex items-center justify-between h-full text-small-regular">
 						{/* Logo */}
 						<div className="flex items-center h-full">
 							<LocalizedClientLink

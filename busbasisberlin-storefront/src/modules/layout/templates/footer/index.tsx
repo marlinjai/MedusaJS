@@ -1,155 +1,198 @@
-import { listCategories } from "@lib/data/categories"
-import { listCollections } from "@lib/data/collections"
-import { Text, clx } from "@medusajs/ui"
+// footer/index.tsx
 
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import MedusaCTA from "@modules/layout/components/medusa-cta"
+'use client'
 
-export default async function Footer() {
-  const { collections } = await listCollections({
-    fields: "*products",
-  })
-  const productCategories = await listCategories()
+import { useState } from 'react'
+import LocalizedClientLink from '@modules/common/components/localized-client-link'
+import { footerNavItems } from '@modules/layout/config/navigation'
+import { MdOutlineMail } from 'react-icons/md'
+import { FiPhone, FiMapPin } from 'react-icons/fi'
+import { FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa'
+
+// Footer accordion for mobile
+const FooterAccordion = ({ title, items }: { title: string; items: typeof footerNavItems }) => {
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <footer className="border-t border-ui-border-base w-full">
-      <div className="content-container flex flex-col w-full">
-        <div className="flex flex-col gap-y-6 xsmall:flex-row items-start justify-between py-40">
+    <div className="border-b border-border">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex justify-between items-center py-4 text-left"
+      >
+        <span className="text-lg font-semibold text-foreground">{title}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className={`w-6 h-6 text-foreground transition-transform duration-300 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d={isOpen ? 'M18 12H6' : 'M12 6v12m6-6H6'} />
+        </svg>
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+        style={{ maxHeight: isOpen ? '500px' : '0' }}
+      >
+        <ul className="pb-4 space-y-3 px-2">
+          {items.map((item) => (
+            <li key={item.href}>
+              <LocalizedClientLink
+                href={item.href}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {item.label}
+              </LocalizedClientLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+export default function Footer() {
+  const currentYear = new Date().getFullYear()
+
+  return (
+    <footer className="bg-card border-t border-border w-full" aria-labelledby="footer-heading">
+      <h2 id="footer-heading" className="sr-only">
+        Footer
+      </h2>
+
+      <div className="content-container py-12 sm:py-16">
+        {/* Main footer content */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 pb-8">
+          {/* Column 1: About / Brand */}
           <div>
             <LocalizedClientLink
               href="/"
-              className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
+              className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
             >
-              Medusa Store
+              Bus Basis Berlin
             </LocalizedClientLink>
-          </div>
-          <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
-            {productCategories && productCategories?.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Categories
-                </span>
-                <ul
-                  className="grid grid-cols-1 gap-2"
-                  data-testid="footer-categories"
-                >
-                  {productCategories?.slice(0, 6).map((c) => {
-                    if (c.parent_category) {
-                      return
-                    }
+            <p className="mt-4 text-muted-foreground text-sm leading-relaxed">
+              Ihr Spezialist für Mercedes-Transporter, Wohnmobile und Expeditionsfahrzeuge.
+              Professionelle Wartung, Reparatur und individuelle Umbauten.
+            </p>
 
-                    const children =
-                      c.category_children?.map((child) => ({
-                        name: child.name,
-                        handle: child.handle,
-                        id: child.id,
-                      })) || null
-
-                    return (
-                      <li
-                        className="flex flex-col gap-2 text-ui-fg-subtle txt-small"
-                        key={c.id}
-                      >
-                        <LocalizedClientLink
-                          className={clx(
-                            "hover:text-ui-fg-base",
-                            children && "txt-small-plus"
-                          )}
-                          href={`/categories/${c.handle}`}
-                          data-testid="category-link"
-                        >
-                          {c.name}
-                        </LocalizedClientLink>
-                        {children && (
-                          <ul className="grid grid-cols-1 ml-3 gap-2">
-                            {children &&
-                              children.map((child) => (
-                                <li key={child.id}>
-                                  <LocalizedClientLink
-                                    className="hover:text-ui-fg-base"
-                                    href={`/categories/${child.handle}`}
-                                    data-testid="category-link"
-                                  >
-                                    {child.name}
-                                  </LocalizedClientLink>
-                                </li>
-                              ))}
-                          </ul>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            )}
-            {collections && collections.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Collections
-                </span>
-                <ul
-                  className={clx(
-                    "grid grid-cols-1 gap-2 text-ui-fg-subtle txt-small",
-                    {
-                      "grid-cols-2": (collections?.length || 0) > 3,
-                    }
-                  )}
-                >
-                  {collections?.slice(0, 6).map((c) => (
-                    <li key={c.id}>
-                      <LocalizedClientLink
-                        className="hover:text-ui-fg-base"
-                        href={`/collections/${c.handle}`}
-                      >
-                        {c.title}
-                      </LocalizedClientLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">Medusa</span>
-              <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
-                <li>
-                  <a
-                    href="https://github.com/medusajs"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    GitHub
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://docs.medusajs.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/medusajs/nextjs-starter-medusa"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    Source code
-                  </a>
-                </li>
-              </ul>
+            {/* Social Links */}
+            <div className="flex gap-4 mt-6">
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Facebook"
+              >
+                <FaFacebook className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Instagram"
+              >
+                <FaInstagram className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="LinkedIn"
+              >
+                <FaLinkedin className="w-5 h-5" />
+              </a>
             </div>
           </div>
+
+          {/* Column 2: Quick Links - Desktop only */}
+          <div className="hidden md:block">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Quick Links</h3>
+            <ul className="space-y-3">
+              {footerNavItems.map((item) => (
+                <li key={item.href}>
+                  <LocalizedClientLink
+                    href={item.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {item.label}
+                  </LocalizedClientLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: Contact Info */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Kontakt</h3>
+            <ul className="space-y-3">
+              <li>
+                <a
+                  href="tel:+4933035365540"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <FiPhone className="w-5 h-5 flex-shrink-0" />
+                  <span>03303 5365540</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="mailto:basiscampberlin-onlineshop.de"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <MdOutlineMail className="w-5 h-5 flex-shrink-0" />
+                  <span>basiscampberlin-onlineshop.de</span>
+                </a>
+              </li>
+              <li className="flex items-start gap-3 text-muted-foreground">
+                <FiMapPin className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span>
+                  16547 Birkenwerder
+                </span>
+              </li>
+            </ul>
+
+            {/* Opening Hours */}
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold text-foreground mb-3">Öffnungszeiten</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div className="flex justify-between gap-4">
+                  <span>Montag - Freitag:</span>
+                  <span className="text-foreground">08:00–16:00</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span>Samstag - Sonntag:</span>
+                  <span className="text-foreground">Geschlossen</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Accordion */}
+          <div className="md:hidden">
+            <FooterAccordion title="Quick Links" items={footerNavItems} />
+          </div>
         </div>
-        <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
-          <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Medusa Store. All rights reserved.
-          </Text>
-          <MedusaCTA />
+
+        {/* Bottom section */}
+        <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
+            &copy; {currentYear} Basis Camp Berlin GmbH. Alle Rechte vorbehalten.
+          </p>
+          <div className="flex gap-4 text-sm">
+            <LocalizedClientLink
+              href="/privacy"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Datenschutz
+            </LocalizedClientLink>
+            <LocalizedClientLink
+              href="/terms"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              AGB
+            </LocalizedClientLink>
+          </div>
         </div>
       </div>
     </footer>

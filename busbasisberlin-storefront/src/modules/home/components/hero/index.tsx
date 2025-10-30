@@ -1,29 +1,15 @@
 'use client';
 
 import { Heading } from '@medusajs/ui';
-import { useRouter } from 'next/navigation';
+import SearchModal from '@modules/search/components/modal';
+import { useState } from 'react';
 
 const Hero = () => {
-	const router = useRouter();
+	const [isSearchOpen, setIsSearchOpen] = useState(false);
 
 	const scrollToServices = () => {
 		const servicesSection = document.getElementById('services');
 		servicesSection?.scrollIntoView({ behavior: 'smooth' });
-	};
-
-	// Funktion zum Navigieren zur Store-Seite mit Fokus auf Suchleiste
-	const handleSearchClick = () => {
-		// Navigiere zur Store-Seite - die Suchleiste wird dort automatisch angezeigt
-		router.push('/de/store');
-		// Fokussiere die Suchleiste nach einer kurzen Verzögerung
-		setTimeout(() => {
-			const searchInput = document.querySelector(
-				'input[placeholder*="Nach Teilen suchen"]',
-			) as HTMLInputElement;
-			if (searchInput) {
-				searchInput.focus();
-			}
-		}, 100);
 	};
 
 	return (
@@ -72,14 +58,17 @@ const Hero = () => {
 					</Heading>
 				</div>
 
-				{/* Search CTA Button - jetzt funktional */}
+				{/* Search CTA Button - opens search modal */}
 				<button
-					onClick={handleSearchClick}
+					onClick={() => setIsSearchOpen(true)}
 					className="mt-8 px-8 py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-lg font-medium rounded-full transition-all z-30 duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
 				>
 					Finde Teile
 				</button>
 			</div>
+
+			{/* Search Modal */}
+			<SearchModal externalIsOpen={isSearchOpen} externalSetIsOpen={setIsSearchOpen} />
 
 			{/* Scroll Indicator with Rotating Text */}
 			<button

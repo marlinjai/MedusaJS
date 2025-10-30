@@ -6,12 +6,6 @@ import { FaLinkedinIn } from "react-icons/fa"
 
 const teamMembers = [
   {
-    name: "Hendrik",
-    role: "Logistik & Lager",
-    image: "/images/team/hendrik.jpg",
-    linkedin: "#",
-  },
-  {
     name: "Conny",
     role: "Büro und Management",
     image: "/images/team/conny.jpg",
@@ -63,8 +57,8 @@ const TeamMemberCard = ({ member, index }: { member: any; index: number }) => {
           />
         </div>
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        {/* Dark gradient overlay - visible by default, disappears on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300" />
       </div>
 
       <div className="text-center mt-4 space-y-1">
@@ -98,26 +92,11 @@ export default function Team() {
           </motion.p>
         </div>
 
-        {/* Custom 5-member layout */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-8 items-start">
-          {/* First row - 3 members */}
-          <div className="md:col-span-2">
-            <TeamMemberCard member={teamMembers[0]} index={0} />
-          </div>
-          <div className="md:col-span-2">
-            <TeamMemberCard member={teamMembers[1]} index={1} />
-          </div>
-          <div className="md:col-span-2">
-            <TeamMemberCard member={teamMembers[2]} index={2} />
-          </div>
-
-          {/* Second row - 2 members centered */}
-          <div className="md:col-start-2 md:col-span-2">
-            <TeamMemberCard member={teamMembers[3]} index={3} />
-          </div>
-          <div className="md:col-span-2">
-            <TeamMemberCard member={teamMembers[4]} index={4} />
-          </div>
+        {/* 4-member layout - 2x2 grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-start max-w-5xl mx-auto">
+          {teamMembers.map((member, index) => (
+            <TeamMemberCard key={member.name} member={member} index={index} />
+          ))}
         </div>
       </div>
     </section>
