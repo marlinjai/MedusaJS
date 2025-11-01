@@ -159,24 +159,18 @@ export default function ContactSection() {
                     {t('contactLabel')}
                   </label>
                   <div className="px-4 py-3 border border-border rounded-lg bg-muted">
-                    <div className="space-y-2 text-muted-foreground">
+                    <div className="space-y-3 text-muted-foreground">
                       <div className="flex items-start gap-2">
                         <span className="font-semibold text-foreground">E-Mail:</span>
                         <a
-                          href="mailto:basiscampberlin-onlineshop.de"
+                          href="mailto:info@basiscampberlin.de"
                           className="text-primary hover:underline"
                         >
-                          basiscampberlin-onlineshop.de
+                          info@basiscampberlin.de
                         </a>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <span className="font-semibold text-foreground">Telefon:</span>
-                        <a
-                          href="tel:+4933035365540"
-                          className="text-primary hover:underline"
-                        >
-                          03303 5365540
-                        </a>
+                      <div className="text-sm text-muted-foreground leading-relaxed">
+                        {t('phoneNote')}
                       </div>
                     </div>
                   </div>

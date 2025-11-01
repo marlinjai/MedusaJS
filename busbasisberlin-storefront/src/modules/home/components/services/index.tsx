@@ -26,17 +26,21 @@ const ServiceCard = ({
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5, delay: index * 0.2 }}
-			className="bg-neutral-900 p-8 rounded-2xl border border-neutral-800 hover:border-neutral-700 transition-all duration-300"
+			whileHover={{ y: -4 }}
+			className="bg-neutral-900 p-8 rounded-2xl border border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/80 transition-all duration-300 cursor-pointer group"
 		>
-			<div className="mb-6 p-3 bg-blue-500/10 w-fit rounded-xl text-blue-400">
+			<div className="mb-6 p-3 bg-blue-500/10 w-fit rounded-xl text-blue-400 group-hover:bg-blue-500/20 transition-colors duration-300">
 				{icon}
 			</div>
-			<h3 className="text-xl font-semibold mb-6 text-white">
+			<h3 className="text-xl font-semibold mb-6 text-white group-hover:text-blue-400 transition-colors duration-300">
 				{t(titleKey as any)}
 			</h3>
 			<ul className="space-y-3">
 				{featureKeys.map((featureKey: string, idx: number) => (
-					<li key={idx} className="flex items-start text-neutral-300">
+					<li
+						key={idx}
+						className="flex items-start text-neutral-300 group-hover:text-neutral-200 transition-colors duration-300"
+					>
 						<span className="mr-2 text-blue-400 mt-1">•</span>
 						<span>{t(featureKey as any)}</span>
 					</li>

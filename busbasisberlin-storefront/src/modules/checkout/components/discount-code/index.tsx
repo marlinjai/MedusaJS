@@ -7,6 +7,7 @@ import { applyPromotions, submitPromotionForm } from '@lib/data/cart';
 import { convertToLocale } from '@lib/util/money';
 import { HttpTypes } from '@medusajs/types';
 import Trash from '@modules/common/icons/trash';
+import { useTranslations } from 'next-intl';
 import ErrorMessage from '../error-message';
 import { SubmitButton } from '../submit-button';
 
@@ -17,6 +18,7 @@ type DiscountCodeProps = {
 };
 
 const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
+	const t = useTranslations('checkout.discount');
 	const [isOpen, setIsOpen] = React.useState(false);
 
 	const { items = [], promotions = [] } = cart;
@@ -63,7 +65,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
 							className="txt-medium text-blue-400 hover:text-blue-300 transition-colors font-medium"
 							data-testid="add-discount-button"
 						>
-							Add Promotion Code(s)
+							{t('addButton')}
 						</button>
 					</Label>
 
@@ -76,13 +78,14 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
 									name="code"
 									type="text"
 									autoFocus={false}
+									placeholder={t('placeholder')}
 									data-testid="discount-input"
 								/>
 								<SubmitButton
 									variant="secondary"
 									data-testid="discount-apply-button"
 								>
-									Apply
+									{t('apply')}
 								</SubmitButton>
 							</div>
 
@@ -98,7 +101,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
 					<div className="w-full flex items-center">
 						<div className="flex flex-col w-full">
 							<Heading className="txt-medium mb-3 text-gray-200">
-								Promotion(s) applied:
+								{t('applied')}:
 							</Heading>
 
 							{promotions.map(promotion => {
@@ -142,7 +145,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
 										</Text>
 										{!promotion.is_automatic && (
 											<button
-												className="flex items-center"
+												className="flex items-center text-red-400 hover:text-red-300 transition-colors"
 												onClick={() => {
 													if (!promotion.code) {
 														return;
@@ -153,9 +156,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
 												data-testid="remove-discount-button"
 											>
 												<Trash size={14} />
-												<span className="sr-only">
-													Remove discount code from order
-												</span>
+												<span className="sr-only">{t('remove')}</span>
 											</button>
 										)}
 									</div>

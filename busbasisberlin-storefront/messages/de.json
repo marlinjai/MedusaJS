@@ -115,6 +115,7 @@
 		"closed": "Geschlossen",
 		"submitButton": "Nachricht senden",
 		"successMessage": "Vielen Dank für Ihre Nachricht! Wir melden uns bald bei Ihnen.",
+		"phoneNote": "Telefonisch eingeschränkt erreichbar. Für Terminvereinbarung bitte per E-Mail melden.",
 		"form": {
 			"name": "Name",
 			"namePlaceholder": "Ihr Name",
@@ -146,6 +147,24 @@
 			"remove": "Entfernen",
 			"quantity": "Menge",
 			"total": "Gesamt"
+		},
+		"tableHeaders": {
+			"item": "Artikel",
+			"quantity": "Menge",
+			"price": "Preis",
+			"total": "Gesamt"
+		},
+		"dropdown": {
+			"title": "Warenkorb",
+			"quantity": "Menge",
+			"remove": "Entfernen",
+			"subtotal": "Zwischensumme",
+			"goToCart": "Zum Warenkorb",
+			"empty": {
+				"title": "Ihr Warenkorb ist leer",
+				"subtitle": "Fügen Sie Produkte hinzu, um mit dem Einkauf zu beginnen",
+				"button": "Produkte entdecken"
+			}
 		}
 	},
 	"checkout": {
@@ -205,7 +224,9 @@
 			"title": "Rabattcode",
 			"placeholder": "Code eingeben",
 			"apply": "Anwenden",
-			"applied": "Angewendet"
+			"applied": "Angewendete Aktionen",
+			"addButton": "Aktionscode hinzufügen",
+			"remove": "Rabattcode entfernen"
 		}
 	},
 	"account": {
@@ -213,18 +234,34 @@
 		"overview": {
 			"title": "Übersicht",
 			"welcome": "Hallo",
+			"signedInAs": "Angemeldet als",
+			"profile": "Profil",
+			"addresses": "Adressen",
+			"completed": "Abgeschlossen",
+			"saved": "Gespeichert",
 			"recentOrders": "Letzte Bestellungen",
 			"noOrders": "Noch keine Bestellungen",
 			"viewAll": "Alle Bestellungen anzeigen"
 		},
 		"profile": {
 			"title": "Profil",
+			"metaDescription": "Ansehen und bearbeiten Sie Ihr BasisCampBerlin Profil.",
+			"subtitle": "Sehen und aktualisieren Sie Ihre Profilinformationen, einschließlich Name, E-Mail und Telefonnummer. Sie können auch Ihre Rechnungsadresse aktualisieren oder Ihr Passwort ändern.",
 			"name": "Name",
 			"firstName": "Vorname",
 			"lastName": "Nachname",
 			"email": "E-Mail",
 			"phone": "Telefon",
 			"password": "Passwort",
+			"billingAddress": "Rechnungsadresse",
+			"noBillingAddress": "Keine Rechnungsadresse",
+			"company": "Firma",
+			"address": "Adresse",
+			"apartment": "Apartment, Zusatz, etc.",
+			"postalCode": "Postleitzahl",
+			"city": "Stadt",
+			"province": "Bundesland",
+			"country": "Land",
 			"changePassword": "Passwort ändern",
 			"currentPassword": "Aktuelles Passwort",
 			"newPassword": "Neues Passwort",
@@ -232,27 +269,60 @@
 		},
 		"addresses": {
 			"title": "Adressen",
+			"metaDescription": "Verwalten Sie Ihre Adressen",
+			"subtitle": "Sehen und aktualisieren Sie Ihre Lieferadressen. Sie können so viele hinzufügen, wie Sie möchten. Ihre gespeicherten Adressen stehen Ihnen beim Checkout zur Verfügung.",
 			"addNew": "Neue Adresse hinzufügen",
 			"edit": "Bearbeiten",
 			"delete": "Löschen",
 			"setDefault": "Als Standard festlegen",
-			"default": "Standard"
+			"default": "Standard",
+			"add": {
+				"button": "Neue Adresse",
+				"title": "Adresse hinzufügen",
+				"firstName": "Vorname",
+				"lastName": "Nachname",
+				"company": "Firma",
+				"address": "Adresse",
+				"apartment": "Apartment, Zusatz, etc.",
+				"postalCode": "Postleitzahl",
+				"city": "Stadt",
+				"province": "Bundesland",
+				"phone": "Telefon",
+				"cancel": "Abbrechen",
+				"save": "Speichern"
+			}
 		},
 		"orders": {
 			"title": "Bestellungen",
+			"description": "Übersicht über Ihre bisherigen Bestellungen.",
+			"subtitle": "Sehen Sie Ihre bisherigen Bestellungen und deren Status ein. Sie können auch Rücksendungen oder Umtausch für Ihre Bestellungen erstellen.",
 			"orderNumber": "Bestellnummer",
 			"date": "Datum",
 			"status": "Status",
 			"total": "Gesamt",
 			"viewDetails": "Details anzeigen",
-			"noOrders": "Sie haben noch keine Bestellungen aufgegeben."
+			"noOrders": "Sie haben noch keine Bestellungen aufgegeben.",
+			"empty": {
+				"title": "Noch nichts zu sehen",
+				"description": "Sie haben noch keine Bestellungen. Das ändern wir! :)",
+				"button": "Weiter einkaufen"
+			},
+			"transfer": {
+				"title": "Bestellungs-Übertragung",
+				"description": "Können Sie Ihre Bestellung nicht finden? Verbinden Sie eine Bestellung mit Ihrem Konto.",
+				"placeholder": "Bestell-ID",
+				"submit": "Übertragung anfordern",
+				"successTitle": "Übertragung für Bestellung",
+				"successMessage": "Übertragungsanfrage per E-Mail gesendet an"
+			}
 		},
 		"nav": {
 			"overview": "Übersicht",
 			"profile": "Profil",
 			"addresses": "Adressen",
 			"orders": "Bestellungen",
-			"logout": "Abmelden"
+			"logout": "Abmelden",
+			"hello": "Hallo"
 		},
 		"login": {
 			"title": "Willkommen zurück",
@@ -267,7 +337,7 @@
 		},
 		"register": {
 			"title": "Mitglied werden",
-			"subtitle": "Erstellen Sie Ihr Profil und erhalten Sie Zugang zu einem verbesserten Einkaufserlebnis.",
+			"subtitle": "Erstellen Sie Ihr BasisCampBerlin Profil und erhalten Sie Zugang zu einem verbesserten Einkaufserlebnis.",
 			"firstName": "Vorname",
 			"lastName": "Nachname",
 			"email": "E-Mail",
@@ -275,7 +345,12 @@
 			"password": "Passwort",
 			"createAccount": "Konto erstellen",
 			"alreadyMember": "Bereits Mitglied?",
-			"signIn": "Anmelden"
+			"signIn": "Anmelden",
+			"agreeCheckbox": "Ich stimme den",
+			"privacyPolicy": "Datenschutzbestimmungen",
+			"and": "und",
+			"termsOfUse": "Allgemeinen Geschäftsbedingungen",
+			"agreeText": "Mit der Erstellung eines Kontos stimmen Sie den"
 		},
 		"resetPassword": {
 			"title": "Passwort zurücksetzen",
@@ -362,7 +437,8 @@
 	"footer": {
 		"companyName": "Bus Basis Berlin",
 		"description": "Ihr Spezialist für Mercedes-Transporter, Wohnmobile und Expeditionsfahrzeuge. Professionelle Wartung, Reparatur und individuelle Umbauten.",
-		"quickLinks": "Quick Links",
+		"navigation": "Navigation",
+		"legal": "Rechtliches",
 		"contact": "Kontakt",
 		"openingHours": "Öffnungszeiten",
 		"mondayFriday": "Montag - Freitag:",
@@ -370,7 +446,9 @@
 		"closed": "Geschlossen",
 		"rights": "Alle Rechte vorbehalten.",
 		"privacy": "Datenschutz",
-		"terms": "AGB"
+		"terms": "AGB",
+		"imprint": "Impressum",
+		"phoneNote": "Telefonisch eingeschränkt erreichbar. Bitte E-Mail für Terminvereinbarung."
 	},
 	"team": {
 		"title": "Unser Team",
@@ -444,6 +522,78 @@
 		"contact": {
 			"title": "Kontakt - Bus Basis Berlin",
 			"description": "Nehmen Sie Kontakt mit uns auf. Wir helfen Ihnen gerne weiter."
+		}
+	},
+	"legal": {
+		"close": "Schließen",
+		"privacy": {
+			"title": "Datenschutzerklärung",
+			"intro": {
+				"title": "1. Datenschutz auf einen Blick",
+				"content": "Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.\n\nVerantwortliche Stelle ist:\nBasis Camp Berlin GmbH\nHauptstraße 51\n16547 Birkenwerder"
+			},
+			"dataCollection": {
+				"title": "2. Datenerfassung auf dieser Website",
+				"content": "Wir erfassen Daten, die Sie uns freiwillig mitteilen (z.B. bei Bestellungen oder Kontaktanfragen). Dies umfasst Namen, E-Mail-Adresse, Telefonnummer und Lieferadresse.\n\nZusätzlich erfassen wir automatisch technische Daten beim Besuch der Website (IP-Adresse, Browser-Typ, Besuchszeit) über Server-Logs."
+			},
+			"dataUsage": {
+				"title": "3. Verwendung Ihrer Daten",
+				"content": "Wir nutzen Ihre Daten ausschließlich zur Abwicklung Ihrer Bestellungen, zur Beantwortung von Anfragen und zur Verbesserung unseres Services.\n\nEine Weitergabe an Dritte erfolgt nur, soweit dies zur Vertragserfüllung erforderlich ist (z.B. Versanddienstleister) oder gesetzlich vorgeschrieben."
+			},
+			"cookies": {
+				"title": "4. Cookies und Tracking",
+				"content": "Diese Website verwendet Cookies, um die Funktionalität zu gewährleisten und das Nutzererlebnis zu verbessern. Sie können die Cookie-Einstellungen in Ihrem Browser jederzeit anpassen.\n\nWir verwenden keine Tracking-Tools von Drittanbietern ohne Ihre ausdrückliche Zustimmung."
+			},
+			"rights": {
+				"title": "5. Ihre Rechte",
+				"content": "Sie haben jederzeit das Recht auf:\n- Auskunft über Ihre gespeicherten Daten\n- Berichtigung unrichtiger Daten\n- Löschung Ihrer Daten\n- Einschränkung der Verarbeitung\n- Datenübertragbarkeit\n- Widerspruch gegen die Verarbeitung\n\nBei Fragen wenden Sie sich bitte an: info@basiscampberlin.de"
+			}
+		},
+		"terms": {
+			"title": "Allgemeine Geschäftsbedingungen",
+			"general": {
+				"title": "1. Geltungsbereich",
+				"content": "Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Bestellungen über den Online-Shop der Basis Camp Berlin GmbH.\n\nDurch die Bestellung erkennen Sie diese AGB als verbindlich an."
+			},
+			"orders": {
+				"title": "2. Vertragsschluss",
+				"content": "Mit dem Absenden einer Bestellung geben Sie ein verbindliches Angebot zum Kauf der ausgewählten Waren ab.\n\nWir bestätigen den Eingang Ihrer Bestellung per E-Mail. Der Vertrag kommt erst durch unsere Auftragsbestätigung oder durch Lieferung der Ware zustande."
+			},
+			"prices": {
+				"title": "3. Preise und Zahlung",
+				"content": "Alle Preise verstehen sich inklusive der gesetzlichen Mehrwertsteuer zuzüglich Versandkosten.\n\nWir akzeptieren folgende Zahlungsmethoden: Kreditkarte, PayPal, Banküberweisung und Vorkasse.\n\nBei Vorkasse behalten wir uns vor, die Ware erst nach Zahlungseingang zu versenden."
+			},
+			"shipping": {
+				"title": "4. Lieferung und Versand",
+				"content": "Die Lieferung erfolgt innerhalb Deutschlands in 2-3 Werktagen, EU-weit in 5-7 Werktagen.\n\nVersandkosten werden separat ausgewiesen und richten sich nach Größe und Gewicht der Sendung.\n\nSelbstabholung in unserer Werkstatt in Birkenwerder ist nach Vereinbarung möglich."
+			},
+			"returns": {
+				"title": "5. Widerrufsrecht",
+				"content": "Sie haben das Recht, binnen 14 Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.\n\nDie Widerrufsfrist beträgt 14 Tage ab dem Tag, an dem Sie die Waren in Besitz genommen haben.\n\nBitte beachten Sie: Gebrauchte Teile und Sonderanfertigungen sind vom Widerrufsrecht ausgeschlossen."
+			},
+			"liability": {
+				"title": "6. Haftung und Gewährleistung",
+				"content": "Für neue Teile gelten die gesetzlichen Gewährleistungsfristen. Für gebrauchte Teile gilt eine Gewährleistung von 12 Monaten.\n\nBei schuldhafter Verletzung wesentlicher Vertragspflichten haften wir nach den gesetzlichen Bestimmungen."
+			}
+		},
+		"imprint": {
+			"title": "Impressum",
+			"company": {
+				"title": "Angaben gemäß § 5 TMG",
+				"content": "Basis Camp Berlin GmbH\nHauptstraße 51\n16547 Birkenwerder\nDeutschland"
+			},
+			"contact": {
+				"title": "Kontakt",
+				"content": "Telefon: +49 3303 5365540\nE-Mail: info@basiscampberlin.de\n\nÖffnungszeiten:\nMontag bis Freitag: 08:00 - 16:00 Uhr\nSamstag und Sonntag: Geschlossen"
+			},
+			"management": {
+				"title": "Vertreten durch",
+				"content": "Geschäftsführer: [Name]\n\nVerantwortlich für den Inhalt nach § 55 Abs. 2 RStV:\n[Name]\nHauptstraße 51, 16547 Birkenwerder"
+			},
+			"register": {
+				"title": "Registereintrag",
+				"content": "Eintragung im Handelsregister\nRegistergericht: Amtsgericht Neuruppin\nRegisternummer: HRB [Nummer]\n\nUmsatzsteuer-ID: DE[Nummer]\ngemäß §27a Umsatzsteuergesetz"
+			}
 		}
 	}
 }
