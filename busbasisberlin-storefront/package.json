@@ -67,7 +67,11 @@
   "packageManager": "yarn@3.2.3",
   "resolutions": {
     "@types/react": "npm:types-react@19.0.0-rc.1",
-    "@types/react-dom": "npm:types-react-dom@19.0.0-rc.1"
+    "@types/react-dom": "npm:types-react-dom@19.0.0-rc.1",
+    "react-instantsearch/react": "19.0.0-rc-66855b96-20241106",
+    "react-instantsearch/react-dom": "19.0.0-rc-66855b96-20241106",
+    "react-instantsearch-core/react": "19.0.0-rc-66855b96-20241106",
+    "react-instantsearch-core/react-dom": "19.0.0-rc-66855b96-20241106"
   },
   "overrides": {
     "react": "19.0.0-rc-66855b96-20241106",
