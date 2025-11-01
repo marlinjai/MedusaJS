@@ -45,11 +45,11 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
   const maxQuantity = item.variant?.manage_inventory ? 10 : maxQtyFromInventory
 
   return (
-    <Table.Row className="w-full" data-testid="product-row">
+    <Table.Row className="w-full border-b border-gray-800 hover:bg-gray-900/30 transition-colors" data-testid="product-row">
       <Table.Cell className="!pl-0 p-4 w-24">
         <LocalizedClientLink
           href={`/products/${item.product_handle}`}
-          className={clx("flex", {
+          className={clx("flex rounded-lg overflow-hidden", {
             "w-16": type === "preview",
             "small:w-24 w-12": type === "full",
           })}
@@ -64,7 +64,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
 
       <Table.Cell className="text-left">
         <Text
-          className="txt-medium-plus text-ui-fg-base"
+          className="txt-medium-plus text-gray-200 font-medium"
           data-testid="product-title"
         >
           {item.product_title}

@@ -3,16 +3,19 @@
 'use client';
 
 import { HttpTypes } from '@medusajs/types';
-import Product from '../product-preview';
 import { useRef } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import Product from '../product-preview';
 
 type ProductSliderProps = {
 	products: HttpTypes.StoreProduct[];
 	region: HttpTypes.StoreRegion;
 };
 
-export default function ProductSlider({ products, region }: ProductSliderProps) {
+export default function ProductSlider({
+	products,
+	region,
+}: ProductSliderProps) {
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
 	const scroll = (direction: 'left' | 'right') => {
@@ -33,7 +36,7 @@ export default function ProductSlider({ products, region }: ProductSliderProps) 
 				ref={scrollContainerRef}
 				className="grid auto-cols-[minmax(100%,1fr)] sm:auto-cols-[minmax(calc(50%-1rem),1fr)] lg:auto-cols-[minmax(calc(33.333%-1.5rem),1fr)] xl:auto-cols-[minmax(calc(25%-1.875rem),1fr)] grid-flow-col gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory no-scrollbar pb-4"
 			>
-				{products.map((product) => (
+				{products.map(product => (
 					<div key={product.id} className="snap-start">
 						<Product region={region} product={product} />
 					</div>

@@ -13,19 +13,19 @@ const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
   const items = cart?.items
   return (
     <div>
-      <div className="pb-3 flex items-center">
-        <Heading className="text-[2rem] leading-[2.75rem]">Cart</Heading>
+      <div className="pb-4 flex items-center">
+        <Heading className="text-3xl font-bold text-gray-100">Cart</Heading>
       </div>
       <Table>
-        <Table.Header className="border-t-0">
-          <Table.Row className="text-ui-fg-subtle txt-medium-plus">
-            <Table.HeaderCell className="!pl-0">Item</Table.HeaderCell>
+        <Table.Header className="border-t-0 border-b border-gray-700">
+          <Table.Row className="text-gray-400 txt-medium-plus">
+            <Table.HeaderCell className="!pl-0 text-gray-300">Item</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
-            <Table.HeaderCell>Quantity</Table.HeaderCell>
-            <Table.HeaderCell className="hidden small:table-cell">
+            <Table.HeaderCell className="text-gray-300">Quantity</Table.HeaderCell>
+            <Table.HeaderCell className="hidden small:table-cell text-gray-300">
               Price
             </Table.HeaderCell>
-            <Table.HeaderCell className="!pr-0 text-right">
+            <Table.HeaderCell className="!pr-0 text-right text-gray-300">
               Total
             </Table.HeaderCell>
           </Table.Row>
