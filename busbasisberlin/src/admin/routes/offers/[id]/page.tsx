@@ -131,6 +131,15 @@ export default function OfferDetailPage() {
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 	const [pdfFilename, setPdfFilename] = useState<string>('');
 
+	// Email notification preferences (per-offer)
+	const [emailNotifications, setEmailNotifications] = useState<{
+		offer_created: boolean;
+		offer_active: boolean;
+		offer_accepted: boolean;
+		offer_completed: boolean;
+		offer_cancelled: boolean;
+	} | null>(null);
+
 	// Load offer data
 	useEffect(() => {
 		if (id) {
@@ -153,6 +162,15 @@ export default function OfferDetailPage() {
 				priceStates[item.id] = (item.unit_price / 100).toFixed(2);
 			});
 			setPriceInputStates(priceStates);
+
+			// Initialize email notifications
+			setEmailNotifications(data.offer.email_notifications || {
+				offer_created: true,
+				offer_active: true,
+				offer_accepted: true,
+				offer_completed: true,
+				offer_cancelled: true,
+			});
 		} catch (error) {
 			console.error('Error loading offer:', error);
 			toast.error(
@@ -406,6 +424,7 @@ export default function OfferDetailPage() {
 				},
 				body: JSON.stringify({
 					...offer,
+					email_notifications: emailNotifications,
 					items: offer.items.map(item => ({
 						...item,
 						unit_price: Math.round(item.unit_price), // Already in cents
@@ -974,6 +993,41 @@ export default function OfferDetailPage() {
 							</div>
 						</div>
 					</div>
+
+					{/* Email Notifications - Only visible in edit mode */}
+					{editing && emailNotifications && (
+						<div className="bg-ui-bg-subtle rounded-lg p-6">
+							<Text size="large" weight="plus" className="text-ui-fg-base mb-4">
+								E-Mail Benachrichtigungen
+							</Text>
+							<Text size="small" className="text-ui-fg-subtle mb-4">
+								Individuelle E-Mail-Einstellungen für dieses Angebot
+							</Text>
+
+							<div className="space-y-3">
+								{[
+									{ key: 'offer_created' as const, label: 'Angebot erstellt' },
+									{ key: 'offer_active' as const, label: 'Angebot aktiv' },
+									{ key: 'offer_accepted' as const, label: 'Angebot angenommen' },
+									{ key: 'offer_completed' as const, label: 'Angebot abgeschlossen' },
+									{ key: 'offer_cancelled' as const, label: 'Angebot storniert' }
+								].map(({ key, label }) => (
+									<label key={key} className="flex items-center gap-2 cursor-pointer">
+										<input
+											type="checkbox"
+											checked={emailNotifications[key]}
+											onChange={(e) => setEmailNotifications(prev => ({
+												...prev!,
+												[key]: e.target.checked
+											}))}
+											className="w-4 h-4 rounded border-ui-border-base"
+										/>
+										<Text size="small">{label}</Text>
+									</label>
+								))}
+							</div>
+						</div>
+					)}
 
 					{/* Items */}
 					<div className="bg-ui-bg-subtle rounded-lg p-6">

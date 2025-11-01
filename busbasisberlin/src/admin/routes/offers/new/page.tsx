@@ -126,6 +126,15 @@ export default function CreateOfferPage() {
 		items: [],
 	});
 
+	// Email notification preferences (per-offer)
+	const [emailNotifications, setEmailNotifications] = useState({
+		offer_created: true,
+		offer_active: true,
+		offer_accepted: true,
+		offer_completed: true,
+		offer_cancelled: true,
+	});
+
 	// Handle customer selection
 	const handleCustomerSelect = (customer: SearchableItem) => {
 		setFormData(prev => ({
@@ -439,6 +448,7 @@ export default function CreateOfferPage() {
 				},
 				body: JSON.stringify({
 					...formData,
+					email_notifications: emailNotifications,
 					items: formData.items.map(item => ({
 						...item,
 						unit_price: Math.round(item.unit_price), // Already in cents
@@ -638,6 +648,39 @@ export default function CreateOfferPage() {
 								rows={2}
 							/>
 						</div>
+					</div>
+				</div>
+
+				{/* Email Notifications */}
+				<div className="bg-ui-bg-subtle rounded-lg p-6">
+					<Text size="large" weight="plus" className="text-ui-fg-base mb-4">
+						E-Mail Benachrichtigungen
+					</Text>
+					<Text size="small" className="text-ui-fg-subtle mb-4">
+						Diese Einstellungen gelten nur für dieses Angebot und überschreiben die globalen Einstellungen.
+					</Text>
+
+					<div className="space-y-3">
+						{[
+							{ key: 'offer_created' as const, label: 'Angebot erstellt' },
+							{ key: 'offer_active' as const, label: 'Angebot aktiv' },
+							{ key: 'offer_accepted' as const, label: 'Angebot angenommen' },
+							{ key: 'offer_completed' as const, label: 'Angebot abgeschlossen' },
+							{ key: 'offer_cancelled' as const, label: 'Angebot storniert' }
+						].map(({ key, label }) => (
+							<label key={key} className="flex items-center gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									checked={emailNotifications[key]}
+									onChange={(e) => setEmailNotifications(prev => ({
+										...prev,
+										[key]: e.target.checked
+									}))}
+									className="w-4 h-4 rounded border-ui-border-base"
+								/>
+								<Text size="small">{label}</Text>
+							</label>
+						))}
 					</div>
 				</div>
 

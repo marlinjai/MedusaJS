@@ -6,8 +6,8 @@
 import type { SubscriberArgs, SubscriberConfig } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
 import {
-	shouldSendEmailForOfferCreation,
-	shouldSendEmailForStatusChange,
+	EmailNotificationSettings,
+	shouldSendEmailForOffer,
 } from '../utils/email-settings';
 import { generateOfferPdfBuffer } from '../utils/pdf-generator';
 
@@ -21,6 +21,7 @@ type OfferEventData = {
 	customer_email?: string;
 	customer_name?: string;
 	user_id?: string;
+	email_notifications?: EmailNotificationSettings | null;
 };
 
 /**
@@ -37,10 +38,15 @@ export async function handleOfferCreated({
 		`[OFFER-SUBSCRIBER] Offer created: ${data.offer_number} (${data.offer_id})`,
 	);
 
-	// Check if email notifications are enabled for offer creation
-	if (!shouldSendEmailForOfferCreation()) {
+	// Check if email notifications are enabled for offer creation (global + per-offer)
+	const shouldSendEmail = shouldSendEmailForOffer(
+		'offer_created',
+		data.email_notifications,
+	);
+
+	if (!shouldSendEmail) {
 		logger.info(
-			`[OFFER-SUBSCRIBER] Email notifications disabled for offer creation - skipping ${data.offer_number}`,
+			`[OFFER-SUBSCRIBER] Email notifications disabled for offer ${data.offer_number}`,
 		);
 		return;
 	}
@@ -74,11 +80,11 @@ export async function handleOfferStatusChanged({
 		`[OFFER-SUBSCRIBER] Offer status changed: ${data.offer_number} (${data.previous_status} → ${data.new_status})`,
 	);
 
-	// Check if email notifications are enabled for this status change
-	const shouldSendEmail = shouldSendEmailForStatusChange(
-		data.previous_status,
-		data.new_status,
-	);
+	// Check if email notifications are enabled for this status change (global + per-offer)
+	const eventType = getEventTypeFromStatus(data.new_status);
+	const shouldSendEmail = eventType
+		? shouldSendEmailForOffer(eventType, data.email_notifications)
+		: false;
 
 	if (shouldSendEmail && data.customer_email) {
 		await generatePdfAndSendEmail(data, container, logger);
@@ -92,7 +98,20 @@ export async function handleOfferStatusChanged({
 	}
 }
 
-// Email trigger logic moved to utils/email-settings.ts
+/**
+ * Helper function to map offer status to email notification event type
+ */
+function getEventTypeFromStatus(
+	status?: string,
+): keyof EmailNotificationSettings | null {
+	const map: Record<string, keyof EmailNotificationSettings> = {
+		active: 'offer_active',
+		accepted: 'offer_accepted',
+		completed: 'offer_completed',
+		cancelled: 'offer_cancelled',
+	};
+	return status ? map[status] || null : null;
+}
 
 /**
  * Generate PDF and send email notification

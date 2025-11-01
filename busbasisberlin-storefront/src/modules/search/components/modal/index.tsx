@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Configure, Hits, InstantSearch, SearchBox } from 'react-instantsearch';
+import { Configure, Hits, InstantSearch, SearchBox } from 'react-instantsearch-core';
 import { FiSearch } from 'react-icons/fi';
 import { searchClient } from '../../../../lib/config';
 import Modal from '../../../common/components/modal';

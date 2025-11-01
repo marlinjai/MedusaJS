@@ -162,6 +162,15 @@ const OfferEmailSettingsWidget = () => {
 				</div>
 			</div>
 
+			{/* Master Switch Explanation */}
+			<div className="px-6 py-4 bg-ui-bg-subtle">
+				<Text size="small" className="text-ui-fg-subtle">
+					Diese Einstellungen gelten als globale Master-Schalter.
+					Wenn eine Benachrichtigung hier deaktiviert ist, wird sie für ALLE Angebote deaktiviert,
+					unabhängig von den individuellen Angebot-Einstellungen.
+				</Text>
+			</div>
+
 			{/* Settings List */}
 			<div className="px-6 py-4">
 				<div className="space-y-4">

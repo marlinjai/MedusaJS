@@ -123,6 +123,7 @@ class OfferService extends MedusaService({
 				status: 'draft',
 				has_reservations: input.has_reservations || false,
 				reservation_expires_at: input.reservation_expires_at || null,
+				email_notifications: input.email_notifications || null, // Per-offer email preferences
 			},
 		]);
 
@@ -205,6 +206,7 @@ class OfferService extends MedusaService({
 			status: createdOffer.status,
 			customer_email: createdOffer.customer_email,
 			customer_name: createdOffer.customer_name,
+			email_notifications: createdOffer.email_notifications,
 		});
 
 		// Return the complete offer with items
@@ -657,7 +659,7 @@ class OfferService extends MedusaService({
 			const hasReservation = Boolean(item.reservation_id);
 			const availableQuantity = inventoryMap[item.variant_id] || 0;
 			const requiredQuantity = item.quantity;
-			
+
 			// If there's a reservation, the item is available regardless of raw stock
 			const isAvailable =
 				hasReservation || availableQuantity >= requiredQuantity;

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Hits } from 'react-instantsearch';
+import { Hits } from 'react-instantsearch-core';
 
 type ProductHit = {
 	id: string;

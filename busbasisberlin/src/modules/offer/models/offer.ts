@@ -40,6 +40,9 @@ const offer = model.define('offer', {
 	customer_notes: model.text().nullable(), // Notes from/for customer
 	pdf_url: model.text().nullable(), // URL to generated PDF
 
+	// Email notification preferences (per-offer granular control)
+	email_notifications: model.json().nullable(), // Per-offer email notification preferences
+
 	// Sales person/creator tracking
 	created_by: model.text().nullable(), // User ID who created the offer
 	assigned_to: model.text().nullable(), // User ID responsible for this offer

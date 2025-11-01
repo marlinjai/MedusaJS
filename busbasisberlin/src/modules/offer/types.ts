@@ -6,6 +6,15 @@
 import { OfferType } from './models/offer';
 import { OfferItemType } from './models/offer-item';
 
+// Email notification settings type (matches global settings structure)
+export type EmailNotificationSettings = {
+	offer_created: boolean;
+	offer_active: boolean;
+	offer_accepted: boolean;
+	offer_completed: boolean;
+	offer_cancelled: boolean;
+};
+
 // ✅ UTILITY TYPES: Use inferred types instead of interfaces
 export type CreateOfferInput = Partial<
 	Omit<

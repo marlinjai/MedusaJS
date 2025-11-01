@@ -361,6 +361,7 @@ const updateOfferStatusStep = createStep(
 						customer_email: offerBeforeUpdate.customer_email,
 						customer_name: offerBeforeUpdate.customer_name,
 						user_id: input.user_id,
+						email_notifications: offerBeforeUpdate.email_notifications,
 					},
 				});
 

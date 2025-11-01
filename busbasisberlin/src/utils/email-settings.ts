@@ -85,3 +85,33 @@ export function shouldSendEmailForStatusChange(
 export function shouldSendEmailForOfferCreation(): boolean {
 	return isEmailNotificationEnabled('offer_created');
 }
+
+/**
+ * Check if email should be sent for a specific offer, considering both global and per-offer settings
+ * Logic:
+ * - Global OFF → No email (master kill switch)
+ * - Global ON + Offer OFF → No email
+ * - Global ON + Offer ON (or null) → Email sent
+ */
+export function shouldSendEmailForOffer(
+	eventType: keyof EmailNotificationSettings,
+	offerEmailNotifications?: EmailNotificationSettings | null,
+): boolean {
+	// Check global settings first (master switch)
+	const globalEnabled = isEmailNotificationEnabled(eventType);
+
+	if (!globalEnabled) {
+		return false; // Global disabled = no emails
+	}
+
+	// If offer has specific settings, use them
+	if (
+		offerEmailNotifications &&
+		offerEmailNotifications[eventType] !== undefined
+	) {
+		return offerEmailNotifications[eventType];
+	}
+
+	// Default to global setting if offer has no preference (backward compatibility)
+	return true;
+}

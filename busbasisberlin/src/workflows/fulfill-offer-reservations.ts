@@ -300,6 +300,7 @@ const updateOfferStatusStep = createStep(
 					status: 'completed',
 					customer_email: offer.customer_email,
 					customer_name: offer.customer_name,
+					email_notifications: offer.email_notifications,
 				},
 			});
 
