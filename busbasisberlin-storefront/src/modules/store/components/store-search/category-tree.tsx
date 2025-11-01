@@ -3,7 +3,7 @@
 // src/modules/store/components/store-search/category-tree.tsx
 // Custom hierarchical menu for category navigation
 
-import { useHierarchicalMenu } from 'react-instantsearch-core';
+import { useHierarchicalMenu } from 'react-instantsearch';
 
 type HierarchicalListProps = {
 	items: ReturnType<typeof useHierarchicalMenu>['items'];

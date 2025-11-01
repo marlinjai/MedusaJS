@@ -15,7 +15,7 @@ import {
 	useInstantSearch,
 	usePagination,
 	useStats,
-} from 'react-instantsearch-core';
+} from 'react-instantsearch';
 import CategoryTree from './category-tree';
 import ProductGrid from './product-grid';
 
