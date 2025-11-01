@@ -1,8 +1,14 @@
-import { Heading, Text } from "@medusajs/ui"
+// empty-cart-message/index.tsx
 
+'use client';
+
+import { Heading, Text } from "@medusajs/ui"
 import InteractiveLink from "@modules/common/components/interactive-link"
+import { useTranslations } from 'next-intl';
 
 const EmptyCartMessage = () => {
+  const t = useTranslations('cart.empty');
+
   return (
     <div
       className="py-24 px-8 flex flex-col justify-center items-center text-center bg-stone-950 rounded-xl min-h-[50vh]"
@@ -27,14 +33,13 @@ const EmptyCartMessage = () => {
         level="h1"
         className="text-3xl font-bold text-gray-100 mb-4"
       >
-        Your cart is empty
+        {t('title')}
       </Heading>
       <Text className="text-base text-gray-400 mt-2 mb-8 max-w-md">
-        You don&apos;t have anything in your cart. Let&apos;s change that, use
-        the link below to start browsing our products.
+        {t('description')}
       </Text>
       <div>
-        <InteractiveLink href="/store">Explore products</InteractiveLink>
+        <InteractiveLink href="/store">{t('button')}</InteractiveLink>
       </div>
     </div>
   )

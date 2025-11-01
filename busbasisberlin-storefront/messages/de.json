@@ -1,0 +1,428 @@
+{
+	"common": {
+		"loading": "Laden...",
+		"error": "Fehler",
+		"success": "Erfolg",
+		"submit": "Absenden",
+		"cancel": "Abbrechen",
+		"save": "Speichern",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"confirm": "Bestätigen",
+		"back": "Zurück",
+		"next": "Weiter",
+		"continue": "Fortfahren",
+		"search": "Suchen",
+		"filter": "Filtern",
+		"sort": "Sortieren",
+		"apply": "Anwenden",
+		"reset": "Zurücksetzen",
+		"close": "Schließen",
+		"required": "Pflichtfeld",
+		"optional": "Optional",
+		"name": "Name",
+		"email": "E-Mail",
+		"phone": "Telefon",
+		"message": "Nachricht",
+		"address": "Adresse",
+		"city": "Stadt",
+		"postalCode": "Postleitzahl",
+		"country": "Land",
+		"total": "Gesamt",
+		"subtotal": "Zwischensumme",
+		"shipping": "Versand",
+		"tax": "Steuer",
+		"discount": "Rabatt",
+		"quantity": "Anzahl",
+		"price": "Preis",
+		"viewAll": "Alle anzeigen",
+		"learnMore": "Mehr erfahren",
+		"contactUs": "Kontaktieren Sie uns"
+	},
+	"nav": {
+		"home": "Startseite",
+		"shop": "Shop",
+		"store": "Sortiment",
+		"about": "Über uns",
+		"contact": "Kontakt",
+		"account": "Konto",
+		"cart": "Warenkorb",
+		"checkout": "Kasse",
+		"signIn": "Anmelden",
+		"signOut": "Abmelden",
+		"register": "Registrieren",
+		"myAccount": "Mein Konto",
+		"orders": "Bestellungen",
+		"categories": "Kategorien",
+		"collections": "Kollektionen"
+	},
+	"hero": {
+		"title": "Unser Herz schlägt für Düdos",
+		"subtitle": "Professionelle Wartung und Reparatur für Mercedes-Transporter",
+		"cta": "Finde Teile",
+		"scrollIndicator": "Werkstatt erkunden • Werkstatt erkunden •",
+		"videoNotSupported": "Ihr Browser unterstützt das Video-Tag nicht."
+	},
+	"services": {
+		"title": "Unsere Dienstleistungen",
+		"subtitle": "Seit über 30 Jahren Ihr Spezialist für Mercedes-Transporter und individuelle Fahrzeugumbauten in Berlin",
+		"camperVans": {
+			"title": "Wohnmobile & Expeditionsfahrzeuge",
+			"description": "Professionelle Beratung und individuelle Fertigung von Reise- und Expeditionsmobilen nach Ihren Wünschen. Von der Konzeption bis zur Umsetzung.",
+			"features": {
+				"planning": "Individuelle Fahrzeugplanung",
+				"interior": "Maßgeschneiderte Innenausstattung",
+				"custom": "Spezialanfertigungen nach Bedarf",
+				"complete": "Komplette Fahrzeugumbauten"
+			}
+		},
+		"repair": {
+			"title": "Reparatur & Restauration",
+			"description": "Spezialisierte Werkstatt für Mercedes-Transporter mit jahrzehntelanger Erfahrung. Professionelle Wartung und technische Modifikationen.",
+			"features": {
+				"expertise": "MB-Transporter Expertise",
+				"restoration": "Oldtimer-Restauration",
+				"inspection": "TÜV-Gutachten",
+				"modifications": "Technische Umbauten"
+			}
+		},
+		"parts": {
+			"title": "Ersatzteile & Ausstattung",
+			"description": "Umfangreiches Sortiment an Originalteilen und Zubehör für Ihren Mercedes-Transporter. Beschaffung und Lieferung von Spezialteilen.",
+			"features": {
+				"original": "Original MB-Ersatzteile",
+				"accessories": "Campingausbau-Zubehör",
+				"specialist": "Spezialteile-Service",
+				"procurement": "Fahrzeugbeschaffung"
+			}
+		}
+	},
+	"contact": {
+		"title": "Kontaktieren Sie uns",
+		"subtitle": "Haben Sie Fragen oder benötigen Sie Hilfe bei der Auswahl der richtigen Teile?",
+		"subtitleLine2": "Wir sind für Sie da.",
+		"formTitle": "Schreiben Sie uns",
+		"locationTitle": "Besuchen Sie unsere Werkstatt",
+		"locationLabel": "Standort",
+		"locationDescription": "Hier finden Sie unsere Werkstatt und unser Lager:",
+		"contactLabel": "Kontakt",
+		"openingHoursLabel": "Öffnungszeiten",
+		"mapLabel": "Karte",
+		"mondayFriday": "Montag - Freitag:",
+		"saturdaySunday": "Samstag - Sonntag:",
+		"closed": "Geschlossen",
+		"submitButton": "Nachricht senden",
+		"successMessage": "Vielen Dank für Ihre Nachricht! Wir melden uns bald bei Ihnen.",
+		"form": {
+			"name": "Name",
+			"namePlaceholder": "Ihr Name",
+			"email": "E-Mail",
+			"emailPlaceholder": "ihre.email@beispiel.de",
+			"phone": "Telefon (optional)",
+			"phonePlaceholder": "Ihre Telefonnummer",
+			"message": "Nachricht",
+			"messagePlaceholder": "Beschreiben Sie Ihr Anliegen..."
+		}
+	},
+	"cart": {
+		"title": "Warenkorb",
+		"empty": {
+			"title": "Ihr Warenkorb ist leer",
+			"description": "Sie haben noch nichts in Ihrem Warenkorb. Lassen Sie uns das ändern, nutzen Sie den untenstehenden Link, um unsere Produkte zu durchsuchen.",
+			"button": "Produkte entdecken"
+		},
+		"signInPrompt": {
+			"title": "Haben Sie bereits ein Konto?",
+			"description": "Melden Sie sich für ein besseres Einkaufserlebnis an.",
+			"button": "Anmelden"
+		},
+		"summary": {
+			"title": "Zusammenfassung",
+			"goToCheckout": "Zur Kasse gehen"
+		},
+		"item": {
+			"remove": "Entfernen",
+			"quantity": "Menge",
+			"total": "Gesamt"
+		}
+	},
+	"checkout": {
+		"title": "Kasse",
+		"addresses": {
+			"title": "Lieferadresse",
+			"shippingAddress": "Lieferadresse",
+			"billingAddress": "Rechnungsadresse",
+			"billingAddressSame": "Rechnungs- und Lieferadresse sind identisch.",
+			"contact": "Kontakt",
+			"continueToDelivery": "Weiter zur Lieferung",
+			"edit": "Bearbeiten"
+		},
+		"shipping": {
+			"title": "Versand",
+			"selectMethod": "Versandmethode wählen",
+			"continueToPayment": "Weiter zur Zahlung"
+		},
+		"payment": {
+			"title": "Zahlung",
+			"selectMethod": "Zahlungsmethode wählen",
+			"paymentMethod": "Zahlungsmethode",
+			"paymentDetails": "Zahlungsdetails",
+			"enterCardDetails": "Kartendaten eingeben",
+			"continueToReview": "Weiter zur Überprüfung",
+			"giftCard": "Geschenkkarte",
+			"anotherStep": "Ein weiterer Schritt wird angezeigt",
+			"edit": "Bearbeiten"
+		},
+		"review": {
+			"title": "Überprüfung",
+			"reviewOrder": "Bestellung überprüfen",
+			"placeOrder": "Bestellung aufgeben",
+			"termsAgree": "Ich stimme den Allgemeinen Geschäftsbedingungen zu",
+			"processing": "Verarbeitung läuft..."
+		},
+		"discount": {
+			"title": "Rabattcode",
+			"placeholder": "Code eingeben",
+			"apply": "Anwenden",
+			"applied": "Angewendet"
+		}
+	},
+	"account": {
+		"title": "Mein Konto",
+		"overview": {
+			"title": "Übersicht",
+			"welcome": "Hallo",
+			"recentOrders": "Letzte Bestellungen",
+			"noOrders": "Noch keine Bestellungen",
+			"viewAll": "Alle Bestellungen anzeigen"
+		},
+		"profile": {
+			"title": "Profil",
+			"name": "Name",
+			"firstName": "Vorname",
+			"lastName": "Nachname",
+			"email": "E-Mail",
+			"phone": "Telefon",
+			"password": "Passwort",
+			"changePassword": "Passwort ändern",
+			"currentPassword": "Aktuelles Passwort",
+			"newPassword": "Neues Passwort",
+			"confirmPassword": "Passwort bestätigen"
+		},
+		"addresses": {
+			"title": "Adressen",
+			"addNew": "Neue Adresse hinzufügen",
+			"edit": "Bearbeiten",
+			"delete": "Löschen",
+			"setDefault": "Als Standard festlegen",
+			"default": "Standard"
+		},
+		"orders": {
+			"title": "Bestellungen",
+			"orderNumber": "Bestellnummer",
+			"date": "Datum",
+			"status": "Status",
+			"total": "Gesamt",
+			"viewDetails": "Details anzeigen",
+			"noOrders": "Sie haben noch keine Bestellungen aufgegeben."
+		},
+		"nav": {
+			"overview": "Übersicht",
+			"profile": "Profil",
+			"addresses": "Adressen",
+			"orders": "Bestellungen",
+			"logout": "Abmelden"
+		},
+		"login": {
+			"title": "Willkommen zurück",
+			"subtitle": "Melden Sie sich an, um ein verbessertes Einkaufserlebnis zu erhalten.",
+			"email": "E-Mail",
+			"emailPlaceholder": "ihre.email@beispiel.de",
+			"password": "Passwort",
+			"forgotPassword": "Passwort vergessen?",
+			"signIn": "Anmelden",
+			"notAMember": "Noch kein Mitglied?",
+			"joinUs": "Jetzt registrieren"
+		},
+		"register": {
+			"title": "Mitglied werden",
+			"subtitle": "Erstellen Sie Ihr Profil und erhalten Sie Zugang zu einem verbesserten Einkaufserlebnis.",
+			"firstName": "Vorname",
+			"lastName": "Nachname",
+			"email": "E-Mail",
+			"phone": "Telefon",
+			"password": "Passwort",
+			"createAccount": "Konto erstellen",
+			"alreadyMember": "Bereits Mitglied?",
+			"signIn": "Anmelden"
+		},
+		"resetPassword": {
+			"title": "Passwort zurücksetzen",
+			"subtitle": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.",
+			"sendLink": "Link senden",
+			"backToLogin": "Zurück zur Anmeldung"
+		},
+		"footer": {
+			"questions": "Haben Sie Fragen?",
+			"faqText": "Häufig gestellte Fragen und Antworten finden Sie auf unserer Kundenservice-Seite.",
+			"customerService": "Kundenservice"
+		}
+	},
+	"products": {
+		"relatedProducts": "Ähnliche Produkte",
+		"details": "Details",
+		"specifications": "Spezifikationen",
+		"description": "Beschreibung",
+		"addToCart": "In den Warenkorb",
+		"outOfStock": "Nicht auf Lager",
+		"selectVariant": "Variante auswählen",
+		"quantity": "Menge",
+		"sku": "Artikelnummer",
+		"category": "Kategorie",
+		"tags": "Tags",
+		"share": "Teilen",
+		"availability": "Verfügbarkeit",
+		"inStock": "Auf Lager",
+		"lowStock": "Wenige verfügbar",
+		"preOrder": "Vorbestellung"
+	},
+	"store": {
+		"title": "Shop",
+		"subtitle": "Entdecken Sie unsere Produkte",
+		"filters": "Filter",
+		"sortBy": "Sortieren nach",
+		"showResults": "Ergebnisse anzeigen",
+		"noResults": "Keine Produkte gefunden",
+		"clearFilters": "Filter zurücksetzen",
+		"priceRange": "Preisspanne",
+		"categories": "Kategorien",
+		"brands": "Marken",
+		"resultsCount": "{count} Produkte",
+		"pagination": {
+			"previous": "Zurück",
+			"next": "Weiter",
+			"page": "Seite {current} von {total}"
+		}
+	},
+	"order": {
+		"title": "Bestellung",
+		"orderNumber": "Bestellnummer",
+		"orderDate": "Bestelldatum",
+		"orderStatus": "Bestellstatus",
+		"orderTotal": "Bestellsumme",
+		"shippingAddress": "Lieferadresse",
+		"billingAddress": "Rechnungsadresse",
+		"shippingMethod": "Versandmethode",
+		"paymentMethod": "Zahlungsmethode",
+		"items": "Artikel",
+		"summary": "Zusammenfassung",
+		"confirmation": {
+			"title": "Bestellung bestätigt",
+			"thankYou": "Vielen Dank für Ihre Bestellung!",
+			"message": "Wir haben Ihre Bestellung erhalten und bearbeiten sie. Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
+			"orderNumber": "Ihre Bestellnummer",
+			"continueShopping": "Weiter einkaufen",
+			"viewOrder": "Bestellung anzeigen"
+		},
+		"status": {
+			"pending": "Ausstehend",
+			"processing": "In Bearbeitung",
+			"shipped": "Versandt",
+			"delivered": "Zugestellt",
+			"cancelled": "Storniert"
+		},
+		"help": {
+			"title": "Benötigen Sie Hilfe?",
+			"contact": "Kontaktieren Sie unseren Kundenservice",
+			"email": "E-Mail",
+			"phone": "Telefon"
+		}
+	},
+	"footer": {
+		"companyName": "Bus Basis Berlin",
+		"description": "Ihr Spezialist für Mercedes-Transporter, Wohnmobile und Expeditionsfahrzeuge. Professionelle Wartung, Reparatur und individuelle Umbauten.",
+		"quickLinks": "Quick Links",
+		"contact": "Kontakt",
+		"openingHours": "Öffnungszeiten",
+		"mondayFriday": "Montag - Freitag:",
+		"saturdaySunday": "Samstag - Sonntag:",
+		"closed": "Geschlossen",
+		"rights": "Alle Rechte vorbehalten.",
+		"privacy": "Datenschutz",
+		"terms": "AGB"
+	},
+	"team": {
+		"title": "Unser Team",
+		"subtitle": "Lernen Sie die Menschen kennen, die hinter Bus Basis Berlin stehen"
+	},
+	"verein": {
+		"title": "Unser Verein",
+		"description": "Wir sind stolz darauf, Teil der Düdo-Community zu sein"
+	},
+	"faq": {
+		"title": "Häufig gestellte Fragen",
+		"subtitle": "Antworten auf die wichtigsten Fragen"
+	},
+	"search": {
+		"placeholder": "Produkte suchen...",
+		"results": "Suchergebnisse",
+		"noResults": "Keine Ergebnisse gefunden",
+		"searching": "Suche läuft..."
+	},
+	"errors": {
+		"general": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+		"notFound": "Seite nicht gefunden",
+		"serverError": "Serverfehler",
+		"networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
+		"invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+		"requiredField": "Dieses Feld ist erforderlich.",
+		"passwordMismatch": "Passwörter stimmen nicht überein.",
+		"passwordTooShort": "Passwort muss mindestens 8 Zeichen lang sein."
+	},
+	"about": {
+		"title": "Unsere Geschichte",
+		"subtitle": "Die Geschichte von BusBasis Berlin - von einer kleinen Werkstatt zu Berlins führendem Anbieter für Busteile.",
+		"timeline": {
+			"2024": {
+				"title": "2024",
+				"description": "Erweiterung unserer Online-Präsenz mit einer modernen E-Commerce-Plattform, um Kunden in ganz Europa zu bedienen.",
+				"image1Alt": "Moderne Werkstattanlage",
+				"image2Alt": "Erweitertes Inventar"
+			},
+			"2020": {
+				"title": "2020",
+				"description": "Modernisierung unseres Lagerverwaltungssystems und Erweiterung unserer Lagerkapazität für eine effizientere Kundenbetreuung.",
+				"image1Alt": "Neue Lageranlage",
+				"image2Alt": "Wachsendes Team"
+			},
+			"2015": {
+				"title": "2015",
+				"description": "Wichtige Meilensteine auf unserem Weg:",
+				"milestone1": "Eröffnung unseres ersten dedizierten Teilelagers",
+				"milestone2": "Partnerschaft mit großen europäischen Busherstellern",
+				"milestone3": "Start unseres Qualitätssicherungsprogramms",
+				"milestone4": "Erweiterung unseres technischen Support-Teams",
+				"image1Alt": "Moderne Werkstattanlage",
+				"image2Alt": "Erweitertes Inventar"
+			}
+		}
+	},
+	"metadata": {
+		"home": {
+			"title": "BusBasis Berlin - Ihr Spezialist für Mercedes-Transporter",
+			"description": "Professionelle Wartung, Reparatur und Umbau von Mercedes-Transportern. Spezialisiert auf Wohnmobile und Expeditionsfahrzeuge."
+		},
+		"store": {
+			"title": "Shop - Bus Basis Berlin",
+			"description": "Entdecken Sie unser Sortiment an Ersatzteilen und Zubehör für Mercedes-Transporter."
+		},
+		"about": {
+			"title": "Über uns - Bus Basis Berlin",
+			"description": "Erfahren Sie mehr über Bus Basis Berlin und unser Team."
+		},
+		"contact": {
+			"title": "Kontakt - Bus Basis Berlin",
+			"description": "Nehmen Sie Kontakt mit uns auf. Wir helfen Ihnen gerne weiter."
+		}
+	}
+}

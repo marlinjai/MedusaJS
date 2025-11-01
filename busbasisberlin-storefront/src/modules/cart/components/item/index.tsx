@@ -46,7 +46,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
 
   return (
     <Table.Row className="w-full border-b border-gray-800 hover:bg-gray-900/30 transition-colors" data-testid="product-row">
-      <Table.Cell className="!pl-0 p-4 w-24">
+      <Table.Cell className="pl-6 py-6 pr-6 w-24">
         <LocalizedClientLink
           href={`/products/${item.product_handle}`}
           className={clx("flex rounded-lg overflow-hidden", {
@@ -62,7 +62,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
         </LocalizedClientLink>
       </Table.Cell>
 
-      <Table.Cell className="text-left">
+      <Table.Cell className="text-left py-6 px-6">
         <Text
           className="txt-medium-plus text-gray-200 font-medium"
           data-testid="product-title"
@@ -73,7 +73,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
       </Table.Cell>
 
       {type === "full" && (
-        <Table.Cell>
+        <Table.Cell className="py-6 px-6">
           <div className="flex gap-2 items-center w-28">
             <DeleteButton id={item.id} data-testid="product-delete-button" />
             <CartItemSelect
@@ -105,7 +105,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
       )}
 
       {type === "full" && (
-        <Table.Cell className="hidden small:table-cell">
+        <Table.Cell className="hidden small:table-cell py-6 px-6">
           <LineItemUnitPrice
             item={item}
             style="tight"
@@ -114,9 +114,9 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
         </Table.Cell>
       )}
 
-      <Table.Cell className="!pr-0">
+      <Table.Cell className="pr-6 py-6 pl-6">
         <span
-          className={clx("!pr-0", {
+          className={clx({
             "flex flex-col items-end h-full justify-center": type === "preview",
           })}
         >

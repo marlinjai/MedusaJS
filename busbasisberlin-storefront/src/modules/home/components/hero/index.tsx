@@ -1,10 +1,14 @@
+// hero/index.tsx
+
 'use client';
 
 import { Heading } from '@medusajs/ui';
 import SearchModal from '@modules/search/components/modal';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 const Hero = () => {
+	const t = useTranslations('hero');
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
 
 	const scrollToServices = () => {
@@ -23,7 +27,7 @@ const Hero = () => {
 				className="absolute inset-0 w-full h-full object-cover"
 			>
 				<source src="/videos/HeaderVideo.webm" type="video/webm" />
-				Your browser does not support the video tag.
+				{t('videoNotSupported')}
 			</video>
 
 			{/* Dark Overlay */}
@@ -48,13 +52,13 @@ const Hero = () => {
 						level="h1"
 						className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 [text-shadow:_2px_2px_10px_rgb(0_0_0_/_40%)]"
 					>
-						Unser Herz schlägt für Düdos
+						{t('title')}
 					</Heading>
 					<Heading
 						level="h2"
 						className="text-xl sm:text-2xl lg:text-3xl text-white/90 font-light [text-shadow:_1px_1px_5px_rgb(0_0_0_/_40%)]"
 					>
-						Professionelle Wartung und Reparatur für Mercedes-Transporter
+						{t('subtitle')}
 					</Heading>
 				</div>
 
@@ -63,7 +67,7 @@ const Hero = () => {
 					onClick={() => setIsSearchOpen(true)}
 					className="mt-8 px-8 py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-lg font-medium rounded-full transition-all z-30 duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
 				>
-					Finde Teile
+					{t('cta')}
 				</button>
 			</div>
 
@@ -100,7 +104,7 @@ const Hero = () => {
 							</defs>
 							<text className="text-[11px] fill-white opacity-70">
 								<textPath href="#circle" startOffset="0%">
-									Werkstatt erkunden • Werkstatt erkunden •
+									{t('scrollIndicator')}
 								</textPath>
 							</text>
 						</svg>

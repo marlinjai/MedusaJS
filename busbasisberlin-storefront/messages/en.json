@@ -1,0 +1,429 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "apply": "Apply",
+    "reset": "Reset",
+    "close": "Close",
+    "required": "Required",
+    "optional": "Optional",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "message": "Message",
+    "address": "Address",
+    "city": "City",
+    "postalCode": "Postal Code",
+    "country": "Country",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "tax": "Tax",
+    "discount": "Discount",
+    "quantity": "Quantity",
+    "price": "Price",
+    "viewAll": "View All",
+    "learnMore": "Learn More",
+    "contactUs": "Contact Us"
+  },
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "store": "Store",
+    "about": "About",
+    "contact": "Contact",
+    "account": "Account",
+    "cart": "Cart",
+    "checkout": "Checkout",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "register": "Register",
+    "myAccount": "My Account",
+    "orders": "Orders",
+    "categories": "Categories",
+    "collections": "Collections"
+  },
+  "hero": {
+    "title": "Our Heart Beats for Düdos",
+    "subtitle": "Professional Maintenance and Repair for Mercedes Vans",
+    "cta": "Find Parts",
+    "scrollIndicator": "Explore Workshop • Explore Workshop •",
+    "videoNotSupported": "Your browser does not support the video tag."
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Your specialist for Mercedes vans and individual vehicle conversions in Berlin for over 30 years",
+    "camperVans": {
+      "title": "Camper Vans & Expedition Vehicles",
+      "description": "Professional consulting and custom manufacturing of travel and expedition vehicles according to your wishes. From concept to implementation.",
+      "features": {
+        "planning": "Individual Vehicle Planning",
+        "interior": "Custom Interior Design",
+        "custom": "Special Customizations as Needed",
+        "complete": "Complete Vehicle Conversions"
+      }
+    },
+    "repair": {
+      "title": "Repair & Restoration",
+      "description": "Specialized workshop for Mercedes vans with decades of experience. Professional maintenance and technical modifications.",
+      "features": {
+        "expertise": "MB Van Expertise",
+        "restoration": "Classic Car Restoration",
+        "inspection": "TÜV Inspections",
+        "modifications": "Technical Modifications"
+      }
+    },
+    "parts": {
+      "title": "Spare Parts & Equipment",
+      "description": "Extensive range of original parts and accessories for your Mercedes van. Procurement and delivery of special parts.",
+      "features": {
+        "original": "Original MB Spare Parts",
+        "accessories": "Camping Conversion Accessories",
+        "specialist": "Special Parts Service",
+        "procurement": "Vehicle Procurement"
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Do you have questions or need help choosing the right parts?",
+    "subtitleLine2": "We're here for you.",
+    "formTitle": "Write to Us",
+    "locationTitle": "Visit Our Workshop",
+    "locationLabel": "Location",
+    "locationDescription": "Find our workshop and warehouse here:",
+    "contactLabel": "Contact",
+    "openingHoursLabel": "Opening Hours",
+    "mapLabel": "Map",
+    "mondayFriday": "Monday - Friday:",
+    "saturdaySunday": "Saturday - Sunday:",
+    "closed": "Closed",
+    "submitButton": "Send Message",
+    "successMessage": "Thank you for your message! We'll get back to you soon.",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Your Name",
+      "email": "Email",
+      "emailPlaceholder": "your.email@example.com",
+      "phone": "Phone (optional)",
+      "phonePlaceholder": "Your Phone Number",
+      "message": "Message",
+      "messagePlaceholder": "Describe your inquiry..."
+    }
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": {
+      "title": "Your cart is empty",
+      "description": "You don't have anything in your cart. Let's change that, use the link below to start browsing our products.",
+      "button": "Explore products"
+    },
+    "signInPrompt": {
+      "title": "Already have an account?",
+      "description": "Sign in for a better experience.",
+      "button": "Sign in"
+    },
+    "summary": {
+      "title": "Summary",
+      "goToCheckout": "Go to checkout"
+    },
+    "item": {
+      "remove": "Remove",
+      "quantity": "Quantity",
+      "total": "Total"
+    }
+  },
+  "checkout": {
+    "title": "Checkout",
+    "addresses": {
+      "title": "Shipping Address",
+      "shippingAddress": "Shipping Address",
+      "billingAddress": "Billing Address",
+      "billingAddressSame": "Billing and delivery address are the same.",
+      "contact": "Contact",
+      "continueToDelivery": "Continue to delivery",
+      "edit": "Edit"
+    },
+    "shipping": {
+      "title": "Shipping",
+      "selectMethod": "Select shipping method",
+      "continueToPayment": "Continue to payment"
+    },
+    "payment": {
+      "title": "Payment",
+      "selectMethod": "Select payment method",
+      "paymentMethod": "Payment method",
+      "paymentDetails": "Payment details",
+      "enterCardDetails": "Enter card details",
+      "continueToReview": "Continue to review",
+      "giftCard": "Gift card",
+      "anotherStep": "Another step will appear",
+      "edit": "Edit"
+    },
+    "review": {
+      "title": "Review",
+      "reviewOrder": "Review order",
+      "placeOrder": "Place order",
+      "termsAgree": "I agree to the terms and conditions",
+      "processing": "Processing..."
+    },
+    "discount": {
+      "title": "Discount code",
+      "placeholder": "Enter code",
+      "apply": "Apply",
+      "applied": "Applied"
+    }
+  },
+  "account": {
+    "title": "My Account",
+    "overview": {
+      "title": "Overview",
+      "welcome": "Hello",
+      "recentOrders": "Recent Orders",
+      "noOrders": "No orders yet",
+      "viewAll": "View all orders"
+    },
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "password": "Password",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password"
+    },
+    "addresses": {
+      "title": "Addresses",
+      "addNew": "Add New Address",
+      "edit": "Edit",
+      "delete": "Delete",
+      "setDefault": "Set as Default",
+      "default": "Default"
+    },
+    "orders": {
+      "title": "Orders",
+      "orderNumber": "Order Number",
+      "date": "Date",
+      "status": "Status",
+      "total": "Total",
+      "viewDetails": "View Details",
+      "noOrders": "You haven't placed any orders yet."
+    },
+    "nav": {
+      "overview": "Overview",
+      "profile": "Profile",
+      "addresses": "Addresses",
+      "orders": "Orders",
+      "logout": "Log out"
+    },
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to access an enhanced shopping experience.",
+      "email": "Email",
+      "emailPlaceholder": "your.email@example.com",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign in",
+      "notAMember": "Not a member?",
+      "joinUs": "Join us"
+    },
+    "register": {
+      "title": "Become a member",
+      "subtitle": "Create your profile and get access to an enhanced shopping experience.",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "password": "Password",
+      "createAccount": "Create Account",
+      "alreadyMember": "Already a member?",
+      "signIn": "Sign in"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "subtitle": "Enter your email address and we'll send you a link to reset your password.",
+      "sendLink": "Send Link",
+      "backToLogin": "Back to Login"
+    },
+    "footer": {
+      "questions": "Got questions?",
+      "faqText": "You can find frequently asked questions and answers on our customer service page.",
+      "customerService": "Customer Service"
+    }
+  },
+  "products": {
+    "relatedProducts": "Related Products",
+    "details": "Details",
+    "specifications": "Specifications",
+    "description": "Description",
+    "addToCart": "Add to Cart",
+    "outOfStock": "Out of Stock",
+    "selectVariant": "Select Variant",
+    "quantity": "Quantity",
+    "sku": "SKU",
+    "category": "Category",
+    "tags": "Tags",
+    "share": "Share",
+    "availability": "Availability",
+    "inStock": "In Stock",
+    "lowStock": "Low Stock",
+    "preOrder": "Pre-order"
+  },
+  "store": {
+    "title": "Shop",
+    "subtitle": "Discover our products",
+    "filters": "Filters",
+    "sortBy": "Sort by",
+    "showResults": "Show results",
+    "noResults": "No products found",
+    "clearFilters": "Clear filters",
+    "priceRange": "Price range",
+    "categories": "Categories",
+    "brands": "Brands",
+    "resultsCount": "{count} products",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {current} of {total}"
+    }
+  },
+  "order": {
+    "title": "Order",
+    "orderNumber": "Order Number",
+    "orderDate": "Order Date",
+    "orderStatus": "Order Status",
+    "orderTotal": "Order Total",
+    "shippingAddress": "Shipping Address",
+    "billingAddress": "Billing Address",
+    "shippingMethod": "Shipping Method",
+    "paymentMethod": "Payment Method",
+    "items": "Items",
+    "summary": "Summary",
+    "confirmation": {
+      "title": "Order Confirmed",
+      "thankYou": "Thank you for your order!",
+      "message": "We've received your order and are processing it. You'll receive a confirmation email shortly.",
+      "orderNumber": "Your order number",
+      "continueShopping": "Continue Shopping",
+      "viewOrder": "View Order"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "help": {
+      "title": "Need help?",
+      "contact": "Contact our customer service",
+      "email": "Email",
+      "phone": "Phone"
+    }
+  },
+  "footer": {
+    "companyName": "Bus Basis Berlin",
+    "description": "Your specialist for Mercedes vans, campers and expedition vehicles. Professional maintenance, repair and individual conversions.",
+    "quickLinks": "Quick Links",
+    "contact": "Contact",
+    "openingHours": "Opening Hours",
+    "mondayFriday": "Monday - Friday:",
+    "saturdaySunday": "Saturday - Sunday:",
+    "closed": "Closed",
+    "rights": "All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "team": {
+    "title": "Our Team",
+    "subtitle": "Meet the people behind Bus Basis Berlin"
+  },
+  "verein": {
+    "title": "Our Association",
+    "description": "We are proud to be part of the Düdo community"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Answers to the most important questions"
+  },
+  "search": {
+    "placeholder": "Search products...",
+    "results": "Search Results",
+    "noResults": "No results found",
+    "searching": "Searching..."
+  },
+  "errors": {
+    "general": "An error occurred. Please try again.",
+    "notFound": "Page not found",
+    "serverError": "Server error",
+    "networkError": "Network error. Please check your connection.",
+    "invalidEmail": "Please enter a valid email address.",
+    "requiredField": "This field is required.",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordTooShort": "Password must be at least 8 characters long."
+  },
+  "about": {
+    "title": "Our Journey",
+    "subtitle": "The story of BusBasis Berlin - from a small workshop to Berlin's premier bus parts destination.",
+    "timeline": {
+      "2024": {
+        "title": "2024",
+        "description": "Expanding our online presence with a state-of-the-art e-commerce platform to serve customers across Europe.",
+        "image1Alt": "Modern workshop facility",
+        "image2Alt": "Expanded inventory"
+      },
+      "2020": {
+        "title": "2020",
+        "description": "Modernized our inventory management system and expanded our warehouse capacity to serve more customers efficiently.",
+        "image1Alt": "New warehouse facility",
+        "image2Alt": "Growing team"
+      },
+      "2015": {
+        "title": "2015",
+        "description": "Key milestones in our journey:",
+        "milestone1": "Established our first dedicated parts warehouse",
+        "milestone2": "Partnered with major European bus manufacturers",
+        "milestone3": "Launched our quality assurance program",
+        "milestone4": "Expanded our technical support team",
+        "image1Alt": "Modern workshop facility",
+        "image2Alt": "Expanded inventory"
+      }
+    }
+  },
+  "metadata": {
+    "home": {
+      "title": "BusBasis Berlin - Your Mercedes Van Specialist",
+      "description": "Professional maintenance, repair and conversion of Mercedes vans. Specialized in campers and expedition vehicles."
+    },
+    "store": {
+      "title": "Shop - Bus Basis Berlin",
+      "description": "Discover our range of spare parts and accessories for Mercedes vans."
+    },
+    "about": {
+      "title": "About Us - Bus Basis Berlin",
+      "description": "Learn more about Bus Basis Berlin and our team."
+    },
+    "contact": {
+      "title": "Contact - Bus Basis Berlin",
+      "description": "Get in touch with us. We're happy to help."
+    }
+  }
+}
+

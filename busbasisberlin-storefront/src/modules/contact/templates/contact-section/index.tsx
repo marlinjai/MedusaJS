@@ -3,8 +3,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 export default function ContactSection() {
+  const t = useTranslations('contact');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,7 +28,7 @@ export default function ContactSection() {
     e.preventDefault()
     console.log('Contact form submitted:', formData)
     // TODO: Implement backend integration
-    alert('Vielen Dank für Ihre Nachricht! Wir melden uns bald bei Ihnen.')
+    alert(t('successMessage'))
     setFormData({ name: '', email: '', phone: '', message: '' })
   }
 
@@ -37,12 +39,12 @@ export default function ContactSection() {
         {/* Header Section */}
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-semibold mb-4 text-foreground">
-            Kontaktieren Sie uns
+            {t('title')}
           </h2>
           <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Haben Sie Fragen oder benötigen Sie Hilfe bei der Auswahl der richtigen Teile?
+            {t('subtitle')}
             <br />
-            Wir sind für Sie da.
+            {t('subtitleLine2')}
           </p>
         </div>
 
@@ -51,12 +53,12 @@ export default function ContactSection() {
           {/* Contact Form */}
           <div className="bg-card rounded-lg shadow-xl p-6 lg:p-10">
             <h3 className="text-xl sm:text-2xl font-semibold mb-6 text-card-foreground">
-              Schreiben Sie uns
+              {t('formTitle')}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Name *
+                  {t('form.name')} *
                 </label>
                 <input
                   type="text"
@@ -66,13 +68,13 @@ export default function ContactSection() {
                   onChange={handleInputChange}
                   required
                   className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
-                  placeholder="Ihr Name"
+                  placeholder={t('form.namePlaceholder')}
                 />
               </div>
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-2">
-                  E-Mail *
+                  {t('form.email')} *
                 </label>
                 <input
                   type="email"
@@ -82,13 +84,13 @@ export default function ContactSection() {
                   onChange={handleInputChange}
                   required
                   className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
-                  placeholder="ihre.email@beispiel.de"
+                  placeholder={t('form.emailPlaceholder')}
                 />
               </div>
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Telefon (optional)
+                  {t('form.phone')}
                 </label>
                 <input
                   type="tel"
@@ -97,13 +99,13 @@ export default function ContactSection() {
                   value={formData.phone}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
-                  placeholder="Ihre Telefonnummer"
+                  placeholder={t('form.phonePlaceholder')}
                 />
               </div>
 
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Nachricht *
+                  {t('form.message')} *
                 </label>
                 <textarea
                   id="message"
@@ -113,7 +115,7 @@ export default function ContactSection() {
                   required
                   rows={6}
                   className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 bg-background text-foreground resize-none placeholder:text-muted-foreground"
-                  placeholder="Beschreiben Sie Ihr Anliegen..."
+                  placeholder={t('form.messagePlaceholder')}
                 />
               </div>
 
@@ -121,7 +123,7 @@ export default function ContactSection() {
                 type="submit"
                 className="w-full sm:w-auto contrast-btn"
               >
-                Nachricht senden
+                {t('submitButton')}
               </button>
             </form>
           </div>
@@ -130,16 +132,16 @@ export default function ContactSection() {
           <div className="flex flex-col justify-between bg-card rounded-lg shadow-xl p-6 lg:p-10">
             <div>
               <h3 className="text-2xl font-semibold mb-6 text-card-foreground">
-                Besuchen Sie unsere Werkstatt
+                {t('locationTitle')}
               </h3>
               <div className="space-y-6">
                 <div>
                   <label className="block text-base sm:text-lg font-medium text-muted-foreground mb-3">
-                    Standort
+                    {t('locationLabel')}
                   </label>
                   <div className="px-4 py-3 border border-border rounded-lg bg-muted">
                     <p className="text-muted-foreground mb-3">
-                      Hier finden Sie unsere Werkstatt und unser Lager:
+                      {t('locationDescription')}
                     </p>
                     <p className="text-lg font-semibold text-foreground mb-2">
                       Basis Camp Berlin GmbH
@@ -154,7 +156,7 @@ export default function ContactSection() {
 
                 <div>
                   <label className="block text-base sm:text-lg font-medium text-muted-foreground mb-3">
-                    Kontakt
+                    {t('contactLabel')}
                   </label>
                   <div className="px-4 py-3 border border-border rounded-lg bg-muted">
                     <div className="space-y-2 text-muted-foreground">
@@ -182,17 +184,17 @@ export default function ContactSection() {
 
                 <div>
                   <label className="block text-base sm:text-lg font-medium text-muted-foreground mb-3">
-                    Öffnungszeiten
+                    {t('openingHoursLabel')}
                   </label>
                   <div className="px-4 py-3 border border-border rounded-lg bg-muted">
                     <div className="space-y-2 text-muted-foreground text-sm">
                       <div className="flex justify-between">
-                        <span>Montag - Freitag:</span>
+                        <span>{t('mondayFriday')}</span>
                         <span className="font-semibold text-foreground">08:00–16:00</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Samstag - Sonntag:</span>
-                        <span className="font-semibold text-foreground">Geschlossen</span>
+                        <span>{t('saturdaySunday')}</span>
+                        <span className="font-semibold text-foreground">{t('closed')}</span>
                       </div>
                     </div>
                   </div>
@@ -200,7 +202,7 @@ export default function ContactSection() {
 
                 <div>
                   <label className="block text-base sm:text-lg font-medium text-muted-foreground mb-3">
-                    Karte
+                    {t('mapLabel')}
                   </label>
                   <div className="h-[300px] sm:h-[350px] rounded-lg overflow-hidden">
                     <iframe

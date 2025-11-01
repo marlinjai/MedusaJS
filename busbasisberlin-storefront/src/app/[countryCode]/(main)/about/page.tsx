@@ -1,29 +1,33 @@
+// about/page.tsx
+
 "use client"
 
 import Image from "next/image"
 import { Timeline } from "@modules/common/components/ui/timeline"
+import { useTranslations } from 'next-intl'
 
 export default function AboutPage() {
+  const t = useTranslations('about.timeline');
+
   const timelineData = [
     {
-      title: "2024",
+      title: t('2024.title'),
       content: (
         <div>
           <p className="text-neutral-300 text-xs md:text-sm font-normal mb-8">
-            Expanding our online presence with a state-of-the-art e-commerce
-            platform to serve customers across Europe.
+            {t('2024.description')}
           </p>
           <div className="grid grid-cols-2 gap-4">
             <Image
               src="/images/about/Werkstattarbeiten_II.jpg"
-              alt="Modern workshop facility"
+              alt={t('2024.image1Alt')}
               width={500}
               height={500}
               className="rounded-lg object-cover h-20 md:h-44 lg:h-60 w-full shadow-[0_0_24px_rgba(0,0,0,0.3)]"
             />
             <Image
               src="/images/about/tools_IV.jpg"
-              alt="Expanded inventory"
+              alt={t('2024.image2Alt')}
               width={500}
               height={500}
               className="rounded-lg object-cover h-20 md:h-44 lg:h-60 w-full shadow-[0_0_24px_rgba(0,0,0,0.3)]"
@@ -33,24 +37,23 @@ export default function AboutPage() {
       ),
     },
     {
-      title: "2020",
+      title: t('2020.title'),
       content: (
         <div>
           <p className="text-neutral-300 text-xs md:text-sm font-normal mb-8">
-            Modernized our inventory management system and expanded our
-            warehouse capacity to serve more customers efficiently.
+            {t('2020.description')}
           </p>
           <div className="grid grid-cols-2 gap-4">
             <Image
               src="/images/about/warehouse-2020.jpg"
-              alt="New warehouse facility"
+              alt={t('2020.image1Alt')}
               width={500}
               height={500}
               className="rounded-lg object-cover h-20 md:h-44 lg:h-60 w-full shadow-[0_0_24px_rgba(0,0,0,0.3)]"
             />
             <Image
               src="/images/about/team-2020.jpg"
-              alt="Growing team"
+              alt={t('2020.image2Alt')}
               width={500}
               height={500}
               className="rounded-lg object-cover h-20 md:h-44 lg:h-60 w-full shadow-[0_0_24px_rgba(0,0,0,0.3)]"
@@ -60,37 +63,37 @@ export default function AboutPage() {
       ),
     },
     {
-      title: "2015",
+      title: t('2015.title'),
       content: (
         <div>
           <p className="text-neutral-300 text-xs md:text-sm font-normal mb-4">
-            Key milestones in our journey:
+            {t('2015.description')}
           </p>
           <div className="mb-8">
             <div className="flex gap-2 items-center text-neutral-400 text-xs md:text-sm">
-              ✓ Established our first dedicated parts warehouse
+              ✓ {t('2015.milestone1')}
             </div>
             <div className="flex gap-2 items-center text-neutral-400 text-xs md:text-sm">
-              ✓ Partnered with major European bus manufacturers
+              ✓ {t('2015.milestone2')}
             </div>
             <div className="flex gap-2 items-center text-neutral-400 text-xs md:text-sm">
-              ✓ Launched our quality assurance program
+              ✓ {t('2015.milestone3')}
             </div>
             <div className="flex gap-2 items-center text-neutral-400 text-xs md:text-sm">
-              ✓ Expanded our technical support team
+              ✓ {t('2015.milestone4')}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Image
               src="/images/about/Werkstattarbeiten_II.jpg"
-              alt="Modern workshop facility"
+              alt={t('2015.image1Alt')}
               width={500}
               height={500}
               className="rounded-lg object-cover h-20 md:h-44 lg:h-60 w-full shadow-[0_0_24px_rgba(0,0,0,0.3)]"
             />
             <Image
               src="/images/about/tools_IV.jpg"
-              alt="Expanded inventory"
+              alt={t('2015.image2Alt')}
               width={500}
               height={500}
               className="rounded-lg object-cover h-20 md:h-44 lg:h-60 w-full shadow-[0_0_24px_rgba(0,0,0,0.3)]"

@@ -53,29 +53,25 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
 	const [message, formAction] = useActionState(submitPromotionForm, null);
 
 	return (
-		<div className="w-full bg-card flex flex-col">
+		<div className="w-full flex flex-col">
 			<div className="txt-medium">
-				<form action={a => addPromotionCode(a)} className="w-full mb-5">
-					<Label className="flex gap-x-1 my-2 items-center">
+				<form action={a => addPromotionCode(a)} className="w-full mb-4">
+					<Label className="flex gap-x-1 mb-3 items-center">
 						<button
 							onClick={() => setIsOpen(!isOpen)}
 							type="button"
-							className="txt-medium text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
+							className="txt-medium text-blue-400 hover:text-blue-300 transition-colors font-medium"
 							data-testid="add-discount-button"
 						>
 							Add Promotion Code(s)
 						</button>
-
-						{/* <Tooltip content="You can add multiple promotion codes">
-              <InformationCircleSolid color="var(--fg-muted)" />
-            </Tooltip> */}
 					</Label>
 
 					{isOpen && (
 						<>
 							<div className="flex w-full gap-x-2">
 								<Input
-									className="size-full"
+									className="size-full bg-gray-800 border-gray-700 text-gray-200"
 									id="promotion-input"
 									name="code"
 									type="text"
@@ -101,7 +97,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
 				{promotions.length > 0 && (
 					<div className="w-full flex items-center">
 						<div className="flex flex-col w-full">
-							<Heading className="txt-medium mb-2">
+							<Heading className="txt-medium mb-3 text-gray-200">
 								Promotion(s) applied:
 							</Heading>
 

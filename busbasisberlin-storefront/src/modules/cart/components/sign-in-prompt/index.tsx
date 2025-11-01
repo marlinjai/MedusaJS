@@ -1,15 +1,22 @@
+// sign-in-prompt/index.tsx
+
+'use client';
+
+import { useTranslations } from '@lib/i18n/translations-context';
 import { Button, Heading, Text } from '@medusajs/ui';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
 
 const SignInPrompt = () => {
+	const t = useTranslations('cart.signInPrompt');
+
 	return (
-		<div className="bg-card flex items-center justify-between">
+		<div className="bg-stone-950 rounded-xl p-6 flex items-center justify-between">
 			<div>
-				<Heading level="h2" className="txt-xlarge">
-					Already have an account?
+				<Heading level="h2" className="txt-xlarge text-gray-100">
+					{t('title')}
 				</Heading>
-				<Text className="txt-medium text-ui-fg-subtle mt-2">
-					Sign in for a better experience.
+				<Text className="txt-medium text-gray-400 mt-2">
+					{t('description')}
 				</Text>
 			</div>
 			<div>
@@ -19,7 +26,7 @@ const SignInPrompt = () => {
 						className="h-10"
 						data-testid="sign-in-button"
 					>
-						Sign in
+						{t('button')}
 					</Button>
 				</LocalizedClientLink>
 			</div>

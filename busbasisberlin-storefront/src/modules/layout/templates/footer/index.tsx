@@ -8,6 +8,7 @@ import { footerNavItems } from '@modules/layout/config/navigation'
 import { MdOutlineMail } from 'react-icons/md'
 import { FiPhone, FiMapPin } from 'react-icons/fi'
 import { FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa'
+import { useTranslations } from 'next-intl'
 
 // Footer accordion for mobile
 const FooterAccordion = ({ title, items }: { title: string; items: typeof footerNavItems }) => {
@@ -55,6 +56,7 @@ const FooterAccordion = ({ title, items }: { title: string; items: typeof footer
 }
 
 export default function Footer() {
+  const t = useTranslations('footer');
   const currentYear = new Date().getFullYear()
 
   return (
@@ -72,11 +74,10 @@ export default function Footer() {
               href="/"
               className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
             >
-              Bus Basis Berlin
+              {t('companyName')}
             </LocalizedClientLink>
             <p className="mt-4 text-muted-foreground text-sm leading-relaxed">
-              Ihr Spezialist für Mercedes-Transporter, Wohnmobile und Expeditionsfahrzeuge.
-              Professionelle Wartung, Reparatur und individuelle Umbauten.
+              {t('description')}
             </p>
 
             {/* Social Links */}
@@ -107,7 +108,7 @@ export default function Footer() {
 
           {/* Column 2: Quick Links - Desktop only */}
           <div className="hidden md:block">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Quick Links</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{t('quickLinks')}</h3>
             <ul className="space-y-3">
               {footerNavItems.map((item) => (
                 <li key={item.href}>
@@ -124,7 +125,7 @@ export default function Footer() {
 
           {/* Column 3: Contact Info */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Kontakt</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">{t('contact')}</h3>
             <ul className="space-y-3">
               <li>
                 <a
@@ -154,15 +155,15 @@ export default function Footer() {
 
             {/* Opening Hours */}
             <div className="mt-6">
-              <h4 className="text-sm font-semibold text-foreground mb-3">Öffnungszeiten</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">{t('openingHours')}</h4>
               <div className="space-y-1 text-sm text-muted-foreground">
                 <div className="flex justify-between gap-4">
-                  <span>Montag - Freitag:</span>
+                  <span>{t('mondayFriday')}</span>
                   <span className="text-foreground">08:00–16:00</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span>Samstag - Sonntag:</span>
-                  <span className="text-foreground">Geschlossen</span>
+                  <span>{t('saturdaySunday')}</span>
+                  <span className="text-foreground">{t('closed')}</span>
                 </div>
               </div>
             </div>
@@ -170,27 +171,27 @@ export default function Footer() {
 
           {/* Mobile Accordion */}
           <div className="md:hidden">
-            <FooterAccordion title="Quick Links" items={footerNavItems} />
+            <FooterAccordion title={t('quickLinks')} items={footerNavItems} />
           </div>
         </div>
 
         {/* Bottom section */}
         <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
-            &copy; {currentYear} Basis Camp Berlin GmbH. Alle Rechte vorbehalten.
+            &copy; {currentYear} Basis Camp Berlin GmbH. {t('rights')}
           </p>
           <div className="flex gap-4 text-sm">
             <LocalizedClientLink
               href="/privacy"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Datenschutz
+              {t('privacy')}
             </LocalizedClientLink>
             <LocalizedClientLink
               href="/terms"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              AGB
+              {t('terms')}
             </LocalizedClientLink>
           </div>
         </div>
