@@ -64,36 +64,38 @@
 		"videoNotSupported": "Ihr Browser unterstützt das Video-Tag nicht."
 	},
 	"services": {
-		"title": "Unsere Dienstleistungen",
-		"subtitle": "Seit über 30 Jahren Ihr Spezialist für Mercedes-Transporter und individuelle Fahrzeugumbauten in Berlin",
+		"title": "Unsere Leistungen",
+		"subtitle": "Es gibt nichts, was wir an Düsseldorfern noch nicht gemacht haben.",
 		"camperVans": {
-			"title": "Wohnmobile & Expeditionsfahrzeuge",
-			"description": "Professionelle Beratung und individuelle Fertigung von Reise- und Expeditionsmobilen nach Ihren Wünschen. Von der Konzeption bis zur Umsetzung.",
+			"title": "Wohnmobile, Expeditionsfahrzeuge und Fernreisemobile",
+			"description": "",
 			"features": {
-				"planning": "Individuelle Fahrzeugplanung",
-				"interior": "Maßgeschneiderte Innenausstattung",
-				"custom": "Spezialanfertigungen nach Bedarf",
-				"complete": "Komplette Fahrzeugumbauten"
+				"planning": "Beratung, Planung und Konzeption Ihres Wunschfahrzeugs",
+				"parts": "Fertigung von Bauteilen für den Innenausbau bis hin zum kompletten Fahrzeug",
+				"tech": "Standheizung, Gasinstallation, Raumkonzept",
+				"custom": "Individuelle Spezialanfertigungen (neues Dach, 6-Zylinder-Diesel, neue Aufbauten)"
 			}
 		},
 		"repair": {
-			"title": "Reparatur & Restauration",
-			"description": "Spezialisierte Werkstatt für Mercedes-Transporter mit jahrzehntelanger Erfahrung. Professionelle Wartung und technische Modifikationen.",
+			"title": "Reparaturen, Restaurationen, HU, Oldtimer-Gutachten",
+			"description": "",
 			"features": {
-				"expertise": "MB-Transporter Expertise",
-				"restoration": "Oldtimer-Restauration",
-				"inspection": "TÜV-Gutachten",
-				"modifications": "Technische Umbauten"
+				"expertise": "Spezialwerkstatt für Mercedes-Transporter (Düsseldorfer, Bremer, Vario)",
+				"models": "Baureihen 406, 407, 408, 409, 508, 608, 613",
+				"engine": "Motorwechsel (z.B. OM616 auf OM314) und technische Änderungen",
+				"maintenance": "Wartung, Instandsetzung vorhandener Wohnmobiletechnik inkl. Gasprüfung",
+				"inspection": "HU-Abnahme und H-Kennzeichen"
 			}
 		},
 		"parts": {
-			"title": "Ersatzteile & Ausstattung",
-			"description": "Umfangreiches Sortiment an Originalteilen und Zubehör für Ihren Mercedes-Transporter. Beschaffung und Lieferung von Spezialteilen.",
+			"title": "Ersatzteile und Fahrzeugbeschaffung",
+			"description": "",
 			"features": {
-				"original": "Original MB-Ersatzteile",
-				"accessories": "Campingausbau-Zubehör",
-				"specialist": "Spezialteile-Service",
-				"procurement": "Fahrzeugbeschaffung"
+				"warehouse": "Großes Ersatzteillager mit neuen und gebrauchten Teilen",
+				"online": "Onlineshop mit sofort verfügbaren Teilen",
+				"special": "Speziellere Teile auf Anfrage per Mail",
+				"local": "Vor-Ort-Einkauf in der Werkstatt jederzeit willkommen",
+				"procurement": "Beschaffung von Basisfahrzeugen im Kundenauftrag"
 			}
 		}
 	},
@@ -155,12 +157,27 @@
 			"billingAddressSame": "Rechnungs- und Lieferadresse sind identisch.",
 			"contact": "Kontakt",
 			"continueToDelivery": "Weiter zur Lieferung",
-			"edit": "Bearbeiten"
+			"edit": "Bearbeiten",
+			"firstName": "Vorname",
+			"lastName": "Nachname",
+			"address": "Adresse",
+			"company": "Firma",
+			"postalCode": "Postleitzahl",
+			"city": "Stadt",
+			"country": "Land",
+			"province": "Bundesland",
+			"phone": "Telefon",
+			"email": "E-Mail",
+			"savedAddresses": "Möchten Sie eine Ihrer gespeicherten Adressen verwenden?",
+			"hello": "Hallo"
 		},
 		"shipping": {
 			"title": "Versand",
 			"selectMethod": "Versandmethode wählen",
-			"continueToPayment": "Weiter zur Zahlung"
+			"continueToPayment": "Weiter zur Zahlung",
+			"method": "Methode",
+			"shippingMethod": "Versandmethode",
+			"howDelivered": "Wie möchten Sie Ihre Bestellung geliefert bekommen?"
 		},
 		"payment": {
 			"title": "Zahlung",
@@ -171,7 +188,11 @@
 			"continueToReview": "Weiter zur Überprüfung",
 			"giftCard": "Geschenkkarte",
 			"anotherStep": "Ein weiterer Schritt wird angezeigt",
-			"edit": "Bearbeiten"
+			"edit": "Bearbeiten",
+			"manualPayment": "Manuelle Zahlung",
+			"testingOnly": "Achtung: Nur für Testzwecke.",
+			"stripe": "Kreditkarte",
+			"paypal": "PayPal"
 		},
 		"review": {
 			"title": "Überprüfung",

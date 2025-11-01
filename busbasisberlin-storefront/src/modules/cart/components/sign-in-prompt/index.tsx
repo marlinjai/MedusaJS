@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useTranslations } from '@lib/i18n/translations-context';
+import { useTranslations } from 'next-intl';
 import { Button, Heading, Text } from '@medusajs/ui';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
 

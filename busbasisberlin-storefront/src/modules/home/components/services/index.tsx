@@ -25,13 +25,12 @@ const ServiceCard = ({ icon, titleKey, descKey, featureKeys, index }: {
       <div className="mb-6 p-3 bg-blue-500/10 w-fit rounded-xl text-blue-400">
         {icon}
       </div>
-      <h3 className="text-xl font-semibold mb-4 text-white">{t(titleKey as any)}</h3>
-      <p className="text-neutral-400 mb-6">{t(descKey as any)}</p>
+      <h3 className="text-xl font-semibold mb-6 text-white">{t(titleKey as any)}</h3>
       <ul className="space-y-3">
         {featureKeys.map((featureKey: string, idx: number) => (
-          <li key={idx} className="flex items-center text-neutral-300">
-            <span className="mr-2 text-blue-400">•</span>
-            {t(featureKey as any)}
+          <li key={idx} className="flex items-start text-neutral-300">
+            <span className="mr-2 text-blue-400 mt-1">•</span>
+            <span>{t(featureKey as any)}</span>
           </li>
         ))}
       </ul>
@@ -49,9 +48,9 @@ export default function Services() {
       descKey: 'camperVans.description',
       featureKeys: [
         'camperVans.features.planning',
-        'camperVans.features.interior',
-        'camperVans.features.custom',
-        'camperVans.features.complete'
+        'camperVans.features.parts',
+        'camperVans.features.tech',
+        'camperVans.features.custom'
       ],
     },
     {
@@ -60,9 +59,10 @@ export default function Services() {
       descKey: 'repair.description',
       featureKeys: [
         'repair.features.expertise',
-        'repair.features.restoration',
-        'repair.features.inspection',
-        'repair.features.modifications'
+        'repair.features.models',
+        'repair.features.engine',
+        'repair.features.maintenance',
+        'repair.features.inspection'
       ],
     },
     {
@@ -70,9 +70,10 @@ export default function Services() {
       titleKey: 'parts.title',
       descKey: 'parts.description',
       featureKeys: [
-        'parts.features.original',
-        'parts.features.accessories',
-        'parts.features.specialist',
+        'parts.features.warehouse',
+        'parts.features.online',
+        'parts.features.special',
+        'parts.features.local',
         'parts.features.procurement'
       ],
     },

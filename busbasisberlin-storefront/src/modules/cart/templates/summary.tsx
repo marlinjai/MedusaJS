@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useTranslations } from '@lib/i18n/translations-context';
+import { useTranslations } from 'next-intl';
 import { HttpTypes } from '@medusajs/types';
 import { Button, Heading } from '@medusajs/ui';
 import DiscountCode from '@modules/checkout/components/discount-code';
