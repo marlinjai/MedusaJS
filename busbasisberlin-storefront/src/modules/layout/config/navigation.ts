@@ -1,7 +1,6 @@
 export const mainNavItems = [
 	{ href: '/store', label: 'Shop' },
-	{ href: '/#services', label: 'Services' },
-	{ href: '/about', label: 'Über uns' },
+	{ href: '/#services', label: 'Über uns' },
 	{ href: '/#contact', label: 'Kontakt' },
 	{ href: '/#verein', label: 'Verein' },
 ] as const;

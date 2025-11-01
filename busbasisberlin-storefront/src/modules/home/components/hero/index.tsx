@@ -17,7 +17,7 @@ const Hero = () => {
 	};
 
 	return (
-		<div className="relative h-[90vh] w-full overflow-hidden -mt-24">
+		<div className="relative h-[90vh] md:h-screen w-full overflow-hidden -mt-24">
 			{/* Video Background */}
 			<video
 				autoPlay
@@ -72,7 +72,10 @@ const Hero = () => {
 			</div>
 
 			{/* Search Modal */}
-			<SearchModal externalIsOpen={isSearchOpen} externalSetIsOpen={setIsSearchOpen} />
+			<SearchModal
+				externalIsOpen={isSearchOpen}
+				externalSetIsOpen={setIsSearchOpen}
+			/>
 
 			{/* Scroll Indicator with Rotating Text */}
 			<button
