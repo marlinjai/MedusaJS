@@ -1,33 +1,46 @@
-// src/app/error.tsx
-// Global error boundary - handles runtime errors
-'use client';
+'use client'
+
+// Custom error page to handle React 19 RC SSR issues
+// This prevents the "Cannot read properties of null (reading 'useContext')" error
+
+import { ArrowUpRightMini } from "@medusajs/icons"
+import { Text } from "@medusajs/ui"
+import Link from "next/link"
+import { useEffect } from "react"
 
 export default function Error({
-	error,
-	reset,
+  error,
+  reset,
 }: {
-	error: Error & { digest?: string };
-	reset: () => void;
+  error: Error & { digest?: string }
+  reset: () => void
 }) {
-	return (
-		<div className="flex flex-col gap-4 items-center justify-center min-h-[calc(100vh-64px)] bg-gray-900 px-4">
-			<h1 className="text-2xl font-bold text-white">
-				Etwas ist schiefgelaufen
-			</h1>
-			<p className="text-sm text-gray-400 text-center max-w-md">
-				Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.
-			</p>
-			{error.message && (
-				<p className="text-xs text-gray-500 bg-gray-800 px-4 py-2 rounded border border-gray-700 max-w-md overflow-auto">
-					{error.message}
-				</p>
-			)}
-			<button
-				onClick={reset}
-				className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-			>
-				Erneut versuchen
-			</button>
-		</div>
-	);
+  useEffect(() => {
+    // Log the error to an error reporting service
+    console.error(error)
+  }, [error])
+
+  return (
+    <div className="flex flex-col gap-4 items-center justify-center min-h-[calc(100vh-64px)]">
+      <h1 className="text-2xl-semi text-ui-fg-base">Something went wrong!</h1>
+      <p className="text-small-regular text-ui-fg-base">
+        An error occurred while loading this page.
+      </p>
+      <div className="flex gap-4">
+        <button
+          onClick={() => reset()}
+          className="px-4 py-2 bg-ui-bg-interactive text-ui-fg-on-color rounded-md"
+        >
+          Try again
+        </button>
+        <Link className="flex gap-x-1 items-center group px-4 py-2" href="/">
+          <Text className="text-ui-fg-interactive">Go to frontpage</Text>
+          <ArrowUpRightMini
+            className="group-hover:rotate-45 ease-in-out duration-150"
+            color="var(--fg-interactive)"
+          />
+        </Link>
+      </div>
+    </div>
+  )
 }
