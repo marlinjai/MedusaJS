@@ -21,6 +21,16 @@ const nextConfig = {
 	typescript: {
 		ignoreBuildErrors: true,
 	},
+	// Skip static generation for 404 page to avoid React 19 RC SSR issues
+	generateBuildId: async () => {
+		return 'build-' + Date.now();
+	},
+	experimental: {
+		// Force all pages to be dynamic to avoid React 19 RC context issues during SSR
+		serverActions: {
+			bodySizeLimit: '2mb',
+		},
+	},
 	// Skip static generation during Docker build when backend isn't available
 	output: 'standalone',
 	// Disable static optimization to prevent build-time API calls

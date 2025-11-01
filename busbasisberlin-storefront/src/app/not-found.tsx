@@ -4,6 +4,10 @@ import { ArrowUpRightMini } from "@medusajs/icons"
 import { Text } from "@medusajs/ui"
 import Link from "next/link"
 
+// Force dynamic rendering to avoid React 19 RC SSR issues
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+
 export default function NotFound() {
   return (
     <div className="flex flex-col gap-4 items-center justify-center min-h-[calc(100vh-64px)]">
