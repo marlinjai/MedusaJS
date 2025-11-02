@@ -336,7 +336,7 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     if (!formData) {
       throw new Error("No form data found when setting addresses")
     }
-    const cartId = getCartId()
+    const cartId = await getCartId()
     if (!cartId) {
       throw new Error("No existing cart found when setting addresses")
     }
@@ -373,14 +373,18 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
         province: formData.get("billing_address.province"),
         phone: formData.get("billing_address.phone"),
       }
+    
+    // Update cart - this must succeed before redirecting
     await updateCart(data)
+    
+    // Only redirect if update was successful
+    redirect(
+      `/${formData.get("shipping_address.country_code")}/checkout?step=delivery`
+    )
   } catch (e: any) {
+    // If error occurs, return error message and do NOT redirect
     return e.message
   }
-
-  redirect(
-    `/${formData.get("shipping_address.country_code")}/checkout?step=delivery`
-  )
 }
 
 /**
