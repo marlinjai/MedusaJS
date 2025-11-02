@@ -222,6 +222,13 @@ http {
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
+
+            # CRITICAL: Pass cookies for authentication
+            proxy_pass_header Set-Cookie;
+            proxy_pass_header Cookie;
+
+            # Ensure cookies work with HTTPS
+            proxy_cookie_path / "/; Secure; HttpOnly; SameSite=None";
         }
 
         # Health check endpoint (no rate limiting)
