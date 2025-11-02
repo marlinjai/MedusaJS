@@ -5,10 +5,9 @@
 
 import React from 'react';
 import {
-	getCompanyInfo,
-	getCompanyAddress,
-	getCompanySignature,
 	getCompanyFooter,
+	getCompanyInfo,
+	getCompanySignature,
 	getCurrentYear,
 	getEmailHeaderStyles,
 } from './company-info';
@@ -59,16 +58,6 @@ export const EmailHeader = ({
 					{company.name}
 				</h1>
 			)}
-			<p
-				style={{
-					color: '#ffffff',
-					margin: '5px 0 0 0',
-					fontSize: '14px',
-					opacity: '0.9',
-				}}
-			>
-				{getCompanyAddress()}
-			</p>
 		</div>
 	);
 };
@@ -96,9 +85,7 @@ export const EmailFooter = () => {
 				<br />
 				{getCompanySignature()}
 			</p>
-			<p style={{ margin: '10px 0', fontSize: '11px' }}>
-				{getCompanyFooter()}
-			</p>
+			<p style={{ margin: '10px 0', fontSize: '11px' }}>{getCompanyFooter()}</p>
 			<p style={{ margin: '10px 0', fontSize: '10px', color: '#999' }}>
 				© {getCurrentYear()} {company.name}. Alle Rechte vorbehalten.
 			</p>
@@ -293,4 +280,3 @@ export const EmailContainer = ({ children }: { children: React.ReactNode }) => {
 		</div>
 	);
 };
-

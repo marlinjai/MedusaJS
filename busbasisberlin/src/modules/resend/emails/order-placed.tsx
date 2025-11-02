@@ -79,9 +79,6 @@ function OrderPlacedEmailComponent({
 								{company.name}
 							</Heading>
 						)}
-						<Text className="text-white opacity-90 mt-2 m-0 text-sm">
-							{company.address}, {company.postalCode} {company.city}
-						</Text>
 					</Section>
 
 					{/* Thank You Message */}
@@ -215,6 +212,9 @@ function OrderPlacedEmailComponent({
 						</Text>
 						<Text className="text-center text-gray-500 text-sm mt-1">
 							📞 Telefon auf Anfrage per E-Mail
+						</Text>
+						<Text className="text-center text-gray-500 text-sm mt-4">
+							📍 {company.address}, {company.postalCode} {company.city}
 						</Text>
 						<Text className="text-center text-gray-500 text-sm mt-4">
 							Bestellnummer: #{order.display_id}

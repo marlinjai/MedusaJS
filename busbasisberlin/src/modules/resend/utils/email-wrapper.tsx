@@ -6,10 +6,9 @@
 
 import React from 'react';
 import {
-	getCompanyInfo,
-	getCompanyAddress,
-	getCompanySignature,
 	getCompanyFooter,
+	getCompanyInfo,
+	getCompanySignature,
 	getCurrentYear,
 	getEmailHeaderStyles,
 } from './company-info';
@@ -74,16 +73,6 @@ export const EmailWrapper = ({
 						{company.name}
 					</h1>
 				)}
-				<p
-					style={{
-						color: '#ffffff',
-						margin: '10px 0 0 0',
-						fontSize: '13px',
-						opacity: '0.9',
-					}}
-				>
-					{getCompanyAddress()}
-				</p>
 			</div>
 
 			{/* Main Content Area */}
@@ -320,4 +309,3 @@ export const EmailDivider = () => (
 		}}
 	/>
 );
-
