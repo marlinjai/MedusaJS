@@ -1,6 +1,7 @@
 // product-actions-wrapper/index.tsx
 
 import { listProducts } from '@lib/data/products';
+import { getInventorySettings } from '@lib/data/inventory-settings';
 import { HttpTypes } from '@medusajs/types';
 import ProductActions from '@modules/products/components/product-actions';
 import QuoteRequest from '@modules/products/components/quote-request';
@@ -30,6 +31,9 @@ export default async function ProductActionsWrapper({
 	// Get customer data for pre-filling quote form
 	const customer = await retrieveCustomer();
 
+	// Get inventory settings for stock display
+	const inventorySettings = await getInventorySettings();
+
 	// Check if product requires shipping quote (Sperrgut profile)
 	// Access the shipping_profile relation that was expanded in the query
 	const shippingProfile = (product as any).shipping_profile;
@@ -52,5 +56,11 @@ export default async function ProductActionsWrapper({
 		return <QuoteRequest product={product} variant={product.variants?.[0]} customer={customer} />;
 	}
 
-	return <ProductActions product={product} region={region} />;
+	return (
+		<ProductActions
+			product={product}
+			region={region}
+			lowStockThreshold={inventorySettings.low_stock_threshold}
+		/>
+	);
 }

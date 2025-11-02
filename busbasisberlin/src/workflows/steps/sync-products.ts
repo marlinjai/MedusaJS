@@ -4,6 +4,7 @@ import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
 import { MEILISEARCH_MODULE } from '../../modules/meilisearch';
 import MeilisearchModuleService from '../../modules/meilisearch/service';
 import { getDefaultSalesChannelIdFromQuery } from '../../utils/sales-channel-helper';
+import { calculateDeliveryDays } from '../../utils/inventory-helper';
 
 export type SyncProductsStepInput = {
 	products: ProductDTO[];
@@ -332,23 +333,35 @@ export const syncProductsStep = createStep(
 					collection_title: product.collection?.title,
 					collection_handle: product.collection?.handle,
 
-					// Sales channel information - consolidated as JSON
-					sales_channels: salesChannelsJSON,
-					primary_sales_channel: primarySalesChannel,
+				// Sales channel information - consolidated as JSON
+				sales_channels: salesChannelsJSON,
+				primary_sales_channel: primarySalesChannel,
 
-					// Search-optimized fields
-					searchable_text: [
-						product.title,
-						product.description,
-						// Extract category names from hierarchical_categories for search
-						...Object.values(hierarchicalCategories),
-						...tagValues,
-						...skus,
-						product.collection?.title,
-					]
-						.filter(Boolean)
-						.join(' '),
-				};
+				// Shipping profile information
+				shipping_profile_id: (product as any).shipping_profile?.id || null,
+				shipping_profile_name: (product as any).shipping_profile?.name || null,
+				shipping_profile_type: (product as any).shipping_profile?.type || null,
+				has_extended_delivery:
+					(product as any).shipping_profile?.name
+						?.toLowerCase()
+						.includes('längere lieferzeit') || false,
+				estimated_delivery_days: calculateDeliveryDays(
+					(product as any).shipping_profile,
+				),
+
+				// Search-optimized fields
+				searchable_text: [
+					product.title,
+					product.description,
+					// Extract category names from hierarchical_categories for search
+					...Object.values(hierarchicalCategories),
+					...tagValues,
+					...skus,
+					product.collection?.title,
+				]
+					.filter(Boolean)
+					.join(' '),
+			};
 			}),
 		);
 

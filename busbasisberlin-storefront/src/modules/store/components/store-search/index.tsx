@@ -220,8 +220,8 @@ export default function StoreSearch() {
 													...item,
 													label:
 														item.label === 'true'
-															? 'Auf Lager'
-															: 'Nicht auf Lager',
+															? 'Verfügbar'
+															: 'Zurzeit nicht lieferbar',
 												}))
 											}
 											classNames={{

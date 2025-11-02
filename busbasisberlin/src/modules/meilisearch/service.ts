@@ -123,6 +123,9 @@ export default class MeilisearchModuleService {
 				'sales_channels.name',
 				'primary_sales_channel.id',
 				'primary_sales_channel.name',
+				'shipping_profile_name',
+				'has_extended_delivery',
+				'estimated_delivery_days',
 			]);
 
 			// Wait a bit for the filterable attributes to be processed

@@ -10,12 +10,16 @@ import { isEqual } from "lodash"
 import { useParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import ProductPrice from "../product-price"
+import QuantitySelector from "../quantity-selector"
+import ShippingInfo from "../shipping-info"
+import StockInfo from "../stock-info"
 import MobileActions from "./mobile-actions"
 
 type ProductActionsProps = {
-  product: HttpTypes.StoreProduct
+  product: HttpTypes.StoreProduct & { shipping_profile?: any }
   region: HttpTypes.StoreRegion
   disabled?: boolean
+  lowStockThreshold?: number
 }
 
 const optionsAsKeymap = (
@@ -30,9 +34,11 @@ const optionsAsKeymap = (
 export default function ProductActions({
   product,
   disabled,
+  lowStockThreshold = 5,
 }: ProductActionsProps) {
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
+  const [quantity, setQuantity] = useState(1)
   const countryCode = useParams().countryCode as string
 
   // If there is only 1 variant, preselect the options
@@ -106,7 +112,7 @@ export default function ProductActions({
 
     await addToCart({
       variantId: selectedVariant.id,
-      quantity: 1,
+      quantity: quantity,
       countryCode,
     })
 
@@ -140,18 +146,25 @@ export default function ProductActions({
 
         <ProductPrice product={product} variant={selectedVariant} />
 
-        {/* Stock Status */}
-        <div className="mb-4">
-          {!inStock || !isValidVariant ? (
-            <div className="px-4 py-3 bg-red-600/10 border border-red-600/20 rounded-lg">
-              <span className="text-red-600 font-semibold">Nicht verfügbar</span>
-            </div>
-          ) : (
-            <div className="px-4 py-3 bg-green-600/10 border border-green-600/20 rounded-lg">
-              <span className="text-green-600 font-semibold">● Verfügbar</span>
-            </div>
-          )}
-        </div>
+        {/* Stock Information */}
+        <StockInfo variant={selectedVariant} lowStockThreshold={lowStockThreshold} />
+
+        {/* Shipping Information */}
+        <ShippingInfo
+          shippingProfile={(product as any).shipping_profile}
+          isBackorder={
+            selectedVariant?.allow_backorder &&
+            (selectedVariant?.inventory_quantity || 0) === 0
+          }
+        />
+
+        {/* Quantity Selector */}
+        <QuantitySelector
+          quantity={quantity}
+          setQuantity={setQuantity}
+          variant={selectedVariant}
+          disabled={!inStock || !isValidVariant || disabled}
+        />
 
         <button
           onClick={handleAddToCart}

@@ -54,6 +54,9 @@ export const syncProductsWorkflow = createWorkflow(
 				'images.url',
 				'sales_channels.id',
 				'sales_channels.name',
+				'shipping_profile.id',
+				'shipping_profile.name',
+				'shipping_profile.type',
 			] as const,
 			pagination: {
 				take: limit,
