@@ -83,41 +83,6 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 						</div>
 					)}
 				</div>
-
-				{/* Navigation arrows for desktop */}
-				{images.length > 1 && (
-					<>
-						<button
-							onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-							className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-all hidden md:flex"
-							aria-label="Vorheriges Bild"
-						>
-							<svg
-								className="w-6 h-6"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-							>
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-							</svg>
-						</button>
-
-						<button
-							onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-							className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-all hidden md:flex"
-							aria-label="Nächstes Bild"
-						>
-							<svg
-								className="w-6 h-6"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-							>
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-							</svg>
-						</button>
-					</>
-				)}
 			</div>
 		</div>
 	);
