@@ -188,20 +188,27 @@ const CartDropdown = ({
 											))}
 									</div>
 									<div className="p-6 border-t border-neutral-800 bg-neutral-900/80 backdrop-blur-sm">
-										<div className="flex items-center justify-between mb-4">
-											<span className="text-neutral-400 text-sm">
-												{t('dropdown.subtotal')}
-											</span>
-											<span
-												className="text-xl font-semibold text-white"
-												data-testid="cart-subtotal"
-												data-value={subtotal}
-											>
-												{convertToLocale({
-													amount: subtotal,
-													currency_code: cartState.currency_code,
-												})}
-											</span>
+										<div className="flex flex-col gap-1 mb-4">
+											<div className="flex items-center justify-between">
+												<span className="text-neutral-400 text-sm">
+													{t('dropdown.subtotal')}
+												</span>
+												<span
+													className="text-xl font-semibold text-white"
+													data-testid="cart-subtotal"
+													data-value={subtotal}
+												>
+													{convertToLocale({
+														amount: subtotal,
+														currency_code: cartState.currency_code,
+													})}
+												</span>
+											</div>
+											<div className="flex items-center justify-end">
+												<span className="text-xs text-neutral-500 italic">
+													inkl. MwSt.
+												</span>
+											</div>
 										</div>
 										<LocalizedClientLink href="/cart" passHref>
 											<Button
