@@ -188,13 +188,14 @@ const CartDropdown = ({
 											))}
 									</div>
 									<div className="p-6 border-t border-neutral-800 bg-neutral-900/80 backdrop-blur-sm">
-										<div className="flex flex-col gap-1 mb-4">
+										<div className="space-y-2 mb-4">
+											{/* Subtotal */}
 											<div className="flex items-center justify-between">
 												<span className="text-neutral-400 text-sm">
 													{t('dropdown.subtotal')}
 												</span>
 												<span
-													className="text-xl font-semibold text-white"
+													className="text-base font-medium text-white"
 													data-testid="cart-subtotal"
 													data-value={subtotal}
 												>
@@ -204,9 +205,39 @@ const CartDropdown = ({
 													})}
 												</span>
 											</div>
-											<div className="flex items-center justify-end">
+											
+											{/* Shipping */}
+											<div className="flex items-center justify-between">
+												<span className="text-neutral-400 text-sm">
+													Versand
+												</span>
+												<span className="text-base font-medium text-white">
+													{cartState.shipping_methods && cartState.shipping_methods.length > 0
+														? convertToLocale({
+																amount: cartState.shipping_total ?? 0,
+																currency_code: cartState.currency_code,
+														  })
+														: 'Im Checkout berechnet'}
+												</span>
+											</div>
+											
+											{/* Tax inclusive note */}
+											<div className="flex items-center justify-end pt-1">
 												<span className="text-xs text-neutral-500 italic">
-													inkl. MwSt.
+													Preise inkl. MwSt.
+												</span>
+											</div>
+											
+											{/* Total */}
+											<div className="flex items-center justify-between pt-2 border-t border-neutral-700">
+												<span className="text-white font-semibold">
+													Gesamt
+												</span>
+												<span className="text-xl font-bold text-white">
+													{convertToLocale({
+														amount: cartState.total ?? subtotal,
+														currency_code: cartState.currency_code,
+													})}
 												</span>
 											</div>
 										</div>
