@@ -50,15 +50,6 @@ export default function ProductCardClient({
 							</svg>
 						</div>
 					)}
-
-					{/* Availability Badge */}
-					{product.is_available === false && (
-						<div className="absolute top-2 right-2">
-							<span className="px-2 py-1 text-xs font-semibold bg-red-600 text-white rounded">
-								Ausverkauft
-							</span>
-						</div>
-					)}
 				</div>
 
 				{/* Content */}
