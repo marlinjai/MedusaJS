@@ -78,17 +78,21 @@ export async function POST(
 
 // Generate the HTML page for password reset
 function generateResetPasswordPage(token: string, email: string): string {
+	// Get backend URL from environment or use current origin
+	const backendUrl = process.env.MEDUSA_BACKEND_URL || '';
+	const adminUrl = backendUrl ? `${backendUrl}/app` : '/app';
+
 	return `
 <!DOCTYPE html>
-<html lang="de" class="bg-gray-50">
+<html lang="de" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Passwort zurücksetzen - BusBasis Berlin</title>
+    <title>Admin Passwort zurücksetzen - Basis Camp Berlin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .spinner {
-            border: 3px solid #f3f4f6;
+            border: 3px solid #334155;
             border-top: 3px solid #3b82f6;
             border-radius: 50%;
             width: 20px;
@@ -99,62 +103,66 @@ function generateResetPasswordPage(token: string, email: string): string {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+<body class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
-        <!-- Header -->
+        <!-- Logo & Header -->
         <div class="text-center">
-            <h2 class="mt-6 text-3xl font-bold text-gray-900">
+            <div class="mx-auto mb-8 flex justify-center">
+                <img src="https://medusa-js-busbasisberlin-storefront.vercel.app/logo-with-font.png" alt="Basis Camp Berlin" class="h-16 w-auto">
+            </div>
+            <h2 class="text-3xl font-bold text-white">
                 Admin Passwort zurücksetzen
             </h2>
-            <p class="mt-2 text-sm text-gray-600">
+            <p class="mt-2 text-sm text-neutral-400">
                 Erstellen Sie ein sicheres Passwort für Ihr Admin-Konto
             </p>
-            <p class="mt-1 text-xs text-gray-500">
-                Für: <strong>${email}</strong>
+            <p class="mt-1 text-xs text-neutral-500">
+                Für: <strong class="text-blue-400">${email}</strong>
             </p>
         </div>
 
         <!-- Success Message (hidden by default) -->
-        <div id="successMessage" class="hidden bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
-            <div class="flex">
+        <div id="successMessage" class="hidden bg-gradient-to-r from-green-900/90 to-emerald-900/90 border border-green-600 p-6 rounded-xl shadow-2xl">
+            <div class="flex items-start">
                 <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <svg class="h-8 w-8 text-green-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-green-800">
+                <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-bold text-white mb-2">
                         Passwort erfolgreich geändert!
                     </h3>
-                    <div class="mt-2 text-sm text-green-700">
-                        <p>Ihr Admin-Passwort wurde erfolgreich zurückgesetzt.</p>
-                    </div>
-                    <div class="mt-4">
-                        <button onclick="window.location.href='http://localhost:9000/app'"
-                                class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md text-sm">
-                            Zur Admin-Anmeldung
-                        </button>
-                    </div>
+                    <p class="text-sm text-green-200 mb-4">
+                        Ihr Admin-Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.
+                    </p>
+                    <button onclick="window.location.href='${adminUrl}'"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-sm transition-all duration-200 shadow-lg hover:shadow-xl">
+                        → Zur Admin-Anmeldung
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Form -->
-        <form id="resetForm" class="mt-8 space-y-6" onsubmit="handleSubmit(event)">
+        <form id="resetForm" class="mt-8 space-y-6 bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-2xl" onsubmit="handleSubmit(event)">
             <div class="space-y-4">
                 <!-- New Password -->
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">
+                    <label for="password" class="block text-sm font-medium text-neutral-300 mb-2">
                         Neues Passwort
                     </label>
-                    <div class="mt-1 relative">
+                    <div class="relative">
                         <input id="password" name="password" type="password" required
-                               class="appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               class="appearance-none block w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg placeholder-neutral-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                placeholder="Mindestens 8 Zeichen">
                         <button type="button" onclick="togglePassword('password')"
-                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-200 transition-colors">
                             <span id="password-toggle">👁️</span>
                         </button>
                     </div>
@@ -162,38 +170,38 @@ function generateResetPasswordPage(token: string, email: string): string {
 
                 <!-- Confirm Password -->
                 <div>
-                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
+                    <label for="confirmPassword" class="block text-sm font-medium text-neutral-300 mb-2">
                         Passwort bestätigen
                     </label>
-                    <div class="mt-1 relative">
+                    <div class="relative">
                         <input id="confirmPassword" name="confirmPassword" type="password" required
-                               class="appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               class="appearance-none block w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg placeholder-neutral-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                placeholder="Passwort wiederholen">
                         <button type="button" onclick="togglePassword('confirmPassword')"
-                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-200 transition-colors">
                             <span id="confirmPassword-toggle">👁️</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Password Requirements -->
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Passwort-Anforderungen:</h4>
-                    <ul class="text-sm text-gray-600 space-y-1">
+                <div class="bg-neutral-800/50 border border-neutral-700 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-neutral-300 mb-3">Passwort-Anforderungen:</h4>
+                    <ul class="text-sm text-neutral-400 space-y-2">
                         <li id="req-length" class="flex items-center">
-                            <span class="mr-2">○</span>
+                            <span class="mr-2 text-neutral-600">○</span>
                             Mindestens 8 Zeichen
                         </li>
                         <li id="req-lower" class="flex items-center">
-                            <span class="mr-2">○</span>
+                            <span class="mr-2 text-neutral-600">○</span>
                             Ein Kleinbuchstabe
                         </li>
                         <li id="req-upper" class="flex items-center">
-                            <span class="mr-2">○</span>
+                            <span class="mr-2 text-neutral-600">○</span>
                             Ein Großbuchstabe
                         </li>
                         <li id="req-digit" class="flex items-center">
-                            <span class="mr-2">○</span>
+                            <span class="mr-2 text-neutral-600">○</span>
                             Eine Ziffer
                         </li>
                     </ul>
@@ -201,7 +209,7 @@ function generateResetPasswordPage(token: string, email: string): string {
             </div>
 
             <!-- Error Message -->
-            <div id="errorMessage" class="hidden bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+            <div id="errorMessage" class="hidden bg-red-900/50 border border-red-600 p-4 rounded-lg">
                 <div class="flex">
                     <div class="flex-shrink-0">
                         <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -209,7 +217,7 @@ function generateResetPasswordPage(token: string, email: string): string {
                         </svg>
                     </div>
                     <div class="ml-3">
-                        <p class="text-sm text-red-700" id="errorText"></p>
+                        <p class="text-sm text-red-200" id="errorText"></p>
                     </div>
                 </div>
             </div>
@@ -217,7 +225,7 @@ function generateResetPasswordPage(token: string, email: string): string {
             <!-- Submit Button -->
             <div>
                 <button type="submit" id="submitButton"
-                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl">
                     <span id="buttonText">Passwort zurücksetzen</span>
                     <div id="buttonSpinner" class="hidden spinner ml-2"></div>
                 </button>
@@ -226,9 +234,9 @@ function generateResetPasswordPage(token: string, email: string): string {
 
         <!-- Footer -->
         <div class="text-center">
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-neutral-400">
                 Haben Sie Probleme?
-                <a href="http://localhost:9000/app/reset-password" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="${adminUrl}/reset-password" class="font-medium text-blue-400 hover:text-blue-300 transition-colors">
                     Neuen Link anfordern
                 </a>
             </p>
@@ -375,35 +383,45 @@ function generateResetPasswordPage(token: string, email: string): string {
 
 // Generate error page
 function generateErrorPage(message: string): string {
+	const backendUrl = process.env.MEDUSA_BACKEND_URL || '';
+	const adminUrl = backendUrl ? `${backendUrl}/app` : '/app';
+
 	return `
 <!DOCTYPE html>
-<html lang="de" class="bg-gray-50">
+<html lang="de" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fehler - BusBasis Berlin</title>
+    <title>Fehler - Basis Camp Berlin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full text-center">
-        <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-            <div class="flex">
+<body class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <img src="https://medusa-js-busbasisberlin-storefront.vercel.app/logo-with-font.png" alt="Basis Camp Berlin" class="h-16 w-auto mx-auto">
+        </div>
+
+        <!-- Error Message -->
+        <div class="bg-red-900/50 border border-red-600 p-6 rounded-xl shadow-2xl">
+            <div class="flex items-start">
                 <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <svg class="h-8 w-8 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-red-800">Fehler</h3>
-                    <div class="mt-2 text-sm text-red-700">
-                        <p>${message}</p>
-                    </div>
-                    <div class="mt-4">
-                        <a href="http://localhost:9000/app/reset-password"
-                           class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md text-sm">
-                            Neuen Reset-Link anfordern
-                        </a>
-                    </div>
+                <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-bold text-white mb-2">Fehler</h3>
+                    <p class="text-sm text-red-200 mb-4">${message}</p>
+                    <a href="${adminUrl}/reset-password"
+                       class="inline-block w-full text-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-sm transition-all duration-200 shadow-lg hover:shadow-xl">
+                        Neuen Reset-Link anfordern
+                    </a>
                 </div>
             </div>
         </div>

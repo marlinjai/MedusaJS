@@ -43,9 +43,9 @@ services:
       # Domain configuration
       - MEDUSA_BACKEND_URL=https://${DOMAIN_NAME}
       # CORS configuration
-      - STORE_CORS=https://medusa-js-busbasisberlin-storefront.vercel.app
-      - ADMIN_CORS=https://${DOMAIN_NAME}
-      - AUTH_CORS=https://${DOMAIN_NAME},https://medusa-js-busbasisberlin-storefront.vercel.app
+      - STORE_CORS=https://medusa-js-busbasisberlin-storefront.vercel.app,https://${DOMAIN_NAME}
+      - ADMIN_CORS=https://${DOMAIN_NAME},https://basiscamp-berlin.de
+      - AUTH_CORS=https://${DOMAIN_NAME},https://basiscamp-berlin.de,https://medusa-js-busbasisberlin-storefront.vercel.app
       # Meilisearch configuration
       - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://medusa_meilisearch:7700}
       - MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY}
