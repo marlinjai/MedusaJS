@@ -33,11 +33,10 @@ export default function ContactSection() {
   }
 
   return (
-    <section className="py-16 md:py-24 bg-muted">
-      <div id="contact" className="-mt-24 mb-24 h-16"></div>
+    <section id="contact" className="pt-40 pb-16 md:pb-24 bg-muted scroll-mt-24">
       <div className="content-container">
         {/* Header Section */}
-        <div className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-16 md:mb-20">
           <h2 className="text-3xl md:text-4xl font-semibold mb-4 text-foreground">
             {t('title')}
           </h2>

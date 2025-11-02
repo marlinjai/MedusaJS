@@ -34,7 +34,7 @@ const Verein = () => {
 	return (
 		<section
 			id="verein"
-			className="py-24 px-4 md:px-8 bg-gradient-to-b from-neutral-900 to-black"
+			className="pt-40 pb-24 px-4 md:px-8 bg-gradient-to-b from-neutral-900 to-black scroll-mt-24"
 		>
 			<div className="max-w-7xl mx-auto">
 				{/* Header */}
