@@ -11,7 +11,7 @@ type OrderDetailsProps = {
 
 const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
   const t = useTranslations('order.details');
-  
+
   const formatStatus = (str: string) => {
     const formatted = str.split("_").join(" ")
     return formatted.slice(0, 1).toUpperCase() + formatted.slice(1)

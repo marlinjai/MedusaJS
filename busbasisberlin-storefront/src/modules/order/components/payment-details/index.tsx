@@ -50,9 +50,9 @@ const PaymentDetails = ({ order }: PaymentDetailsProps) => {
                         currency_code: order.currency_code,
                       })} ${t('paidAt')} ${new Date(
                         payment.created_at ?? ""
-                      ).toLocaleDateString('de-DE', { 
-                        day: '2-digit', 
-                        month: '2-digit', 
+                      ).toLocaleDateString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
                         year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'

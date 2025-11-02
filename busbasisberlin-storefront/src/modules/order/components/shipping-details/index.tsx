@@ -12,7 +12,7 @@ type ShippingDetailsProps = {
 
 const ShippingDetails = ({ order }: ShippingDetailsProps) => {
   const t = useTranslations('order.delivery');
-  
+
   return (
     <div>
       <Heading level="h2" className="text-2xl font-bold text-white my-6">

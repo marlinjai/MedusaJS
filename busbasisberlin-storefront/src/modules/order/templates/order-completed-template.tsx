@@ -1,15 +1,15 @@
-import { Heading, Button } from '@medusajs/ui';
-import { cookies as nextCookies } from 'next/headers';
 import { HttpTypes } from '@medusajs/types';
+import { Button, Heading } from '@medusajs/ui';
 import CartTotals from '@modules/common/components/cart-totals';
+import LocalizedClientLink from '@modules/common/components/localized-client-link';
 import Help from '@modules/order/components/help';
 import Items from '@modules/order/components/items';
 import OnboardingCta from '@modules/order/components/onboarding-cta';
 import OrderDetails from '@modules/order/components/order-details';
 import PaymentDetails from '@modules/order/components/payment-details';
 import ShippingDetails from '@modules/order/components/shipping-details';
-import LocalizedClientLink from '@modules/common/components/localized-client-link';
 import { getTranslations } from 'next-intl/server';
+import { cookies as nextCookies } from 'next/headers';
 
 type OrderCompletedTemplateProps = {
 	order: HttpTypes.StoreOrder;
@@ -31,19 +31,24 @@ export default async function OrderCompletedTemplate({
 				{/* Success Icon & Message */}
 				<div className="flex flex-col items-center text-center gap-4 mb-8">
 					<div className="w-20 h-20 rounded-full bg-green-600/20 flex items-center justify-center mb-4">
-						<svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+						<svg
+							className="w-12 h-12 text-green-500"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M5 13l4 4L19 7"
+							/>
 						</svg>
 					</div>
-					<Heading
-						level="h1"
-						className="text-4xl font-bold text-white"
-					>
+					<Heading level="h1" className="text-4xl font-bold text-white">
 						{t('title')}
 					</Heading>
-					<p className="text-xl text-neutral-300">
-						{t('subtitle')}
-					</p>
+					<p className="text-xl text-neutral-300">{t('subtitle')}</p>
 				</div>
 
 				<div
@@ -61,7 +66,10 @@ export default async function OrderCompletedTemplate({
 								{t('continueShopping')}
 							</Button>
 						</LocalizedClientLink>
-						<LocalizedClientLink href={`/account/orders/${order.id}`} className="w-full">
+						<LocalizedClientLink
+							href={`/account/orders/${order.id}`}
+							className="w-full"
+						>
 							<Button className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white">
 								{t('viewOrder')}
 							</Button>

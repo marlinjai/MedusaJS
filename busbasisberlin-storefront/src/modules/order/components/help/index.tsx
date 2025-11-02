@@ -7,7 +7,7 @@ import React from "react"
 
 const Help = () => {
   const t = useTranslations('order.help');
-  
+
   return (
     <div className="mt-8 bg-neutral-800/30 rounded-lg p-6 border border-neutral-700">
       <Heading className="text-lg font-semibold text-white mb-4">{t('title')}</Heading>
