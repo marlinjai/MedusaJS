@@ -85,7 +85,8 @@ function OrderPlacedEmailComponent({
 					<Container className="p-6">
 						<Heading className="text-2xl font-bold text-center text-gray-800">
 							Vielen Dank für Ihre Bestellung,{' '}
-							{order.customer?.first_name || order.shipping_address?.first_name}!
+							{order.customer?.first_name || order.shipping_address?.first_name}
+							!
 						</Heading>
 						<Text className="text-center text-gray-600 mt-2">
 							Wir bearbeiten Ihre Bestellung und benachrichtigen Sie, sobald sie
