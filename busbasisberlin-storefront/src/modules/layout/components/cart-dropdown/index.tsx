@@ -101,7 +101,7 @@ const CartDropdown = ({
 				>
 					<PopoverPanel
 						static
-						className="hidden small:block absolute top-[calc(100%+8px)] right-0  rounded-lg  w-[40vw] text-white backdrop-blur-sm pt-8"
+						className="hidden small:block absolute top-[calc(100%+8px)] right-0  rounded-lg  w-[40vw] text-white  pt-8"
 						data-testid="nav-cart-dropdown"
 					>
 						<div className="border border-neutral-800 bg-neutral-900 rounded-lg">
@@ -205,14 +205,15 @@ const CartDropdown = ({
 													})}
 												</span>
 											</div>
-											
+
 											{/* Shipping */}
 											<div className="flex items-center justify-between">
 												<span className="text-neutral-400 text-sm">
 													Versand
 												</span>
 												<span className="text-base font-medium text-white">
-													{cartState.shipping_methods && cartState.shipping_methods.length > 0
+													{cartState.shipping_methods &&
+													cartState.shipping_methods.length > 0
 														? convertToLocale({
 																amount: cartState.shipping_total ?? 0,
 																currency_code: cartState.currency_code,
@@ -220,19 +221,17 @@ const CartDropdown = ({
 														: 'Im Checkout berechnet'}
 												</span>
 											</div>
-											
+
 											{/* Tax inclusive note */}
 											<div className="flex items-center justify-end pt-1">
 												<span className="text-xs text-neutral-500 italic">
 													Preise inkl. MwSt.
 												</span>
 											</div>
-											
+
 											{/* Total */}
 											<div className="flex items-center justify-between pt-2 border-t border-neutral-700">
-												<span className="text-white font-semibold">
-													Gesamt
-												</span>
+												<span className="text-white font-semibold">Gesamt</span>
 												<span className="text-xl font-bold text-white">
 													{convertToLocale({
 														amount: cartState.total ?? subtotal,
