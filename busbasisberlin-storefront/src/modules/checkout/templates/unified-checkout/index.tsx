@@ -13,10 +13,10 @@ import BillingAddress from '@modules/checkout/components/billing_address';
 import PaymentContainer, {
 	StripeCardContainer,
 } from '@modules/checkout/components/payment-container';
+import PaymentButton from '@modules/checkout/components/payment-button';
 import ShippingAddress from '@modules/checkout/components/shipping-address';
 import MedusaRadio from '@modules/common/components/radio';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
@@ -34,7 +34,6 @@ export default function UnifiedCheckout({
 	paymentMethods,
 }: UnifiedCheckoutProps) {
 	const t = useTranslations('checkout');
-	const router = useRouter();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const timelineRef = useRef<HTMLDivElement>(null);
 	const [timelineHeight, setTimelineHeight] = useState(0);
@@ -46,7 +45,6 @@ export default function UnifiedCheckout({
 	const [cardComplete, setCardComplete] = useState(false);
 	const [cardBrand, setCardBrand] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const { state: sameAsBilling, toggle: toggleSameAsBilling } = useToggleState(
 		cart?.shipping_address && cart?.billing_address
@@ -299,8 +297,14 @@ export default function UnifiedCheckout({
 						level="h2"
 						className="text-2xl font-bold mb-6 flex items-center gap-3"
 					>
-						<span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">
-							4
+						<span className={clx(
+							"flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold",
+							{
+								"bg-green-600 text-white": canPlaceOrder,
+								"bg-blue-600 text-white": !canPlaceOrder,
+							}
+						)}>
+							{canPlaceOrder ? '✓' : '4'}
 						</span>
 						{t('review.title')}
 					</Heading>
@@ -311,20 +315,14 @@ export default function UnifiedCheckout({
 					</p>
 				</div>
 
-					<Button
-						size="large"
-						className="w-full"
-						disabled={isSubmitting}
-						isLoading={isSubmitting}
-						onClick={async () => {
-							setIsSubmitting(true);
-							router.push(`/checkout?step=review`);
-						}}
-					>
-						Bestellung aufgeben
-					</Button>
+				{/* Use proper PaymentButton component that handles order placement */}
+				{canPlaceOrder && (
+					<div className="w-full">
+						<PaymentButton cart={cart} data-testid="submit-order-button" />
+					</div>
+				)}
 
-					{error && <p className="text-red-500 mt-4">{error}</p>}
+				{error && <p className="text-red-500 mt-4">{error}</p>}
 			</div>
 			</div>
 		</div>

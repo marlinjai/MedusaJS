@@ -83,7 +83,7 @@ const ShippingAddress = ({
       setFormAddress(undefined, customer.email)
     }
   }, [cart]) // Add cart as a dependency
-  
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -112,12 +112,12 @@ const ShippingAddress = ({
         },
         email: data.email,
       }
-      
+
       // Copy shipping to billing if checkbox is checked
       if (checked) {
         updateData.billing_address = updateData.shipping_address
       }
-      
+
       await updateCart(updateData)
     } catch (error) {
       console.error("Failed to save address:", error)
@@ -134,7 +134,7 @@ const ShippingAddress = ({
       [e.target.name]: e.target.value,
     }
     setFormData(newFormData)
-    
+
     // Debounce the save - only save 800ms after user stops typing
     if (typeof window !== "undefined") {
       // @ts-ignore

@@ -373,10 +373,10 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
         province: formData.get("billing_address.province"),
         phone: formData.get("billing_address.phone"),
       }
-    
+
     // Update cart - this must succeed before redirecting
     await updateCart(data)
-    
+
     // Only redirect if update was successful
     redirect(
       `/${formData.get("shipping_address.country_code")}/checkout?step=delivery`

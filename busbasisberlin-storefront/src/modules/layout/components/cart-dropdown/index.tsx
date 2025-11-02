@@ -240,7 +240,7 @@ const CartDropdown = ({
 												</span>
 											</div>
 										</div>
-										
+
 										{/* Action buttons row */}
 										<div className="grid grid-cols-2 gap-3">
 											<LocalizedClientLink href="/cart" passHref>
@@ -252,7 +252,7 @@ const CartDropdown = ({
 													{t('dropdown.goToCart')}
 												</Button>
 											</LocalizedClientLink>
-											
+
 											<LocalizedClientLink href="/checkout" passHref>
 												<Button
 													className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors h-12"
