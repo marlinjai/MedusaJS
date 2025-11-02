@@ -104,7 +104,10 @@ export default function InfiniteSlider({ region, currentProductId }: InfiniteSli
 			searchClient={searchClient}
 			indexName={process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME || 'products'}
 		>
-			<Configure hitsPerPage={12} />
+			<Configure 
+				hitsPerPage={12}
+				filters='NOT (tags = "internal" OR tags = "verbrauchsstoffe") AND min_price > 0'
+			/>
 			<SliderContent region={region} currentProductId={currentProductId} />
 		</InstantSearch>
 	);

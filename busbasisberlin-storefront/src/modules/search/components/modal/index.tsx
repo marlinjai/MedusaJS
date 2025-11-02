@@ -66,10 +66,11 @@ export default function SearchModal({ externalIsOpen, externalSetIsOpen }: { ext
 						searchClient={searchClient}
 						indexName={process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME}
 					>
-						{/* Configure to sort by availability (available products first) */}
-						<Configure
-							ranking={['desc(is_available)', 'typo', 'words', 'proximity', 'attribute', 'sort', 'exactness']}
-						/>
+					{/* Configure to sort by availability and filter out products without prices */}
+					<Configure
+						ranking={['desc(is_available)', 'typo', 'words', 'proximity', 'attribute', 'sort', 'exactness']}
+						filters='NOT (tags = "internal" OR tags = "verbrauchsstoffe") AND min_price > 0'
+					/>
 
 						{/* Custom Search Box */}
 						<div className="mb-6">
