@@ -406,6 +406,27 @@ export default async function importProducts({ container }: ExecArgs) {
 		logger.warn(`⚠️  Failed to fetch stock locations: ${error.message}`);
 	}
 
+	// Get or create default shipping profile for products
+	const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT);
+	let defaultShippingProfile: any = null;
+	try {
+		const shippingProfiles = await fulfillmentModuleService.listShippingProfiles({
+			type: 'default',
+		});
+		
+		if (shippingProfiles.length > 0) {
+			defaultShippingProfile = shippingProfiles[0];
+			logger.info(
+				`📦 Using default shipping profile: ${defaultShippingProfile.name} (${defaultShippingProfile.id})`,
+			);
+		} else {
+			logger.warn('⚠️  No default shipping profile found.');
+			logger.info('💡 Products without shipping profile will be imported as DRAFT.');
+		}
+	} catch (error) {
+		logger.warn(`⚠️  Failed to fetch shipping profiles: ${error.message}`);
+	}
+
 	// File paths
 	const articleCsvPath = path.resolve(
 		__dirname,
@@ -1194,6 +1215,16 @@ export default async function importProducts({ container }: ExecArgs) {
 						}
 					}
 
+					// Determine product status: Only publish if Active AND has shipping profile
+					const isActive = safe(baseArticle, 'Aktiv') === 'Y';
+					const canPublish = isActive && defaultShippingProfile;
+					
+					if (isActive && !defaultShippingProfile) {
+						logger.warn(
+							`⚠️  Product ${sku} marked as active but no shipping profile available - importing as DRAFT`,
+						);
+					}
+
 					// Create product data with correct field mappings and category assignment
 					const productToCreate = {
 						title: safe(baseArticle, 'Artikelname'),
@@ -1206,10 +1237,8 @@ export default async function importProducts({ container }: ExecArgs) {
 							.replace(/^-|-$/g, ''),
 						is_giftcard: false,
 						discountable: true,
-						status:
-							safe(baseArticle, 'Aktiv') === 'Y'
-								? ProductStatus.PUBLISHED
-								: ProductStatus.DRAFT,
+						// Only publish if active AND has shipping profile
+						status: canPublish ? ProductStatus.PUBLISHED : ProductStatus.DRAFT,
 						thumbnail: images[0] || undefined,
 						weight: weight > 0 ? weight : undefined,
 						length: length > 0 ? length : undefined,
@@ -1224,6 +1253,8 @@ export default async function importProducts({ container }: ExecArgs) {
 						collection_id: undefined,
 						tags: [], // Tags will be created after product creation
 						images: images.map((imagePath: string) => ({ url: imagePath })),
+						// Assign shipping profile if available
+						shipping_profile_id: defaultShippingProfile?.id || undefined,
 						sales_channels: [
 							{
 								id: selectedSalesChannel.id,

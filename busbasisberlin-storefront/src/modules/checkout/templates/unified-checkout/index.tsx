@@ -8,17 +8,17 @@ import { initiatePaymentSession, setShippingMethod } from '@lib/data/cart';
 import compareAddresses from '@lib/util/compare-addresses';
 import { convertToLocale } from '@lib/util/money';
 import { HttpTypes } from '@medusajs/types';
-import { Button, clx, Heading, useToggleState } from '@medusajs/ui';
+import { clx, Heading, useToggleState } from '@medusajs/ui';
 import BillingAddress from '@modules/checkout/components/billing_address';
+import PaymentButton from '@modules/checkout/components/payment-button';
 import PaymentContainer, {
 	StripeCardContainer,
 } from '@modules/checkout/components/payment-container';
-import PaymentButton from '@modules/checkout/components/payment-button';
 import ShippingAddress from '@modules/checkout/components/shipping-address';
 import MedusaRadio from '@modules/common/components/radio';
-import { useTranslations } from 'next-intl';
-import { useState, useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useTranslations } from 'next-intl';
+import { useEffect, useRef, useState } from 'react';
 
 type UnifiedCheckoutProps = {
 	cart: HttpTypes.StoreCart;
@@ -71,7 +71,11 @@ export default function UnifiedCheckout({
 		offset: ['start 10%', 'end 50%'],
 	});
 
-	const heightTransform = useTransform(scrollYProgress, [0, 1], [0, timelineHeight]);
+	const heightTransform = useTransform(
+		scrollYProgress,
+		[0, 1],
+		[0, timelineHeight],
+	);
 	const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
 	const handleShippingSelect = async (id: string) => {
@@ -128,60 +132,63 @@ export default function UnifiedCheckout({
 	return (
 		<div className="w-full relative" ref={containerRef}>
 			{/* Animated vertical timeline line - on the left */}
-			<div ref={timelineRef} className="absolute left-4 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-neutral-700 to-transparent">
+			<div
+				ref={timelineRef}
+				className="absolute left-4 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-neutral-700 to-transparent"
+			>
 				<motion.div
 					style={{
 						height: `${progress}%`,
 					}}
 					className="absolute inset-x-0 top-0 w-[2px] bg-gradient-to-b from-blue-500 via-blue-400 to-transparent rounded-full"
-					transition={{ duration: 0.6, ease: "easeInOut" }}
+					transition={{ duration: 0.6, ease: 'easeInOut' }}
 				/>
 			</div>
 
 			<div className="pl-12 space-y-6">
-			{/* Step 1: Address */}
-			<div className="bg-card border border-neutral-700 rounded-lg p-6">
-				<Heading
-					level="h2"
-					className="text-2xl font-bold mb-6 flex items-center gap-3"
-				>
-					<span
-						className={clx(
-							'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold',
-							{
-								'bg-green-600 text-white': addressCompleted,
-								'bg-blue-600 text-white': !addressCompleted,
-							},
-						)}
+				{/* Step 1: Address */}
+				<div className="bg-card border border-neutral-700 rounded-lg p-6">
+					<Heading
+						level="h2"
+						className="text-2xl font-bold mb-6 flex items-center gap-3"
 					>
-						{addressCompleted ? '✓' : '1'}
-					</span>
-					{t('addresses.title')}
-				</Heading>
+						<span
+							className={clx(
+								'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold',
+								{
+									'bg-green-600 text-white': addressCompleted,
+									'bg-blue-600 text-white': !addressCompleted,
+								},
+							)}
+						>
+							{addressCompleted ? '✓' : '1'}
+						</span>
+						{t('addresses.title')}
+					</Heading>
 
-				<ShippingAddress
-					customer={customer}
-					cart={cart}
-					checked={sameAsBilling}
-					onChange={toggleSameAsBilling}
-				/>
+					<ShippingAddress
+						customer={customer}
+						cart={cart}
+						checked={sameAsBilling}
+						onChange={toggleSameAsBilling}
+					/>
 
-				{!sameAsBilling && (
-					<div className="mt-8">
-						<Heading level="h2" className="text-xl font-bold mb-4">
-							{t('addresses.billingAddress')}
-						</Heading>
-						<BillingAddress cart={cart} />
-					</div>
-				)}
-			</div>
+					{!sameAsBilling && (
+						<div className="mt-8">
+							<Heading level="h2" className="text-xl font-bold mb-4">
+								{t('addresses.billingAddress')}
+							</Heading>
+							<BillingAddress cart={cart} />
+						</div>
+					)}
+				</div>
 
-			{/* Step 2: Shipping - Always visible */}
-			<div
-				className={clx('bg-card border border-neutral-700 rounded-lg p-6', {
-					'opacity-60': !addressCompleted,
-				})}
-			>
+				{/* Step 2: Shipping - Always visible */}
+				<div
+					className={clx('bg-card border border-neutral-700 rounded-lg p-6', {
+						'opacity-60': !addressCompleted,
+					})}
+				>
 					<Heading
 						level="h2"
 						className="text-2xl font-bold mb-6 flex items-center gap-3"
@@ -239,12 +246,13 @@ export default function UnifiedCheckout({
 								<strong>⚠️ Keine Versandoptionen verfügbar</strong>
 							</p>
 							<p className="text-sm text-yellow-100 mb-4">
-								Für die Produkte in Ihrem Warenkorb sind keine Versandoptionen konfiguriert.
-								Bitte kontaktieren Sie uns oder wählen Sie Abholung.
+								Für die Produkte in Ihrem Warenkorb sind keine Versandoptionen
+								konfiguriert. Bitte kontaktieren Sie uns oder wählen Sie
+								Abholung.
 							</p>
 							<div className="flex flex-col gap-2">
-								<a 
-									href="/de#contact" 
+								<a
+									href="/de#contact"
 									className="text-blue-400 hover:text-blue-300 text-sm underline"
 								>
 									→ Kontakt für Versandoptionen
@@ -255,14 +263,14 @@ export default function UnifiedCheckout({
 							</div>
 						</div>
 					)}
-			</div>
+				</div>
 
-			{/* Step 3: Payment - Always visible */}
-			<div
-				className={clx('bg-card border border-neutral-700 rounded-lg p-6', {
-					'opacity-60': !addressCompleted || !shippingMethodId,
-				})}
-			>
+				{/* Step 3: Payment - Always visible */}
+				<div
+					className={clx('bg-card border border-neutral-700 rounded-lg p-6', {
+						'opacity-60': !addressCompleted || !shippingMethodId,
+					})}
+				>
 					<Heading
 						level="h2"
 						className="text-2xl font-bold mb-6 flex items-center gap-3"
@@ -307,45 +315,51 @@ export default function UnifiedCheckout({
 							</div>
 						))}
 					</RadioGroup>
-			</div>
+				</div>
 
-			{/* Step 4: Review & Place Order - Always visible */}
-			<div className={clx("bg-card border rounded-lg p-6", {
-				"border-blue-500": canPlaceOrder,
-				"border-neutral-700": !canPlaceOrder,
-				"opacity-60": !canPlaceOrder,
-			})}>
+				{/* Step 4: Review & Place Order - Always visible */}
+				<div
+					className={clx('bg-card border rounded-lg p-6', {
+						'border-blue-500': canPlaceOrder,
+						'border-neutral-700': !canPlaceOrder,
+						'opacity-60': !canPlaceOrder,
+					})}
+				>
 					<Heading
 						level="h2"
 						className="text-2xl font-bold mb-6 flex items-center gap-3"
 					>
-						<span className={clx(
-							"flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold",
-							{
-								"bg-green-600 text-white": canPlaceOrder,
-								"bg-blue-600 text-white": !canPlaceOrder,
-							}
-						)}>
+						<span
+							className={clx(
+								'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold',
+								{
+									'bg-green-600 text-white': canPlaceOrder,
+									'bg-blue-600 text-white': !canPlaceOrder,
+								},
+							)}
+						>
 							{canPlaceOrder ? '✓' : '4'}
 						</span>
 						{t('review.title')}
 					</Heading>
 
-				<div className="mb-6">
-					<p className="text-sm text-neutral-400">
-						Durch Klicken auf "Bestellung aufgeben" bestätigen Sie, dass Sie unsere Allgemeinen Geschäftsbedingungen und Datenschutzrichtlinie gelesen und akzeptiert haben.
-					</p>
-				</div>
-
-				{/* Use proper PaymentButton component that handles order placement */}
-				{canPlaceOrder && (
-					<div className="w-full">
-						<PaymentButton cart={cart} data-testid="submit-order-button" />
+					<div className="mb-6">
+						<p className="text-sm text-neutral-400">
+							Durch Klicken auf "Bestellung aufgeben" bestätigen Sie, dass Sie
+							unsere Allgemeinen Geschäftsbedingungen und Datenschutzrichtlinie
+							gelesen und akzeptiert haben.
+						</p>
 					</div>
-				)}
 
-				{error && <p className="text-red-500 mt-4">{error}</p>}
-			</div>
+					{/* Use proper PaymentButton component that handles order placement */}
+					{canPlaceOrder && (
+						<div className="w-full">
+							<PaymentButton cart={cart} data-testid="submit-order-button" />
+						</div>
+					)}
+
+					{error && <p className="text-red-500 mt-4">{error}</p>}
+				</div>
 			</div>
 		</div>
 	);
