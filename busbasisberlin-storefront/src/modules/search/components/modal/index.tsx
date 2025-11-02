@@ -186,31 +186,31 @@ const Hit = ({ hit }: { hit: Hit }) => {
 
 					{/* Price and Availability */}
 					<div className="mt-auto pt-2 border-t border-border">
-						{hit.is_available !== false ? (
-							<>
-								{hit.min_price ? (
-									<div className="flex items-baseline gap-2">
-										<span className="text-xl font-bold text-primary">
-											€{hit.min_price.toFixed(2)}
+						{hit.min_price ? (
+							<div className="flex flex-col gap-1">
+								<div className="flex items-baseline gap-2">
+									<span className="text-xl font-bold text-primary">
+										€{hit.min_price.toFixed(2)}
+									</span>
+									{hit.max_price && hit.max_price !== hit.min_price && (
+										<span className="text-sm text-muted-foreground">
+											- €{hit.max_price.toFixed(2)}
 										</span>
-										{hit.max_price && hit.max_price !== hit.min_price && (
-											<span className="text-sm text-muted-foreground">
-												- €{hit.max_price.toFixed(2)}
-											</span>
-										)}
-									</div>
-								) : (
-									<span className="text-sm text-muted-foreground">Preis auf Anfrage</span>
-								)}
-								<div className="mt-1">
-									<span className="text-xs text-green-600 font-medium">● Verfügbar</span>
+									)}
 								</div>
-							</>
-						) : (
-							<div>
-								<span className="text-lg font-semibold text-red-600">Nicht verfügbar</span>
+								<span className="text-xs text-muted-foreground">inkl. MwSt.</span>
 							</div>
+						) : (
+							<span className="text-sm text-muted-foreground">Preis auf Anfrage</span>
 						)}
+						{/* Availability Status */}
+						<div className="mt-2">
+							{hit.is_available !== false ? (
+								<span className="text-xs text-green-600 font-medium">● Verfügbar</span>
+							) : (
+								<span className="text-xs text-red-600 font-medium">✕ Nicht verfügbar</span>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
