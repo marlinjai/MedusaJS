@@ -365,40 +365,6 @@
 			"customerService": "Kundenservice"
 		}
 	},
-	"order": {
-		"confirmation": {
-			"title": "Vielen Dank!",
-			"subtitle": "Ihre Bestellung wurde erfolgreich aufgegeben.",
-			"thankYou": "Vielen Dank!",
-			"message": "Wir haben Ihre Bestellung erhalten und bearbeiten sie. Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
-			"summary": "Zusammenfassung",
-			"continueShopping": "Weiter einkaufen",
-			"viewOrder": "Bestellung ansehen"
-		},
-		"details": {
-			"emailSent": "Wir haben die Bestellbestätigung an",
-			"emailSentEnd": "gesendet",
-			"orderDate": "Bestelldatum:",
-			"orderNumber": "Bestellnummer:"
-		},
-		"delivery": {
-			"title": "Lieferung",
-			"shippingAddress": "Lieferadresse",
-			"contact": "Kontakt",
-			"method": "Versandart"
-		},
-		"payment": {
-			"title": "Zahlung",
-			"paymentMethod": "Zahlungsart",
-			"paymentDetails": "Zahlungsdetails",
-			"paidAt": "bezahlt am"
-		},
-		"help": {
-			"title": "Benötigen Sie Hilfe?",
-			"contact": "Kontaktieren Sie unseren Kundenservice",
-			"returns": "Rücksendungen & Umtausch"
-		}
-	},
 	"products": {
 		"relatedProducts": "Ähnliche Produkte",
 		"details": "Details",
@@ -436,24 +402,37 @@
 		}
 	},
 	"order": {
-		"title": "Bestellung",
-		"orderNumber": "Bestellnummer",
-		"orderDate": "Bestelldatum",
-		"orderStatus": "Bestellstatus",
-		"orderTotal": "Bestellsumme",
-		"shippingAddress": "Lieferadresse",
-		"billingAddress": "Rechnungsadresse",
-		"shippingMethod": "Versandmethode",
-		"paymentMethod": "Zahlungsmethode",
-		"items": "Artikel",
-		"summary": "Zusammenfassung",
 		"confirmation": {
-			"title": "Bestellung bestätigt",
-			"thankYou": "Vielen Dank für Ihre Bestellung!",
+			"title": "Vielen Dank!",
+			"subtitle": "Ihre Bestellung wurde erfolgreich aufgegeben.",
+			"thankYou": "Vielen Dank!",
 			"message": "Wir haben Ihre Bestellung erhalten und bearbeiten sie. Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
-			"orderNumber": "Ihre Bestellnummer",
+			"summary": "Zusammenfassung",
 			"continueShopping": "Weiter einkaufen",
 			"viewOrder": "Bestellung anzeigen"
+		},
+		"details": {
+			"emailSent": "Wir haben die Bestellbestätigung an",
+			"emailSentEnd": "gesendet",
+			"orderDate": "Bestelldatum:",
+			"orderNumber": "Bestellnummer:"
+		},
+		"delivery": {
+			"title": "Lieferung",
+			"shippingAddress": "Lieferadresse",
+			"contact": "Kontakt",
+			"method": "Versandart"
+		},
+		"payment": {
+			"title": "Zahlung",
+			"paymentMethod": "Zahlungsart",
+			"paymentDetails": "Zahlungsdetails",
+			"paidAt": "bezahlt am"
+		},
+		"help": {
+			"title": "Benötigen Sie Hilfe?",
+			"contact": "Kontaktieren Sie unseren Kundenservice",
+			"returns": "Rücksendungen & Umtausch"
 		},
 		"status": {
 			"pending": "Ausstehend",
@@ -461,12 +440,6 @@
 			"shipped": "Versandt",
 			"delivered": "Zugestellt",
 			"cancelled": "Storniert"
-		},
-		"help": {
-			"title": "Benötigen Sie Hilfe?",
-			"contact": "Kontaktieren Sie unseren Kundenservice",
-			"email": "E-Mail",
-			"phone": "Telefon"
 		}
 	},
 	"footer": {
