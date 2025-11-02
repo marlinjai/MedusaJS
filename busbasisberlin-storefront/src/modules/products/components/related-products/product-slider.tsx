@@ -38,11 +38,11 @@ export default function ProductSlider({
 			>
 				{products.map(product => (
 					<div key={product.id} className="snap-start">
-						<UnifiedProductCard
+						<UnifiedProductCard 
 							product={product}
 							showDescription={false}
-							showCategories={false}
-							showStock={false}
+							showCategories={true}
+							showStock={true}
 						/>
 					</div>
 				))}

@@ -69,11 +69,11 @@ function SliderContent({ region, currentProductId }: InfiniteSliderProps) {
 			>
 				{filteredHits.map((product: any) => (
 					<div key={product.id} className="snap-start">
-						<UnifiedProductCard
+						<UnifiedProductCard 
 							product={product}
 							showDescription={false}
-							showCategories={false}
-							showStock={false}
+							showCategories={true}
+							showStock={true}
 						/>
 					</div>
 				))}
