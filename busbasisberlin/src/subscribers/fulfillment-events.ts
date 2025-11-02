@@ -37,7 +37,6 @@ export async function handleFulfillmentCreated({
 				'order.email',
 				'order.customer.first_name',
 				'order.customer.last_name',
-				'shipping_labels.*',
 			],
 			filters: {
 				id: data.id,
@@ -57,15 +56,10 @@ export async function handleFulfillmentCreated({
 			? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
 			: undefined;
 
-		// Extract tracking information from metadata or shipping labels
-		const trackingNumber =
-			fulfillment.metadata?.tracking_number ||
-			fulfillment.shipping_labels?.[0]?.tracking_number;
-		const trackingUrl =
-			fulfillment.metadata?.tracking_url ||
-			fulfillment.shipping_labels?.[0]?.tracking_url;
-		const carrier =
-			fulfillment.metadata?.carrier || fulfillment.shipping_labels?.[0]?.carrier;
+		// Extract tracking information from metadata
+		const trackingNumber = fulfillment.metadata?.tracking_number;
+		const trackingUrl = fulfillment.metadata?.tracking_url;
+		const carrier = fulfillment.metadata?.carrier;
 		const estimatedDelivery = fulfillment.metadata?.estimated_delivery;
 
 		// Send shipping confirmation email
@@ -89,10 +83,9 @@ export async function handleFulfillmentCreated({
 			`[FULFILLMENT-SUBSCRIBER] Shipped email sent for order #${order.display_id}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
 		logger.error(
 			`[FULFILLMENT-SUBSCRIBER] Error processing fulfillment:`,
-			errorMessage,
+			error,
 		);
 		// Don't throw - email failure shouldn't break fulfillment
 	}
@@ -173,10 +166,9 @@ export async function handleFulfillmentDelivered({
 			`[FULFILLMENT-SUBSCRIBER] Delivered email sent for order #${order.display_id}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
 		logger.error(
 			`[FULFILLMENT-SUBSCRIBER] Error processing delivery:`,
-			errorMessage,
+			error,
 		);
 		// Don't throw - email failure shouldn't break fulfillment
 	}

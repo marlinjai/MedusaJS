@@ -73,10 +73,9 @@ export default async function customerCreatedHandler({
 			`[CUSTOMER-SUBSCRIBER] Welcome email sent to ${customer.email}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
 		logger.error(
 			`[CUSTOMER-SUBSCRIBER] Error processing customer creation:`,
-			errorMessage,
+			error,
 		);
 		// Don't throw - email failure shouldn't break customer creation
 	}
