@@ -10,4 +10,8 @@ export const sdk = new Medusa({
 	auth: {
 		type: 'session',
 	},
+	// CRITICAL: Ensure credentials (cookies) are sent with every request
+	fetchConfig: {
+		credentials: 'include',
+	},
 });

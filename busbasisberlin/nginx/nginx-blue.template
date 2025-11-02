@@ -227,8 +227,9 @@ http {
             proxy_pass_header Set-Cookie;
             proxy_pass_header Cookie;
 
-            # Ensure cookies work with HTTPS
-            proxy_cookie_path / "/; Secure; HttpOnly; SameSite=None";
+            # Ensure cookies work with HTTPS (proper syntax for modern nginx)
+            # Note: Medusa already sets these, but we ensure they're correct
+            proxy_cookie_flags ~ secure httponly samesite=none;
         }
 
         # Health check endpoint (no rate limiting)

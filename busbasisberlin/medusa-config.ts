@@ -26,6 +26,10 @@ const getProjectConfig = () => {
 				secure: isProduction, // true in production (HTTPS), false in development
 				sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production
 				maxAge: 24 * 60 * 60 * 1000, // 24 hours
+				// Set cookie domain for production (allows subdomain access)
+				...(isProduction && process.env.DOMAIN_NAME
+					? { domain: `.${process.env.DOMAIN_NAME}` }
+					: {}),
 			},
 		},
 		// Worker mode configuration for production deployment
