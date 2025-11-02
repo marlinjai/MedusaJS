@@ -200,38 +200,61 @@ export default function UnifiedCheckout({
 						{t('shipping.title')}
 					</Heading>
 
-					<RadioGroup
-						value={shippingMethodId}
-						onChange={handleShippingSelect}
-						disabled={!addressCompleted}
-					>
-						{shippingMethods?.map(option => (
-							<Radio
-								key={option.id}
-								value={option.id}
-								disabled={!addressCompleted}
-								className={clx(
-									'flex items-center justify-between cursor-pointer py-4 border rounded-lg px-8 mb-2',
-									{
-										'border-ui-border-interactive':
-											option.id === shippingMethodId,
-										'cursor-not-allowed opacity-50': !addressCompleted,
-									},
-								)}
-							>
-								<div className="flex items-center gap-x-4">
-									<MedusaRadio checked={option.id === shippingMethodId} />
-									<span>{option.name}</span>
-								</div>
-								<span>
-									{convertToLocale({
-										amount: option.amount!,
-										currency_code: cart?.currency_code,
-									})}
-								</span>
-							</Radio>
-						))}
-					</RadioGroup>
+					{shippingMethods && shippingMethods.length > 0 ? (
+						<RadioGroup
+							value={shippingMethodId}
+							onChange={handleShippingSelect}
+							disabled={!addressCompleted}
+						>
+							{shippingMethods.map(option => (
+								<Radio
+									key={option.id}
+									value={option.id}
+									disabled={!addressCompleted}
+									className={clx(
+										'flex items-center justify-between cursor-pointer py-4 border rounded-lg px-8 mb-2',
+										{
+											'border-ui-border-interactive':
+												option.id === shippingMethodId,
+											'cursor-not-allowed opacity-50': !addressCompleted,
+										},
+									)}
+								>
+									<div className="flex items-center gap-x-4">
+										<MedusaRadio checked={option.id === shippingMethodId} />
+										<span>{option.name}</span>
+									</div>
+									<span>
+										{convertToLocale({
+											amount: option.amount!,
+											currency_code: cart?.currency_code,
+										})}
+									</span>
+								</Radio>
+							))}
+						</RadioGroup>
+					) : (
+						<div className="p-6 bg-yellow-900/20 border border-yellow-600/50 rounded-lg">
+							<p className="text-yellow-200 mb-3">
+								<strong>⚠️ Versand nicht verfügbar</strong>
+							</p>
+							<p className="text-sm text-yellow-100 mb-4">
+								Die Produkte in Ihrem Warenkorb erfordern Versandprofile, die derzeit nicht konfiguriert sind. 
+								Bitte wählen Sie <strong>Abholung im Geschäft</strong> oder kontaktieren Sie uns für weitere Optionen.
+							</p>
+							<div className="flex flex-col gap-2">
+								<a 
+									href="/de#contact" 
+									className="text-blue-400 hover:text-blue-300 text-sm underline"
+								>
+									→ Kontaktieren Sie uns für Versandoptionen
+								</a>
+								<p className="text-xs text-neutral-400">
+									Oder besuchen Sie uns: Hauptstraße 51, 16547 Birkenwerder
+								</p>
+							</div>
+						</div>
+					)}
 			</div>
 
 			{/* Step 3: Payment - Always visible */}
