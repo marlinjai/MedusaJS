@@ -4,10 +4,10 @@
 
 import { searchClient } from '@lib/config';
 import { HttpTypes } from '@medusajs/types';
-import ProductCardClient from './product-card-client';
 import { useEffect, useRef } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import { useInfiniteHits, InstantSearch, Configure } from 'react-instantsearch';
+import { Configure, InstantSearch, useInfiniteHits } from 'react-instantsearch';
+import ProductCardClient from './product-card-client';
 
 type InfiniteSliderProps = {
 	region: HttpTypes.StoreRegion;
@@ -37,12 +37,12 @@ function SliderContent({ region, currentProductId }: InfiniteSliderProps) {
 		if (!trigger) return;
 
 		const observer = new IntersectionObserver(
-			(entries) => {
+			entries => {
 				if (entries[0].isIntersecting && !isLastPage) {
 					showMore();
 				}
 			},
-			{ rootMargin: '400px' }
+			{ rootMargin: '400px' },
 		);
 
 		observer.observe(trigger);
@@ -53,7 +53,11 @@ function SliderContent({ region, currentProductId }: InfiniteSliderProps) {
 	const filteredHits = hits.filter((hit: any) => hit.id !== currentProductId);
 
 	if (filteredHits.length === 0) {
-		return <div className="text-center text-muted-foreground py-8">Keine weiteren Produkte verfügbar</div>;
+		return (
+			<div className="text-center text-muted-foreground py-8">
+				Keine weiteren Produkte verfügbar
+			</div>
+		);
 	}
 
 	return (
@@ -98,7 +102,10 @@ function SliderContent({ region, currentProductId }: InfiniteSliderProps) {
 }
 
 // Wrapper with InstantSearch
-export default function InfiniteSlider({ region, currentProductId }: InfiniteSliderProps) {
+export default function InfiniteSlider({
+	region,
+	currentProductId,
+}: InfiniteSliderProps) {
 	return (
 		<InstantSearch
 			searchClient={searchClient}
@@ -112,5 +119,3 @@ export default function InfiniteSlider({ region, currentProductId }: InfiniteSli
 		</InstantSearch>
 	);
 }
-
-

@@ -40,9 +40,15 @@ const Item = ({ item, type = 'full', currencyCode }: ItemProps) => {
 			});
 	};
 
-	// TODO: Update this to grab the actual max inventory
-	const maxQtyFromInventory = 10;
-	const maxQuantity = item.variant?.manage_inventory ? 10 : maxQtyFromInventory;
+	// Use actual inventory quantity for max limit
+	const stockQty = item.variant?.inventory_quantity || 0;
+	const allowBackorder = item.variant?.allow_backorder || false;
+	const manageInventory = item.variant?.manage_inventory !== false;
+	
+	// Calculate max quantity based on inventory
+	const maxQuantity = manageInventory && !allowBackorder 
+		? Math.min(stockQty, 10) 
+		: 10;
 
 	return (
 		<Table.Row
@@ -73,6 +79,25 @@ const Item = ({ item, type = 'full', currencyCode }: ItemProps) => {
 					{item.product_title}
 				</Text>
 				<LineItemOptions variant={item.variant} data-testid="product-variant" />
+				
+				{/* Stock availability info */}
+				{item.variant?.inventory_quantity !== undefined && (
+					<div className="mt-2">
+						{item.variant.inventory_quantity > 0 ? (
+							<Text className="text-xs text-green-600">
+								● {item.variant.inventory_quantity} Stück verfügbar
+							</Text>
+						) : item.variant.allow_backorder ? (
+							<Text className="text-xs text-blue-600">
+								● Verfügbar (Lieferzeit verlängert)
+							</Text>
+						) : (
+							<Text className="text-xs text-red-600">
+								✕ Zurzeit nicht lieferbar
+							</Text>
+						)}
+					</div>
+				)}
 			</Table.Cell>
 
 			{type === 'full' && (
