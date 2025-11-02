@@ -16,6 +16,7 @@ type ProductHit = {
 	hierarchical_categories?: Record<string, string>;
 	tags?: string[];
 	is_available?: boolean;
+	total_inventory?: number;
 };
 
 function Hit({ hit }: { hit: ProductHit & { objectID: string } }) {
@@ -81,31 +82,36 @@ function Hit({ hit }: { hit: ProductHit & { objectID: string } }) {
 
 					{/* Price and Availability */}
 					<div className="mt-auto pt-2 space-y-2">
-						<div className="flex items-center justify-between">
-							<div>
-								{hit.min_price && (
-									<div className="flex items-baseline gap-2">
-										<span className="text-lg font-semibold text-gray-300">
-											€{hit.min_price.toFixed(2)}
+						{/* Price */}
+						<div className="mb-2">
+							{hit.min_price && (
+								<div className="flex items-baseline gap-2">
+									<span className="text-lg font-semibold text-gray-300">
+										€{hit.min_price.toFixed(2)}
+									</span>
+									{hit.max_price && hit.max_price !== hit.min_price && (
+										<span className="text-sm text-gray-500 font-medium">
+											- €{hit.max_price.toFixed(2)}
 										</span>
-										{hit.max_price && hit.max_price !== hit.min_price && (
-											<span className="text-sm text-gray-500 font-medium">
-												- €{hit.max_price.toFixed(2)}
-											</span>
-										)}
-									</div>
-								)}
-							</div>
+									)}
+								</div>
+							)}
+						</div>
 
-							{/* Availability Badge */}
-							<div>
-								{hit.is_available ? (
-									<span className="px-2 py-1 text-xs font-medium text-green-400 bg-green-950/80 border border-green-600 rounded-md">
-										Verfügbar
+						{/* Stock Availability */}
+						<div className="flex items-center justify-between">
+							<div className="flex-1">
+								{hit.total_inventory !== undefined && hit.total_inventory > 0 ? (
+									<span className="text-xs text-green-400 font-medium">
+										● {hit.total_inventory} Stück verfügbar
+									</span>
+								) : hit.is_available ? (
+									<span className="text-xs text-blue-400 font-medium">
+										● Verfügbar
 									</span>
 								) : (
-									<span className="px-2 py-1 text-xs font-medium text-red-400 bg-red-950/80 border border-red-600 rounded-md">
-										Ausverkauft
+									<span className="text-xs text-red-400 font-medium">
+										✕ Zurzeit nicht lieferbar
 									</span>
 								)}
 							</div>
