@@ -92,7 +92,7 @@ export default function Services() {
 	];
 
 	return (
-		<section id="services" className="pt-48 pb-24 px-4 md:px-8 scroll-mt-32">
+		<section id="services" className="pt-48 pb-24 px-4 md:px-8 -scroll-mt-8">
 			<div className="max-w-7xl mx-auto">
 				<div className="text-center mb-24">
 					<motion.h2
