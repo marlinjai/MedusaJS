@@ -160,6 +160,7 @@
 			"remove": "Entfernen",
 			"subtotal": "Zwischensumme",
 			"goToCart": "Zum Warenkorb",
+			"goToCheckout": "Zur Kasse",
 			"empty": {
 				"title": "Ihr Warenkorb ist leer",
 				"subtitle": "Fügen Sie Produkte hinzu, um mit dem Einkauf zu beginnen",

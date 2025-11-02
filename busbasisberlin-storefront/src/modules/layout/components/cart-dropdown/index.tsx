@@ -240,15 +240,29 @@ const CartDropdown = ({
 												</span>
 											</div>
 										</div>
-										<LocalizedClientLink href="/cart" passHref>
-											<Button
-												className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors h-12"
-												size="large"
-												data-testid="go-to-cart-button"
-											>
-												{t('dropdown.goToCart')}
-											</Button>
-										</LocalizedClientLink>
+										
+										{/* Action buttons row */}
+										<div className="grid grid-cols-2 gap-3">
+											<LocalizedClientLink href="/cart" passHref>
+												<Button
+													className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-semibold rounded-lg transition-colors h-12"
+													size="large"
+													data-testid="go-to-cart-button"
+												>
+													{t('dropdown.goToCart')}
+												</Button>
+											</LocalizedClientLink>
+											
+											<LocalizedClientLink href="/checkout" passHref>
+												<Button
+													className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors h-12"
+													size="large"
+													data-testid="go-to-checkout-button"
+												>
+													{t('dropdown.goToCheckout')}
+												</Button>
+											</LocalizedClientLink>
+										</div>
 									</div>
 								</>
 							) : (
