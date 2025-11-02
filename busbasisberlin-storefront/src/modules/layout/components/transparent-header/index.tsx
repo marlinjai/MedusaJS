@@ -10,10 +10,10 @@ export default function TransparentHeader() {
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY
-      
+
       // Background transparency
       setIsScrolled(scrollPosition > 50)
-      
+
       // Auto-hide on scroll down, show on scroll up
       if (scrollPosition < 10) {
         // Always show at top
@@ -25,7 +25,7 @@ export default function TransparentHeader() {
         // Scrolling up - show
         setIsVisible(true)
       }
-      
+
       setLastScrollY(scrollPosition)
     }
 

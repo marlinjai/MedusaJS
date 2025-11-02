@@ -70,7 +70,7 @@ const CartDropdown = ({
 
 	// open cart dropdown when modifying the cart items, but only if we're not on the cart page
 	useEffect(() => {
-		if (itemRef.current !== totalItems && !pathname.includes('/cart')) {
+		if (itemRef.current !== totalItems && !pathname?.includes('/cart')) {
 			timedOpen();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,8 +82,8 @@ const CartDropdown = ({
 			onMouseEnter={openAndCancel}
 			onMouseLeave={close}
 		>
-			<Popover className="relative h-full ">
-				<PopoverButton className="h-full">
+			<Popover className="relative h-full">
+				<PopoverButton className="h-full focus:outline-none focus-visible:outline-none">
 					<div className="flex items-center gap-x-2 hover:text-white/80">
 						<BsCart3 className="w-5 h-5" />
 						<span>{totalItems}</span>
