@@ -8,11 +8,16 @@ import {
 	MedusaError,
 } from '@medusajs/framework/utils';
 import { CreateEmailOptions, Resend } from 'resend';
+import { adminPasswordResetEmail } from './emails/admin-password-reset';
+import { customerWelcomeEmail } from './emails/customer-welcome';
 import { offerAcceptedEmail } from './emails/offer-accepted';
 import { offerActiveEmail } from './emails/offer-active';
 import { offerCancelledEmail } from './emails/offer-cancelled';
 import { offerCompletedEmail } from './emails/offer-completed';
+import { orderCancelledEmail } from './emails/order-cancelled';
+import { orderDeliveredEmail } from './emails/order-delivered';
 import { orderPlacedEmail } from './emails/order-placed';
+import { orderShippedEmail } from './emails/order-shipped';
 import { passwordResetEmail } from './emails/reset-password';
 import { userInvitedEmail } from './emails/user-invited';
 
@@ -40,6 +45,7 @@ enum Templates {
 	ORDER_REFUNDED = 'order-refunded',
 	ORDER_RETURNED = 'order-returned',
 	PASSWORD_RESET = 'password-reset',
+	ADMIN_PASSWORD_RESET = 'admin-password-reset',
 	WELCOME = 'welcome',
 	VERIFICATION = 'verification',
 	ORDER_CONFIRMATION = 'order-confirmation',
@@ -55,15 +61,22 @@ enum Templates {
 
 const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
 	{
+		// Order templates
 		[Templates.ORDER_PLACED]: orderPlacedEmail,
+		[Templates.ORDER_SHIPPED]: orderShippedEmail,
+		[Templates.ORDER_DELIVERED]: orderDeliveredEmail,
+		[Templates.ORDER_CANCELLED]: orderCancelledEmail,
+		// Customer templates
+		[Templates.WELCOME]: customerWelcomeEmail,
 		[Templates.PASSWORD_RESET]: passwordResetEmail,
+		// Admin templates
+		[Templates.ADMIN_PASSWORD_RESET]: adminPasswordResetEmail,
+		[Templates.USER_INVITED]: userInvitedEmail,
 		// Offer templates
 		[Templates.OFFER_ACTIVE]: offerActiveEmail,
 		[Templates.OFFER_ACCEPTED]: offerAcceptedEmail,
 		[Templates.OFFER_COMPLETED]: offerCompletedEmail,
 		[Templates.OFFER_CANCELLED]: offerCancelledEmail,
-		// User management templates
-		[Templates.USER_INVITED]: userInvitedEmail,
 	};
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -113,10 +126,26 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 			return this.options.html_templates[template].subject;
 		}
 		switch (template) {
+			// Order templates
 			case Templates.ORDER_PLACED:
-				return 'Order Confirmation';
+				return 'Bestellbestätigung';
+			case Templates.ORDER_SHIPPED:
+				return 'Ihre Bestellung wurde versandt';
+			case Templates.ORDER_DELIVERED:
+				return 'Ihre Bestellung wurde zugestellt';
+			case Templates.ORDER_CANCELLED:
+				return 'Bestellung storniert';
+			// Customer templates
+			case Templates.WELCOME:
+				return 'Willkommen bei Basis Camp Berlin';
 			case Templates.PASSWORD_RESET:
-				return 'Reset Your Password';
+				return 'Passwort zurücksetzen';
+			// Admin templates
+			case Templates.ADMIN_PASSWORD_RESET:
+				return 'Admin-Passwort zurücksetzen';
+			case Templates.USER_INVITED:
+				return 'Sie wurden zu unserem Team eingeladen';
+			// Offer templates
 			case Templates.OFFER_ACTIVE:
 				return 'Ihr Angebot ist bereit';
 			case Templates.OFFER_ACCEPTED:
@@ -127,10 +156,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 				return 'Angebot storniert';
 			case Templates.OFFER_NOTIFICATION:
 				return 'Angebot Update';
-			case Templates.USER_INVITED:
-				return 'Sie wurden zu unserem Team eingeladen';
 			default:
-				return 'New Email';
+				return 'Neue Benachrichtigung';
 		}
 	}
 

@@ -1,94 +1,91 @@
-// src/modules/resend/emails/user-invited.tsx
+/**
+ * user-invited-v2.tsx
+ * Unified admin invitation template using EmailWrapper
+ */
+
 import {
-	Body,
-	Button,
-	Container,
-	Head,
-	Heading,
-	Html,
-	Link,
-	Preview,
-	Section,
-	Tailwind,
-	Text,
-} from '@react-email/components';
+	EmailWrapper,
+	EmailTitle,
+	EmailText,
+	EmailButton,
+	EmailInfoBox,
+} from '../utils/email-wrapper';
 
 type UserInvitedEmailProps = {
 	invite_url: string;
 	email?: string;
 };
 
-function UserInvitedEmailComponent({
-	invite_url,
-	email,
-}: UserInvitedEmailProps) {
+function UserInvitedEmailComponent({ invite_url, email }: UserInvitedEmailProps) {
 	return (
-		<Html>
-			<Head />
-			<Preview>Sie wurden eingeladen, unserem Team beizutreten</Preview>
-			<Tailwind>
-				<Body className="bg-white my-auto mx-auto font-sans px-2">
-					<Container className="border border-solid border-[#eaeaea] rounded my-[40px] mx-auto p-[20px] max-w-[465px]">
-						<Section className="mt-[32px]">
-							<Heading className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">
-								Sie sind eingeladen!
-							</Heading>
-						</Section>
+		<EmailWrapper headerVariant="admin">
+			<EmailTitle>🎉 Sie sind eingeladen!</EmailTitle>
 
-						<Section className="my-[32px]">
-							<Text className="text-black text-[14px] leading-[24px]">
-								Hallo{email ? ` ${email}` : ''},
-							</Text>
-							<Text className="text-black text-[14px] leading-[24px]">
-								Sie wurden eingeladen, unserem Admin-Team beizutreten. Klicken
-								Sie auf die Schaltfläche unten, um Ihre Einladung anzunehmen und
-								Ihr Konto einzurichten.
-							</Text>
-						</Section>
+			<EmailText>Hallo{email ? ` ${email}` : ''},</EmailText>
 
-						<Section className="text-center mt-[32px] mb-[32px]">
-							<Button
-								className="bg-[#000000] rounded text-white text-[12px] font-semibold no-underline text-center px-5 py-3"
-								href={invite_url}
-							>
-								Einladung annehmen
-							</Button>
-						</Section>
+			<EmailText>
+				Sie wurden eingeladen, unserem <strong>Admin-Team</strong> beizutreten.
+				Klicken Sie auf die Schaltfläche unten, um Ihre Einladung anzunehmen
+				und Ihr Konto einzurichten.
+			</EmailText>
 
-						<Section className="my-[32px]">
-							<Text className="text-black text-[14px] leading-[24px]">
-								Oder kopieren Sie diese URL und fügen Sie sie in Ihren Browser
-								ein:
-							</Text>
-							<Link
-								href={invite_url}
-								className="text-blue-600 no-underline text-[14px] leading-[24px] break-all"
-							>
-								{invite_url}
-							</Link>
-						</Section>
+			<EmailButton href={invite_url} variant="primary">
+				✅ Einladung annehmen
+			</EmailButton>
 
-						<Section className="mt-[32px]">
-							<Text className="text-[#666666] text-[12px] leading-[24px]">
-								Falls Sie diese Einladung nicht erwartet haben, können Sie diese
-								E-Mail ignorieren.
-							</Text>
-						</Section>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
+			<EmailText>
+				Oder kopieren Sie diese URL und fügen Sie sie in Ihren Browser ein:
+			</EmailText>
+
+			<div
+				style={{
+					backgroundColor: '#f8f9fa',
+					padding: '15px',
+					borderRadius: '5px',
+					marginBottom: '20px',
+					wordBreak: 'break-all',
+				}}
+			>
+				<a
+					href={invite_url}
+					style={{
+						color: '#2c5aa0',
+						fontSize: '13px',
+						textDecoration: 'none',
+					}}
+				>
+					{invite_url}
+				</a>
+			</div>
+
+			<EmailInfoBox title="ℹ️ Wichtige Informationen" variant="info">
+				<p style={{ margin: '5px 0' }}>
+					• Sie erhalten Zugriff auf das Administrator-Panel
+				</p>
+				<p style={{ margin: '5px 0' }}>
+					• Bitte wählen Sie ein sicheres Passwort (min. 12 Zeichen)
+				</p>
+				<p style={{ margin: '5px 0' }}>
+					• Falls Sie diese Einladung nicht erwartet haben, ignorieren Sie diese
+					E-Mail
+				</p>
+			</EmailInfoBox>
+		</EmailWrapper>
 	);
 }
 
+// Mock data for preview
+const mockInvite: UserInvitedEmailProps = {
+	invite_url:
+		'https://basiscampberlin.de/app/invite?token=sample-token-123',
+	email: 'admin@example.com',
+};
+
+// Default export for React Email preview
+export default () => <UserInvitedEmailComponent {...mockInvite} />;
+
+// Export for service
 export const userInvitedEmail = (props: UserInvitedEmailProps) => (
 	<UserInvitedEmailComponent {...props} />
 );
 
-// Mock data for preview/development
-const mockInvite: UserInvitedEmailProps = {
-	invite_url: 'https://basiscamp-berlin.de/app/invite?token=sample-token-123',
-	email: 'user@example.com',
-};
-
-export default () => <UserInvitedEmailComponent {...mockInvite} />;

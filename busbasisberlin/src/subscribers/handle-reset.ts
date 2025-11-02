@@ -23,10 +23,14 @@ export default async function resetPasswordTokenHandler({
 			? `${urlPrefix}/de/reset-password?token=${token}&email=${encodeURIComponent(email)}`
 			: `${urlPrefix}/admin-password-reset?token=${token}&email=${encodeURIComponent(email)}`;
 
+	// Verwende unterschiedliche Templates für Admin und Customer
+	const template =
+		actor_type === 'customer' ? 'password-reset' : 'admin-password-reset';
+
 	await notificationModuleService.createNotifications({
 		to: email,
 		channel: 'email',
-		template: 'password-reset', // Verwende die korrekte Template-ID
+		template: template,
 		data: {
 			url: resetUrl,
 			email: email,

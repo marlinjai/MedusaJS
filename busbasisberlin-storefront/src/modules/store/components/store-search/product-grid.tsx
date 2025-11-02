@@ -22,9 +22,9 @@ type ProductHit = {
 function Hit({ hit }: { hit: ProductHit & { objectID: string } }) {
 	return (
 		<Link href={`/products/${hit.handle}`} className="group block h-full">
-			<div className="bg-gray-800/50 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 hover:bg-gray-800/70 transition-all duration-200 h-full flex flex-col">
+			<div className="bg-stone-950 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 hover:bg-gray-800/70 transition-all duration-200 h-full flex flex-col">
 				{/* Image */}
-				<div className="relative w-full aspect-[4/3] bg-gray-900">
+				<div className="relative w-full aspect-[4/3] bg-stone-950">
 					{hit.thumbnail ? (
 						<Image
 							src={hit.thumbnail}
@@ -34,7 +34,7 @@ function Hit({ hit }: { hit: ProductHit & { objectID: string } }) {
 							sizes="(max-width: 768px) 50vw, 33vw"
 						/>
 					) : (
-						<div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+						<div className="absolute inset-0 flex items-center justify-center bg-stone-950">
 							<svg
 								className="w-16 h-16 text-gray-600"
 								fill="none"
@@ -101,7 +101,8 @@ function Hit({ hit }: { hit: ProductHit & { objectID: string } }) {
 						{/* Stock Availability */}
 						<div className="flex items-center justify-between">
 							<div className="flex-1">
-								{hit.total_inventory !== undefined && hit.total_inventory > 0 ? (
+								{hit.total_inventory !== undefined &&
+								hit.total_inventory > 0 ? (
 									<span className="text-xs text-green-400 font-medium">
 										● {hit.total_inventory} Stück verfügbar
 									</span>

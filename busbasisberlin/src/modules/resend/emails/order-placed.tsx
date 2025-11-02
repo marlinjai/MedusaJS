@@ -18,6 +18,7 @@ import {
 	Tailwind,
 	Text,
 } from '@react-email/components';
+import { getCompanyInfo } from '../utils/company-info';
 
 type OrderPlacedEmailProps = {
 	order: OrderDTO & {
@@ -34,9 +35,10 @@ function OrderPlacedEmailComponent({
 	order,
 	email_banner,
 }: OrderPlacedEmailProps) {
+	const company = getCompanyInfo();
 	const shouldDisplayBanner = email_banner && 'title' in email_banner;
 
-	const formatter = new Intl.NumberFormat([], {
+	const formatter = new Intl.NumberFormat('de-DE', {
 		style: 'currency',
 		currencyDisplay: 'narrowSymbol',
 		currency: order.currency_code,
@@ -58,32 +60,39 @@ function OrderPlacedEmailComponent({
 		<Tailwind>
 			<Html className="font-sans bg-gray-100">
 				<Head />
-				<Preview>Thank you for your order from Medusa</Preview>
+				<Preview>Vielen Dank für Ihre Bestellung bei {company.name}</Preview>
 				<Body className="bg-white my-10 mx-auto w-full max-w-2xl">
-					{/* Header */}
-					<Section className="bg-[#27272a] text-white px-6 py-4">
-						<svg
-							width="15"
-							height="15"
-							viewBox="0 0 20 20"
-							fill="none"
-							xmlns="http://www.w3.org/2000/svg"
-						>
-							<path
-								d="M16.2447 3.92183L12.1688 1.57686C10.8352 0.807712 9.20112 0.807712 7.86753 1.57686L3.77285 3.92183C2.45804 4.69098 1.63159 6.11673 1.63159 7.63627V12.345C1.63159 13.8833 2.45804 15.2903 3.77285 16.0594L7.84875 18.4231C9.18234 19.1923 10.8165 19.1923 12.15 18.4231L16.2259 16.0594C17.5595 15.2903 18.3672 13.8833 18.3672 12.345V7.63627C18.4048 6.11673 17.5783 4.69098 16.2447 3.92183ZM10.0088 14.1834C7.69849 14.1834 5.82019 12.3075 5.82019 10C5.82019 7.69255 7.69849 5.81657 10.0088 5.81657C12.3191 5.81657 14.2162 7.69255 14.2162 10C14.2162 12.3075 12.3379 14.1834 10.0088 14.1834Z"
-								fill="currentColor"
-							></path>
-						</svg>
+					{/* Header with Logo */}
+					<Section
+						className="text-white px-6 py-6 text-center"
+						style={{ backgroundColor: company.primaryColor }}
+					>
+						{company.logoUrl ? (
+							<Img
+								src={company.logoUrl}
+								alt={company.name}
+								className="mx-auto"
+								style={{ maxHeight: '60px', maxWidth: '250px' }}
+							/>
+						) : (
+							<Heading className="text-2xl font-bold m-0 text-white">
+								{company.name}
+							</Heading>
+						)}
+						<Text className="text-white opacity-90 mt-2 m-0 text-sm">
+							{company.address}, {company.postalCode} {company.city}
+						</Text>
 					</Section>
 
 					{/* Thank You Message */}
 					<Container className="p-6">
 						<Heading className="text-2xl font-bold text-center text-gray-800">
-							Thank you for your order,{' '}
-							{order.customer?.first_name || order.shipping_address?.first_name}
+							Vielen Dank für Ihre Bestellung,{' '}
+							{order.customer?.first_name || order.shipping_address?.first_name}!
 						</Heading>
 						<Text className="text-center text-gray-600 mt-2">
-							We're processing your order and will notify you when it ships.
+							Wir bearbeiten Ihre Bestellung und benachrichtigen Sie, sobald sie
+							versandt wird.
 						</Text>
 					</Container>
 
@@ -119,12 +128,12 @@ function OrderPlacedEmailComponent({
 					{/* Order Items */}
 					<Container className="px-6">
 						<Heading className="text-xl font-semibold text-gray-800 mb-4">
-							Your Items
+							Ihre Artikel
 						</Heading>
 						<Row>
 							<Column>
 								<Text className="text-sm m-0 my-2 text-gray-500">
-									Order ID: #{order.display_id}
+									Bestellnummer: #{order.display_id}
 								</Text>
 							</Column>
 						</Row>
@@ -155,11 +164,11 @@ function OrderPlacedEmailComponent({
 						{/* Order Summary */}
 						<Section className="mt-8">
 							<Heading className="text-xl font-semibold text-gray-800 mb-4">
-								Order Summary
+								Bestellübersicht
 							</Heading>
 							<Row className="text-gray-600">
 								<Column className="w-1/2">
-									<Text className="m-0">Subtotal</Text>
+									<Text className="m-0">Zwischensumme</Text>
 								</Column>
 								<Column className="w-1/2 text-right">
 									<Text className="m-0">{formatPrice(order.item_total)}</Text>
@@ -177,7 +186,7 @@ function OrderPlacedEmailComponent({
 							))}
 							<Row className="text-gray-600">
 								<Column className="w-1/2">
-									<Text className="m-0">Tax</Text>
+									<Text className="m-0">MwSt.</Text>
 								</Column>
 								<Column className="w-1/2 text-right">
 									<Text className="m-0">
@@ -187,7 +196,7 @@ function OrderPlacedEmailComponent({
 							</Row>
 							<Row className="border-t border-gray-200 mt-4 text-gray-800 font-bold">
 								<Column className="w-1/2">
-									<Text>Total</Text>
+									<Text>Gesamt</Text>
 								</Column>
 								<Column className="w-1/2 text-right">
 									<Text>{formatPrice(order.total)}</Text>
@@ -198,15 +207,21 @@ function OrderPlacedEmailComponent({
 
 					{/* Footer */}
 					<Section className="bg-gray-50 p-6 mt-10">
-						<Text className="text-center text-gray-500 text-sm">
-							If you have any questions, reply to this email or contact our
-							support team at support@medusajs.com.
+						<Text className="text-center text-gray-500 text-sm mb-2">
+							Bei Fragen zu Ihrer Bestellung kontaktieren Sie uns gerne:
 						</Text>
-						<Text className="text-center text-gray-500 text-sm">
-							Order Token: {order.id}
+						<Text className="text-center text-gray-600 text-sm font-medium">
+							📧 {company.supportEmail || company.email}
+						</Text>
+						<Text className="text-center text-gray-500 text-sm mt-1">
+							📞 Telefon auf Anfrage per E-Mail
+						</Text>
+						<Text className="text-center text-gray-500 text-sm mt-4">
+							Bestellnummer: #{order.display_id}
 						</Text>
 						<Text className="text-center text-gray-400 text-xs mt-4">
-							© {new Date().getFullYear()} Medusajs, Inc. All rights reserved.
+							© {new Date().getFullYear()} {company.name}. Alle Rechte
+							vorbehalten.
 						</Text>
 					</Section>
 				</Body>
