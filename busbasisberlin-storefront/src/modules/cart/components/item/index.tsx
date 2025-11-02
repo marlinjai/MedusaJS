@@ -44,10 +44,10 @@ const Item = ({ item, type = 'full', currencyCode }: ItemProps) => {
 	const stockQty = item.variant?.inventory_quantity || 0;
 	const allowBackorder = item.variant?.allow_backorder || false;
 	const manageInventory = item.variant?.manage_inventory !== false;
-	
+
 	// Calculate max quantity based on inventory
-	const maxQuantity = manageInventory && !allowBackorder 
-		? Math.min(stockQty, 10) 
+	const maxQuantity = manageInventory && !allowBackorder
+		? Math.min(stockQty, 10)
 		: 10;
 
 	return (
@@ -79,7 +79,7 @@ const Item = ({ item, type = 'full', currencyCode }: ItemProps) => {
 					{item.product_title}
 				</Text>
 				<LineItemOptions variant={item.variant} data-testid="product-variant" />
-				
+
 				{/* Stock availability info */}
 				{item.variant?.inventory_quantity !== undefined && (
 					<div className="mt-2">
