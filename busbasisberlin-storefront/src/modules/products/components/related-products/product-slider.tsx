@@ -5,7 +5,7 @@
 import { HttpTypes } from '@medusajs/types';
 import { useRef } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import Product from '../product-preview';
+import UnifiedProductCard from '../unified-product-card';
 
 type ProductSliderProps = {
 	products: HttpTypes.StoreProduct[];
@@ -38,7 +38,12 @@ export default function ProductSlider({
 			>
 				{products.map(product => (
 					<div key={product.id} className="snap-start">
-						<Product region={region} product={product} />
+						<UnifiedProductCard 
+							product={product}
+							showDescription={false}
+							showCategories={false}
+							showStock={false}
+						/>
 					</div>
 				))}
 			</div>

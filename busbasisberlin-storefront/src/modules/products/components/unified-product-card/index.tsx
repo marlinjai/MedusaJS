@@ -1,7 +1,7 @@
 /**
  * unified-product-card/index.tsx
  * Unified product card component used across entire storefront
- * Replaces product-preview, product-grid Hit, and product-card-client
+ * Supports both MeiliSearch hits and Medusa product objects
  */
 
 'use client';
@@ -9,23 +9,54 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { HttpTypes } from '@medusajs/types';
+import { getProductPrice } from '@lib/util/get-product-price';
+
+type MeiliSearchProduct = {
+	handle: string;
+	title: string;
+	thumbnail?: string | null;
+	description?: string | null;
+	category_names?: string[];
+	min_price?: number;
+	max_price?: number;
+	is_available?: boolean;
+	total_inventory?: number;
+};
 
 type UnifiedProductCardProps = {
-	product: {
-		handle: string;
-		title: string;
-		thumbnail?: string | null;
-		description?: string | null;
-		category_names?: string[];
-		min_price?: number;
-		max_price?: number;
-		is_available?: boolean;
-		total_inventory?: number;
-	};
+	product: MeiliSearchProduct | HttpTypes.StoreProduct;
 	showDescription?: boolean;
 	showCategories?: boolean;
 	showStock?: boolean;
 };
+
+// Helper to normalize product data from different sources
+function normalizeProduct(
+	product: MeiliSearchProduct | HttpTypes.StoreProduct,
+): MeiliSearchProduct {
+	// If it's already a MeiliSearch hit, return as-is
+	if ('min_price' in product) {
+		return product as MeiliSearchProduct;
+	}
+
+	// Convert Medusa product to MeiliSearch format
+	const medusaProduct = product as HttpTypes.StoreProduct;
+	const { cheapestPrice } = getProductPrice({ product: medusaProduct });
+
+	return {
+		handle: medusaProduct.handle || '',
+		title: medusaProduct.title || '',
+		thumbnail: medusaProduct.thumbnail,
+		description: medusaProduct.description || null,
+		category_names: medusaProduct.categories?.map(c => c.name) || [],
+		min_price: cheapestPrice?.calculated_price_number
+			? cheapestPrice.calculated_price_number / 100
+			: undefined,
+		max_price: undefined,
+		is_available: medusaProduct.status === 'published',
+		total_inventory: undefined,
+	};
+}
 
 export default function UnifiedProductCard({
 	product,
@@ -33,6 +64,7 @@ export default function UnifiedProductCard({
 	showCategories = true,
 	showStock = true,
 }: UnifiedProductCardProps) {
+	const normalized = normalizeProduct(product);
 	const {
 		handle,
 		title,
@@ -43,7 +75,7 @@ export default function UnifiedProductCard({
 		max_price,
 		is_available,
 		total_inventory,
-	} = product;
+	} = normalized;
 
 	return (
 		<Link href={`/products/${handle}`} className="group block h-full">

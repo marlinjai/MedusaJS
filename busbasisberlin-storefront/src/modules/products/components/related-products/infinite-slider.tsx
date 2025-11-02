@@ -7,7 +7,7 @@ import { HttpTypes } from '@medusajs/types';
 import { useEffect, useRef } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { Configure, InstantSearch, useInfiniteHits } from 'react-instantsearch';
-import ProductCardClient from './product-card-client';
+import UnifiedProductCard from '../unified-product-card';
 
 type InfiniteSliderProps = {
 	region: HttpTypes.StoreRegion;
@@ -69,7 +69,12 @@ function SliderContent({ region, currentProductId }: InfiniteSliderProps) {
 			>
 				{filteredHits.map((product: any) => (
 					<div key={product.id} className="snap-start">
-						<ProductCardClient product={product} region={region} />
+						<UnifiedProductCard 
+							product={product}
+							showDescription={false}
+							showCategories={false}
+							showStock={false}
+						/>
 					</div>
 				))}
 

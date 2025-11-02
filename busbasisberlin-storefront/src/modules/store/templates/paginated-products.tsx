@@ -1,6 +1,6 @@
 import { listProducts } from '@lib/data/products';
 import { getRegion } from '@lib/data/regions';
-import ProductPreview from '@modules/products/components/product-preview';
+import UnifiedProductCard from '@modules/products/components/unified-product-card';
 import SkeletonProductGrid from '@modules/skeletons/templates/skeleton-product-grid';
 import { Pagination } from '@modules/store/components/pagination';
 import { Suspense } from 'react';
@@ -49,7 +49,12 @@ async function ProductResults({
 			<ul className="grid grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-4 gap-y-8">
 				{response.products.map(product => (
 					<li key={product.id}>
-						<ProductPreview product={product} region={region} />
+						<UnifiedProductCard 
+							product={product}
+							showDescription={false}
+							showCategories={true}
+							showStock={true}
+						/>
 					</li>
 				))}
 			</ul>
