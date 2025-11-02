@@ -367,15 +367,17 @@
 	},
 	"order": {
 		"confirmation": {
+			"title": "Vielen Dank!",
+			"subtitle": "Ihre Bestellung wurde erfolgreich aufgegeben.",
 			"thankYou": "Vielen Dank!",
-			"message": "Ihre Bestellung wurde erfolgreich aufgegeben.",
+			"message": "Wir haben Ihre Bestellung erhalten und bearbeiten sie. Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
 			"summary": "Zusammenfassung",
 			"continueShopping": "Weiter einkaufen",
 			"viewOrder": "Bestellung ansehen"
 		},
 		"details": {
 			"emailSent": "Wir haben die Bestellbestätigung an",
-			"emailSentEnd": "gesendet.",
+			"emailSentEnd": "gesendet",
 			"orderDate": "Bestelldatum:",
 			"orderNumber": "Bestellnummer:"
 		},
@@ -383,7 +385,7 @@
 			"title": "Lieferung",
 			"shippingAddress": "Lieferadresse",
 			"contact": "Kontakt",
-			"method": "Methode"
+			"method": "Versandart"
 		},
 		"payment": {
 			"title": "Zahlung",
@@ -392,8 +394,8 @@
 			"paidAt": "bezahlt am"
 		},
 		"help": {
-			"title": "Brauchen Sie Hilfe?",
-			"contact": "Kontakt",
+			"title": "Benötigen Sie Hilfe?",
+			"contact": "Kontaktieren Sie unseren Kundenservice",
 			"returns": "Rücksendungen & Umtausch"
 		}
 	},

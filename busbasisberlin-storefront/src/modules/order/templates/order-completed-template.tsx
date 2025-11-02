@@ -27,7 +27,7 @@ export default async function OrderCompletedTemplate({
 		<div className="py-12 min-h-[calc(100vh-64px)] bg-gradient-to-b from-neutral-900 to-black">
 			<div className="content-container flex flex-col justify-center items-center gap-y-10 max-w-5xl h-full w-full">
 				{isOnboarding && <OnboardingCta orderId={order.id} />}
-				
+
 				{/* Success Icon & Message */}
 				<div className="flex flex-col items-center text-center gap-4 mb-8">
 					<div className="w-20 h-20 rounded-full bg-green-600/20 flex items-center justify-center mb-4">
@@ -39,10 +39,10 @@ export default async function OrderCompletedTemplate({
 						level="h1"
 						className="text-4xl font-bold text-white"
 					>
-						{t('thankYou')}
+						{t('title')}
 					</Heading>
 					<p className="text-xl text-neutral-300">
-						{t('message')}
+						{t('subtitle')}
 					</p>
 				</div>
 
@@ -51,11 +51,11 @@ export default async function OrderCompletedTemplate({
 					data-testid="order-complete-container"
 				>
 					<OrderDetails order={order} />
-					
+
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 						<LocalizedClientLink href="/store" className="w-full">
-							<Button 
-								variant="secondary" 
+							<Button
+								variant="secondary"
 								className="w-full h-12 bg-neutral-800 hover:bg-neutral-700 text-white"
 							>
 								{t('continueShopping')}
