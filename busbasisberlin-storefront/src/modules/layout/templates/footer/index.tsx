@@ -163,7 +163,7 @@ export default function Footer() {
 
 	return (
 		<footer
-			className="bg-card border-t border-border w-full"
+			className="bg-stone-950 border-t border-border w-full relative"
 			aria-labelledby="footer-heading"
 		>
 			<h2 id="footer-heading" className="sr-only">
