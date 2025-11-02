@@ -3,10 +3,11 @@ import { Container } from "@medusajs/ui"
 import Checkbox from "@modules/common/components/checkbox"
 import Input from "@modules/common/components/input"
 import { mapKeys } from "lodash"
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState, useCallback } from "react"
 import AddressSelect from "../address-select"
 import CountrySelect from "../country-select"
 import { useTranslations } from "next-intl"
+import { updateCart } from "@lib/data/cart"
 
 const ShippingAddress = ({
   customer,
@@ -82,16 +83,67 @@ const ShippingAddress = ({
       setFormAddress(undefined, customer.email)
     }
   }, [cart]) // Add cart as a dependency
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      // @ts-ignore
+      if (typeof window !== "undefined" && window.addressSaveTimeout) {
+        // @ts-ignore
+        clearTimeout(window.addressSaveTimeout)
+      }
+    }
+  }, [])
+
+  // Debounced save to cart - auto-saves 800ms after user stops typing
+  const saveAddressToCart = useCallback(async (data: Record<string, any>) => {
+    try {
+      const updateData: any = {
+        shipping_address: {
+          first_name: data["shipping_address.first_name"],
+          last_name: data["shipping_address.last_name"],
+          address_1: data["shipping_address.address_1"],
+          company: data["shipping_address.company"],
+          postal_code: data["shipping_address.postal_code"],
+          city: data["shipping_address.city"],
+          country_code: data["shipping_address.country_code"],
+          province: data["shipping_address.province"],
+          phone: data["shipping_address.phone"],
+        },
+        email: data.email,
+      }
+      
+      // Copy shipping to billing if checkbox is checked
+      if (checked) {
+        updateData.billing_address = updateData.shipping_address
+      }
+      
+      await updateCart(updateData)
+    } catch (error) {
+      console.error("Failed to save address:", error)
+    }
+  }, [checked])
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLInputElement | HTMLSelectElement
     >
   ) => {
-    setFormData({
+    const newFormData = {
       ...formData,
       [e.target.name]: e.target.value,
-    })
+    }
+    setFormData(newFormData)
+    
+    // Debounce the save - only save 800ms after user stops typing
+    if (typeof window !== "undefined") {
+      // @ts-ignore
+      if (window.addressSaveTimeout) clearTimeout(window.addressSaveTimeout)
+      // @ts-ignore
+      window.addressSaveTimeout = setTimeout(() => {
+        saveAddressToCart(newFormData)
+      }, 800)
+    }
   }
 
   return (
@@ -189,7 +241,11 @@ const ShippingAddress = ({
           label={t('billingAddressSame')}
           name="same_as_billing"
           checked={checked}
-          onChange={onChange}
+          onChange={() => {
+            onChange()
+            // Save immediately when checkbox changes
+            setTimeout(() => saveAddressToCart(formData), 100)
+          }}
           data-testid="billing-address-checkbox"
         />
       </div>
