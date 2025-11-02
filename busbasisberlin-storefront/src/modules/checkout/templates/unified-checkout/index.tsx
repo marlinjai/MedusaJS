@@ -236,21 +236,21 @@ export default function UnifiedCheckout({
 					) : (
 						<div className="p-6 bg-yellow-900/20 border border-yellow-600/50 rounded-lg">
 							<p className="text-yellow-200 mb-3">
-								<strong>⚠️ Versand nicht verfügbar</strong>
+								<strong>⚠️ Keine Versandoptionen verfügbar</strong>
 							</p>
 							<p className="text-sm text-yellow-100 mb-4">
-								Die Produkte in Ihrem Warenkorb erfordern Versandprofile, die derzeit nicht konfiguriert sind. 
-								Bitte wählen Sie <strong>Abholung im Geschäft</strong> oder kontaktieren Sie uns für weitere Optionen.
+								Für die Produkte in Ihrem Warenkorb sind keine Versandoptionen konfiguriert.
+								Bitte kontaktieren Sie uns oder wählen Sie Abholung.
 							</p>
 							<div className="flex flex-col gap-2">
 								<a 
 									href="/de#contact" 
 									className="text-blue-400 hover:text-blue-300 text-sm underline"
 								>
-									→ Kontaktieren Sie uns für Versandoptionen
+									→ Kontakt für Versandoptionen
 								</a>
 								<p className="text-xs text-neutral-400">
-									Oder besuchen Sie uns: Hauptstraße 51, 16547 Birkenwerder
+									Abholung: Hauptstraße 51, 16547 Birkenwerder
 								</p>
 							</div>
 						</div>
