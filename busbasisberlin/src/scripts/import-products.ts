@@ -410,10 +410,11 @@ export default async function importProducts({ container }: ExecArgs) {
 	const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT);
 	let defaultShippingProfile: any = null;
 	try {
-		const shippingProfiles = await fulfillmentModuleService.listShippingProfiles({
-			type: 'default',
-		});
-		
+		const shippingProfiles =
+			await fulfillmentModuleService.listShippingProfiles({
+				type: 'default',
+			});
+
 		if (shippingProfiles.length > 0) {
 			defaultShippingProfile = shippingProfiles[0];
 			logger.info(
@@ -421,7 +422,9 @@ export default async function importProducts({ container }: ExecArgs) {
 			);
 		} else {
 			logger.warn('⚠️  No default shipping profile found.');
-			logger.info('💡 Products without shipping profile will be imported as DRAFT.');
+			logger.info(
+				'💡 Products without shipping profile will be imported as DRAFT.',
+			);
 		}
 	} catch (error) {
 		logger.warn(`⚠️  Failed to fetch shipping profiles: ${error.message}`);
@@ -1218,7 +1221,7 @@ export default async function importProducts({ container }: ExecArgs) {
 					// Determine product status: Only publish if Active AND has shipping profile
 					const isActive = safe(baseArticle, 'Aktiv') === 'Y';
 					const canPublish = isActive && defaultShippingProfile;
-					
+
 					if (isActive && !defaultShippingProfile) {
 						logger.warn(
 							`⚠️  Product ${sku} marked as active but no shipping profile available - importing as DRAFT`,

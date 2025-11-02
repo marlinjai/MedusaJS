@@ -365,6 +365,38 @@
 			"customerService": "Kundenservice"
 		}
 	},
+	"order": {
+		"confirmation": {
+			"thankYou": "Vielen Dank!",
+			"message": "Ihre Bestellung wurde erfolgreich aufgegeben.",
+			"summary": "Zusammenfassung",
+			"continueShopping": "Weiter einkaufen",
+			"viewOrder": "Bestellung ansehen"
+		},
+		"details": {
+			"emailSent": "Wir haben die Bestellbestätigung an",
+			"emailSentEnd": "gesendet.",
+			"orderDate": "Bestelldatum:",
+			"orderNumber": "Bestellnummer:"
+		},
+		"delivery": {
+			"title": "Lieferung",
+			"shippingAddress": "Lieferadresse",
+			"contact": "Kontakt",
+			"method": "Methode"
+		},
+		"payment": {
+			"title": "Zahlung",
+			"paymentMethod": "Zahlungsart",
+			"paymentDetails": "Zahlungsdetails",
+			"paidAt": "bezahlt am"
+		},
+		"help": {
+			"title": "Brauchen Sie Hilfe?",
+			"contact": "Kontakt",
+			"returns": "Rücksendungen & Umtausch"
+		}
+	},
 	"products": {
 		"relatedProducts": "Ähnliche Produkte",
 		"details": "Details",
