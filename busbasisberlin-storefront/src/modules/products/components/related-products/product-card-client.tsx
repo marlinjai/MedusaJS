@@ -77,13 +77,18 @@ export default function ProductCardClient({
 								</span>
 							)}
 						</div>
-						{product.is_available !== false && (
-							<div className="mt-1">
+						{/* Availability Status - always shown to maintain consistent card height */}
+						<div className="mt-1">
+							{product.is_available !== false ? (
 								<span className="text-xs text-green-600 font-medium">
 									● Verfügbar
 								</span>
-							</div>
-						)}
+							) : (
+								<span className="text-xs text-red-600 font-medium">
+									● Ausverkauft
+								</span>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
