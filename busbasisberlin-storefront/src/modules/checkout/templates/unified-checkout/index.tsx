@@ -90,12 +90,11 @@ export default function UnifiedCheckout({
 		setError(null);
 		setSelectedPaymentMethod(method);
 
-		if (isStripeFunc(method)) {
-			try {
-				await initiatePaymentSession(cart, { provider_id: method });
-			} catch (err: any) {
-				setError(err.message);
-			}
+		// Always initiate payment session for any payment method
+		try {
+			await initiatePaymentSession(cart, { provider_id: method });
+		} catch (err: any) {
+			setError(err.message);
 		}
 	};
 
