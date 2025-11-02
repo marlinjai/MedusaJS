@@ -7,23 +7,28 @@ export const getPricesForVariant = (variant: any) => {
     return null;
   }
 
+  // Use tax-inclusive prices (prices already include 19% MwSt.)
+  const priceWithTax = variant.calculated_price.calculated_amount_with_tax || variant.calculated_price.calculated_amount;
+  const originalWithTax = variant.calculated_price.original_amount_with_tax || variant.calculated_price.original_amount;
+
   return {
-    calculated_price_number: variant.calculated_price.calculated_amount,
+    calculated_price_number: priceWithTax,
     calculated_price: convertToLocale({
-      amount: variant.calculated_price.calculated_amount,
+      amount: priceWithTax,
       currency_code: variant.calculated_price.currency_code,
     }),
-    original_price_number: variant.calculated_price.original_amount,
+    original_price_number: originalWithTax,
     original_price: convertToLocale({
-      amount: variant.calculated_price.original_amount,
+      amount: originalWithTax,
       currency_code: variant.calculated_price.currency_code,
     }),
     currency_code: variant.calculated_price.currency_code,
     price_type: variant.calculated_price.calculated_price.price_list_type,
     percentage_diff: getPercentageDiff(
-      variant.calculated_price.original_amount,
-      variant.calculated_price.calculated_amount,
+      originalWithTax,
+      priceWithTax,
     ),
+    is_tax_inclusive: variant.calculated_price.is_calculated_price_tax_inclusive || true,
   };
 };
 

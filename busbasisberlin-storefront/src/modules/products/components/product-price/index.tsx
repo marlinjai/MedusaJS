@@ -28,13 +28,16 @@ export default function ProductPrice({
           "text-ui-fg-interactive": selectedPrice.price_type === "sale",
         })}
       >
-        {!variant && "From "}
+        {!variant && "Ab "}
         <span
           data-testid="product-price"
           data-value={selectedPrice.calculated_price_number}
         >
           {selectedPrice.calculated_price}
         </span>
+      </span>
+      <span className="text-xs text-ui-fg-subtle mt-1">
+        inkl. MwSt.
       </span>
       {selectedPrice.price_type === "sale" && (
         <>

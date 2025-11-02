@@ -29,12 +29,19 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
     shipping_subtotal,
   } = totals
 
+  // Calculate tax from tax-inclusive price if tax_total is 0
+  // German tax rate: 19%
+  // Formula: tax = price - (price / 1.19)
+  const displayTaxTotal = tax_total && tax_total > 0
+    ? tax_total
+    : (subtotal || 0) - ((subtotal || 0) / 1.19); // Extract exact 19% from tax-inclusive price
+
   return (
     <div>
       <div className="flex flex-col gap-y-3 txt-medium text-gray-400">
         <div className="flex items-center justify-between">
           <span className="text-sm">
-            Zwischensumme (exkl. Versand und Steuern)
+            Zwischensumme (inkl. 19% MwSt.)
           </span>
           <span className="text-gray-300 font-medium" data-testid="cart-subtotal" data-value={subtotal || 0}>
             {convertToLocale({ amount: subtotal ?? 0, currency_code })}
@@ -59,10 +66,11 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
             {convertToLocale({ amount: shipping_subtotal ?? 0, currency_code })}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-sm">Steuern</span>
-          <span className="text-gray-300 font-medium" data-testid="cart-taxes" data-value={tax_total || 0}>
-            {convertToLocale({ amount: tax_total ?? 0, currency_code })}
+        {/* Tax info - calculated from tax-inclusive price */}
+        <div className="flex justify-between text-xs text-gray-500 italic">
+          <span>davon MwSt. (19%)</span>
+          <span data-testid="cart-taxes" data-value={displayTaxTotal}>
+            {convertToLocale({ amount: displayTaxTotal, currency_code })}
           </span>
         </div>
         {!!gift_card_total && (
