@@ -33,8 +33,22 @@ RUN adduser -S medusa -u 1001
 # Set working directory (following official Medusa recommendation)
 WORKDIR /server
 
-# Install required packages for health checks and database connection
-RUN apk add --no-cache curl postgresql-client
+# Install required packages for health checks, database connection, and Puppeteer
+# Chromium and dependencies needed for PDF generation
+RUN apk add --no-cache \
+    curl \
+    postgresql-client \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji
+
+# Tell Puppeteer to use the installed Chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # Copy built application from builder stage (following official Medusa docs)
 COPY --from=builder /server/.medusa ./.medusa
