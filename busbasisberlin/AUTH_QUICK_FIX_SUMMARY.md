@@ -1,6 +1,6 @@
 # Authentication Quick Fix Summary
 
-## 🔴 Three Critical Issues Fixed
+## 🔴 Four Critical Issues Fixed
 
 ### 1. Nginx Cookie Flags (CRITICAL)
 **Before:**
@@ -33,7 +33,42 @@ export const sdk = new Medusa({
 });
 ```
 
-### 3. Cookie Domain Missing (HIGH)
+### 3. Missing Proxy Headers in Location Block (CRITICAL)
+**Before:**
+```nginx
+location / {
+  proxy_pass http://medusa_backend;
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "upgrade";
+  # Missing critical headers!
+}
+```
+
+**After:**
+```nginx
+location / {
+  proxy_pass http://medusa_backend;
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "upgrade";
+
+  # ↓ ADDED - Critical for Medusa authentication
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Forwarded-Host $host;
+  proxy_set_header X-Forwarded-Port $server_port;
+  proxy_set_header X-Forwarded-Server $host;
+
+  proxy_read_timeout 86400;
+}
+```
+
+**Why it matters:** Medusa uses these headers to determine the request origin and build correct URLs for cookies and CORS validation.
+
+### 4. Cookie Domain Missing (HIGH)
 **Before:**
 ```typescript
 cookieOptions: {
@@ -116,13 +151,17 @@ fetch('/admin/users/me', {
 
 1. **Nginx was breaking cookies** with incorrect `proxy_cookie_path` syntax
 2. **SDK wasn't sending cookies** - missing `credentials: 'include'`
-3. **Cookie domain not set** - browser rejected cross-origin cookie sharing
+3. **Missing proxy headers** - Medusa couldn't determine request origin correctly
+4. **Cookie domain not set** - browser rejected cross-origin cookie sharing
 
 ## ✅ Why It Works Now
 
 1. **Nginx passes cookies correctly** using proper `proxy_cookie_flags`
 2. **SDK includes credentials** in all fetch requests
-3. **Cookie domain explicit** - browser allows cross-origin sharing
+3. **All proxy headers present** - Medusa can build correct URLs and validate requests
+4. **Cookie domain explicit** - browser allows cross-origin sharing
+
+**Key insight from Stack Overflow:** The proxy headers are essential for Medusa's authentication middleware to work correctly behind a reverse proxy.
 
 ---
 

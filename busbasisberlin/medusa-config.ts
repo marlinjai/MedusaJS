@@ -20,17 +20,6 @@ const getProjectConfig = () => {
 			authCors: process.env.AUTH_CORS!,
 			jwtSecret: process.env.JWT_SECRET || 'supersecret',
 			cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
-			// Cookie configuration for cross-origin authentication
-			cookieOptions: {
-				httpOnly: true,
-				secure: isProduction, // true in production (HTTPS), false in development
-				sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production
-				maxAge: 24 * 60 * 60 * 1000, // 24 hours
-				// Set cookie domain for production (allows subdomain access)
-				...(isProduction && process.env.DOMAIN_NAME
-					? { domain: `.${process.env.DOMAIN_NAME}` }
-					: {}),
-			},
 		},
 		// Worker mode configuration for production deployment
 		workerMode: process.env.MEDUSA_WORKER_MODE as

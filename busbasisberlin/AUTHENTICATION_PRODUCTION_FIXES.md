@@ -6,7 +6,45 @@
 
 ## Root Cause Analysis
 
-### Problem 1: Nginx Cookie Manipulation ⚠️ CRITICAL
+### Problem 1: Missing Proxy Headers in Location Block ⚠️ CRITICAL
+**Files:** `nginx/nginx-blue.template` & `nginx/nginx-green.template`
+
+**Issue:**
+The nginx `location /` block was missing critical proxy headers that Medusa needs to:
+- Identify the original request origin
+- Build correct URLs for cookies
+- Validate CORS requests
+- Determine if the connection is over HTTPS
+
+While we had these headers set globally in the `server` block, **nginx location blocks don't inherit headers** from the parent context. Each location needs its own headers.
+
+**Fix Applied:**
+```nginx
+location / {
+    proxy_pass http://medusa_backend;
+
+    # CRITICAL: Proxy headers for Medusa authentication
+    # These headers are essential for Medusa to identify the request correctly
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
+    proxy_set_header X-Forwarded-Server $host;
+
+    # Timeouts for long-running requests
+    proxy_read_timeout 86400;
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 60s;
+}
+```
+
+**Reference:** [Stack Overflow - MedusaJS 401 responses](https://stackoverflow.com/questions/77617857/medusa-js-401-responses-in-the-admin-panel-on-server-works-fine-in-localhost)
+
+---
+
+### Problem 2: Nginx Cookie Manipulation ⚠️ CRITICAL
 **File:** `nginx/nginx-blue.template` & `nginx/nginx-green.template`
 
 **Issue:**
@@ -27,7 +65,7 @@ This properly ensures cookies have the correct flags without breaking the path.
 
 ---
 
-### Problem 2: Missing Credentials in SDK ⚠️ CRITICAL
+### Problem 3: Missing Credentials in SDK ⚠️ CRITICAL
 **File:** `src/admin/lib/sdk.ts`
 
 **Issue:**
@@ -50,7 +88,7 @@ export const sdk = new Medusa({
 
 ---
 
-### Problem 3: Missing Cookie Domain Configuration ⚠️ HIGH PRIORITY
+### Problem 4: Missing Cookie Domain Configuration ⚠️ HIGH PRIORITY
 **File:** `medusa-config.ts`
 
 **Issue:**
@@ -172,8 +210,22 @@ curl -v -X GET https://basiscamp-berlin.de/admin/users/me \
 | Secure flag | false | true |
 | SameSite | lax | none |
 | Domain | localhost | .basiscamp-berlin.de |
-| Proxy | None | Nginx |
+| Proxy | None | Nginx (requires headers) |
 | CORS | Same-origin | Cross-origin |
+
+### Why Proxy Headers Matter
+
+When Medusa runs behind nginx, it can't directly see:
+- The original client IP
+- The HTTPS protocol (sees HTTP from nginx)
+- The original host/domain
+- The original port (443 vs 9000)
+
+Without these headers, Medusa's authentication middleware:
+- ❌ Builds incorrect cookie URLs
+- ❌ Fails CORS validation
+- ❌ Can't determine if connection is secure
+- ❌ Returns 401 even with valid credentials
 
 ---
 
