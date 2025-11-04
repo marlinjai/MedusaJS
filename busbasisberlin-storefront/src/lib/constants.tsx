@@ -30,6 +30,23 @@ export const paymentInfoMap: Record<
     title: "Manuelle Zahlung",
     icon: <CreditCard />,
   },
+  // Payment method types from Stripe Payment Element
+  card: {
+    title: "Kreditkarte",
+    icon: <CreditCard />,
+  },
+  paypal: {
+    title: "PayPal",
+    icon: <PayPal />,
+  },
+  ideal: {
+    title: "iDeal",
+    icon: <Ideal />,
+  },
+  bancontact: {
+    title: "Bancontact",
+    icon: <Bancontact />,
+  },
   // Add more payment providers here
 }
 
