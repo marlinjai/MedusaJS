@@ -112,38 +112,10 @@ const handleInventoryForStatusTransitionStep = createStep(
 			`[OFFER-TRANSITION] Handling inventory for transition: ${input.previous_status} → ${input.new_status}`,
 		);
 
-		// ✅ Scenario 1: Draft → Active (create reservations)
-		if (input.previous_status === 'draft' && input.new_status === 'active') {
-			logger.info(
-				`[OFFER-TRANSITION] Draft → Active: Creating new reservations`,
-			);
-			try {
-				const result = await reserveOfferInventoryWorkflow(container).run({
-					input: { offer_id: input.offer.id },
-				});
-				logger.info(
-					`[OFFER-TRANSITION] Reservations created: ${result.result.reservations_created} items`,
-				);
-				return new StepResponse(
-					{
-						inventory_action: 'reservations_created',
-						reservations_created: result.result.reservations_created,
-					},
-					{
-						inventory_action: 'reservations_created',
-						previous_status: input.previous_status,
-						offer_id: input.offer.id,
-					},
-				);
-			} catch (error) {
-				logger.error(
-					`[OFFER-TRANSITION] Failed to create reservations: ${error.message}`,
-				);
-				throw error;
-			}
-		}
+		// ✅ MANUAL RESERVATION: Inventory reservation is now done via button click
+		// No automatic reservation on draft → active transition
 
-		// ✅ Scenario 2: Active → Accepted (maintain reservations)
+		// ✅ Scenario 1: Active → Accepted (maintain reservations)
 		if (input.previous_status === 'active' && input.new_status === 'accepted') {
 			logger.info(
 				`[OFFER-TRANSITION] Active → Accepted: Maintaining existing reservations`,
@@ -260,27 +232,8 @@ const handleInventoryForStatusTransitionStep = createStep(
 		}
 
 		// ✅ Compensation logic for inventory actions
-		if (compensationData.inventory_action === 'reservations_created') {
-			logger.info(
-				`[OFFER-TRANSITION] Compensating: Releasing created reservations`,
-			);
-			if (!compensationData.offer_id) {
-				logger.error(`[OFFER-TRANSITION] Cannot compensate: missing offer_id`);
-				return;
-			}
-			try {
-				await releaseOfferReservationsWorkflow(container).run({
-					input: {
-						offer_id: compensationData.offer_id,
-						reason: 'Compensation for failed status transition',
-					},
-				});
-			} catch (error) {
-				logger.error(
-					`[OFFER-TRANSITION] Compensation failed: ${error.message}`,
-				);
-			}
-		} else if (compensationData.inventory_action === 'reservations_released') {
+		// Note: reservations_created compensation removed - reservations are now manual
+		if (compensationData.inventory_action === 'reservations_released') {
 			logger.info(
 				`[OFFER-TRANSITION] Compensating: Re-creating released reservations`,
 			);

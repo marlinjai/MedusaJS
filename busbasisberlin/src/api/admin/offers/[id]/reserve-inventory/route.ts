@@ -1,0 +1,103 @@
+/**
+ * /admin/offers/[id]/reserve-inventory/route.ts
+ * API route for manually reserving inventory for an offer
+ *
+ * This route allows admins to manually reserve inventory via button click.
+ * Inventory is no longer reserved automatically on draft → active transition.
+ */
+
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { resolveOfferService } from '../../../../../types/services';
+import { reserveOfferInventoryWorkflow } from '../../../../../workflows/reserve-offer-inventory';
+
+interface ReserveInventoryParams {
+	id: string;
+}
+
+export async function POST(
+	req: MedusaRequest<{}, ReserveInventoryParams>,
+	res: MedusaResponse,
+): Promise<void> {
+	const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
+	const { id } = req.params;
+
+	try {
+		const offerService = resolveOfferService(req.scope);
+
+		// Get offer details
+		const offer = await offerService.getOfferWithDetails(id);
+
+		if (!offer) {
+			res.status(404).json({
+				success: false,
+				error: 'Offer not found',
+			});
+			return;
+		}
+
+		// Validate offer status allows reservation
+		if (!['draft', 'active'].includes(offer.status)) {
+			res.status(400).json({
+				success: false,
+				error: `Cannot reserve inventory for offer with status: ${offer.status}. Allowed statuses: draft, active`,
+			});
+			return;
+		}
+
+		// Check if offer already has reservations
+		if (offer.has_reservations) {
+			res.status(400).json({
+				success: false,
+				error: 'Offer already has inventory reservations',
+			});
+			return;
+		}
+
+		// Check if offer has product items
+		const productItems = offer.items.filter(
+			item => item.item_type === 'product' && item.variant_id && item.sku,
+		);
+
+		if (productItems.length === 0) {
+			res.status(400).json({
+				success: false,
+				error: 'Offer does not have any product items to reserve',
+			});
+			return;
+		}
+
+		logger.info(
+			`[RESERVE-INVENTORY] Manual inventory reservation requested for offer ${offer.offer_number} (${id})`,
+		);
+
+		// Call workflow to reserve inventory
+		const result = await reserveOfferInventoryWorkflow(req.scope).run({
+			input: {
+				offer_id: id,
+			},
+		});
+
+		logger.info(
+			`[RESERVE-INVENTORY] Successfully created ${result.result.reservations_created} reservations for offer ${offer.offer_number}`,
+		);
+
+		res.json({
+			success: true,
+			message: `Successfully reserved inventory for ${result.result.reservations_created} items`,
+			offer_id: id,
+			offer_number: offer.offer_number,
+			reservations_created: result.result.reservations_created,
+		});
+	} catch (error) {
+		logger.error(`[RESERVE-INVENTORY] Error reserving inventory:`, error);
+
+		res.status(500).json({
+			success: false,
+			error: error.message || 'Failed to reserve inventory',
+			details:
+				process.env.NODE_ENV === 'development' ? error.stack : undefined,
+		});
+	}
+}
+

@@ -23,32 +23,80 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 	let browser;
 	try {
 		console.log('[PDF-GENERATOR] Launching Puppeteer browser...');
-		browser = await puppeteer.launch({
-			headless: true, // Use headless mode
+
+		// Determine Chromium executable path
+		// Only set executablePath if explicitly configured (for Docker/production)
+		// In local development, let Puppeteer use its default (bundled Chromium or system Chrome)
+		const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+
+		if (executablePath) {
+			console.log(`[PDF-GENERATOR] Using Chromium executable: ${executablePath}`);
+		} else {
+			console.log('[PDF-GENERATOR] Using default Puppeteer browser (no explicit executable path)');
+		}
+
+		const launchOptions: any = {
+			headless: true,
 			args: [
 				'--no-sandbox',
 				'--disable-setuid-sandbox',
-				'--disable-dev-shm-usage',
+				'--disable-dev-shm-usage', // Critical for Docker (uses /tmp instead of /dev/shm)
 				'--disable-gpu',
-				'--no-first-run',
-				'--no-zygote',
-				'--single-process',
-				'--disable-web-security',
+				'--disable-software-rasterizer',
+				'--disable-background-timer-throttling',
+				'--disable-backgrounding-occluded-windows',
+				'--disable-renderer-backgrounding',
+				'--disable-features=TranslateUI',
 				'--disable-features=VizDisplayCompositor',
+				'--no-first-run',
+				'--disable-web-security',
+				'--disable-extensions',
+				'--disable-default-apps',
+				'--disable-sync',
 			],
 			ignoreDefaultArgs: ['--disable-extensions'],
-		});
+			timeout: 30000, // 30 second timeout for browser launch
+		};
+
+		// Only set executablePath if explicitly configured (Docker/production)
+		// On local macOS/Windows, let Puppeteer use its default browser
+		if (executablePath) {
+			launchOptions.executablePath = executablePath;
+			// Only use --single-process in Docker/production (with explicit executable path)
+			launchOptions.args.push('--single-process');
+		}
+
+		browser = await puppeteer.launch(launchOptions);
+
+		// Small delay to ensure browser is fully initialized
+		await new Promise(resolve => setTimeout(resolve, 500));
 		console.log('[PDF-GENERATOR] Browser launched successfully');
 	} catch (error) {
 		console.error('[PDF-GENERATOR] Failed to launch browser:', error);
+		console.error('[PDF-GENERATOR] Error details:', {
+			message: error.message,
+			stack: error.stack,
+			executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 'using default',
+		});
 		throw new Error(`Failed to launch Puppeteer browser: ${error.message}`);
 	}
 
 	try {
+		// Check if browser is still connected before proceeding
+		if (!browser.isConnected()) {
+			throw new Error('Browser disconnected before page creation');
+		}
+
+		// Listen for browser disconnection
+		browser.on('disconnected', () => {
+			console.error('[PDF-GENERATOR] Browser disconnected unexpectedly');
+		});
+
 		const page = await browser.newPage();
 
 		// Set page format for German A4 standard
-		await page.setViewport({ width: 794, height: 1123 }); // A4 at 96 DPI
+		// Use a larger viewport to ensure content fits
+		await page.setViewport({ width: 1200, height: 1697 }); // A4 at 144 DPI for better rendering
 
 		// Prepare data for template
 		console.log('[PDF-GENERATOR] Preparing template data...');
@@ -119,16 +167,168 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 			html.length,
 		);
 
-		// Set content and wait for fonts/images to load
+		// Verify HTML contains actual content (not just Handlebars placeholders)
+		if (html.includes('{{') && !html.includes('Basis Camp Berlin')) {
+			console.warn('[PDF-GENERATOR] Warning: HTML may contain unrendered Handlebars placeholders');
+			// Log a sample of the HTML for debugging
+			console.log('[PDF-GENERATOR] HTML sample (first 500 chars):', html.substring(0, 500));
+		}
+
+		// Set content and wait for DOM to be ready
+		// Using 'load' to ensure all styles are applied
 		console.log('[PDF-GENERATOR] Setting page content...');
-		await page.setContent(html, { waitUntil: 'networkidle0' });
+		await page.setContent(html, {
+			waitUntil: 'load',
+			timeout: 30000,
+		});
 		console.log('[PDF-GENERATOR] Page content set successfully');
+
+		// Additional wait for styles to apply
+		await new Promise(resolve => setTimeout(resolve, 500));
+
+		// Wait for fonts to be loaded (critical for PDF rendering)
+		await page.evaluateHandle(() => document.fonts.ready);
+		console.log('[PDF-GENERATOR] Fonts loaded');
+
+		// Wait for content to be fully rendered and CSS applied
+		// This ensures all styles are calculated and content is visible
+		try {
+			await page.waitForFunction(
+				() => {
+					const doc = document.querySelector('.document');
+					if (!doc) return false;
+					const computedStyle = window.getComputedStyle(doc);
+					// Check that element is visible and has content
+					return (
+						doc.textContent &&
+						doc.textContent.trim().length > 0 &&
+						computedStyle.display !== 'none' &&
+						computedStyle.visibility !== 'hidden' &&
+						computedStyle.opacity !== '0'
+					);
+				},
+				{ timeout: 10000 }, // Increased timeout to 10 seconds
+			);
+			console.log('[PDF-GENERATOR] Content rendering verified');
+		} catch (waitError) {
+			console.warn('[PDF-GENERATOR] Content wait timeout, proceeding anyway:', waitError.message);
+			// Continue anyway - sometimes the content is already rendered
+		}
+
+		// Additional wait to ensure all rendering is complete
+		await new Promise(resolve => setTimeout(resolve, 1000));
+
+		// Ensure content is painted before PDF generation
+		// This is critical - PDF generation needs the content to be visually rendered
+		await page.evaluate(() => {
+			return new Promise((resolve) => {
+				// Force a repaint by reading layout properties
+				const doc = document.querySelector('.document');
+				if (doc) {
+					// Trigger layout calculation
+					void doc.offsetHeight;
+					void doc.offsetWidth;
+					// Force style recalculation
+					void window.getComputedStyle(doc).height;
+				}
+				// Wait for multiple paint cycles to ensure everything is rendered
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => {
+						requestAnimationFrame(() => {
+							resolve(undefined);
+						});
+					});
+				});
+			});
+		});
+		console.log('[PDF-GENERATOR] Content painting completed');
+
+		// Verify content is actually rendered (check for main document element)
+		const contentCheck = await page.evaluate(() => {
+			const doc = document.querySelector('.document');
+			if (!doc) {
+				return { found: false, textLength: 0, computedStyle: null };
+			}
+			const computedStyle = window.getComputedStyle(doc);
+			const textContent = doc.textContent?.trim() || '';
+			return {
+				found: true,
+				textLength: textContent.length,
+				preview: textContent.substring(0, 100),
+				display: computedStyle.display,
+				visibility: computedStyle.visibility,
+				opacity: computedStyle.opacity,
+				color: computedStyle.color,
+				backgroundColor: computedStyle.backgroundColor,
+			};
+		});
+		console.log('[PDF-GENERATOR] Content check:', JSON.stringify(contentCheck));
+
+		if (!contentCheck.found || contentCheck.textLength === 0) {
+			throw new Error(
+				`PDF content appears to be empty after rendering. Found: ${contentCheck.found}, Text length: ${contentCheck.textLength}`,
+			);
+		}
+
+		// Verify content is visible (not hidden by CSS)
+		if (contentCheck.display === 'none' || contentCheck.visibility === 'hidden' || contentCheck.opacity === '0') {
+			console.warn('[PDF-GENERATOR] Warning: Content may be hidden by CSS:', contentCheck);
+		}
+
+		// Additional debug: Check if content is actually visible in viewport
+		const viewportCheck = await page.evaluate(() => {
+			const doc = document.querySelector('.document');
+			if (!doc) return { visible: false, reason: 'Element not found' };
+
+			const rect = doc.getBoundingClientRect();
+			const style = window.getComputedStyle(doc);
+
+			return {
+				visible: rect.width > 0 && rect.height > 0,
+				width: rect.width,
+				height: rect.height,
+				top: rect.top,
+				left: rect.left,
+				display: style.display,
+				position: style.position,
+				overflow: style.overflow,
+			};
+		});
+		console.log('[PDF-GENERATOR] Viewport check:', JSON.stringify(viewportCheck));
+
+		if (!viewportCheck.visible) {
+			console.error('[PDF-GENERATOR] Content has zero dimensions in viewport!', viewportCheck);
+		}
+
+		// Debug: Capture screenshot to verify rendering (optional, can be disabled in production)
+		if (process.env.NODE_ENV !== 'production') {
+			try {
+				const screenshot = await page.screenshot({ type: 'png', fullPage: true });
+				console.log('[PDF-GENERATOR] Screenshot captured, size:', screenshot.length, 'bytes');
+			} catch (screenshotError) {
+				console.warn('[PDF-GENERATOR] Screenshot capture failed (non-critical):', screenshotError.message);
+			}
+		}
 
 		// Generate PDF with German business standards
 		console.log('[PDF-GENERATOR] Generating PDF...');
+
+		// Ensure page is fully loaded and scrolled to show all content
+		await page.evaluate(() => {
+			// Scroll to top to ensure we capture from the beginning
+			window.scrollTo(0, 0);
+			// Force a reflow
+			document.body.offsetHeight;
+		});
+
+		// Final wait before PDF generation
+		await new Promise(resolve => setTimeout(resolve, 500));
+
 		const pdfBuffer = await page.pdf({
 			format: 'A4',
 			printBackground: true,
+			preferCSSPageSize: false, // Use format instead of CSS page size
+			displayHeaderFooter: false,
 			margin: {
 				top: '20mm',
 				right: '20mm',
@@ -186,6 +386,9 @@ function getHTMLTemplate(data: any): string {
           max-width: 210mm;
           margin: 0 auto;
           padding: 0;
+          min-height: 100vh; /* Ensure document has minimum height */
+          background: white; /* Explicit white background */
+          color: #333; /* Explicit text color */
         }
 
         /* Header with company information */

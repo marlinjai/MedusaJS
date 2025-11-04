@@ -3,7 +3,7 @@
  * Offer detail page for viewing and editing offers
  * Includes status management, item editing, and comprehensive information display
  */
-import { ArrowLeft, Edit, FileText, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, Plus, Trash2, Mail, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -130,15 +130,8 @@ export default function OfferDetailPage() {
 	const [generatingPDF, setGeneratingPDF] = useState(false);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 	const [pdfFilename, setPdfFilename] = useState<string>('');
-
-	// Email notification preferences (per-offer)
-	const [emailNotifications, setEmailNotifications] = useState<{
-		offer_created: boolean;
-		offer_active: boolean;
-		offer_accepted: boolean;
-		offer_completed: boolean;
-		offer_cancelled: boolean;
-	} | null>(null);
+	const [sendingEmail, setSendingEmail] = useState(false);
+	const [reservingInventory, setReservingInventory] = useState(false);
 
 	// Load offer data
 	useEffect(() => {
@@ -162,15 +155,6 @@ export default function OfferDetailPage() {
 				priceStates[item.id] = (item.unit_price / 100).toFixed(2);
 			});
 			setPriceInputStates(priceStates);
-
-			// Initialize email notifications
-			setEmailNotifications(data.offer.email_notifications || {
-				offer_created: true,
-				offer_active: true,
-				offer_accepted: true,
-				offer_completed: true,
-				offer_cancelled: true,
-			});
 		} catch (error) {
 			console.error('Error loading offer:', error);
 			toast.error(
@@ -249,6 +233,81 @@ export default function OfferDetailPage() {
 			}
 		};
 	}, [pdfUrl]);
+
+	// Send email manually
+	const sendEmail = async (eventType?: string) => {
+		if (!offer) return;
+
+		setSendingEmail(true);
+		try {
+			const response = await fetch(`/admin/offers/${offer.id}/send-email`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					event_type: eventType,
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Fehler beim Senden der E-Mail');
+			}
+
+			const result = await response.json();
+			toast.success(result.message || 'E-Mail erfolgreich gesendet');
+		} catch (error) {
+			console.error('Error sending email:', error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Fehler beim Senden der E-Mail',
+			);
+		} finally {
+			setSendingEmail(false);
+		}
+	};
+
+	// Reserve inventory manually
+	const reserveInventory = async () => {
+		if (!offer) return;
+
+		setReservingInventory(true);
+		try {
+			const response = await fetch(
+				`/admin/offers/${offer.id}/reserve-inventory`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Fehler beim Reservieren des Inventars');
+			}
+
+			const result = await response.json();
+			toast.success(
+				result.message || 'Inventar erfolgreich reserviert',
+			);
+
+			// Reload offer to reflect reservation status
+			await loadOffer();
+		} catch (error) {
+			console.error('Error reserving inventory:', error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Fehler beim Reservieren des Inventars',
+			);
+		} finally {
+			setReservingInventory(false);
+		}
+	};
 
 	// Check for cached PDF when offer loads
 	const checkCachedPDF = async (offerId: string) => {
@@ -424,7 +483,6 @@ export default function OfferDetailPage() {
 				},
 				body: JSON.stringify({
 					...offer,
-					email_notifications: emailNotifications,
 					items: offer.items.map(item => ({
 						...item,
 						unit_price: Math.round(item.unit_price), // Already in cents
@@ -994,40 +1052,6 @@ export default function OfferDetailPage() {
 						</div>
 					</div>
 
-					{/* Email Notifications - Only visible in edit mode */}
-					{editing && emailNotifications && (
-						<div className="bg-ui-bg-subtle rounded-lg p-6">
-							<Text size="large" weight="plus" className="text-ui-fg-base mb-4">
-								E-Mail Benachrichtigungen
-							</Text>
-							<Text size="small" className="text-ui-fg-subtle mb-4">
-								Individuelle E-Mail-Einstellungen für dieses Angebot
-							</Text>
-
-							<div className="space-y-3">
-								{[
-									{ key: 'offer_created' as const, label: 'Angebot erstellt' },
-									{ key: 'offer_active' as const, label: 'Angebot aktiv' },
-									{ key: 'offer_accepted' as const, label: 'Angebot angenommen' },
-									{ key: 'offer_completed' as const, label: 'Angebot abgeschlossen' },
-									{ key: 'offer_cancelled' as const, label: 'Angebot storniert' }
-								].map(({ key, label }) => (
-									<label key={key} className="flex items-center gap-2 cursor-pointer">
-										<input
-											type="checkbox"
-											checked={emailNotifications[key]}
-											onChange={(e) => setEmailNotifications(prev => ({
-												...prev!,
-												[key]: e.target.checked
-											}))}
-											className="w-4 h-4 rounded border-ui-border-base"
-										/>
-										<Text size="small">{label}</Text>
-									</label>
-								))}
-							</div>
-						</div>
-					)}
 
 					{/* Items */}
 					<div className="bg-ui-bg-subtle rounded-lg p-6">
@@ -1750,6 +1774,39 @@ export default function OfferDetailPage() {
 						</Text>
 
 						<div className="flex flex-col gap-2">
+							{/* Send Email Button */}
+							{offer.customer_email &&
+								['active', 'accepted', 'cancelled', 'completed'].includes(
+									offer.status,
+								) && (
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={() => sendEmail()}
+										disabled={sendingEmail}
+									>
+										<Mail className="w-4 h-4 mr-2" />
+										{sendingEmail ? 'E-Mail wird gesendet...' : 'E-Mail senden'}
+									</Button>
+								)}
+
+							{/* Reserve Inventory Button */}
+							{offer.items.some(item => item.item_type === 'product') &&
+								['draft', 'active'].includes(offer.status) &&
+								!offer.has_reservations && (
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={reserveInventory}
+										disabled={reservingInventory}
+									>
+										<Package className="w-4 h-4 mr-2" />
+										{reservingInventory
+											? 'Inventar wird reserviert...'
+											: 'Inventar reservieren'}
+									</Button>
+								)}
+
 							{/* ✅ PDF generation only for finalized offers (not draft) */}
 							{['active', 'accepted', 'cancelled', 'completed'].includes(
 								offer.status,

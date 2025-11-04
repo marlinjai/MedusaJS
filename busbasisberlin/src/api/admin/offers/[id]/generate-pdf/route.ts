@@ -84,7 +84,7 @@ export async function POST(
 				{
 					filename,
 					mimeType: 'application/pdf',
-					content: Buffer.from(pdfBuffer).toString('binary'), // Convert Uint8Array to Buffer, then to binary string
+					content: Buffer.from(pdfBuffer),
 				},
 			]);
 

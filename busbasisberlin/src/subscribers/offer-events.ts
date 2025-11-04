@@ -5,10 +5,6 @@
  */
 import type { SubscriberArgs, SubscriberConfig } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
-import {
-	EmailNotificationSettings,
-	shouldSendEmailForOffer,
-} from '../utils/email-settings';
 import { generateOfferPdfBuffer } from '../utils/pdf-generator';
 
 // Define the data structure for offer events
@@ -21,12 +17,12 @@ type OfferEventData = {
 	customer_email?: string;
 	customer_name?: string;
 	user_id?: string;
-	email_notifications?: EmailNotificationSettings | null;
+	email_notifications?: any | null; // Kept for backwards compatibility but not used
 };
 
 /**
  * Handle offer created events
- * Currently just logs the event - PDF generation typically happens when status changes to 'active'
+ * MANUAL EMAIL MODE: Emails are now sent manually via button clicks, not automatically
  */
 export async function handleOfferCreated({
 	event: { data },
@@ -38,37 +34,16 @@ export async function handleOfferCreated({
 		`[OFFER-SUBSCRIBER] Offer created: ${data.offer_number} (${data.offer_id})`,
 	);
 
-	// Check if email notifications are enabled for offer creation (global + per-offer)
-	const shouldSendEmail = shouldSendEmailForOffer(
-		'offer_created',
-		data.email_notifications,
+	// ✅ MANUAL EMAIL MODE: No automatic email sending
+	// Emails must be sent manually via the "Send Email" button in admin UI
+	logger.info(
+		`[OFFER-SUBSCRIBER] Email sending skipped - use manual "Send Email" button in admin UI`,
 	);
-
-	if (!shouldSendEmail) {
-		logger.info(
-			`[OFFER-SUBSCRIBER] Email notifications disabled for offer ${data.offer_number}`,
-		);
-		return;
-	}
-
-	// For now, we don't generate PDFs for draft offers
-	// PDF generation will happen when status changes to 'active' or later
-	if (data.status === 'draft') {
-		logger.info(
-			`[OFFER-SUBSCRIBER] Skipping PDF generation for draft offer ${data.offer_number}`,
-		);
-		return;
-	}
-
-	// If offer is created with active status, trigger PDF generation and email
-	if (data.status === 'active' && data.customer_email) {
-		await generatePdfAndSendEmail(data, container, logger);
-	}
 }
 
 /**
  * Handle offer status change events
- * Generates PDF and sends email for certain status transitions
+ * MANUAL EMAIL MODE: Emails are now sent manually via button clicks, not automatically
  */
 export async function handleOfferStatusChanged({
 	event: { data },
@@ -80,22 +55,11 @@ export async function handleOfferStatusChanged({
 		`[OFFER-SUBSCRIBER] Offer status changed: ${data.offer_number} (${data.previous_status} → ${data.new_status})`,
 	);
 
-	// Check if email notifications are enabled for this status change (global + per-offer)
-	const eventType = getEventTypeFromStatus(data.new_status);
-	const shouldSendEmail = eventType
-		? shouldSendEmailForOffer(eventType, data.email_notifications)
-		: false;
-
-	if (shouldSendEmail && data.customer_email) {
-		await generatePdfAndSendEmail(data, container, logger);
-	} else {
-		const reason = !shouldSendEmail
-			? 'email notifications disabled for this status change'
-			: 'no customer email provided';
-		logger.info(
-			`[OFFER-SUBSCRIBER] Skipping email for status change ${data.previous_status} → ${data.new_status}: ${reason}`,
-		);
-	}
+	// ✅ MANUAL EMAIL MODE: No automatic email sending
+	// Emails must be sent manually via the "Send Email" button in admin UI
+	logger.info(
+		`[OFFER-SUBSCRIBER] Email sending skipped - use manual "Send Email" button in admin UI`,
+	);
 }
 
 /**
@@ -208,7 +172,7 @@ async function generateOfferPdfToS3(
 			{
 				filename,
 				mimeType: 'application/pdf',
-				content: Buffer.from(pdfBuffer).toString('binary'), // Use binary string, not base64
+				content: Buffer.from(pdfBuffer),
 			},
 		]);
 

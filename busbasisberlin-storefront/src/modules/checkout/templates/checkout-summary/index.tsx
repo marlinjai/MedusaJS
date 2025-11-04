@@ -18,24 +18,24 @@ const CheckoutSummary = ({ cart }: { cart: any }) => {
 		item_subtotal: cart.item_subtotal,
 		item_total: cart.item_total,
 	});
-	console.log('Cart items:', cart.items?.map((item: any) => ({
-		title: item.product_title,
-		quantity: item.quantity,
-		unit_price: item.unit_price,
-		subtotal: item.subtotal,
-		total: item.total,
-		original_total: item.original_total,
-		tax_total: item.tax_total,
-	})));
+	console.log(
+		'Cart items:',
+		cart.items?.map((item: any) => ({
+			title: item.product_title,
+			quantity: item.quantity,
+			unit_price: item.unit_price,
+			subtotal: item.subtotal,
+			total: item.total,
+			original_total: item.original_total,
+			tax_total: item.tax_total,
+		})),
+	);
 	console.log('========================');
 
 	return (
 		<div className="sticky top-24">
 			<div className="w-full bg-card border border-neutral-700 rounded-lg p-6 space-y-6">
-				<Heading
-					level="h2"
-					className="text-2xl font-bold"
-				>
+				<Heading level="h2" className="text-2xl font-bold">
 					{t('title')}
 				</Heading>
 				<div className="h-px bg-neutral-700" />
