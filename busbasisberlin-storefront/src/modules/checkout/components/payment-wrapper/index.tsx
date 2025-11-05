@@ -15,14 +15,15 @@ const stripeKey = process.env.NEXT_PUBLIC_STRIPE_KEY
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null
 
 const PaymentWrapper: React.FC<PaymentWrapperProps> = ({ cart, children }) => {
+  // Find the Stripe card payment session (pp_stripe_stripe), not other Stripe methods
   const paymentSession = cart.payment_collection?.payment_sessions?.find(
-    (s) => s.status === "pending"
+    (s) => s.status === "pending" && s.provider_id === "pp_stripe_stripe"
   )
 
   if (
-    isStripe(paymentSession?.provider_id) &&
     paymentSession &&
-    stripePromise
+    stripePromise &&
+    paymentSession.data?.client_secret
   ) {
     return (
       <StripeWrapper

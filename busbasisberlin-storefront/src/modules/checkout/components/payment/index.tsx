@@ -208,9 +208,6 @@ const Payment = ({
 										business: {
 											name: 'BASISCAMP BERLIN REPAIR & RESTORATION',
 										},
-										// Payment methods will be automatically displayed based on your Stripe Dashboard settings
-										// Make sure you have enabled the payment methods you want in:
-										// Stripe Dashboard > Settings > Payment methods
 									}}
 								/>
 							</div>
