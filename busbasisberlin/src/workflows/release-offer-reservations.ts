@@ -72,13 +72,13 @@ const releaseOfferReservationsStep = createStep(
 				}
 
 				if (reservationExists) {
-					// ✅ USE OFFICIAL WORKFLOW: Delete reservation with proper error handling & rollback
+				// ✅ USE OFFICIAL WORKFLOW: Delete reservation with proper error handling & rollback
 					try {
-						await deleteReservationsWorkflow(container).run({
-							input: { ids: [item.reservation_id] },
-						});
+				await deleteReservationsWorkflow(container).run({
+					input: { ids: [item.reservation_id] },
+				});
 
-						releasedReservations.push(item.reservation_id);
+				releasedReservations.push(item.reservation_id);
 						logger.info(
 							`[RELEASE-WORKFLOW] Released reservation ${item.reservation_id} for item ${item.title}${input.reason ? ` (${input.reason})` : ''}`,
 						);

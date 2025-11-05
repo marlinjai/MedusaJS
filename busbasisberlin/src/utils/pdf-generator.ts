@@ -111,6 +111,7 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 				postalCode: process.env.COMPANY_POSTAL_CODE || '12345',
 				city: process.env.COMPANY_CITY || 'Your City',
 				email: process.env.COMPANY_EMAIL || 'info@yourcompany.com',
+				logoUrl: process.env.COMPANY_LOGO_URL || null,
 			},
 
 			// Offer information
@@ -132,11 +133,10 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 				address: offer.customer_address,
 			},
 
-			// Items with German formatting
+			// Items with German formatting (description removed for cleaner layout)
 			items: (offer.items || []).map((item: any, index: number) => ({
 				position: index + 1,
 				title: item.title,
-				description: item.description,
 				quantity: item.quantity,
 				unit: item.unit || 'STK',
 				unitPrice: formatCurrency(item.unit_price),
@@ -444,9 +444,12 @@ function getHTMLTemplate(data: any): string {
         }
 
         .logo {
-          width: 150px;
+          max-width: 150px;
+          max-height: 60px;
           height: auto;
+          width: auto;
           margin-bottom: 10mm;
+          object-fit: contain;
         }
 
         .company-info {
@@ -556,24 +559,11 @@ function getHTMLTemplate(data: any): string {
 
          .item-title {
            font-weight: bold;
-           margin-bottom: 2mm;
            display: block;
          }
 
-         .item-description {
-           font-size: 9pt;
-           color: #666;
-           line-height: 1.6;
-           margin-top: 2mm;
-           padding-top: 2mm;
-           border-top: 1px solid #f0f0f0;
-           white-space: pre-wrap;
-           word-wrap: break-word;
-           overflow-wrap: break-word;
-         }
-
          .item-cell {
-           width: 48%;
+           width: 100%;
            overflow: visible;
          }
 
@@ -656,10 +646,14 @@ function getHTMLTemplate(data: any): string {
         <!-- Header Section -->
         <div class="header">
           <div class="logo-section">
-            <!-- Placeholder logo - replace with actual logo -->
+            {{#if company.logoUrl}}
+            <img src="{{company.logoUrl}}" alt="{{company.name}}" class="logo" />
+            {{else}}
+            <!-- Placeholder logo - set COMPANY_LOGO_URL environment variable to embed logo -->
             <div style="width: 150px; height: 60px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; font-size: 10pt; color: #666;">
               LOGO HIER
             </div>
+            {{/if}}
 
             <div class="company-info">
               <div class="company-name">{{company.name}}</div>
@@ -703,13 +697,13 @@ function getHTMLTemplate(data: any): string {
         <table class="items-table">
           <thead>
             <tr>
-              <th style="width: 6%;">Pos.</th>
-              <th style="width: 48%;">Artikel/Leistung</th>
-              <th style="width: 7%;">Menge</th>
-              <th style="width: 7%;">Einheit</th>
-              <th style="width: 12%;">Einzelpreis</th>
-              <th style="width: 6%;">Rabatt</th>
-              <th style="width: 14%;">Gesamtpreis</th>
+              <th style="width: 5%;">Pos.</th>
+              <th style="width: 58%;">Artikel/Leistung</th>
+              <th style="width: 6%;">Menge</th>
+              <th style="width: 6%;">Einheit</th>
+              <th style="width: 10%;">Einzelpreis</th>
+              <th style="width: 5%;">Rabatt</th>
+              <th style="width: 10%;">Gesamtpreis</th>
             </tr>
           </thead>
           <tbody>
@@ -718,7 +712,6 @@ function getHTMLTemplate(data: any): string {
               <td class="text-center">{{position}}</td>
               <td class="item-cell">
                 <span class="item-title">{{title}}</span>
-                {{#if description}}<div class="item-description">{{description}}</div>{{/if}}
               </td>
               <td class="text-right">{{quantity}}</td>
               <td class="text-center">{{unit}}</td>

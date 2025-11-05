@@ -4,7 +4,7 @@
 
 import { paymentInfoMap } from '@lib/constants';
 import { initiatePaymentSession } from '@lib/data/cart';
-import { CheckCircleSolid, CreditCard } from '@medusajs/icons';
+import { CheckCircleSolid } from '@medusajs/icons';
 import { Button, Container, Heading, Text, clx } from '@medusajs/ui';
 import ErrorMessage from '@modules/checkout/components/error-message';
 import Divider from '@modules/common/components/divider';
@@ -117,13 +117,26 @@ const Payment = ({
 
 	const initStripe = async () => {
 		try {
-			await initiatePaymentSession(cart, {
+			console.log('[PAYMENT] Attempting to initialize Stripe session...', {
+				cartId: cart.id,
+				providerId: 'pp_stripe_stripe',
+			});
+			const result = await initiatePaymentSession(cart, {
 				// TODO: change the provider ID if using a different ID in medusa-config.ts
 				provider_id: 'pp_stripe_stripe',
 			});
-		} catch (err) {
-			console.error('Failed to initialize Stripe session:', err);
-			setError('Failed to initialize payment. Please try again.');
+			console.log('[PAYMENT] Stripe session initialized successfully:', result);
+		} catch (err: any) {
+			console.error('[PAYMENT] Failed to initialize Stripe session:', err);
+			console.error('[PAYMENT] Error details:', {
+				message: err.message,
+				status: err.status,
+				response: err.response,
+				stack: err.stack,
+			});
+			setError(
+				`Failed to initialize payment: ${err.message || 'Unknown error'}`,
+			);
 		}
 	};
 
@@ -166,6 +179,23 @@ const Payment = ({
 				)}
 			</div>
 			<div>
+				{/* Debug info */}
+				{isOpen && (
+					<div className="mb-4 p-3 bg-ui-bg-subtle rounded text-xs">
+						<strong>Debug Info:</strong>
+						<br />
+						Active Session: {activeSession ? 'Yes' : 'No'}
+						<br />
+						Active Session Provider: {activeSession?.provider_id || 'None'}
+						<br />
+						Stripe Ready: {stripeReady ? 'Yes' : 'No'}
+						<br />
+						Available Payment Methods: {availablePaymentMethods?.length || 0}
+						<br />
+						Cart Payment Sessions:{' '}
+						{cart.payment_collection?.payment_sessions?.length || 0}
+					</div>
+				)}
 				<div className={isOpen ? 'block' : 'hidden'}>
 					{!paidByGiftcard &&
 						availablePaymentMethods?.length &&
@@ -247,7 +277,11 @@ const Payment = ({
 								>
 									<Container className="flex items-center h-7 w-fit p-2 bg-ui-button-neutral-hover">
 										{paymentInfoMap[selectedPaymentMethod]?.icon || (
-											<CreditCard />
+											<>
+												<p className="text-ui-fg-subtle">
+													nothing to show here
+												</p>
+											</>
 										)}
 									</Container>
 									<Text>{t('anotherStep')}</Text>
