@@ -47,12 +47,11 @@ export async function GET(
 		const sales_channel_id = await getDefaultSalesChannelIdFromQuery(query);
 		logger.info(`[DEBUG] Using sales channel ID: ${sales_channel_id}`);
 
-		// Build search filters
-		const filters: any = {};
-		if (q && q.trim()) filters.q = q.trim();
-		if (category_id) filters.category_id = category_id;
-		if (collection_id) filters.collection_id = collection_id;
-		if (status) filters.status = status;
+		// Build base filters (without query)
+		const baseFilters: any = {};
+		if (category_id) baseFilters.category_id = category_id;
+		if (collection_id) baseFilters.collection_id = collection_id;
+		if (status) baseFilters.status = status;
 
 		// Query products with variants and prices
 		const useCalculatedPrice = Boolean(
@@ -73,22 +72,108 @@ export async function GET(
 			fields.push('variants.calculated_price.*');
 		}
 
-		const { data: products } = await query.graph({
-			entity: 'product',
-			fields,
-			filters: filters,
-			pagination: { take, skip: 0 },
-			context: useCalculatedPrice
-				? {
-						variants: {
-							calculated_price: {
-								region_id,
-								currency_code,
+		// Smart search: Try handle first, then SKU, then general search
+		let products: any[] = [];
+		const searchQuery = q?.trim() || '';
+
+		if (searchQuery) {
+			const isSkuOrHandle = /^[a-zA-Z0-9_-]+$/.test(searchQuery);
+
+			if (isSkuOrHandle) {
+				// Step 1: Try searching by handle (handle equals SKU per user requirement)
+				logger.info(`[DEBUG] Searching by handle: "${searchQuery}"`);
+				const handleResult = await query.graph({
+					entity: 'product',
+					fields,
+					filters: { ...baseFilters, handle: searchQuery },
+					pagination: { take, skip: 0 },
+					context: useCalculatedPrice
+						? {
+								variants: {
+									calculated_price: {
+										region_id,
+										currency_code,
+									},
+								},
+							}
+						: undefined,
+				});
+				products = handleResult.data || [];
+
+				// Step 2: If handle search didn't work, search variants by SKU
+				if (products.length === 0) {
+					logger.info(`[DEBUG] Handle search returned no results, searching variants by SKU: "${searchQuery}"`);
+
+					// Get more products to search through variants
+					const allProductsResult = await query.graph({
+						entity: 'product',
+						fields,
+						filters: baseFilters,
+						pagination: { take: 100, skip: 0 },
+						context: useCalculatedPrice
+							? {
+									variants: {
+										calculated_price: {
+											region_id,
+											currency_code,
+										},
+									},
+								}
+							: undefined,
+					});
+
+					// Filter products that have variants with matching SKU
+					const allProducts = allProductsResult.data || [];
+					products = allProducts.filter((product: any) =>
+						product.variants?.some((variant: any) =>
+							variant.sku?.toLowerCase() === searchQuery.toLowerCase()
+						)
+					);
+
+					// Limit to requested take amount
+					products = products.slice(0, take);
+				}
+			} else {
+				// Step 3: Use general text search for non-SKU/handle queries
+				logger.info(`[DEBUG] Using general text search: "${searchQuery}"`);
+				const { data } = await query.graph({
+					entity: 'product',
+					fields,
+					filters: { ...baseFilters, q: searchQuery },
+					pagination: { take, skip: 0 },
+					context: useCalculatedPrice
+						? {
+								variants: {
+									calculated_price: {
+										region_id,
+										currency_code,
+									},
+								},
+							}
+						: undefined,
+				});
+				products = data || [];
+			}
+		} else {
+			// No query - return all products (or empty)
+			const { data } = await query.graph({
+				entity: 'product',
+				fields,
+				filters: baseFilters,
+				pagination: { take, skip: 0 },
+				context: useCalculatedPrice
+					? {
+							variants: {
+								calculated_price: {
+									region_id,
+									currency_code,
+								},
 							},
-						},
-					}
-				: undefined,
-		});
+						}
+					: undefined,
+			});
+			products = data || [];
+		}
 
 		logger.info(`[DEBUG] Found ${products.length} products for query "${q}"`);
 

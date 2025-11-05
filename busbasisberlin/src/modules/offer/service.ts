@@ -485,8 +485,8 @@ class OfferService extends MedusaService({
 	): boolean {
 		const validTransitions: { [key: string]: string[] } = {
 			draft: ['active', 'cancelled'],
-			active: ['accepted', 'cancelled'],
-			accepted: ['completed', 'cancelled'],
+			active: ['accepted', 'cancelled', 'draft'],
+			accepted: ['completed', 'cancelled', 'active'],
 			completed: [], // Terminal state
 			cancelled: [], // Terminal state
 		};
@@ -597,13 +597,41 @@ class OfferService extends MedusaService({
 			.map(item => item.variant_id)
 			.filter((variantId): variantId is string => Boolean(variantId));
 
+		// ✅ Filter out manual products (variants with manage_inventory: false)
+		let inventoryEligibleVariantIds: string[] = [];
+		if (variantIds.length > 0) {
+			try {
+				// Fetch variant data to check manage_inventory property
+				const { data: variants } = await queryService.graph({
+					entity: 'product_variant',
+					fields: ['id', 'manage_inventory'],
+					filters: { id: variantIds },
+				});
+
+				// Only include variants that manage inventory
+				inventoryEligibleVariantIds = variants
+					.filter((v: any) => v.manage_inventory !== false)
+					.map((v: any) => v.id);
+
+				this.logger_.info(
+					`[OFFER-INVENTORY] Filtered ${variantIds.length} variants to ${inventoryEligibleVariantIds.length} inventory-managed variants for offer ${offer.offer_number}`,
+				);
+			} catch (error) {
+				this.logger_.warn(
+					`[OFFER-INVENTORY] Could not fetch variant data to check manage_inventory, checking all variants: ${error.message}`,
+				);
+				// Fallback: check all variants if we can't fetch variant data
+				inventoryEligibleVariantIds = variantIds;
+			}
+		}
+
 		let inventoryMap: Record<string, number> = {};
 
-		if (variantIds.length > 0) {
+		if (inventoryEligibleVariantIds.length > 0) {
 			try {
 				// Use getVariantAvailability to get real-time inventory data
 				const availability = await getVariantAvailability(queryService, {
-					variant_ids: variantIds,
+					variant_ids: inventoryEligibleVariantIds,
 					sales_channel_id,
 				});
 
@@ -654,8 +682,19 @@ class OfferService extends MedusaService({
 				};
 			}
 
+			// ✅ Manual products (manage_inventory: false) don't need inventory checks
+			if (!inventoryEligibleVariantIds.includes(item.variant_id)) {
+				return {
+					item_id: item.id,
+					available_quantity: null, // Manual products don't track inventory
+					is_available: true, // Manual products are always available
+					stock_status: 'manual',
+					required_quantity: item.quantity,
+				};
+			}
+
 			// ✅ FIX: If item has a reservation_id, it means inventory is already reserved
-			// Don't check raw availability - check if reservation exists
+			// Check if reservation exists and differentiate between actual stock vs backorder
 			const hasReservation = Boolean(item.reservation_id);
 			const availableQuantity = inventoryMap[item.variant_id] || 0;
 			const requiredQuantity = item.quantity;
@@ -666,8 +705,14 @@ class OfferService extends MedusaService({
 
 			let stockStatus = 'available';
 			if (hasReservation) {
-				// Item has reservation - it's available
-				stockStatus = 'reserved';
+				// ✅ NEW: Differentiate between reserved with stock vs backorder reservation
+				// If reservation exists but stock is insufficient, it's a backorder reservation
+				if (availableQuantity < requiredQuantity) {
+					stockStatus = 'reserved_backorder';
+				} else {
+					// Item has reservation and stock is available
+					stockStatus = 'reserved';
+				}
 			} else if (availableQuantity <= 0) {
 				stockStatus = 'out_of_stock';
 			} else if (availableQuantity < requiredQuantity) {
@@ -695,13 +740,15 @@ class OfferService extends MedusaService({
 		const hasLowStock = itemStatuses.some(
 			item => item.stock_status === 'low_stock',
 		);
-		// Reserved items can be completed, so check if all items are either available or reserved
+		// Reserved items (including backorder), manual products, and services can be completed
 		const canComplete = itemStatuses.every(
 			item =>
 				item.stock_status === 'available' ||
 				item.stock_status === 'reserved' ||
+				item.stock_status === 'reserved_backorder' || // ✅ Backorder reservations can be completed
 				item.stock_status === 'low_stock' ||
-				item.stock_status === 'service',
+				item.stock_status === 'service' ||
+				item.stock_status === 'manual', // ✅ Manual products are always available
 		);
 
 		return {

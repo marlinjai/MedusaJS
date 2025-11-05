@@ -5,8 +5,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Configure, Hits, InstantSearch, SearchBox } from 'react-instantsearch';
 import { FiSearch } from 'react-icons/fi';
+import {
+	Configure,
+	InstantSearch,
+	SearchBox,
+	useHits,
+	useInstantSearch,
+} from 'react-instantsearch';
 import { searchClient } from '../../../../lib/config';
 import Modal from '../../../common/components/modal';
 
@@ -37,13 +43,53 @@ export const useSearchModal = () => {
 	return { isOpen, setIsOpen };
 };
 
-export default function SearchModal({ externalIsOpen, externalSetIsOpen }: { externalIsOpen?: boolean; externalSetIsOpen?: (value: boolean) => void } = {}) {
+// Custom Hits component using useHits hook for better styling control
+function CustomHits() {
+	const { items } = useHits();
+	const { results } = useInstantSearch();
+
+	// Show empty state if there's a query but no results
+	if (results?.query && items.length === 0) {
+		return (
+			<div className="flex flex-col items-center justify-center py-12 px-4">
+				<div className="text-center">
+					<p className="text-lg font-semibold text-gray-300 mb-2">
+						Keine Ergebnisse gefunden
+					</p>
+					<p className="text-sm text-gray-400">
+						Versuchen Sie es mit anderen Suchbegriffen
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	// Show grid of hits
+	return (
+		<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+			{items.map(hit => (
+				<div key={hit.id || (hit as any).objectID} className="h-full w-[280px]">
+					<Hit hit={hit as unknown as Hit} />
+				</div>
+			))}
+		</div>
+	);
+}
+
+export default function SearchModal({
+	externalIsOpen,
+	externalSetIsOpen,
+}: {
+	externalIsOpen?: boolean;
+	externalSetIsOpen?: (value: boolean) => void;
+} = {}) {
 	const [internalIsOpen, setInternalIsOpen] = useState(false);
 	const pathname = usePathname();
 
 	// Use external state if provided, otherwise use internal
 	const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
-	const setIsOpen = externalSetIsOpen !== undefined ? externalSetIsOpen : setInternalIsOpen;
+	const setIsOpen =
+		externalSetIsOpen !== undefined ? externalSetIsOpen : setInternalIsOpen;
 
 	useEffect(() => {
 		setIsOpen(false);
@@ -60,51 +106,55 @@ export default function SearchModal({ externalIsOpen, externalSetIsOpen }: { ext
 					Suche
 				</Button>
 			</div>
-			<Modal isOpen={isOpen} close={() => setIsOpen(false)}>
-				<div className="w-full max-w-4xl mx-auto">
+			<Modal isOpen={isOpen} close={() => setIsOpen(false)} search={true}>
+				<div className="w-full max-w-[98vw] mx-auto h-full flex flex-col px-4">
 					<InstantSearch
 						searchClient={searchClient}
-						indexName={process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME}
+						indexName={
+							process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME || 'products'
+						}
 					>
-					{/* Configure to sort by availability and filter out products without prices */}
-					<Configure
-						ranking={['desc(is_available)', 'typo', 'words', 'proximity', 'attribute', 'sort', 'exactness']}
-						filters='NOT (tags = "internal" OR tags = "verbrauchsstoffe") AND min_price > 0'
-					/>
-
-						{/* Custom Search Box */}
-						<div className="mb-6">
-							<div className="relative">
-								<SearchBox
-									placeholder="Suche nach Produkten..."
-									classNames={{
-										root: 'relative',
-										form: 'relative flex items-center',
-										input:
-											'w-full pl-12 pr-4 py-3 text-base text-foreground placeholder:text-muted-foreground bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all',
-										submit: 'absolute left-3 top-1/2 -translate-y-1/2',
-										reset: 'absolute right-3 top-1/2 -translate-y-1/2',
-										submitIcon: 'hidden',
-										resetIcon: 'hidden',
-										loadingIcon: 'hidden',
-									}}
-									submitIconComponent={() => (
-										<FiSearch className="w-5 h-5 text-muted-foreground" />
-									)}
-								/>
+						{/* Configure to sort by availability and filter out products without prices */}
+						<Configure
+							ranking={[
+								'desc(is_available)',
+								'typo',
+								'words',
+								'proximity',
+								'attribute',
+								'sort',
+								'exactness',
+							]}
+							filters='NOT (tags = "internal" OR tags = "verbrauchsstoffe") AND min_price > 0'
+						/>
+						<div className="flex flex-col items-center justify-center">
+							{/* Custom Search Box */}
+							<div className="mb-6 flex-shrink-0">
+								<div className="relative">
+									<SearchBox
+										placeholder="Suche nach Produkten..."
+										classNames={{
+											root: 'relative',
+											form: 'relative flex items-center',
+											input:
+												'w-full pl-12 pr-4 py-3 text-base text-foreground placeholder:text-muted-foreground bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all',
+											submit: 'absolute left-3 top-1/2 -translate-y-1/2',
+											reset: 'absolute right-3 top-1/2 -translate-y-1/2',
+											submitIcon: 'hidden',
+											resetIcon: 'hidden',
+											loadingIcon: 'hidden',
+										}}
+										submitIconComponent={() => (
+											<FiSearch className="w-5 h-5 text-muted-foreground" />
+										)}
+									/>
+								</div>
 							</div>
-						</div>
 
-						{/* Results */}
-						<div className="max-h-[600px] overflow-y-auto">
-							<Hits
-								hitComponent={Hit}
-								classNames={{
-									root: '',
-									list: 'grid grid-cols-1 sm:grid-cols-2 gap-4',
-									item: '',
-								}}
-							/>
+							{/* Results */}
+							<div className="flex-1 overflow-y-auto min-h-0 max-h-[750px] bg-stone-950 p-8 rounded-lg w-[75vw]">
+								<CustomHits />
+							</div>
 						</div>
 					</InstantSearch>
 				</div>
@@ -115,22 +165,22 @@ export default function SearchModal({ externalIsOpen, externalSetIsOpen }: { ext
 
 const Hit = ({ hit }: { hit: Hit }) => {
 	return (
-		<Link href={`/products/${hit.handle}`} className="group block">
-			<div className="bg-card rounded-lg overflow-hidden border border-border hover:border-primary hover:shadow-lg transition-all duration-200 h-full flex flex-col">
+		<Link href={`/products/${hit.handle}`} className="group block h-full">
+			<div className="bg-stone-950 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 hover:shadow-lg transition-all duration-200 h-full flex flex-col">
 				{/* Image */}
-				<div className="relative w-full aspect-square bg-muted">
+				<div className="relative w-full aspect-square bg-stone-900">
 					{hit.thumbnail ? (
 						<Image
 							src={hit.thumbnail}
 							alt={hit.title}
 							fill
 							className="object-cover group-hover:scale-105 transition-transform duration-300"
-							sizes="(max-width: 640px) 100vw, 50vw"
+							sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
 						/>
 					) : (
 						<div className="absolute inset-0 flex items-center justify-center">
 							<svg
-								className="w-16 h-16 text-muted-foreground"
+								className="w-16 h-16 text-gray-600"
 								fill="none"
 								viewBox="0 0 24 24"
 								stroke="currentColor"
@@ -157,13 +207,13 @@ const Hit = ({ hit }: { hit: Hit }) => {
 
 				{/* Content */}
 				<div className="p-4 flex-1 flex flex-col">
-					<h3 className="font-semibold text-base text-card-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5rem]">
+					<h3 className="font-semibold text-base text-white mb-2 line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5rem]">
 						{hit.title}
 					</h3>
 
 					{/* Description */}
 					{hit.description && (
-						<p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+						<p className="text-sm text-gray-400 line-clamp-2 mb-3">
 							{hit.description}
 						</p>
 					)}
@@ -175,7 +225,7 @@ const Hit = ({ hit }: { hit: Hit }) => {
 								{hit.category_names.slice(0, 2).map((category, idx) => (
 									<span
 										key={idx}
-										className="text-xs px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full"
+										className="text-xs px-2 py-0.5 bg-gray-800 text-gray-300 rounded-full"
 									>
 										{category}
 									</span>
@@ -185,7 +235,7 @@ const Hit = ({ hit }: { hit: Hit }) => {
 					)}
 
 					{/* Price and Availability */}
-					<div className="mt-auto pt-2 border-t border-border">
+					<div className="mt-auto pt-2 border-t border-gray-700">
 						{hit.min_price ? (
 							<div className="flex flex-col gap-1">
 								<div className="flex items-baseline gap-2">
@@ -193,22 +243,26 @@ const Hit = ({ hit }: { hit: Hit }) => {
 										€{hit.min_price.toFixed(2)}
 									</span>
 									{hit.max_price && hit.max_price !== hit.min_price && (
-										<span className="text-sm text-muted-foreground">
+										<span className="text-sm text-gray-400">
 											- €{hit.max_price.toFixed(2)}
 										</span>
 									)}
 								</div>
-								<span className="text-xs text-muted-foreground">inkl. MwSt.</span>
+								<span className="text-xs text-gray-400">inkl. MwSt.</span>
 							</div>
 						) : (
-							<span className="text-sm text-muted-foreground">Preis auf Anfrage</span>
+							<span className="text-sm text-gray-400">Preis auf Anfrage</span>
 						)}
 						{/* Availability Status */}
 						<div className="mt-2">
 							{hit.is_available !== false ? (
-								<span className="text-xs text-green-600 font-medium">● Verfügbar</span>
+								<span className="text-xs text-green-600 font-medium">
+									● Verfügbar
+								</span>
 							) : (
-								<span className="text-xs text-red-600 font-medium">✕ Nicht verfügbar</span>
+								<span className="text-xs text-red-600 font-medium">
+									✕ Nicht verfügbar
+								</span>
 							)}
 						</div>
 					</div>

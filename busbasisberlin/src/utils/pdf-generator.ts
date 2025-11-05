@@ -98,6 +98,9 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		// Use a larger viewport to ensure content fits
 		await page.setViewport({ width: 1200, height: 1697 }); // A4 at 144 DPI for better rendering
 
+		// Emulate print media to ensure print styles are applied
+		await page.emulateMediaType('print');
+
 		// Prepare data for template
 		console.log('[PDF-GENERATOR] Preparing template data...');
 		const templateData = {
@@ -183,8 +186,12 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		});
 		console.log('[PDF-GENERATOR] Page content set successfully');
 
+		// Wait for the document element to be present
+		await page.waitForSelector('.document', { timeout: 10000 });
+		console.log('[PDF-GENERATOR] Document element found');
+
 		// Additional wait for styles to apply
-		await new Promise(resolve => setTimeout(resolve, 500));
+		await new Promise(resolve => setTimeout(resolve, 1000));
 
 		// Wait for fonts to be loaded (critical for PDF rendering)
 		await page.evaluateHandle(() => document.fonts.ready);
@@ -226,8 +233,9 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 				const doc = document.querySelector('.document');
 				if (doc) {
 					// Trigger layout calculation
-					void doc.offsetHeight;
-					void doc.offsetWidth;
+					const htmlElement = doc as HTMLElement;
+					void htmlElement.offsetHeight;
+					void htmlElement.offsetWidth;
 					// Force style recalculation
 					void window.getComputedStyle(doc).height;
 				}
@@ -313,11 +321,9 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		// Generate PDF with German business standards
 		console.log('[PDF-GENERATOR] Generating PDF...');
 
-		// Ensure page is fully loaded and scrolled to show all content
+		// Ensure page is fully loaded and scrolled to top
 		await page.evaluate(() => {
-			// Scroll to top to ensure we capture from the beginning
 			window.scrollTo(0, 0);
-			// Force a reflow
 			document.body.offsetHeight;
 		});
 
@@ -374,21 +380,57 @@ function getHTMLTemplate(data: any): string {
           box-sizing: border-box;
         }
 
+        html {
+          width: 100%;
+          height: 100%;
+        }
+
         body {
           font-family: 'Arial', 'Helvetica', sans-serif;
           font-size: 11pt;
           line-height: 1.4;
           color: #333;
           background: white;
+          width: 100%;
+          min-height: 100%;
+          margin: 0;
+          padding: 0;
         }
 
         .document {
+          width: 100%;
           max-width: 210mm;
           margin: 0 auto;
-          padding: 0;
+          padding: 20mm;
           min-height: 100vh; /* Ensure document has minimum height */
           background: white; /* Explicit white background */
           color: #333; /* Explicit text color */
+          display: block;
+        }
+
+        @page {
+          size: A4;
+          margin: 20mm;
+        }
+
+        @media print {
+          .items-table {
+            page-break-inside: auto;
+          }
+
+          .items-table thead {
+            display: table-header-group;
+          }
+
+          .items-table tbody tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            page-break-after: auto;
+          }
+
+          .items-table tbody tr td {
+            page-break-inside: auto;
+          }
         }
 
         /* Header with company information */
@@ -474,6 +516,15 @@ function getHTMLTemplate(data: any): string {
           border-collapse: collapse;
           margin-bottom: 15mm;
           font-size: 10pt;
+          page-break-inside: auto;
+        }
+
+        .items-table thead {
+          display: table-header-group;
+        }
+
+        .items-table tbody {
+          display: table-row-group;
         }
 
         .items-table th {
@@ -482,6 +533,11 @@ function getHTMLTemplate(data: any): string {
           padding: 3mm;
           text-align: left;
           font-weight: bold;
+        }
+
+        .items-table tr {
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
 
         .items-table td {
@@ -498,11 +554,27 @@ function getHTMLTemplate(data: any): string {
            text-align: center;
          }
 
+         .item-title {
+           font-weight: bold;
+           margin-bottom: 2mm;
+           display: block;
+         }
+
          .item-description {
            font-size: 9pt;
            color: #666;
-           line-height: 1.3;
-           margin-top: 1mm;
+           line-height: 1.6;
+           margin-top: 2mm;
+           padding-top: 2mm;
+           border-top: 1px solid #f0f0f0;
+           white-space: pre-wrap;
+           word-wrap: break-word;
+           overflow-wrap: break-word;
+         }
+
+         .item-cell {
+           width: 48%;
+           overflow: visible;
          }
 
         /* Totals section - German tax display */
@@ -644,8 +716,8 @@ function getHTMLTemplate(data: any): string {
             {{#each items}}
             <tr>
               <td class="text-center">{{position}}</td>
-              <td>
-                <strong>{{title}}</strong>
+              <td class="item-cell">
+                <span class="item-title">{{title}}</span>
                 {{#if description}}<div class="item-description">{{description}}</div>{{/if}}
               </td>
               <td class="text-right">{{quantity}}</td>

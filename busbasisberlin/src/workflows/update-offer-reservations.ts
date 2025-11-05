@@ -152,6 +152,9 @@ const updateReservationsStep = createStep(
 					});
 					if (inventoryLevels.length === 0) continue;
 
+					// Get offer to retrieve offer_number
+					const offer = await offerService.getOfferWithDetails(input.offer_id);
+
 					// ✅ USE OFFICIAL WORKFLOW: Create new reservation
 					const reservationResult = await createReservationsWorkflow(
 						container,
@@ -163,12 +166,15 @@ const updateReservationsStep = createStep(
 									location_id: inventoryLevels[0].location_id,
 									quantity: item.quantity,
 									allow_backorder: true,
+									description: `Reservierung für Angebot ${offer?.offer_number || input.offer_id}`,
 									metadata: {
 										type: 'offer',
 										offer_id: input.offer_id,
+										offer_number: offer?.offer_number,
 										offer_item_id: item.id,
 										variant_id: item.variant_id,
 										sku: item.sku,
+										created_at: new Date().toISOString(),
 									},
 								},
 							],
@@ -223,6 +229,9 @@ const createReservationsStep = createStep(
 
 		let createdCount = 0;
 
+		// Get offer once to retrieve offer_number for all new reservations
+		const offer = await offerService.getOfferWithDetails(input.offer_id);
+
 		for (const item of input.items_to_create) {
 			try {
 				const inventoryItems = await inventoryService.listInventoryItems({
@@ -246,12 +255,15 @@ const createReservationsStep = createStep(
 								location_id: inventoryLevels[0].location_id,
 								quantity: item.quantity,
 								allow_backorder: true,
+								description: `Reservierung für Angebot ${offer?.offer_number || input.offer_id}`,
 								metadata: {
 									type: 'offer',
 									offer_id: input.offer_id,
+									offer_number: offer?.offer_number,
 									offer_item_id: item.id,
 									variant_id: item.variant_id,
 									sku: item.sku,
+									created_at: new Date().toISOString(),
 								},
 							},
 						],

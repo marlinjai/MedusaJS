@@ -3,7 +3,17 @@
  * Offer detail page for viewing and editing offers
  * Includes status management, item editing, and comprehensive information display
  */
-import { ArrowLeft, Edit, FileText, Plus, Trash2, Mail, Package } from 'lucide-react';
+import {
+	ArrowLeft,
+	Edit,
+	FileText,
+	Info,
+	Mail,
+	Package,
+	Plus,
+	Trash2,
+	X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -63,6 +73,7 @@ interface OfferItem {
 	sku?: string;
 	variant_id?: string;
 	variant_title?: string;
+	reservation_id?: string; // Inventory reservation ID
 	base_price?: number;
 	hourly_rate?: number;
 	currency_code?: string;
@@ -132,6 +143,17 @@ export default function OfferDetailPage() {
 	const [pdfFilename, setPdfFilename] = useState<string>('');
 	const [sendingEmail, setSendingEmail] = useState(false);
 	const [reservingInventory, setReservingInventory] = useState(false);
+	const [releasingReservations, setReleasingReservations] = useState(false);
+
+	// Preview modal state
+	const [showPreview, setShowPreview] = useState(false);
+	const [previewData, setPreviewData] = useState<{
+		pdf: { base64: string; filename: string };
+		email: { html: string; subject: string; to: string };
+	} | null>(null);
+	const [loadingPreview, setLoadingPreview] = useState(false);
+	const [previewTab, setPreviewTab] = useState<'pdf' | 'email'>('pdf');
+	const [showInfoModal, setShowInfoModal] = useState(false);
 
 	// Load offer data
 	useEffect(() => {
@@ -234,7 +256,44 @@ export default function OfferDetailPage() {
 		};
 	}, [pdfUrl]);
 
-	// Send email manually
+	// Preview email and PDF before sending
+	const previewEmail = async (eventType?: string) => {
+		if (!offer) return;
+
+		setLoadingPreview(true);
+		try {
+			const response = await fetch(`/admin/offers/${offer.id}/preview-email`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					event_type: eventType,
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Fehler beim Laden der Vorschau');
+			}
+
+			const result = await response.json();
+			setPreviewData(result);
+			setShowPreview(true);
+			setPreviewTab('email'); // Start with email preview
+		} catch (error) {
+			console.error('Error loading preview:', error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Fehler beim Laden der Vorschau',
+			);
+		} finally {
+			setLoadingPreview(false);
+		}
+	};
+
+	// Send email manually (after preview confirmation)
 	const sendEmail = async (eventType?: string) => {
 		if (!offer) return;
 
@@ -257,6 +316,8 @@ export default function OfferDetailPage() {
 
 			const result = await response.json();
 			toast.success(result.message || 'E-Mail erfolgreich gesendet');
+			setShowPreview(false); // Close preview modal after sending
+			setPreviewData(null);
 		} catch (error) {
 			console.error('Error sending email:', error);
 			toast.error(
@@ -291,9 +352,7 @@ export default function OfferDetailPage() {
 			}
 
 			const result = await response.json();
-			toast.success(
-				result.message || 'Inventar erfolgreich reserviert',
-			);
+			toast.success(result.message || 'Inventar erfolgreich reserviert');
 
 			// Reload offer to reflect reservation status
 			await loadOffer();
@@ -306,6 +365,46 @@ export default function OfferDetailPage() {
 			);
 		} finally {
 			setReservingInventory(false);
+		}
+	};
+
+	// Release inventory reservations manually
+	const releaseReservations = async () => {
+		if (!offer) return;
+
+		setReleasingReservations(true);
+		try {
+			const response = await fetch(
+				`/admin/offers/${offer.id}/release-reservations`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(
+					error.error || 'Fehler beim Freigeben der Reservierungen',
+				);
+			}
+
+			const result = await response.json();
+			toast.success(result.message || 'Reservierungen erfolgreich freigegeben');
+
+			// Reload offer to reflect reservation status
+			await loadOffer();
+		} catch (error) {
+			console.error('Error releasing reservations:', error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Fehler beim Freigeben der Reservierungen',
+			);
+		} finally {
+			setReleasingReservations(false);
 		}
 	};
 
@@ -559,8 +658,8 @@ export default function OfferDetailPage() {
 	const getAvailableStatusTransitions = (currentStatus: string): string[] => {
 		const transitions: { [key: string]: string[] } = {
 			draft: ['active', 'cancelled'],
-			active: ['accepted', 'cancelled'],
-			accepted: ['completed', 'cancelled'], // Can now be fulfilled via workflow
+			active: ['accepted', 'cancelled', 'draft'], // Can transition back to draft
+			accepted: ['completed', 'cancelled', 'active'], // Can transition back to active
 			completed: [], // Cannot transition from completed
 			cancelled: [], // Cannot transition from cancelled
 		};
@@ -1052,7 +1151,6 @@ export default function OfferDetailPage() {
 						</div>
 					</div>
 
-
 					{/* Items */}
 					<div className="bg-ui-bg-subtle rounded-lg p-6">
 						<div className="flex items-center justify-between mb-4">
@@ -1126,7 +1224,7 @@ export default function OfferDetailPage() {
 															<SearchableDropdown
 																key={`product-${item.id}`}
 																label="Produkt auswählen"
-																placeholder="Produkt suchen..."
+																placeholder="Produkt, SKU oder Handle suchen..."
 																value={item.product_id || ''}
 																onValueChange={() => {}}
 																onItemSelect={product =>
@@ -1465,6 +1563,12 @@ export default function OfferDetailPage() {
 																					return `🔒 Reserviert (${item.quantity} Stk.)`;
 																				}
 																				if (
+																					inventoryItem.stock_status ===
+																					'reserved_backorder'
+																				) {
+																					return `⚠️ Muss bestellt werden (${item.quantity} Stk.)`;
+																				}
+																				if (
 																					inventoryItem.stock_status !==
 																					'service'
 																				) {
@@ -1495,6 +1599,12 @@ export default function OfferDetailPage() {
 																					return (
 																						<Badge color="purple" size="small">
 																							Reserviert
+																						</Badge>
+																					);
+																				case 'reserved_backorder':
+																					return (
+																						<Badge color="orange" size="small">
+																							Muss bestellt werden
 																						</Badge>
 																					);
 																				case 'available':
@@ -1779,33 +1889,75 @@ export default function OfferDetailPage() {
 								['active', 'accepted', 'cancelled', 'completed'].includes(
 									offer.status,
 								) && (
-									<Button
-										variant="secondary"
-										size="small"
-										onClick={() => sendEmail()}
-										disabled={sendingEmail}
-									>
-										<Mail className="w-4 h-4 mr-2" />
-										{sendingEmail ? 'E-Mail wird gesendet...' : 'E-Mail senden'}
-									</Button>
+									<div className="flex items-center gap-2">
+										<Button
+											variant="secondary"
+											size="small"
+											onClick={() => previewEmail()}
+											disabled={loadingPreview || sendingEmail}
+											className="flex-1"
+										>
+											<Mail className="w-4 h-4 mr-2" />
+											{loadingPreview
+												? 'Vorschau wird geladen...'
+												: sendingEmail
+													? 'E-Mail wird gesendet...'
+													: 'E-Mail senden'}
+										</Button>
+										<Button
+											variant="transparent"
+											size="small"
+											onClick={() => setShowInfoModal(true)}
+											className="p-2"
+											title="Informationen zum E-Mail-Versand"
+										>
+											<Info className="w-4 h-4" />
+										</Button>
+									</div>
 								)}
 
-							{/* Reserve Inventory Button */}
-							{offer.items.some(item => item.item_type === 'product') &&
-								['draft', 'active'].includes(offer.status) &&
-								!offer.has_reservations && (
-									<Button
-										variant="secondary"
-										size="small"
-										onClick={reserveInventory}
-										disabled={reservingInventory}
-									>
-										<Package className="w-4 h-4 mr-2" />
-										{reservingInventory
-											? 'Inventar wird reserviert...'
-											: 'Inventar reservieren'}
-									</Button>
-								)}
+							{/* Reserve/Release Inventory Buttons */}
+							{offer.items.some(item => item.item_type === 'product') && (
+								<div className="flex items-center gap-2">
+									{['draft', 'active'].includes(offer.status) &&
+										!offer.has_reservations &&
+										!offer.items.some(
+											item =>
+												item.item_type === 'product' && item.reservation_id,
+										) && (
+											<Button
+												variant="secondary"
+												size="small"
+												onClick={reserveInventory}
+												disabled={reservingInventory}
+											>
+												<Package className="w-4 h-4 mr-2" />
+												{reservingInventory
+													? 'Inventar wird reserviert...'
+													: 'Inventar reservieren'}
+											</Button>
+										)}
+									{['active', 'accepted'].includes(offer.status) &&
+										(offer.has_reservations ||
+											offer.items.some(
+												item =>
+													item.item_type === 'product' && item.reservation_id,
+											)) && (
+											<Button
+												variant="secondary"
+												size="small"
+												onClick={releaseReservations}
+												disabled={releasingReservations}
+												className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300"
+											>
+												<Package className="w-4 h-4 mr-2" />
+												{releasingReservations
+													? 'Reservierungen werden freigegeben...'
+													: 'Reservierungen freigeben'}
+											</Button>
+										)}
+								</div>
+							)}
 
 							{/* ✅ PDF generation only for finalized offers (not draft) */}
 							{['active', 'accepted', 'cancelled', 'completed'].includes(
@@ -1890,6 +2042,295 @@ export default function OfferDetailPage() {
 					)}
 				</div>
 			</div>
+
+			{/* Preview Modal */}
+			{showPreview && previewData && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+					<div className="bg-ui-bg-base rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
+						{/* Modal Header */}
+						<div className="flex items-center justify-between p-6 border-b border-ui-border-base">
+							<Text size="large" weight="plus" className="text-ui-fg-base">
+								E-Mail & PDF Vorschau
+							</Text>
+							<Button
+								variant="transparent"
+								size="small"
+								onClick={() => {
+									setShowPreview(false);
+									setPreviewData(null);
+								}}
+							>
+								<X className="w-4 h-4" />
+							</Button>
+						</div>
+
+						{/* Tab Navigation */}
+						<div className="flex border-b border-ui-border-base">
+							<button
+								type="button"
+								onClick={() => setPreviewTab('email')}
+								className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+									previewTab === 'email'
+										? 'border-ui-fg-interactive text-ui-fg-interactive'
+										: 'border-transparent text-ui-fg-subtle hover:text-ui-fg-base'
+								}`}
+							>
+								E-Mail Vorschau
+							</button>
+							<button
+								type="button"
+								onClick={() => setPreviewTab('pdf')}
+								className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+									previewTab === 'pdf'
+										? 'border-ui-fg-interactive text-ui-fg-interactive'
+										: 'border-transparent text-ui-fg-subtle hover:text-ui-fg-base'
+								}`}
+							>
+								PDF Vorschau
+							</button>
+						</div>
+
+						{/* Modal Content */}
+						<div className="flex-1 overflow-hidden relative">
+							{/* Email Preview */}
+							{previewTab === 'email' && (
+								<div className="h-full flex flex-col">
+									{/* Email Info */}
+									<div className="p-4 bg-ui-bg-subtle border-b border-ui-border-base">
+										<div className="space-y-2">
+											<Text
+												size="small"
+												weight="plus"
+												className="text-ui-fg-base"
+											>
+												An: {previewData.email.to}
+											</Text>
+											<Text
+												size="small"
+												weight="plus"
+												className="text-ui-fg-base"
+											>
+												Betreff: {previewData.email.subject}
+											</Text>
+										</div>
+									</div>
+									{/* Email HTML Preview */}
+									<iframe
+										srcDoc={previewData.email.html}
+										className="w-full h-full border-0"
+										title="Email Preview"
+									/>
+								</div>
+							)}
+
+							{/* PDF Preview */}
+							{previewTab === 'pdf' && (
+								<div className="h-full w-full">
+									<iframe
+										src={`data:application/pdf;base64,${previewData.pdf.base64}`}
+										className="w-full h-full border-0"
+										title="PDF Preview"
+									/>
+								</div>
+							)}
+						</div>
+
+						{/* Modal Footer */}
+						<div className="flex items-center justify-end gap-3 p-6 border-t border-ui-border-base">
+							<Button
+								variant="secondary"
+								size="small"
+								onClick={() => {
+									setShowPreview(false);
+									setPreviewData(null);
+								}}
+							>
+								Abbrechen
+							</Button>
+							<Button
+								variant="primary"
+								size="small"
+								onClick={() => sendEmail()}
+								disabled={sendingEmail}
+							>
+								{sendingEmail ? 'Wird gesendet...' : 'E-Mail senden'}
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Info Modal */}
+			{showInfoModal && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+					<div className="bg-ui-bg-base rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+						{/* Modal Header */}
+						<div className="flex items-center justify-between p-6 border-b border-ui-border-base">
+							<Text size="large" weight="plus" className="text-ui-fg-base">
+								E-Mail-Versand Informationen
+							</Text>
+							<Button
+								variant="transparent"
+								size="small"
+								onClick={() => setShowInfoModal(false)}
+							>
+								<X className="w-4 h-4" />
+							</Button>
+						</div>
+
+						{/* Modal Content */}
+						<div className="p-6 space-y-6">
+							{/* Overview */}
+							<div>
+								<Text
+									size="base"
+									weight="plus"
+									className="text-ui-fg-base mb-3"
+								>
+									Übersicht
+								</Text>
+								<Text
+									size="small"
+									className="text-ui-fg-subtle leading-relaxed"
+								>
+									Der E-Mail-Versand erfolgt in mehreren Schritten. Sie können
+									zuerst eine Vorschau der E-Mail und des PDF-Anhangs anzeigen,
+									bevor Sie die E-Mail an den Kunden senden.
+								</Text>
+							</div>
+
+							{/* Process Steps */}
+							<div>
+								<Text
+									size="base"
+									weight="plus"
+									className="text-ui-fg-base mb-3"
+								>
+									Ablauf
+								</Text>
+								<div className="space-y-4">
+									{/* Step 1 */}
+									<div className="flex gap-3">
+										<div className="flex-shrink-0 w-8 h-8 rounded-full bg-ui-bg-interactive text-ui-fg-on-interactive flex items-center justify-center font-semibold text-sm">
+											1
+										</div>
+										<div className="flex-1">
+											<Text
+												size="small"
+												weight="plus"
+												className="text-ui-fg-base mb-1"
+											>
+												Vorschau öffnen
+											</Text>
+											<Text size="small" className="text-ui-fg-subtle">
+												Klicken Sie auf "E-Mail senden" um die Vorschau zu
+												öffnen. Das System generiert automatisch die E-Mail und
+												das PDF-Angebot.
+											</Text>
+										</div>
+									</div>
+
+									{/* Step 2 */}
+									<div className="flex gap-3">
+										<div className="flex-shrink-0 w-8 h-8 rounded-full bg-ui-bg-interactive text-ui-fg-on-interactive flex items-center justify-center font-semibold text-sm">
+											2
+										</div>
+										<div className="flex-1">
+											<Text
+												size="small"
+												weight="plus"
+												className="text-ui-fg-base mb-1"
+											>
+												Vorschau prüfen
+											</Text>
+											<Text size="small" className="text-ui-fg-subtle">
+												In der Vorschau können Sie zwischen zwei Tabs wechseln:
+												<br />• <strong>E-Mail Vorschau:</strong> Zeigt die
+												gerenderte E-Mail mit Betreff und Empfänger
+												<br />• <strong>PDF Vorschau:</strong> Zeigt das
+												generierte PDF-Angebot, das als Anhang versendet wird
+											</Text>
+										</div>
+									</div>
+
+									{/* Step 3 */}
+									<div className="flex gap-3">
+										<div className="flex-shrink-0 w-8 h-8 rounded-full bg-ui-bg-interactive text-ui-fg-on-interactive flex items-center justify-center font-semibold text-sm">
+											3
+										</div>
+										<div className="flex-1">
+											<Text
+												size="small"
+												weight="plus"
+												className="text-ui-fg-base mb-1"
+											>
+												E-Mail senden oder abbrechen
+											</Text>
+											<Text size="small" className="text-ui-fg-subtle">
+												Wenn alles korrekt aussieht, klicken Sie auf "E-Mail
+												senden" um die E-Mail an den Kunden zu versenden. Das
+												PDF wird automatisch als Anhang hinzugefügt. Sie können
+												die Vorschau auch jederzeit mit "Abbrechen" schließen.
+											</Text>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{/* Status Information */}
+							<div className="bg-ui-bg-subtle rounded-lg p-4">
+								<Text
+									size="small"
+									weight="plus"
+									className="text-ui-fg-base mb-2"
+								>
+									Status-Anforderungen
+								</Text>
+								<Text size="small" className="text-ui-fg-subtle">
+									E-Mails können nur für Angebote mit folgenden Status gesendet
+									werden:
+									<br />• <strong>active</strong> - Angebot ist aktiv
+									<br />• <strong>accepted</strong> - Angebot wurde angenommen
+									<br />• <strong>completed</strong> - Angebot ist abgeschlossen
+									<br />• <strong>cancelled</strong> - Angebot wurde storniert
+								</Text>
+							</div>
+
+							{/* Email Template Info */}
+							<div className="bg-ui-bg-subtle rounded-lg p-4">
+								<Text
+									size="small"
+									weight="plus"
+									className="text-ui-fg-base mb-2"
+								>
+									E-Mail-Vorlage
+								</Text>
+								<Text size="small" className="text-ui-fg-subtle">
+									Die verwendete E-Mail-Vorlage hängt vom aktuellen Status des
+									Angebots ab:
+									<br />• <strong>Active:</strong> "Ihr Angebot ist bereit"
+									<br />• <strong>Accepted:</strong> "Angebot angenommen -
+									Bestätigung"
+									<br />• <strong>Completed:</strong> "Angebot erfolgreich
+									abgeschlossen"
+									<br />• <strong>Cancelled:</strong> "Angebot storniert"
+								</Text>
+							</div>
+						</div>
+
+						{/* Modal Footer */}
+						<div className="flex items-center justify-end p-6 border-t border-ui-border-base">
+							<Button
+								variant="primary"
+								size="small"
+								onClick={() => setShowInfoModal(false)}
+							>
+								Verstanden
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
 		</Container>
 	);
 }

@@ -705,7 +705,7 @@ export default function CreateOfferPage() {
 												<SearchableDropdown
 													key={`product-${item.id}`}
 													label="Produkt auswählen"
-													placeholder="Produkt suchen..."
+													placeholder="Produkt, SKU oder Handle suchen..."
 													value={item.product_id || ''}
 													onValueChange={() => {}}
 													onItemSelect={product =>

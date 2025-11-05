@@ -46,7 +46,55 @@ Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to le
 
 - **Meilisearch Integration**: Advanced product search with category faceting
 - **Automatic Product Sync**: Products sync to Meilisearch on create/update
-- **Custom Modules**: Supplier, Offer, and Service modules
+- **Custom Modules**: Complete ERP functionality with Offer, Supplier, Manual Customer, and Service modules
+- **Transactional Emails**: Pre-configured email templates for orders, offers, and customer communications
+- **Search Integration**: Enhanced search functionality across products, services, and customers
+
+## Custom Modules
+
+This backend includes several custom modules built for ERP functionality:
+
+### [Offer Module](./src/modules/offer/README.md)
+Complete offer/quotation management system with:
+- Automatic offer numbering (ANG-00001, ANG-00002, etc.)
+- Status workflow management (draft → active → accepted → completed)
+- Inventory reservation and release (manual and automatic)
+- PDF generation (DIN 5008 compliant)
+- Email notifications with preview functionality
+- Product and service item support
+- Bidirectional status transitions
+
+### [Supplier Module](./src/modules/supplier/README.md)
+Comprehensive supplier management with:
+- Supplier information and contact management
+- Multiple addresses per supplier
+- Product-supplier relationships with pricing
+- Lead time and delivery time tracking
+- CSV import support (JTL VAP format compatible)
+
+### [Manual Customer Module](./src/modules/manual-customer/README.md)
+Flexible customer management for:
+- Legacy customers from other systems
+- Walk-in customers without email addresses
+- Business customers with incomplete information
+- Customer linking to core Medusa customers
+- Purchase history tracking
+
+### [Service Module](./src/modules/service/README.md)
+Service catalog management with:
+- Service categorization and types
+- Flexible pricing (base price or hourly rate)
+- Service requirements tracking
+- Integration with offers
+
+## Search Integration
+
+### Meilisearch Configuration
+Advanced product search powered by Meilisearch with:
+- Real-time product synchronization
+- Category faceting and filtering
+- SKU and handle search support
+- Product availability integration
 
 ## Meilisearch Configuration
 
@@ -97,6 +145,35 @@ curl -X POST 'http://localhost:7700/keys' \
     "expiresAt": null
   }'
 ```
+
+## Transactional Emails
+
+The backend includes pre-configured transactional email templates using React Email and Resend:
+
+### Order Emails
+- Order placed confirmation
+- Order shipped notification
+- Order delivered notification
+- Order cancelled notification
+
+### Offer Emails
+- Offer active notification
+- Offer accepted confirmation
+- Offer completed notification
+- Offer cancelled notification
+
+### Customer Emails
+- Welcome email for new customers
+- Password reset
+- User invitation
+
+All emails include:
+- Company branding and styling
+- Responsive design
+- German language support
+- PDF attachments (for offers)
+
+See [`src/modules/resend/emails/`](./src/modules/resend/emails/) for all email templates.
 
 ## Maintenance Scripts
 

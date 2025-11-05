@@ -64,6 +64,13 @@ Features include:
   - Server Actions
   - Streaming
   - Static Pre-Rendering
+- Advanced Search:
+  - Meilisearch integration for fast product search
+  - Category faceting and filtering
+  - Real-time product availability
+- German Language Support:
+  - Full i18n implementation
+  - Localized content and messaging
 
 # Quickstart
 

@@ -80,11 +80,12 @@ export async function POST(
 		try {
 			// Try File Module first
 			logger.info(`[PDF-GENERATION] Attempting File Module upload...`);
+			const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
 			const uploadResult = await fileModuleService.createFiles([
 				{
 					filename,
 					mimeType: 'application/pdf',
-					content: Buffer.from(pdfBuffer),
+					content: pdfBase64,
 				},
 			]);
 

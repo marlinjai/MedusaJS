@@ -17,6 +17,11 @@ For complete production deployment instructions, see **[DEPLOYMENT_GUIDE.md](./D
 
 **Live Application:** https://basiscamp-berlin.de
 
+## 📚 Documentation
+
+- **[Backend README](./busbasisberlin/README.md)** - Complete backend documentation including custom modules, search integration, and transactional emails
+- **[Frontend README](./busbasisberlin-storefront/README.md)** - Frontend documentation and setup guide
+
 ## 🏗️ Project Structure
 
 ```
@@ -25,17 +30,24 @@ MedusaJS/
 │   ├── src/                     # Source code
 │   │   ├── admin/               # Admin UI routes & components
 │   │   ├── api/                 # API routes
-│   │   ├── modules/             # Custom modules (Blog, Supplier)
+│   │   ├── modules/             # Custom modules (Offer, Supplier, Manual Customer, Service)
+│   │   │   ├── offer/           # Offer/quotation management
+│   │   │   ├── supplier/        # Supplier management
+│   │   │   ├── manual-customer/ # Manual customer management
+│   │   │   ├── service/         # Service catalog
+│   │   │   └── resend/          # Email templates
+│   │   ├── workflows/          # Business logic workflows
 │   │   └── scripts/             # Database scripts
-│   ├── .eslintrc.js            # ESLint configuration
-│   ├── .prettierrc             # Prettier configuration
+│   ├── README.md               # Backend documentation
 │   └── package.json            # Backend dependencies
 ├── busbasisberlin-storefront/   # Next.js Frontend
 │   ├── src/                     # Source code
 │   │   ├── app/                 # Next.js App Router
 │   │   ├── modules/             # UI components & templates
 │   │   └── lib/                 # Utilities & data fetching
+│   ├── README.md               # Frontend documentation
 │   └── package.json            # Frontend dependencies
+├── change-docu/                # Implementation documentation
 ├── .vscode/                     # VSCode workspace settings
 ├── package.json                # Monorepo scripts
 └── README.md                   # This file
@@ -216,17 +228,34 @@ npx eslint "src/**/*.{ts,tsx,js,jsx}" --fix
 
 ## 📦 Custom Modules
 
-### Supplier Management
+The backend includes comprehensive ERP modules. See the [Backend README](./busbasisberlin/README.md) for detailed documentation:
 
-- Complete CRUD operations
-- Comprehensive supplier information tracking
-- Admin UI integration
+### [Offer Module](./busbasisberlin/src/modules/offer/README.md)
+Complete offer/quotation management with inventory reservation, PDF generation, and email notifications.
 
-### Blog System
+### [Supplier Module](./busbasisberlin/src/modules/supplier/README.md)
+Supplier management with contacts, addresses, and product-supplier relationships.
 
-- Content management
-- SEO optimization
-- Admin interface
+### [Manual Customer Module](./busbasisberlin/src/modules/manual-customer/README.md)
+Flexible customer management for legacy and walk-in customers.
+
+### [Service Module](./busbasisberlin/src/modules/service/README.md)
+Service catalog management integrated with offers.
+
+## 🔍 Search Integration
+
+- **Meilisearch**: Advanced product search with category faceting
+- **Real-time Sync**: Automatic product synchronization
+- **SKU/Handle Search**: Enhanced search capabilities
+- See [Backend README](./busbasisberlin/README.md#search-integration) for configuration
+
+## 📧 Transactional Emails
+
+Pre-configured email templates for:
+- Order confirmations and updates
+- Offer notifications
+- Customer communications
+- See [Backend README](./busbasisberlin/README.md#transactional-emails) for details
 
 ## 🔗 Available Scripts
 

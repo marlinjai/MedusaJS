@@ -39,6 +39,14 @@ const createOfferReservationsStep = createStep(
 
 		for (const item of input.productItems) {
 			try {
+				// ✅ CHECK: Skip items that already have reservations
+				if (item.reservation_id) {
+					logger.info(
+						`[RESERVE-WORKFLOW] Item ${item.title} already has reservation ${item.reservation_id}, skipping`,
+					);
+					continue;
+				}
+
 				// Get inventory item by SKU
 				const inventoryItems = await inventoryService.listInventoryItems({
 					sku: item.sku,
@@ -76,9 +84,11 @@ const createOfferReservationsStep = createStep(
 								location_id: locationId,
 								quantity: item.quantity,
 								allow_backorder: true, // Allow backorder for offers
+								description: `Reservierung für Angebot ${input.offer.offer_number}`,
 								metadata: {
 									type: 'offer',
 									offer_id: input.offer.id,
+									offer_number: input.offer.offer_number,
 									offer_item_id: item.id,
 									variant_id: item.variant_id,
 									sku: item.sku,

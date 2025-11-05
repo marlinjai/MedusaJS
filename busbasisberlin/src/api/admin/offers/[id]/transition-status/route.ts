@@ -97,16 +97,49 @@ export async function POST(
 						await getDefaultSalesChannelIdFromQuery(query);
 
 					// Filter product items that have variant_id
-					const productItems = offer.items.filter(
+					let productItems = offer.items.filter(
 						item => item.item_type === 'product' && item.variant_id,
 					);
 					const variantIds = productItems
 						.map(item => item.variant_id)
 						.filter((variantId): variantId is string => Boolean(variantId));
 
+					// ✅ Filter out manual products (variants with manage_inventory: false)
+					let inventoryEligibleVariantIds: string[] = [];
 					if (variantIds.length > 0) {
+						try {
+							// Fetch variant data to check manage_inventory property
+							const { data: variants } = await query.graph({
+								entity: 'product_variant',
+								fields: ['id', 'manage_inventory'],
+								filters: { id: variantIds },
+							});
+
+							// Only include variants that manage inventory
+							inventoryEligibleVariantIds = variants
+								.filter((v: any) => v.manage_inventory !== false)
+								.map((v: any) => v.id);
+
+							// Filter product items to only those with inventory-managed variants
+							productItems = productItems.filter(item =>
+								inventoryEligibleVariantIds.includes(item.variant_id!),
+							);
+
+							logger.info(
+								`[TRANSITION-STATUS] Filtered ${variantIds.length} variants to ${inventoryEligibleVariantIds.length} inventory-managed variants`,
+							);
+						} catch (error) {
+							logger.warn(
+								`[TRANSITION-STATUS] Could not fetch variant data to check manage_inventory: ${error.message}`,
+							);
+							// Fallback: check all variants if we can't fetch variant data
+							inventoryEligibleVariantIds = variantIds;
+						}
+					}
+
+					if (inventoryEligibleVariantIds.length > 0) {
 						const availability = await getVariantAvailability(query, {
-							variant_ids: variantIds,
+							variant_ids: inventoryEligibleVariantIds,
 							sales_channel_id,
 						});
 

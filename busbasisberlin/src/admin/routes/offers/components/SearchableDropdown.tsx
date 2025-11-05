@@ -151,7 +151,9 @@ const SearchableDropdown = ({
 				const productPrice = item.unit_price
 					? `${(item.unit_price / 100).toFixed(2)} €`
 					: null;
-				return [item.sku, item.category, productPrice]
+				// Show handle/SKU prominently, then category, then price
+				const handleOrSku = item.handle || item.sku || '';
+				return [handleOrSku, item.category, productPrice]
 					.filter(Boolean)
 					.join(' • ');
 			case 'service':

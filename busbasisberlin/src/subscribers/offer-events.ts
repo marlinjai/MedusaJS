@@ -6,6 +6,7 @@
 import type { SubscriberArgs, SubscriberConfig } from '@medusajs/framework';
 import { Modules } from '@medusajs/framework/utils';
 import { generateOfferPdfBuffer } from '../utils/pdf-generator';
+import type { EmailNotificationSettings } from '../utils/email-settings';
 
 // Define the data structure for offer events
 type OfferEventData = {

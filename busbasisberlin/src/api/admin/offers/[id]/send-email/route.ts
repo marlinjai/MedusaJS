@@ -81,7 +81,7 @@ export async function POST(
 			{
 				filename,
 				mimeType: 'application/pdf',
-				content: Buffer.from(pdfBuffer),
+				content: Buffer.from(pdfBuffer).toString('base64'),
 			},
 		]);
 

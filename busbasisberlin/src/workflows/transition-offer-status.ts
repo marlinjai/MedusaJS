@@ -132,6 +132,67 @@ const handleInventoryForStatusTransitionStep = createStep(
 			);
 		}
 
+		// ✅ Scenario 2: Accepted → Active (maintain reservations)
+		if (input.previous_status === 'accepted' && input.new_status === 'active') {
+			logger.info(
+				`[OFFER-TRANSITION] Accepted → Active: Maintaining existing reservations`,
+			);
+			return new StepResponse(
+				{
+					inventory_action: 'reservations_maintained',
+					reservations_maintained: true,
+				},
+				{
+					inventory_action: 'reservations_maintained',
+					previous_status: input.previous_status,
+				},
+			);
+		}
+
+		// ✅ Scenario 2b: Active → Draft (release reservations)
+		if (input.previous_status === 'active' && input.new_status === 'draft') {
+			logger.info(
+				`[OFFER-TRANSITION] Active → Draft: Releasing reservations`,
+			);
+			try {
+				const result = await releaseOfferReservationsWorkflow(container).run({
+					input: {
+						offer_id: input.offer.id,
+						reason: 'Offer status changed to draft',
+					},
+				});
+				logger.info(
+					`[OFFER-TRANSITION] Reservations released: ${result.result.reservations_released} items`,
+				);
+				return new StepResponse(
+					{
+						inventory_action: 'reservations_released',
+						reservations_released: result.result.reservations_released,
+					},
+					{
+						inventory_action: 'reservations_released',
+						previous_status: input.previous_status,
+						offer_id: input.offer.id,
+					},
+				);
+			} catch (error) {
+				logger.error(
+					`[OFFER-TRANSITION] Failed to release reservations: ${error.message}`,
+				);
+				// Don't throw error for release failures to allow status change to proceed
+				return new StepResponse(
+					{
+						inventory_action: 'reservations_release_failed',
+						error: error.message,
+					},
+					{
+						inventory_action: 'reservations_release_failed',
+						previous_status: input.previous_status,
+					},
+				);
+			}
+		}
+
 		// ✅ Scenario 3: Any → Cancelled (release reservations)
 		if (input.new_status === 'cancelled') {
 			logger.info(`[OFFER-TRANSITION] → Cancelled: Releasing all reservations`);

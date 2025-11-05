@@ -45,15 +45,6 @@ export async function POST(
 			return;
 		}
 
-		// Check if offer already has reservations
-		if (offer.has_reservations) {
-			res.status(400).json({
-				success: false,
-				error: 'Offer already has inventory reservations',
-			});
-			return;
-		}
-
 		// Check if offer has product items
 		const productItems = offer.items.filter(
 			item => item.item_type === 'product' && item.variant_id && item.sku,
@@ -63,6 +54,19 @@ export async function POST(
 			res.status(400).json({
 				success: false,
 				error: 'Offer does not have any product items to reserve',
+			});
+			return;
+		}
+
+		// Check if any items already have reservations (more reliable than has_reservations flag)
+		const itemsWithReservations = productItems.filter(
+			item => item.reservation_id,
+		);
+
+		if (itemsWithReservations.length > 0) {
+			res.status(400).json({
+				success: false,
+				error: `Offer already has reservations for ${itemsWithReservations.length} item(s). Cannot create duplicate reservations.`,
 			});
 			return;
 		}
@@ -81,6 +85,16 @@ export async function POST(
 		logger.info(
 			`[RESERVE-INVENTORY] Successfully created ${result.result.reservations_created} reservations for offer ${offer.offer_number}`,
 		);
+
+		// Update offer has_reservations flag if reservations were created
+		if (result.result.reservations_created > 0) {
+			await offerService.updateOffers([
+				{
+					id: id,
+					has_reservations: true,
+				},
+			]);
+		}
 
 		res.json({
 			success: true,
