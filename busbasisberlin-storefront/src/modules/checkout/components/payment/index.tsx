@@ -8,15 +8,15 @@ import { CheckCircleSolid, CreditCard } from '@medusajs/icons';
 import { Button, Container, Heading, Text, clx } from '@medusajs/ui';
 import ErrorMessage from '@modules/checkout/components/error-message';
 import Divider from '@modules/common/components/divider';
-import { useTranslations } from 'next-intl';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useContext, useEffect, useState } from 'react';
 import {
 	PaymentElement,
 	useElements,
 	useStripe,
 } from '@stripe/react-stripe-js';
 import { StripePaymentElementChangeEvent } from '@stripe/stripe-js';
+import { useTranslations } from 'next-intl';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { StripeContext } from '../payment-wrapper/stripe-wrapper';
 
 const Payment = ({
@@ -35,9 +35,8 @@ const Payment = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [stripeComplete, setStripeComplete] = useState(false);
-	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>(
-		'',
-	);
+	const [selectedPaymentMethod, setSelectedPaymentMethod] =
+		useState<string>('');
 
 	const stripe = stripeReady ? useStripe() : null;
 	const elements = stripeReady ? useElements() : null;
@@ -46,7 +45,7 @@ const Payment = ({
 	const router = useRouter();
 	const pathname = usePathname();
 
-	const isOpen = searchParams.get('step') === 'payment';
+	const isOpen = searchParams?.get('step') === 'payment';
 
 	const handlePaymentElementChange = async (
 		event: StripePaymentElementChangeEvent,
@@ -73,7 +72,7 @@ const Payment = ({
 
 	const createQueryString = useCallback(
 		(name: string, value: string) => {
-			const params = new URLSearchParams(searchParams);
+			const params = new URLSearchParams(searchParams?.toString() || '');
 			params.set(name, value);
 
 			return params.toString();
@@ -99,7 +98,7 @@ const Payment = ({
 			}
 
 			// Submit the payment method details
-			await elements.submit().catch((err) => {
+			await elements.submit().catch(err => {
 				console.error(err);
 				setError(err.message || 'An error occurred with the payment');
 				return;
@@ -176,6 +175,12 @@ const Payment = ({
 									onChange={handlePaymentElementChange}
 									options={{
 										layout: 'accordion',
+										business: {
+											name: 'BASISCAMP BERLIN REPAIR & RESTORATION',
+										},
+										// Payment methods will be automatically displayed based on your Stripe Dashboard settings
+										// Make sure you have enabled the payment methods you want in:
+										// Stripe Dashboard > Settings > Payment methods
 									}}
 								/>
 							</div>
