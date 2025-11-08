@@ -36,13 +36,16 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 		}));
 	};
 
+	const [submitError, setSubmitError] = useState<string | null>(null);
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsSubmitting(true);
+		setSubmitError(null);
 
 		try {
-			// TODO: Implement API route to send quote request
-			const response = await fetch('/api/quote-request', {
+			const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+			const response = await fetch(`${backendUrl}/store/quote-request`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -58,22 +61,28 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 				}),
 			});
 
-			if (response.ok) {
-				setIsSuccess(true);
-				setFormData({
-					email: customer?.email || '',
-					name: customer?.first_name && customer?.last_name
-						? `${customer.first_name} ${customer.last_name}`
-						: '',
-					phone: customer?.phone || '',
-					address: '',
-					city: '',
-					postalCode: '',
-					message: '',
-				});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to send quote request');
 			}
-		} catch (error) {
+
+			// Success - show success message and reset form
+			setIsSuccess(true);
+			setFormData({
+				email: customer?.email || '',
+				name: customer?.first_name && customer?.last_name
+					? `${customer.first_name} ${customer.last_name}`
+					: '',
+				phone: customer?.phone || '',
+				address: '',
+				city: '',
+				postalCode: '',
+				message: '',
+			});
+			setIsFormVisible(false);
+		} catch (error: any) {
 			console.error('Quote request error:', error);
+			setSubmitError(error.message || 'Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.');
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -248,6 +257,11 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 					/>
 				</div>
 
+					{submitError && (
+						<div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+							{submitError}
+						</div>
+					)}
 					<button
 						type="submit"
 						disabled={isSubmitting}

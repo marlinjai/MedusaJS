@@ -9,6 +9,7 @@ import {
 } from '@medusajs/framework/utils';
 import { CreateEmailOptions, Resend } from 'resend';
 import { adminPasswordResetEmail } from './emails/admin-password-reset';
+import { contactFormEmail } from './emails/contact-form';
 import { customerWelcomeEmail } from './emails/customer-welcome';
 import { offerAcceptedEmail } from './emails/offer-accepted';
 import { offerActiveEmail } from './emails/offer-active';
@@ -18,8 +19,9 @@ import { orderCancelledEmail } from './emails/order-cancelled';
 import { orderDeliveredEmail } from './emails/order-delivered';
 import { orderPlacedEmail } from './emails/order-placed';
 import { orderShippedEmail } from './emails/order-shipped';
-import { passwordResetEmail } from './emails/reset-password';
 import { productInquiryEmail } from './emails/product-inquiry';
+import { quoteRequestEmail } from './emails/quote-request';
+import { passwordResetEmail } from './emails/reset-password';
 import { userInvitedEmail } from './emails/user-invited';
 
 type ResendOptions = {
@@ -58,6 +60,10 @@ enum Templates {
 	OFFER_NOTIFICATION = 'offer-notification',
 	// Product inquiry templates
 	PRODUCT_INQUIRY = 'product-inquiry',
+	// Quote request templates (Sperrgut)
+	QUOTE_REQUEST = 'quote-request',
+	// Contact form templates
+	CONTACT_FORM = 'contact-form',
 	// User management templates
 	USER_INVITED = 'user-invited',
 }
@@ -82,6 +88,10 @@ const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
 		[Templates.OFFER_CANCELLED]: offerCancelledEmail,
 		// Product inquiry templates
 		[Templates.PRODUCT_INQUIRY]: productInquiryEmail,
+		// Quote request templates (Sperrgut)
+		[Templates.QUOTE_REQUEST]: quoteRequestEmail,
+		// Contact form templates
+		[Templates.CONTACT_FORM]: contactFormEmail,
 	};
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -164,6 +174,12 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 			// Product inquiry templates
 			case Templates.PRODUCT_INQUIRY:
 				return 'Neue Anfrage für ein Artikel';
+			// Quote request templates (Sperrgut)
+			case Templates.QUOTE_REQUEST:
+				return 'Neue Versandkosten-Anfrage (Sperrgut)';
+			// Contact form templates
+			case Templates.CONTACT_FORM:
+				return 'Neue Kontaktanfrage';
 			default:
 				return 'Neue Benachrichtigung';
 		}

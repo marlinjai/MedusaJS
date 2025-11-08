@@ -24,12 +24,40 @@ export default function ContactSection() {
 		}));
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [submitError, setSubmitError] = useState<string | null>(null);
+
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		console.log('Contact form submitted:', formData);
-		// TODO: Implement backend integration
-		alert(t('successMessage'));
-		setFormData({ name: '', email: '', phone: '', message: '' });
+		setIsSubmitting(true);
+		setSubmitError(null);
+
+		try {
+			const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+			const response = await fetch(`${backendUrl}/store/contact`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					customer: formData,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to submit contact form');
+			}
+
+			// Success - show success message and reset form
+			alert(t('successMessage'));
+			setFormData({ name: '', email: '', phone: '', message: '' });
+		} catch (error: any) {
+			console.error('Contact form error:', error);
+			setSubmitError(error.message || t('errorMessage') || 'Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.');
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	return (
@@ -133,8 +161,17 @@ export default function ContactSection() {
 								/>
 							</div>
 
-							<button type="submit" className="w-full sm:w-auto contrast-btn">
-								{t('submitButton')}
+							{submitError && (
+								<div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+									{submitError}
+								</div>
+							)}
+							<button
+								type="submit"
+								disabled={isSubmitting}
+								className="w-full sm:w-auto contrast-btn disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{isSubmitting ? t('submitting') || 'Wird gesendet...' : t('submitButton')}
 							</button>
 						</form>
 					</div>
