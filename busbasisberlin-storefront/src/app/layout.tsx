@@ -1,7 +1,7 @@
 import { getBaseURL } from '@lib/util/env';
 import { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
-import 'styles/globals.css';
+import '../styles/globals.css';
 
 // Import German translations directly
 import messages from '../../messages/de.json';
