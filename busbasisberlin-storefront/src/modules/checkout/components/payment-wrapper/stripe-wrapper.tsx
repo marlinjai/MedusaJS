@@ -20,8 +20,12 @@ const StripeWrapper: React.FC<StripeWrapperProps> = ({
 	stripePromise,
 	children,
 }) => {
+	const clientSecret = paymentSession?.data?.client_secret as
+		| string
+		| undefined;
+
 	const options: StripeElementsOptions = {
-		clientSecret: paymentSession!.data?.client_secret as string | undefined,
+		clientSecret: clientSecret,
 		locale: 'de', // Set locale to German to show German payment methods
 		appearance: {
 			theme: 'stripe',
@@ -40,7 +44,7 @@ const StripeWrapper: React.FC<StripeWrapperProps> = ({
 		);
 	}
 
-	if (!paymentSession?.data?.client_secret) {
+	if (!clientSecret) {
 		throw new Error(
 			'Stripe client secret is missing. Cannot initialize Stripe.',
 		);
@@ -48,7 +52,13 @@ const StripeWrapper: React.FC<StripeWrapperProps> = ({
 
 	return (
 		<StripeContext.Provider value={true}>
-			<Elements options={options} stripe={stripePromise}>
+			{/*
+				OPTIMIZATION: Single Elements instance for all Stripe elements.
+				ExpressCheckoutElement and PaymentElement should both be children of this
+				same Elements instance for optimal performance.
+				See: https://stripe.com/docs/payments/payment-element/express-checkout-element
+			*/}
+			<Elements key={clientSecret} options={options} stripe={stripePromise}>
 				{children}
 			</Elements>
 		</StripeContext.Provider>

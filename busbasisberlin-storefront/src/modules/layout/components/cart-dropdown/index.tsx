@@ -39,6 +39,17 @@ const CartDropdown = ({
 		}, 0) || 0;
 
 	const subtotal = cartState?.subtotal ?? 0;
+	const itemTotal = (cartState as any)?.item_total ?? subtotal;
+	const shippingTotal =
+		cartState?.shipping_total ?? cartState?.shipping_subtotal ?? 0;
+	const total = cartState?.total ?? 0;
+
+	// Calculate netto and tax from tax-inclusive prices
+	const itemTotalNetto = itemTotal / 1.19;
+	const itemTotalTax = itemTotal - itemTotalNetto;
+	const totalNetto = total / 1.19;
+	const totalTax = total - totalNetto;
+
 	const itemRef = useRef<number>(totalItems || 0);
 
 	const timedOpen = () => {
@@ -189,18 +200,52 @@ const CartDropdown = ({
 									</div>
 									<div className="p-6 border-t border-neutral-800 bg-neutral-900/80 backdrop-blur-sm">
 										<div className="space-y-2 mb-4">
-											{/* Subtotal */}
+											{/* Netto sum */}
 											<div className="flex items-center justify-between">
-												<span className="text-neutral-400 text-sm">
-													{t('dropdown.subtotal')}
+												<span className="text-neutral-400 text-xs">
+													Summe Waren (netto):
 												</span>
 												<span
-													className="text-base font-medium text-white"
-													data-testid="cart-subtotal"
-													data-value={subtotal}
+													className="text-sm font-medium text-white"
+													data-testid="cart-subtotal-netto"
 												>
 													{convertToLocale({
-														amount: subtotal,
+														amount: itemTotalNetto,
+														currency_code: cartState.currency_code,
+													})}
+												</span>
+											</div>
+
+											{/* Tax */}
+											<div className="flex items-center justify-between">
+												<span className="text-neutral-400 text-xs">
+													+ MwSt. 19%:
+												</span>
+												<span
+													className="text-sm font-medium text-white"
+													data-testid="cart-tax"
+												>
+													{convertToLocale({
+														amount: itemTotalTax,
+														currency_code: cartState.currency_code,
+													})}
+												</span>
+											</div>
+
+											{/* Divider */}
+											<div className="h-px w-full bg-neutral-700 my-1" />
+
+											{/* Brutto sum */}
+											<div className="flex items-center justify-between">
+												<span className="text-neutral-400 text-xs">
+													= Summe Waren (brutto):
+												</span>
+												<span
+													className="text-sm font-medium text-white"
+													data-testid="cart-subtotal-brutto"
+												>
+													{convertToLocale({
+														amount: itemTotal,
 														currency_code: cartState.currency_code,
 													})}
 												</span>
@@ -208,37 +253,48 @@ const CartDropdown = ({
 
 											{/* Shipping */}
 											<div className="flex items-center justify-between">
-												<span className="text-neutral-400 text-sm">
-													Versand
+												<span className="text-neutral-400 text-xs">
+													+ Versand (brutto):
 												</span>
-												<span className="text-base font-medium text-white">
+												<span className="text-sm font-medium text-white">
 													{cartState.shipping_methods &&
 													cartState.shipping_methods.length > 0
 														? convertToLocale({
-																amount: cartState.shipping_total ?? 0,
+																amount: shippingTotal,
 																currency_code: cartState.currency_code,
 														  })
 														: 'Im Checkout berechnet'}
 												</span>
 											</div>
 
-											{/* Tax inclusive note */}
-											<div className="flex items-center justify-end pt-1">
-												<span className="text-xs text-neutral-500 italic">
-													Preise inkl. MwSt.
-												</span>
-											</div>
+											{/* Divider */}
+											<div className="h-px w-full bg-neutral-700 my-1" />
 
 											{/* Total */}
-											<div className="flex items-center justify-between pt-2 border-t border-neutral-700">
-												<span className="text-white font-semibold">Gesamt</span>
-												<span className="text-xl font-bold text-white">
+											<div className="flex items-center justify-between pt-1">
+												<span className="text-white font-semibold text-base">
+													= Gesamtbetrag:
+												</span>
+												<span className="text-lg font-bold text-white">
 													{convertToLocale({
-														amount: cartState.total ?? subtotal,
+														amount: total || itemTotal,
 														currency_code: cartState.currency_code,
 													})}
 												</span>
 											</div>
+
+											{/* Total tax info */}
+											{(total > 0 || itemTotal > 0) && (
+												<div className="flex justify-between text-xs text-neutral-500 italic pt-1 border-t border-neutral-700">
+													<span>Enthaltene MwSt. (19%):</span>
+													<span data-testid="cart-total-taxes">
+														{convertToLocale({
+															amount: totalTax || itemTotalTax,
+															currency_code: cartState.currency_code,
+														})}
+													</span>
+												</div>
+											)}
 										</div>
 
 										{/* Action buttons row */}

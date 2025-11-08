@@ -19,6 +19,7 @@ import { orderDeliveredEmail } from './emails/order-delivered';
 import { orderPlacedEmail } from './emails/order-placed';
 import { orderShippedEmail } from './emails/order-shipped';
 import { passwordResetEmail } from './emails/reset-password';
+import { productInquiryEmail } from './emails/product-inquiry';
 import { userInvitedEmail } from './emails/user-invited';
 
 type ResendOptions = {
@@ -55,6 +56,8 @@ enum Templates {
 	OFFER_COMPLETED = 'offer-completed',
 	OFFER_CANCELLED = 'offer-cancelled',
 	OFFER_NOTIFICATION = 'offer-notification',
+	// Product inquiry templates
+	PRODUCT_INQUIRY = 'product-inquiry',
 	// User management templates
 	USER_INVITED = 'user-invited',
 }
@@ -77,6 +80,8 @@ const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
 		[Templates.OFFER_ACCEPTED]: offerAcceptedEmail,
 		[Templates.OFFER_COMPLETED]: offerCompletedEmail,
 		[Templates.OFFER_CANCELLED]: offerCancelledEmail,
+		// Product inquiry templates
+		[Templates.PRODUCT_INQUIRY]: productInquiryEmail,
 	};
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -156,6 +161,9 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 				return 'Angebot storniert';
 			case Templates.OFFER_NOTIFICATION:
 				return 'Angebot Update';
+			// Product inquiry templates
+			case Templates.PRODUCT_INQUIRY:
+				return 'Neue Anfrage für ein Artikel';
 			default:
 				return 'Neue Benachrichtigung';
 		}

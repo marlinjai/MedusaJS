@@ -39,9 +39,11 @@ const CheckoutSummary = ({ cart }: { cart: any }) => {
 					{t('title')}
 				</Heading>
 				<div className="h-px bg-neutral-700" />
-				<CartTotals totals={cart} />
-				<div className="h-px bg-neutral-700" />
+				{/* Products first - show items with images */}
 				<ItemsPreviewTemplate cart={cart} />
+				<div className="h-px bg-neutral-700" />
+				{/* Then show calculation breakdown */}
+				<CartTotals totals={cart} />
 				<div className="h-px bg-neutral-700" />
 				<DiscountCode cart={cart} />
 			</div>

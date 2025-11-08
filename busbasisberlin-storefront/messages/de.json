@@ -443,7 +443,7 @@
 		}
 	},
 	"footer": {
-		"companyName": "Bus Basis Berlin",
+		"companyName": "BasisCampBerlin",
 		"description": "Ihr Spezialist für Mercedes-Transporter, Wohnmobile und Expeditionsfahrzeuge. Professionelle Wartung, Reparatur und individuelle Umbauten.",
 		"navigation": "Navigation",
 		"legal": "Rechtliches",
@@ -456,15 +456,12 @@
 		"privacy": "Datenschutz",
 		"terms": "AGB",
 		"imprint": "Impressum",
+		"vereinsatzung": "Vereinssatzung",
 		"phoneNote": "Telefonisch eingeschränkt erreichbar. Bitte E-Mail für Terminvereinbarung."
 	},
 	"team": {
 		"title": "Unser Team",
 		"subtitle": "Lernen Sie die Menschen kennen, die hinter Bus Basis Berlin stehen"
-	},
-	"verein": {
-		"title": "Unser Verein",
-		"description": "Wir sind stolz darauf, Teil der Düdo-Community zu sein"
 	},
 	"faq": {
 		"title": "Häufig gestellte Fragen",
@@ -602,6 +599,59 @@
 				"title": "Registereintrag",
 				"content": "Eintragung im Handelsregister\nRegistergericht: Amtsgericht Neuruppin\nRegisternummer: HRB [Nummer]\n\nUmsatzsteuer-ID: DE[Nummer]\ngemäß §27a Umsatzsteuergesetz"
 			}
+		},
+		"vereinsatzung": {
+			"title": "Satzung des Vereins",
+			"subtitle": "Birkenwerder klassische Fahrzeuge e.V.",
+			"section1": {
+				"title": "§1 Name, Sitz, Geschäftsjahr",
+				"content": "1. Der Verein führt den Namen Birkenwerder klassische Fahrzeuge e.V.\n\n2. Er hat seinen Sitz in 16547 Birkenwerder und ist im Vereinsregister eingetragen.\n\n3. Das Geschäftsjahr ist das Kalenderjahr."
+			},
+			"section2": {
+				"title": "§2 Ziele und Aufgaben des Vereins",
+				"content": "Ziel des Vereins ist die Förderung der technischen Kunst und Kultur durch den Erhalt und Restaurierung historischer Fahrzeuge als Dokumente der Zeitgeschichte, der Erhalt der Fahrzeuge der Mitglieder in verkehrstauglichem Zustand, Recherche und Dokumentationen, Ersatzteilbeschaffung, Erfahrungsaustausch und gemeinsame Aktivitäten.\n\nDer Verein erreicht seine Ziele insbesondere durch den Betrieb eines Clubgeländes, gemeinsame Veranstaltungen sowie den Betrieb eigener Internetseiten."
+			},
+			"section3": {
+				"title": "§3 Selbstlosigkeit",
+				"content": "Die Körperschaft ist selbstlos tätig, sie verfolgt gemäß § 21 BGB nicht in erster Linie eigenwirtschaftliche Zwecke. Mittel der Körperschaft dürfen nur für die satzungsmäßigen Zwecke verwendet werden. Die Mitglieder erhalten in ihrer Eigenschaft als Mitglieder keine Zuwendung aus Mitteln der Körperschaft.\n\nEs darf keine Person durch Ausgaben, die dem Zweck der Körperschaft fremd sind, oder durch unverhältnismäßig hohe Vergütungen begünstigt werden."
+			},
+			"section4": {
+				"title": "§4 Mitgliedschaft",
+				"content": "1. Mitglieder können alle natürlichen und juristischen Personen werden.\n\n2. Die Mitgliedschaft erfolgt durch Beschluss des Vorstandes auf schriftlichen Antrag des Mitglieds.\n\n3. Der Austritt eines Mitgliedes erfolgt durch schriftliche Erklärung gegenüber dem Vorstand mit einer Frist von drei Monaten zum Schluss des Geschäftsjahres.\n\n4. Ein Mitglied kann durch den Beschluss des Vorstandes ausgeschlossen werden, wenn es den Vereinszielen zuwider handelt oder seinen Verpflichtungen gegenüber dem Verein nicht nachkommt. Gegen den Beschluss kann das Mitglied die Mitgliederversammlung anrufen. Diese entscheidet endgültig. Das Mitglied ist zu der Versammlung einzuladen und anzuhören."
+			},
+			"section5": {
+				"title": "§5 Rechte und Pflichten der Mitglieder",
+				"content": "1. Alle Mitglieder sind berechtigt, die Einrichtungen des Vereins zu nutzen und an den Veranstaltungen teilzunehmen.\n\n2. Alle Mitglieder sind zur Pflege der Vereinseinrichtungen verpflichtet.\n\n3. Von den Mitgliedern wird ein Mitgliedsbeitrag erhoben. Die Höhe wird in einer Beitragsordnung festgelegt, über die die Mitgliederversammlung entscheidet."
+			},
+			"section6": {
+				"title": "§6 Organe des Vereins",
+				"content": "Die Organe des Vereins sind:\n\n1. Die Mitgliedervollversammlung\n\n2. Der Vorstand."
+			},
+			"section7": {
+				"title": "§7 Mitgliederversammlung",
+				"content": "1. Oberstes Organ ist die Mitgliederversammlung. Sie wird vom Vorstandsvorsitzenden geleitet.\n\n2. Die Mitgliederversammlung stellt die Richtlinien für die Arbeit des Vereins auf und entscheidet Fragen von grundsätzlicher Bedeutung. Zu den Aufgaben der Mitgliederversammlung gehören insbesondere:\n\na. Wahl und Abwahl des Vorstandes\nb. Wahl des Kassenprüfers\nc. Beratung über den Stand und die Planung der Vereinsarbeit\nd. Genehmigung des vom Vorstand vorgelegten Wirtschafts- und Investitionsplans\ne. Beschlussfassung über den Jahresabschluss\nf. Entgegennahme des Geschäftsberichtes des Vorstandes\ng. Beschlussfassung über die Entlastung des Vorstandes\nh. Erlass der Beitragsordnung, die nicht Bestandteil der Satzung ist\ni. Beschlussfassung über Änderungen der Satzung und die Auflösung des Vereins.\n\n3. Zur Mitgliederversammlung wird vom Vorstandsvorsitzenden unter Angabe der vorläufigen Tagesordnung mit einer Frist von vier Wochen schriftlich eingeladen. Sie tagt in der Regel einmal im Jahr.\n\n4. Eine außerordentliche Mitgliederversammlung findet statt, wenn mindestens 25% der Mitglieder sie unter Angabe von Gründen verlangen. Sie muss längstens fünf Wochen nach Eingang des Antrags auf schriftliche Berufung tagen.\n\n5. Die Mitgliederversammlung ist beschlussfähig, wenn mehr als die Hälfte der Mitglieder anwesend sind.\n\n6. Die Mitgliederversammlung beschließt mit einfacher Mehrheit, sofern keine andere Mehrheit durch die Satzung oder durch geltendes Recht vorgeschrieben ist.\n\n7. Über die Beschlüsse und den Verlauf der Versammlung ist ein Protokoll anzufertigen, das vom Versammlungsleiter und dem Protokollführer zu unterschreiben ist."
+			},
+			"section8": {
+				"title": "§8 Vorstand",
+				"content": "1. Der Vorstand besteht aus dem Vorsitzenden, dem stellvertretenden Vorsitzenden und dem Schatzmeister. Sie bilden den Vorstand im Sinne von § 26 BGB. Die Vorstandsmitglieder sind ehrenamtlich tätig.\n\n2. Zur rechtsverbindlichen Vertretung genügt die Zeichnung durch ein Mitglied des Vorstandes.\n\n3. Die Beschlüsse sind zu protokollieren und vom Vorstandsvorsitzenden zu unterschreiben."
+			},
+			"section9": {
+				"title": "§9 Satzungsänderung und Auflösung",
+				"content": "1. Über Satzungsänderungen, die Änderung des Vereinszwecks und die Auflösung entscheidet die Mitgliederversammlung. Vorschläge zu Satzungsänderungen, Zweckänderungen und zur Auflösung sind den stimmberechtigten Mitgliedern bis spätestens einen Monat vor der Sitzung der Mitgliederversammlung zuzuleiten. Für die Beschlussfassung ist eine Mehrheit von drei Vierteln der anwesenden Stimmberechtigten erforderlich.\n\n2. Änderungen oder Ergänzungen der Satzung, die von der zuständigen Registerbehörde oder vom Finanzamt vorgeschrieben werden, werden vom Vorstand umgesetzt und bedürfen keiner Beschlussfassung durch die Mitgliederversammlung. Sie sind den Mitgliedern spätestens mit der nächsten Einladung zur Mitgliederversammlung mitzuteilen.\n\n3. Bei Auflösung, bei Entziehung der Rechtsfähigkeit des Vereins oder bei Wegfall der steuerbegünstigten Zwecke fällt das gesamte Vermögen an den Allgemeinen Deutschen Automobilclub e.V. und zwar mit der Auflage, es entsprechend seinen bisherigen Zielen und Aufgaben ausschließlich und unmittelbar gemäß § 2 zu verwenden.\n\nBerlin, den 22. 03. 2011"
+			}
+		}
+	},
+	"verein": {
+		"title": "Unser Verein",
+		"description": "Wir sind stolz darauf, Teil der Düdo-Community zu sein",
+		"membershipForm": {
+			"title": "Mitgliedschaft beantragen",
+			"description": "Die Mitgliedschaft kann nur schriftlich beantragt werden. Bitte nehmen Sie vor dem Beitritt Kontakt mit uns auf.",
+			"downloadForm": "Aufnahmeantrag herunterladen",
+			"downloadInfo": "Bitte senden Sie den ausgefüllten Aufnahmeantrag an die Vereins-E-Mail.",
+			"contactBefore": "Bitte nehmen Sie vor dem Beitritt Kontakt mit uns auf.",
+			"vereinsEmail": "klassische-wohnmobile@gmx.de",
+			"viewStatute": "Vereinssatzung anzeigen"
 		}
 	}
 }

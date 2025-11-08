@@ -87,11 +87,15 @@ const LegalAccordion = ({
 	onPrivacyClick,
 	onTermsClick,
 	onImprintClick,
+	onVereinsatzungClick,
+	vereinsatzungLabel,
 }: {
 	title: string;
 	onPrivacyClick: () => void;
 	onTermsClick: () => void;
 	onImprintClick: () => void;
+	onVereinsatzungClick: () => void;
+	vereinsatzungLabel: string;
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 
@@ -148,6 +152,14 @@ const LegalAccordion = ({
 							Impressum
 						</button>
 					</li>
+					<li>
+						<button
+							onClick={onVereinsatzungClick}
+							className="text-muted-foreground hover:text-foreground transition-colors text-left"
+						>
+							{vereinsatzungLabel}
+						</button>
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -158,7 +170,7 @@ export default function Footer() {
 	const t = useTranslations('footer');
 	const currentYear = new Date().getFullYear();
 	const [modalOpen, setModalOpen] = useState<
-		'privacy' | 'terms' | 'imprint' | null
+		'privacy' | 'terms' | 'imprint' | 'vereinsatzung' | null
 	>(null);
 
 	return (
@@ -306,6 +318,14 @@ export default function Footer() {
 								</button>
 							</li>
 							<li>
+								<button
+									onClick={() => setModalOpen('vereinsatzung')}
+									className="text-muted-foreground hover:text-foreground transition-colors text-left"
+								>
+									{t('vereinsatzung')}
+								</button>
+							</li>
+							<li>
 								<LocalizedClientLink
 									href="/#faq"
 									className="text-muted-foreground hover:text-foreground transition-colors"
@@ -334,6 +354,8 @@ export default function Footer() {
 							<li className="flex items-start gap-3 text-muted-foreground">
 								<FiMapPin className="w-5 h-5 flex-shrink-0 mt-0.5" />
 								<span>
+									BCB GmbH
+									<br />
 									Hauptstraße 51
 									<br />
 									16547 Birkenwerder
@@ -356,6 +378,8 @@ export default function Footer() {
 							onPrivacyClick={() => setModalOpen('privacy')}
 							onTermsClick={() => setModalOpen('terms')}
 							onImprintClick={() => setModalOpen('imprint')}
+							onVereinsatzungClick={() => setModalOpen('vereinsatzung')}
+							vereinsatzungLabel={t('vereinsatzung')}
 						/>
 					</div>
 				</div>
@@ -383,6 +407,12 @@ export default function Footer() {
 							className="text-muted-foreground hover:text-foreground transition-colors underline"
 						>
 							{t('imprint')}
+						</button>
+						<button
+							onClick={() => setModalOpen('vereinsatzung')}
+							className="text-muted-foreground hover:text-foreground transition-colors underline"
+						>
+							{t('vereinsatzung')}
 						</button>
 					</div>
 				</div>

@@ -1,11 +1,19 @@
 // src/modules/home/components/verein/index.tsx
 'use client';
 
+import LegalModal from '@modules/layout/components/legal-modal';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { BsCalendarEvent, BsEnvelope, BsPeople, BsTools } from 'react-icons/bs';
+import { BsCalendarEvent, BsDownload, BsEnvelope, BsPeople, BsTools } from 'react-icons/bs';
 
 const Verein = () => {
+	const t = useTranslations('verein');
+	const [modalOpen, setModalOpen] = useState<'vereinsatzung' | null>(null);
+
+	// Feature flag: Set to true to show membership form, false to hide it
+	// Can be controlled via environment variable: NEXT_PUBLIC_SHOW_MEMBERSHIP_FORM
+	const showMembershipForm = process.env.NEXT_PUBLIC_SHOW_MEMBERSHIP_FORM === 'true';
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -142,14 +150,64 @@ const Verein = () => {
 						className="bg-neutral-800/50 p-8 rounded-2xl border border-neutral-700"
 					>
 						<h3 className="text-2xl font-semibold text-white mb-6">
-							Mitgliedschaft beantragen
+							{t('membershipForm.title')}
 						</h3>
-						<p className="text-neutral-400 mb-8">
-							Die Mitgliedschaft kann über dieses Formular beantragt werden. Wir
-							melden uns zeitnah bei Ihnen zurück.
+						<p className="text-neutral-400 mb-4">
+							{t('membershipForm.description')}
+						</p>
+						<p className="text-neutral-400 mb-6">
+							{t('membershipForm.contactBefore')}
 						</p>
 
-						<form onSubmit={handleSubmit} className="space-y-6">
+						{/* Download Button */}
+						<div className="mb-6 p-4 bg-neutral-700/50 rounded-lg border border-neutral-600">
+							<div className="flex items-center gap-3 mb-3">
+								<BsDownload className="w-5 h-5 text-blue-400" />
+								<h4 className="text-lg font-semibold text-white">
+									{t('membershipForm.downloadForm')}
+								</h4>
+							</div>
+							<p className="text-neutral-300 text-sm mb-4">
+								{t('membershipForm.downloadInfo')}
+							</p>
+							<a
+								href="/201117_Aufnahmeantrag_Birkenwerder-Klassische-Fahrzeuge.pdf"
+								download
+								className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+							>
+								<BsDownload className="w-4 h-4" />
+								PDF herunterladen
+							</a>
+							<p className="text-neutral-400 text-xs mt-3">
+								Bitte senden Sie den ausgefüllten Antrag an:{' '}
+								<a
+									href={`mailto:${t('membershipForm.vereinsEmail')}`}
+									className="text-blue-400 hover:text-blue-300 transition-colors"
+								>
+									{t('membershipForm.vereinsEmail')}
+								</a>
+							</p>
+						</div>
+
+						{/* Vereinsatzung Link */}
+						<div className="mb-6">
+							<button
+								onClick={() => setModalOpen('vereinsatzung')}
+								className="w-full flex items-center justify-center gap-2 bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+							>
+								{t('membershipForm.viewStatute')}
+							</button>
+						</div>
+
+						{/* Conditional Membership Form */}
+						{showMembershipForm && (
+							<>
+								<div className="border-t border-neutral-700 pt-6 mt-6">
+									<p className="text-neutral-400 mb-6">
+										Alternativ können Sie auch das folgende Formular verwenden:
+									</p>
+								</div>
+								<form onSubmit={handleSubmit} className="space-y-6">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								<div>
 									<label
@@ -264,21 +322,32 @@ const Verein = () => {
 								/>
 							</div>
 
-							<button
-								type="submit"
-								className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-							>
-								Mitgliedschaftsantrag senden
-							</button>
-						</form>
+									<button
+										type="submit"
+										className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+									>
+										Mitgliedschaftsantrag senden
+									</button>
 
-						<p className="text-neutral-500 text-xs mt-4">
-							* Pflichtfelder. Ihre Daten werden vertraulich behandelt und nur
-							für die Vereinsmitgliedschaft verwendet.
-						</p>
+									<p className="text-neutral-500 text-xs mt-4">
+										* Pflichtfelder. Ihre Daten werden vertraulich behandelt und nur
+										für die Vereinsmitgliedschaft verwendet.
+									</p>
+								</form>
+							</>
+						)}
 					</motion.div>
 				</div>
 			</div>
+
+			{/* Vereinsatzung Modal */}
+			{modalOpen && (
+				<LegalModal
+					isOpen={modalOpen !== null}
+					onClose={() => setModalOpen(null)}
+					type={modalOpen}
+				/>
+			)}
 		</section>
 	);
 };

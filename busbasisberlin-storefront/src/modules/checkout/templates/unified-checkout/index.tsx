@@ -18,6 +18,7 @@ import ShippingAddress from '@modules/checkout/components/shipping-address';
 import MedusaRadio from '@modules/common/components/radio';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 type UnifiedCheckoutProps = {
@@ -34,6 +35,8 @@ export default function UnifiedCheckout({
 	paymentMethods,
 }: UnifiedCheckoutProps) {
 	const t = useTranslations('checkout');
+	const params = useParams();
+	const countryCode = (params?.countryCode as string) || 'de';
 	const containerRef = useRef<HTMLDivElement>(null);
 	const timelineRef = useRef<HTMLDivElement>(null);
 	const [timelineHeight, setTimelineHeight] = useState(0);
@@ -41,10 +44,16 @@ export default function UnifiedCheckout({
 	const [shippingMethodId, setShippingMethodId] = useState(
 		cart.shipping_methods?.at(-1)?.shipping_option_id || null,
 	);
-	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+	const [selectedPaymentMethod, setSelectedPaymentMethod] =
+		useState('pp_stripe_stripe'); // Default to Stripe
 	const [cardComplete, setCardComplete] = useState(false);
 	const [cardBrand, setCardBrand] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const stripeSession = cart?.payment_collection?.payment_sessions?.find(
+		session =>
+			session.provider_id === 'pp_stripe_stripe' &&
+			session.status === 'pending',
+	);
 
 	const { state: sameAsBilling, toggle: toggleSameAsBilling } = useToggleState(
 		cart?.shipping_address && cart?.billing_address
@@ -57,6 +66,28 @@ export default function UnifiedCheckout({
 		cart?.billing_address &&
 		cart?.email
 	);
+
+	// Align with Medusa docs: initialize Stripe session when payment step can be interacted with
+	useEffect(() => {
+		if (!addressCompleted || !shippingMethodId) {
+			return;
+		}
+
+		if (stripeSession) {
+			return;
+		}
+
+		const initStripe = async () => {
+			try {
+				await initiatePaymentSession(cart, { provider_id: 'pp_stripe_stripe' });
+				setSelectedPaymentMethod('pp_stripe_stripe');
+			} catch (err: any) {
+				setError(err.message || 'Failed to initialize payment');
+			}
+		};
+
+		void initStripe();
+	}, [addressCompleted, shippingMethodId, stripeSession?.id, cart]);
 
 	// Calculate timeline height and progress
 	useEffect(() => {
@@ -90,17 +121,7 @@ export default function UnifiedCheckout({
 		}
 	};
 
-	const handlePaymentSelect = async (method: string) => {
-		setError(null);
-		setSelectedPaymentMethod(method);
-
-		// Always initiate payment session for any payment method
-		try {
-			await initiatePaymentSession(cart, { provider_id: method });
-		} catch (err: any) {
-			setError(err.message);
-		}
-	};
+	// Removed handlePaymentSelect - payment methods are now shown directly without radio selection
 
 	const canPlaceOrder =
 		addressCompleted &&
@@ -265,7 +286,7 @@ export default function UnifiedCheckout({
 					)}
 				</div>
 
-				{/* Step 3: Payment - Always visible */}
+				{/* Step 3: Payment - Always visible, PaymentElement shown directly */}
 				<div
 					className={clx('bg-card border border-neutral-700 rounded-lg p-6', {
 						'opacity-60': !addressCompleted || !shippingMethodId,
@@ -279,42 +300,48 @@ export default function UnifiedCheckout({
 							className={clx(
 								'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold',
 								{
-									'bg-green-600 text-white': selectedPaymentMethod,
-									'bg-blue-600 text-white': !selectedPaymentMethod,
+									'bg-green-600 text-white': cardComplete,
+									'bg-blue-600 text-white': !cardComplete,
 								},
 							)}
 						>
-							{selectedPaymentMethod ? '✓' : '3'}
+							{cardComplete ? '✓' : '3'}
 						</span>
 						{t('payment.title')}
 					</Heading>
 
-					<RadioGroup
-						value={selectedPaymentMethod}
-						onChange={handlePaymentSelect}
-						disabled={!addressCompleted || !shippingMethodId}
-					>
-						{paymentMethods.map(method => (
-							<div key={method.id}>
-								{isStripeFunc(method.id) ? (
+					{/* Auto-initialize Stripe session when addresses and shipping are ready */}
+					{addressCompleted && shippingMethodId && (
+						<>
+							{paymentMethods
+								.filter(method => method.id === 'pp_stripe_stripe')
+								.map(method => (
 									<StripeCardContainer
+										key={method.id}
 										paymentProviderId={method.id}
-										selectedPaymentOptionId={selectedPaymentMethod}
+										selectedPaymentOptionId={method.id}
 										paymentInfoMap={paymentInfoMap}
 										setCardBrand={setCardBrand}
 										setError={setError}
 										setCardComplete={setCardComplete}
+										cartId={cart.id}
+										countryCode={countryCode}
 									/>
-								) : (
-									<PaymentContainer
-										paymentInfoMap={paymentInfoMap}
-										paymentProviderId={method.id}
-										selectedPaymentOptionId={selectedPaymentMethod}
-									/>
-								)}
-							</div>
+								))}
+						</>
+					)}
+
+					{/* Show non-Stripe payment methods if any */}
+					{paymentMethods
+						.filter(method => !isStripeFunc(method.id))
+						.map(method => (
+							<PaymentContainer
+								key={method.id}
+								paymentInfoMap={paymentInfoMap}
+								paymentProviderId={method.id}
+								selectedPaymentOptionId={selectedPaymentMethod}
+							/>
 						))}
-					</RadioGroup>
 				</div>
 
 				{/* Step 4: Review & Place Order - Always visible */}

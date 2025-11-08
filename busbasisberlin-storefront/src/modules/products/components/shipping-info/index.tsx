@@ -17,14 +17,21 @@ export default function ShippingInfo({
 }: ShippingInfoProps) {
 	const profileName = shippingProfile?.name?.toLowerCase() || '';
 
+	// Check for "on request" products - handled by OnRequestProduct component
+	const isOnRequest =
+		profileName.includes('artikel auf anfrage') ||
+		profileName.includes('auf anfrage') ||
+		profileName.includes('on request') ||
+		shippingProfile?.id === 'artikel-auf-anfrage';
+
 	// Check for oversized/special shipping (Sperrgut) - handled by QuoteRequest component
 	const isOversized =
 		profileName.includes('sperrgut') ||
 		profileName.includes('speergut') ||
 		shippingProfile?.type === 'oversized';
 
-	// Don't show shipping info for oversized items (they use quote request instead)
-	if (isOversized) {
+	// Don't show shipping info for on-request or oversized items
+	if (isOnRequest || isOversized) {
 		return null;
 	}
 

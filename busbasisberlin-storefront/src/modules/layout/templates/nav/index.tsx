@@ -28,7 +28,7 @@ export default async function Nav() {
 								<Image
 									//src="/logo basiscamp.png"
 									className="w-auto h-16"
-									src="/images/logo_home.png"
+									src="/logo-with-font.png"
 									alt="BusBasis Berlin"
 									width={400}
 									height={200}

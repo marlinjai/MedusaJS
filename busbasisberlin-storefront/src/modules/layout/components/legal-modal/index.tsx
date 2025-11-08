@@ -15,7 +15,7 @@ import { BsX } from 'react-icons/bs';
 type LegalModalProps = {
 	isOpen: boolean;
 	onClose: () => void;
-	type: 'privacy' | 'terms' | 'imprint';
+	type: 'privacy' | 'terms' | 'imprint' | 'vereinsatzung';
 };
 
 export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
@@ -91,6 +91,48 @@ export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
 				},
 			],
 		},
+		vereinsatzung: {
+			title: t('vereinsatzung.title'),
+			subtitle: t('vereinsatzung.subtitle'),
+			sections: [
+				{
+					title: t('vereinsatzung.section1.title'),
+					content: t('vereinsatzung.section1.content'),
+				},
+				{
+					title: t('vereinsatzung.section2.title'),
+					content: t('vereinsatzung.section2.content'),
+				},
+				{
+					title: t('vereinsatzung.section3.title'),
+					content: t('vereinsatzung.section3.content'),
+				},
+				{
+					title: t('vereinsatzung.section4.title'),
+					content: t('vereinsatzung.section4.content'),
+				},
+				{
+					title: t('vereinsatzung.section5.title'),
+					content: t('vereinsatzung.section5.content'),
+				},
+				{
+					title: t('vereinsatzung.section6.title'),
+					content: t('vereinsatzung.section6.content'),
+				},
+				{
+					title: t('vereinsatzung.section7.title'),
+					content: t('vereinsatzung.section7.content'),
+				},
+				{
+					title: t('vereinsatzung.section8.title'),
+					content: t('vereinsatzung.section8.content'),
+				},
+				{
+					title: t('vereinsatzung.section9.title'),
+					content: t('vereinsatzung.section9.content'),
+				},
+			],
+		},
 	};
 
 	const currentContent = content[type];
@@ -138,9 +180,16 @@ export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
 								<div className="relative">
 									{/* Header */}
 									<div className="flex items-center justify-between p-8 border-b border-neutral-800 bg-neutral-900/95 backdrop-blur-sm">
-										<h2 className="text-2xl md:text-3xl font-bold text-white">
-											{currentContent.title}
-										</h2>
+										<div>
+											<h2 className="text-2xl md:text-3xl font-bold text-white">
+												{currentContent.title}
+											</h2>
+											{currentContent.subtitle && (
+												<p className="text-neutral-400 mt-2">
+													{currentContent.subtitle}
+												</p>
+											)}
+										</div>
 										<button
 											onClick={onClose}
 											className="p-2 rounded-lg hover:bg-neutral-800 transition-colors text-neutral-400 hover:text-white"
