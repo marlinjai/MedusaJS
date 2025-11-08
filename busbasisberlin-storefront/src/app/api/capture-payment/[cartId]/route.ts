@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 		'payment_intent_client_secret',
 	);
 	const redirectStatus = searchParams.get('redirect_status') || '';
-	const countryCode = searchParams.get('country_code');
+	const countryCode = searchParams.get('country_code') || 'de'; // Default to 'de' if undefined
 
 	const cart = await retrieveCart(cartId);
 

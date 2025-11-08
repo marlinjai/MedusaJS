@@ -42,10 +42,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
 			);
 		case isManual(paymentSession?.provider_id):
 			return (
-				<ManualTestPaymentButton
-					notReady={notReady}
-					data-testid={dataTestId}
-				/>
+				<ManualTestPaymentButton notReady={notReady} data-testid={dataTestId} />
 			);
 		default:
 			return (
@@ -71,8 +68,8 @@ const StripePaymentButton = ({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const params = useParams();
-	const country_code = params?.country_code as string;
-	const countryCode = country_code as string;
+	// Extract countryCode from URL path (e.g., /de/checkout -> 'de')
+	const countryCode = (params?.countryCode as string) || 'de';
 	const router = useRouter();
 	const pathname = usePathname();
 	const paymentSession = cart.payment_collection?.payment_sessions?.find(
@@ -80,13 +77,17 @@ const StripePaymentButton = ({
 	);
 
 	const onPaymentCompleted = async () => {
-		await placeOrder()
-			.catch(err => {
-				setErrorMessage(err.message);
-			})
-			.finally(() => {
-				setSubmitting(false);
-			});
+		try {
+			await placeOrder();
+			// If placeOrder succeeds, it will redirect, so we don't need to do anything here
+		} catch (err: any) {
+			// NEXT_REDIRECT is thrown by redirect() in Server Actions - don't catch it
+			if (err?.digest === 'NEXT_REDIRECT') {
+				throw err; // Re-throw to let Next.js handle the redirect
+			}
+			setErrorMessage(err?.message || 'Failed to place order');
+			setSubmitting(false);
+		}
 	};
 
 	const stripe = useStripe();
@@ -205,13 +206,17 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const onPaymentCompleted = async () => {
-		await placeOrder()
-			.catch(err => {
-				setErrorMessage(err.message);
-			})
-			.finally(() => {
-				setSubmitting(false);
-			});
+		try {
+			await placeOrder();
+			// If placeOrder succeeds, it will redirect, so we don't need to do anything here
+		} catch (err: any) {
+			// NEXT_REDIRECT is thrown by redirect() in Server Actions - don't catch it
+			if (err?.digest === 'NEXT_REDIRECT') {
+				throw err; // Re-throw to let Next.js handle the redirect
+			}
+			setErrorMessage(err?.message || 'Failed to place order');
+			setSubmitting(false);
+		}
 	};
 
 	const handlePayment = () => {
