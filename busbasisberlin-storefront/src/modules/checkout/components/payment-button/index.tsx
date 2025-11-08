@@ -5,7 +5,7 @@ import { placeOrder } from '@lib/data/cart';
 import { HttpTypes } from '@medusajs/types';
 import { Button } from '@medusajs/ui';
 import { useElements, useStripe } from '@stripe/react-stripe-js';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import ErrorMessage from '../error-message';
 
@@ -58,22 +58,22 @@ const StripePaymentButton = ({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const params = useParams();
-	const countryCode = params?.countryCode as string | undefined;
+	const country_code = params?.country_code as string;
+	const countryCode = country_code as string;
+	const router = useRouter();
+	const pathname = usePathname();
 	const paymentSession = cart.payment_collection?.payment_sessions?.find(
 		session => session.provider_id === 'pp_stripe_stripe',
 	);
 
 	const onPaymentCompleted = async () => {
-		try {
-			const order = await placeOrder();
-			// Redirect to order confirmation page after successful order placement
-			if (order?.id && countryCode) {
-				window.location.href = `/${countryCode}/order/${order.id}/confirmed`;
-			}
-		} catch (err: any) {
-			setErrorMessage(err.message);
-			setSubmitting(false);
-		}
+		await placeOrder()
+			.catch(err => {
+				setErrorMessage(err.message);
+			})
+			.finally(() => {
+				setSubmitting(false);
+			});
 	};
 
 	const stripe = useStripe();
@@ -96,10 +96,6 @@ const StripePaymentButton = ({
 		}
 
 		const clientSecret = paymentSession?.data?.client_secret as string;
-
-		// Check if we're in test mode (client secret starts with 'pi_' for test mode)
-		// In test mode, Stripe will redirect to test pages for payment methods like PayPal
-		const isTestMode = clientSecret?.includes('_test_') || process.env.NODE_ENV === 'development';
 
 		await stripe
 			.confirmPayment({
@@ -126,9 +122,6 @@ const StripePaymentButton = ({
 						},
 					},
 				},
-				// In test mode, Stripe will automatically redirect to test pages
-				// For PayPal, this means redirecting to PayPal Sandbox (not a Stripe test page)
-				// Stripe doesn't have a "test page" for PayPal - it always uses PayPal Sandbox
 				redirect: 'if_required',
 			})
 			.then(({ error, paymentIntent }) => {
@@ -163,6 +156,17 @@ const StripePaymentButton = ({
 		}
 	}, [cart.payment_collection?.status]);
 
+	useEffect(() => {
+		elements?.getElement('payment')?.on('change', e => {
+			if (!e.complete) {
+				// redirect to payment step if not complete
+				router.push(pathname + '?step=payment', {
+					scroll: false,
+				});
+			}
+		});
+	}, [elements]);
+
 	return (
 		<>
 			<Button
@@ -172,7 +176,7 @@ const StripePaymentButton = ({
 				isLoading={submitting}
 				data-testid={dataTestId}
 			>
-				Place order with Stripe
+				Place order
 			</Button>
 			<ErrorMessage
 				error={errorMessage}

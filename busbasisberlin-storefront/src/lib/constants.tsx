@@ -2,9 +2,10 @@ import { CreditCard } from '@medusajs/icons';
 import React from 'react';
 
 import Bancontact from '@modules/common/icons/bancontact';
+
+import Giropay from '@modules/common/icons/giropay';
 import Ideal from '@modules/common/icons/ideal';
 import PayPal from '@modules/common/icons/paypal';
-
 /* Map of payment provider_id to their title and icon. Add in any payment providers you want to use. */
 export const paymentInfoMap: Record<
 	string,
@@ -30,6 +31,7 @@ export const paymentInfoMap: Record<
 		title: 'Manuelle Zahlung',
 		icon: <CreditCard />,
 	},
+
 	// Payment method types from Stripe Payment Element
 	card: {
 		title: 'Kreditkarte',
@@ -42,6 +44,10 @@ export const paymentInfoMap: Record<
 	ideal: {
 		title: 'iDeal',
 		icon: <Ideal />,
+	},
+	giropay: {
+		title: 'Giropay',
+		icon: <Giropay />,
 	},
 	bancontact: {
 		title: 'Bancontact',
