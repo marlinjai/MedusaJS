@@ -58,7 +58,7 @@ class OfferService extends MedusaService({
 			this.logger_ = console;
 		}
 
-		// Resolve inventory and product services with error handling
+		// Resolve inventory and product services with error handling dynamically
 		try {
 			this.query_ = container.resolve('query');
 		} catch (error) {
