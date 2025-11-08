@@ -23,6 +23,10 @@ export const paymentInfoMap: Record<
 		title: 'Bancontact',
 		icon: <Bancontact />,
 	},
+	'pp_stripe-giropay_stripe': {
+		title: 'Giropay',
+		icon: <Giropay />,
+	},
 	pp_paypal_paypal: {
 		title: 'PayPal',
 		icon: <PayPal />,
@@ -56,9 +60,12 @@ export const paymentInfoMap: Record<
 	// Add more payment providers here
 };
 
-// This only checks if it is native stripe for card payments, it ignores the other stripe-based providers
+// This checks if it is a Stripe payment provider (handles both underscore and hyphen formats)
+// Stripe creates separate provider IDs for each payment method type (e.g., pp_stripe-giropay_stripe)
 export const isStripe = (providerId?: string) => {
-	return providerId?.startsWith('pp_stripe_');
+	return (
+		providerId?.startsWith('pp_stripe_') || providerId?.startsWith('pp_stripe-')
+	);
 };
 export const isPaypal = (providerId?: string) => {
 	return providerId?.startsWith('pp_paypal');

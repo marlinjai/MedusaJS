@@ -197,7 +197,11 @@
 			"continueToPayment": "Weiter zur Zahlung",
 			"method": "Methode",
 			"shippingMethod": "Versandmethode",
-			"howDelivered": "Wie möchten Sie Ihre Bestellung geliefert bekommen?"
+			"howDelivered": "Wie möchten Sie Ihre Bestellung geliefert bekommen?",
+			"edit": "Bearbeiten",
+			"pickupOrder": "Bestellung abholen",
+			"store": "Geschäft",
+			"chooseStore": "Wählen Sie ein Geschäft in Ihrer Nähe"
 		},
 		"payment": {
 			"title": "Zahlung",
@@ -212,13 +216,21 @@
 			"manualPayment": "Manuelle Zahlung",
 			"testingOnly": "Achtung: Nur für Testzwecke.",
 			"stripe": "Kreditkarte",
-			"paypal": "PayPal"
+			"paypal": "PayPal",
+			"notReady": "Zahlungsverarbeitung nicht bereit. Bitte versuchen Sie es erneut.",
+			"initFailed": "Zahlung konnte nicht initialisiert werden. Bitte versuchen Sie es erneut."
 		},
 		"review": {
 			"title": "Überprüfung",
 			"reviewOrder": "Bestellung überprüfen",
 			"placeOrder": "Bestellung aufgeben",
 			"termsAgree": "Ich stimme den Allgemeinen Geschäftsbedingungen zu",
+			"termsAgreement": "Durch Klicken auf die Schaltfläche \"Bestellung aufgeben\" bestätigen Sie, dass Sie unsere Nutzungsbedingungen, Verkaufsbedingungen und Rückgaberichtlinien gelesen, verstanden und akzeptiert haben und anerkennen, dass Sie die Datenschutzrichtlinie von Medusa Store gelesen haben.",
+			"termsAgreeStart": "Ich habe die",
+			"termsLink": "Allgemeinen Geschäftsbedingungen",
+			"and": "und die",
+			"cancellationPolicy": "Widerrufsbelehrung",
+			"termsAgreeEnd": "gelesen und akzeptiere diese.",
 			"processing": "Verarbeitung läuft..."
 		},
 		"discount": {

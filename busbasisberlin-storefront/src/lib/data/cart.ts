@@ -377,13 +377,16 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     // Update cart - this must succeed before redirecting
     await updateCart(data)
 
-    // Only redirect if update was successful
-    redirect(
-      `/${formData.get("shipping_address.country_code")}/checkout?step=delivery`
-    )
+    // Return success with redirect path instead of using redirect() directly
+    // This prevents NEXT_REDIRECT error from being displayed
+    const countryCode = formData.get("shipping_address.country_code")
+    return {
+      success: true,
+      redirect: `/${countryCode}/checkout?step=delivery`
+    }
   } catch (e: any) {
     // If error occurs, return error message and do NOT redirect
-    return e.message
+    return { success: false, error: e.message }
   }
 }
 

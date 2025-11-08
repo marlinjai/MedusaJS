@@ -172,7 +172,14 @@
 		"shipping": {
 			"title": "Shipping",
 			"selectMethod": "Select shipping method",
-			"continueToPayment": "Continue to payment"
+			"continueToPayment": "Continue to payment",
+			"method": "Method",
+			"shippingMethod": "Shipping method",
+			"howDelivered": "How would you like your order delivered?",
+			"edit": "Edit",
+			"pickupOrder": "Pick up your order",
+			"store": "Store",
+			"chooseStore": "Choose a store near you"
 		},
 		"payment": {
 			"title": "Payment",
@@ -182,14 +189,22 @@
 			"enterCardDetails": "Enter card details",
 			"continueToReview": "Continue to review",
 			"giftCard": "Gift card",
-			"anotherStep": "Another step will appear",
-			"edit": "Edit"
+			"anotherStep": "Another step may appear",
+			"edit": "Edit",
+			"notReady": "Payment processing not ready. Please try again.",
+			"initFailed": "Failed to initialize payment. Please try again."
 		},
 		"review": {
 			"title": "Review",
 			"reviewOrder": "Review order",
 			"placeOrder": "Place order",
 			"termsAgree": "I agree to the terms and conditions",
+			"termsAgreement": "By clicking the Place Order button, you confirm that you have read, understand and accept our Terms of Use, Terms of Sale and Returns Policy and acknowledge that you have read Medusa Store's Privacy Policy.",
+			"termsAgreeStart": "I have read and accept the",
+			"termsLink": "Terms and Conditions",
+			"and": "and the",
+			"cancellationPolicy": "Cancellation Policy",
+			"termsAgreeEnd": ".",
 			"processing": "Processing..."
 		},
 		"discount": {

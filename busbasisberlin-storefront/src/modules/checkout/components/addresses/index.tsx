@@ -9,7 +9,7 @@ import { clx, Heading, Text, useToggleState } from '@medusajs/ui';
 import Spinner from '@modules/common/icons/spinner';
 import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useActionState } from 'react';
+import { useEffect, useActionState } from 'react';
 import BillingAddress from '../billing_address';
 import ErrorMessage from '../error-message';
 import ShippingAddress from '../shipping-address';
@@ -42,6 +42,13 @@ const Addresses = ({
 	};
 
 	const [message, formAction] = useActionState(setAddresses, null);
+
+	// Handle successful form submission with redirect
+	useEffect(() => {
+		if (message && typeof message === 'object' && 'success' in message && message.success && 'redirect' in message) {
+			router.push(message.redirect as string);
+		}
+	}, [message, router]);
 
 	const addressCompleted = !!(
 		cart?.shipping_address &&
@@ -109,7 +116,7 @@ const Addresses = ({
 									{t('continueToDelivery')}
 								</SubmitButton>
 								<ErrorMessage
-									error={message}
+									error={message && typeof message === 'object' && 'error' in message ? message.error : typeof message === 'string' ? message : null}
 									data-testid="address-error-message"
 								/>
 							</div>
