@@ -91,9 +91,7 @@ export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
 												{getTitle()}
 											</h2>
 											{getSubtitle() && (
-												<p className="text-neutral-400 mt-2">
-													{getSubtitle()}
-												</p>
+												<p className="text-neutral-400 mt-2">{getSubtitle()}</p>
 											)}
 										</div>
 										<button
