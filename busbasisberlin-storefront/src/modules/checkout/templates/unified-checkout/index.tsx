@@ -332,16 +332,23 @@ export default function UnifiedCheckout({
 					)}
 
 					{/* Show non-Stripe payment methods if any */}
-					{paymentMethods
-						.filter(method => !isStripeFunc(method.id))
-						.map(method => (
-							<PaymentContainer
-								key={method.id}
-								paymentInfoMap={paymentInfoMap}
-								paymentProviderId={method.id}
-								selectedPaymentOptionId={selectedPaymentMethod}
-							/>
-						))}
+					{paymentMethods.filter(method => !isStripeFunc(method.id)).length > 0 && (
+						<RadioGroup
+							value={selectedPaymentMethod}
+							onChange={setSelectedPaymentMethod}
+						>
+							{paymentMethods
+								.filter(method => !isStripeFunc(method.id))
+								.map(method => (
+									<PaymentContainer
+										key={method.id}
+										paymentInfoMap={paymentInfoMap}
+										paymentProviderId={method.id}
+										selectedPaymentOptionId={selectedPaymentMethod}
+									/>
+								))}
+						</RadioGroup>
+					)}
 				</div>
 
 				{/* Step 4: Review & Place Order - Always visible */}

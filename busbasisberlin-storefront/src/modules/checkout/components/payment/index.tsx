@@ -1,10 +1,8 @@
-// payment/index.tsx
-
 'use client';
 
-import { paymentInfoMap } from '@lib/constants';
+import { isStripe as isStripeFunc, paymentInfoMap } from '@lib/constants';
 import { initiatePaymentSession } from '@lib/data/cart';
-import { CheckCircleSolid } from '@medusajs/icons';
+import { CheckCircleSolid, CreditCard } from '@medusajs/icons';
 import { Button, Container, Heading, Text, clx } from '@medusajs/ui';
 import ErrorMessage from '@modules/checkout/components/error-message';
 import Divider from '@modules/common/components/divider';
@@ -14,7 +12,6 @@ import {
 	useStripe,
 } from '@stripe/react-stripe-js';
 import { StripePaymentElementChangeEvent } from '@stripe/stripe-js';
-import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { StripeContext } from '../payment-wrapper/stripe-wrapper';
@@ -26,7 +23,6 @@ const Payment = ({
 	cart: any;
 	availablePaymentMethods: any[];
 }) => {
-	const t = useTranslations('checkout.payment');
 	const activeSession = cart.payment_collection?.payment_sessions?.find(
 		(paymentSession: any) => paymentSession.status === 'pending',
 	);
@@ -61,6 +57,16 @@ const Payment = ({
 		// Clears any errors on successful completion
 		if (event.complete) {
 			setError(null);
+		}
+	};
+
+	const setPaymentMethod = async (method: string) => {
+		setError(null);
+		setSelectedPaymentMethod(method);
+		if (isStripeFunc(method)) {
+			await initiatePaymentSession(cart, {
+				provider_id: method,
+			});
 		}
 	};
 
@@ -117,26 +123,12 @@ const Payment = ({
 
 	const initStripe = async () => {
 		try {
-			console.log('[PAYMENT] Attempting to initialize Stripe session...', {
-				cartId: cart.id,
-				providerId: 'pp_stripe_stripe',
-			});
-			const result = await initiatePaymentSession(cart, {
-				// TODO: change the provider ID if using a different ID in medusa-config.ts
+			await initiatePaymentSession(cart, {
 				provider_id: 'pp_stripe_stripe',
 			});
-			console.log('[PAYMENT] Stripe session initialized successfully:', result);
-		} catch (err: any) {
-			console.error('[PAYMENT] Failed to initialize Stripe session:', err);
-			console.error('[PAYMENT] Error details:', {
-				message: err.message,
-				status: err.status,
-				response: err.response,
-				stack: err.stack,
-			});
-			setError(
-				`Failed to initialize payment: ${err.message || 'Unknown error'}`,
-			);
+		} catch (err) {
+			console.error('Failed to initialize Stripe session:', err);
+			setError('Failed to initialize payment. Please try again.');
 		}
 	};
 
@@ -151,7 +143,7 @@ const Payment = ({
 	}, [isOpen]);
 
 	return (
-		<div className="bg-card">
+		<div className="bg-white">
 			<div className="flex flex-row items-center justify-between mb-6">
 				<Heading
 					level="h2"
@@ -163,7 +155,7 @@ const Payment = ({
 						},
 					)}
 				>
-					{t('title')}
+					Payment
 					{!isOpen && paymentReady && <CheckCircleSolid />}
 				</Heading>
 				{!isOpen && paymentReady && (
@@ -173,29 +165,12 @@ const Payment = ({
 							className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
 							data-testid="edit-payment-button"
 						>
-							{t('edit')}
+							Edit
 						</button>
 					</Text>
 				)}
 			</div>
 			<div>
-				{/* Debug info */}
-				{isOpen && (
-					<div className="mb-4 p-3 bg-ui-bg-subtle rounded text-xs">
-						<strong>Debug Info:</strong>
-						<br />
-						Active Session: {activeSession ? 'Yes' : 'No'}
-						<br />
-						Active Session Provider: {activeSession?.provider_id || 'None'}
-						<br />
-						Stripe Ready: {stripeReady ? 'Yes' : 'No'}
-						<br />
-						Available Payment Methods: {availablePaymentMethods?.length || 0}
-						<br />
-						Cart Payment Sessions:{' '}
-						{cart.payment_collection?.payment_sessions?.length || 0}
-					</div>
-				)}
 				<div className={isOpen ? 'block' : 'hidden'}>
 					{!paidByGiftcard &&
 						availablePaymentMethods?.length &&
@@ -205,9 +180,6 @@ const Payment = ({
 									onChange={handlePaymentElementChange}
 									options={{
 										layout: 'accordion',
-										business: {
-											name: 'BASISCAMP BERLIN REPAIR & RESTORATION',
-										},
 									}}
 								/>
 							</div>
@@ -216,13 +188,13 @@ const Payment = ({
 					{paidByGiftcard && (
 						<div className="flex flex-col w-1/3">
 							<Text className="txt-medium-plus text-ui-fg-base mb-1">
-								{t('paymentMethod')}
+								Payment method
 							</Text>
 							<Text
 								className="txt-medium text-ui-fg-subtle"
 								data-testid="payment-method-summary"
 							>
-								{t('giftCard')}
+								Gift card
 							</Text>
 						</div>
 					)}
@@ -245,7 +217,7 @@ const Payment = ({
 						}
 						data-testid="submit-payment-button"
 					>
-						{t('continueToReview')}
+						Continue to review
 					</Button>
 				</div>
 
@@ -254,7 +226,7 @@ const Payment = ({
 						<div className="flex items-start gap-x-1 w-full">
 							<div className="flex flex-col w-1/3">
 								<Text className="txt-medium-plus text-ui-fg-base mb-1">
-									{t('paymentMethod')}
+									Payment method
 								</Text>
 								<Text
 									className="txt-medium text-ui-fg-subtle"
@@ -266,7 +238,7 @@ const Payment = ({
 							</div>
 							<div className="flex flex-col w-1/3">
 								<Text className="txt-medium-plus text-ui-fg-base mb-1">
-									{t('paymentDetails')}
+									Payment details
 								</Text>
 								<div
 									className="flex gap-2 txt-medium text-ui-fg-subtle items-center"
@@ -274,27 +246,23 @@ const Payment = ({
 								>
 									<Container className="flex items-center h-7 w-fit p-2 bg-ui-button-neutral-hover">
 										{paymentInfoMap[selectedPaymentMethod]?.icon || (
-											<>
-												<p className="text-ui-fg-subtle">
-													nothing to show here
-												</p>
-											</>
+											<CreditCard />
 										)}
 									</Container>
-									<Text>{t('anotherStep')}</Text>
+									<Text>Another step may appear</Text>
 								</div>
 							</div>
 						</div>
 					) : paidByGiftcard ? (
 						<div className="flex flex-col w-1/3">
 							<Text className="txt-medium-plus text-ui-fg-base mb-1">
-								{t('paymentMethod')}
+								Payment method
 							</Text>
 							<Text
 								className="txt-medium text-ui-fg-subtle"
 								data-testid="payment-method-summary"
 							>
-								{t('giftCard')}
+								Gift card
 							</Text>
 						</div>
 					) : null}
