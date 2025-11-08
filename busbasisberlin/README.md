@@ -55,7 +55,9 @@ Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to le
 This backend includes several custom modules built for ERP functionality:
 
 ### [Offer Module](./src/modules/offer/README.md)
+
 Complete offer/quotation management system with:
+
 - Automatic offer numbering (ANG-00001, ANG-00002, etc.)
 - Status workflow management (draft → active → accepted → completed)
 - Inventory reservation and release (manual and automatic)
@@ -65,7 +67,9 @@ Complete offer/quotation management system with:
 - Bidirectional status transitions
 
 ### [Supplier Module](./src/modules/supplier/README.md)
+
 Comprehensive supplier management with:
+
 - Supplier information and contact management
 - Multiple addresses per supplier
 - Product-supplier relationships with pricing
@@ -73,7 +77,9 @@ Comprehensive supplier management with:
 - CSV import support (JTL VAP format compatible)
 
 ### [Manual Customer Module](./src/modules/manual-customer/README.md)
+
 Flexible customer management for:
+
 - Legacy customers from other systems
 - Walk-in customers without email addresses
 - Business customers with incomplete information
@@ -81,7 +87,9 @@ Flexible customer management for:
 - Purchase history tracking
 
 ### [Service Module](./src/modules/service/README.md)
+
 Service catalog management with:
+
 - Service categorization and types
 - Flexible pricing (base price or hourly rate)
 - Service requirements tracking
@@ -90,7 +98,9 @@ Service catalog management with:
 ## Search Integration
 
 ### Meilisearch Configuration
+
 Advanced product search powered by Meilisearch with:
+
 - Real-time product synchronization
 - Category faceting and filtering
 - SKU and handle search support
@@ -151,23 +161,27 @@ curl -X POST 'http://localhost:7700/keys' \
 The backend includes pre-configured transactional email templates using React Email and Resend:
 
 ### Order Emails
+
 - Order placed confirmation
 - Order shipped notification
 - Order delivered notification
 - Order cancelled notification
 
 ### Offer Emails
+
 - Offer active notification
 - Offer accepted confirmation
 - Offer completed notification
 - Offer cancelled notification
 
 ### Customer Emails
+
 - Welcome email for new customers
 - Password reset
 - User invitation
 
 All emails include:
+
 - Company branding and styling
 - Responsive design
 - German language support
@@ -245,4 +259,4 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
 
-<!-- Deployment trigger: Tue Nov 01 11:00:00 CET 2025 - Test STOREFRONT_URL fallback and CORS fix -->
+<!-- Deployment trigger: Tue Nov 08 11:00:00 CET 2025 - Test build -->
