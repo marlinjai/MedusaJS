@@ -48,8 +48,7 @@ export function generateOfferAcceptanceUrl(
 	const storefrontUrl =
 		baseUrl ||
 		process.env.NEXT_PUBLIC_STOREFRONT_URL ||
-		process.env.MEDUSA_BACKEND_URL ||
-		'http://localhost:3000';
+		process.env.NEXT_PUBLIC_BASE_URL;
 
 	// Use storefront URL for better UX
 	const acceptPath = `/de/offers/${offerId}/accept?token=${token}&email=${encodeURIComponent(customerEmail)}`;
