@@ -29,7 +29,10 @@ export function getCompanyInfo(): CompanyInfo {
 		city: process.env.COMPANY_CITY || 'Birkenwerder',
 		email: process.env.COMPANY_EMAIL || 'info@basiscampberlin.de',
 		phone: process.env.COMPANY_PHONE || '+49 3303 5365540',
-		website: process.env.COMPANY_WEBSITE || 'https://basiscampberlin.de',
+		website:
+			process.env.STOREFRONT_URL ||
+			process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+			'https://www.basiscampberlin.de',
 		logoUrl: process.env.COMPANY_LOGO_URL,
 		supportEmail:
 			process.env.COMPANY_SUPPORT_EMAIL ||

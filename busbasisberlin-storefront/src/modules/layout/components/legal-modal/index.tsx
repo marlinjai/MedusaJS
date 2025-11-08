@@ -11,6 +11,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { Fragment } from 'react';
 import { BsX } from 'react-icons/bs';
+import LegalContent from '../legal-content';
 
 type LegalModalProps = {
 	isOpen: boolean;
@@ -21,121 +22,26 @@ type LegalModalProps = {
 export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
 	const t = useTranslations('legal');
 
-	const content = {
-		privacy: {
-			title: t('privacy.title'),
-			sections: [
-				{
-					title: t('privacy.intro.title'),
-					content: t('privacy.intro.content'),
-				},
-				{
-					title: t('privacy.dataCollection.title'),
-					content: t('privacy.dataCollection.content'),
-				},
-				{
-					title: t('privacy.dataUsage.title'),
-					content: t('privacy.dataUsage.content'),
-				},
-				{
-					title: t('privacy.cookies.title'),
-					content: t('privacy.cookies.content'),
-				},
-				{
-					title: t('privacy.rights.title'),
-					content: t('privacy.rights.content'),
-				},
-			],
-		},
-		terms: {
-			title: t('terms.title'),
-			sections: [
-				{
-					title: t('terms.general.title'),
-					content: t('terms.general.content'),
-				},
-				{ title: t('terms.orders.title'), content: t('terms.orders.content') },
-				{ title: t('terms.prices.title'), content: t('terms.prices.content') },
-				{
-					title: t('terms.shipping.title'),
-					content: t('terms.shipping.content'),
-				},
-				{
-					title: t('terms.returns.title'),
-					content: t('terms.returns.content'),
-				},
-				{
-					title: t('terms.liability.title'),
-					content: t('terms.liability.content'),
-				},
-			],
-		},
-		imprint: {
-			title: t('imprint.title'),
-			sections: [
-				{
-					title: t('imprint.company.title'),
-					content: t('imprint.company.content'),
-				},
-				{
-					title: t('imprint.contact.title'),
-					content: t('imprint.contact.content'),
-				},
-				{
-					title: t('imprint.management.title'),
-					content: t('imprint.management.content'),
-				},
-				{
-					title: t('imprint.register.title'),
-					content: t('imprint.register.content'),
-				},
-			],
-		},
-		vereinsatzung: {
-			title: t('vereinsatzung.title'),
-			subtitle: t('vereinsatzung.subtitle'),
-			sections: [
-				{
-					title: t('vereinsatzung.section1.title'),
-					content: t('vereinsatzung.section1.content'),
-				},
-				{
-					title: t('vereinsatzung.section2.title'),
-					content: t('vereinsatzung.section2.content'),
-				},
-				{
-					title: t('vereinsatzung.section3.title'),
-					content: t('vereinsatzung.section3.content'),
-				},
-				{
-					title: t('vereinsatzung.section4.title'),
-					content: t('vereinsatzung.section4.content'),
-				},
-				{
-					title: t('vereinsatzung.section5.title'),
-					content: t('vereinsatzung.section5.content'),
-				},
-				{
-					title: t('vereinsatzung.section6.title'),
-					content: t('vereinsatzung.section6.content'),
-				},
-				{
-					title: t('vereinsatzung.section7.title'),
-					content: t('vereinsatzung.section7.content'),
-				},
-				{
-					title: t('vereinsatzung.section8.title'),
-					content: t('vereinsatzung.section8.content'),
-				},
-				{
-					title: t('vereinsatzung.section9.title'),
-					content: t('vereinsatzung.section9.content'),
-				},
-			],
-		},
+	// Get title and subtitle for modal header
+	const getTitle = () => {
+		switch (type) {
+			case 'privacy':
+				return t('privacy.title');
+			case 'terms':
+				return t('terms.title');
+			case 'imprint':
+				return t('imprint.title');
+			case 'vereinsatzung':
+				return t('vereinsatzung.title');
+		}
 	};
 
-	const currentContent = content[type];
+	const getSubtitle = () => {
+		if (type === 'vereinsatzung') {
+			return t('vereinsatzung.subtitle');
+		}
+		return null;
+	};
 
 	return (
 		<Transition show={isOpen} as={Fragment}>
@@ -182,11 +88,11 @@ export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
 									<div className="flex items-center justify-between p-8 border-b border-neutral-800 bg-neutral-900/95 backdrop-blur-sm">
 										<div>
 											<h2 className="text-2xl md:text-3xl font-bold text-white">
-												{currentContent.title}
+												{getTitle()}
 											</h2>
-											{currentContent.subtitle && (
+											{getSubtitle() && (
 												<p className="text-neutral-400 mt-2">
-													{currentContent.subtitle}
+													{getSubtitle()}
 												</p>
 											)}
 										</div>
@@ -200,18 +106,7 @@ export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
 
 									{/* Content Sections */}
 									<div className="p-8 max-h-[70vh] overflow-y-auto bg-neutral-900/95 backdrop-blur-sm">
-										<div className="space-y-8">
-											{currentContent.sections.map((section, index) => (
-												<div key={index}>
-													<h3 className="text-xl font-semibold text-white mb-4">
-														{section.title}
-													</h3>
-													<div className="text-neutral-300 leading-relaxed whitespace-pre-line">
-														{section.content}
-													</div>
-												</div>
-											))}
-										</div>
+										<LegalContent type={type} />
 									</div>
 
 									{/* Footer */}

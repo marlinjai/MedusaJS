@@ -8,6 +8,40 @@ import * as handlebars from 'handlebars';
 import * as puppeteer from 'puppeteer';
 
 /**
+ * Get terms and conditions URL - dynamically generated from STOREFRONT_URL
+ * Falls back to PDF_TERMS_CONDITIONS env var if set, otherwise uses STOREFRONT_URL/terms
+ */
+function getTermsUrl(): string {
+	const explicitUrl = process.env.PDF_TERMS_CONDITIONS;
+	if (explicitUrl) {
+		return explicitUrl;
+	}
+	const storefrontUrl =
+		process.env.STOREFRONT_URL ||
+		process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+		'https://www.basiscampberlin.de';
+	// Ensure URL ends without trailing slash, then add /terms
+	return `${storefrontUrl.replace(/\/$/, '')}/terms`;
+}
+
+/**
+ * Get privacy policy URL - dynamically generated from STOREFRONT_URL
+ * Falls back to PDF_PRIVACY_POLICY env var if set, otherwise uses STOREFRONT_URL/privacy
+ */
+function getPrivacyUrl(): string {
+	const explicitUrl = process.env.PDF_PRIVACY_POLICY;
+	if (explicitUrl) {
+		return explicitUrl;
+	}
+	const storefrontUrl =
+		process.env.STOREFRONT_URL ||
+		process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+		'https://www.basiscampberlin.de';
+	// Ensure URL ends without trailing slash, then add /privacy
+	return `${storefrontUrl.replace(/\/$/, '')}/privacy`;
+}
+
+/**
  * Generate PDF buffer from offer data using German business standards
  */
 export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
@@ -30,9 +64,13 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
 
 		if (executablePath) {
-			console.log(`[PDF-GENERATOR] Using Chromium executable: ${executablePath}`);
+			console.log(
+				`[PDF-GENERATOR] Using Chromium executable: ${executablePath}`,
+			);
 		} else {
-			console.log('[PDF-GENERATOR] Using default Puppeteer browser (no explicit executable path)');
+			console.log(
+				'[PDF-GENERATOR] Using default Puppeteer browser (no explicit executable path)',
+			);
 		}
 
 		const launchOptions: any = {
@@ -106,12 +144,22 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		const templateData = {
 			// Company information from environment variables
 			company: {
-				name: process.env.COMPANY_NAME || 'Your Company Name',
-				address: process.env.COMPANY_ADDRESS || 'Your Company Address',
-				postalCode: process.env.COMPANY_POSTAL_CODE || '12345',
-				city: process.env.COMPANY_CITY || 'Your City',
-				email: process.env.COMPANY_EMAIL || 'info@yourcompany.com',
-				logoUrl: process.env.COMPANY_LOGO_URL || null,
+				name: process.env.COMPANY_NAME || 'BasisCampBerlin GmbH',
+				address: process.env.COMPANY_ADDRESS || 'Hauptstraße 51',
+				postalCode: process.env.COMPANY_POSTAL_CODE || '16547',
+				city: process.env.COMPANY_CITY || 'Birkenwerder',
+				email: process.env.COMPANY_EMAIL || 'info@basiscampberlin.de',
+				logoUrl:
+					process.env.COMPANY_LOGO_URL || 'https://basiscampberlin.de/logo.png',
+				phone: process.env.COMPANY_PHONE || '+49 3303 5365540',
+				website:
+					process.env.STOREFRONT_URL ||
+					process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+					'https://www.basiscampberlin.de',
+				supportEmail:
+					process.env.COMPANY_SUPPORT_EMAIL || 'info@basiscampberlin.de',
+				primaryColor: process.env.BRAND_PRIMARY_COLOR || '#2c5aa0',
+				secondaryColor: process.env.BRAND_SECONDARY_COLOR || '#1e40af',
 			},
 
 			// Offer information
@@ -172,9 +220,14 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 
 		// Verify HTML contains actual content (not just Handlebars placeholders)
 		if (html.includes('{{') && !html.includes('Basis Camp Berlin')) {
-			console.warn('[PDF-GENERATOR] Warning: HTML may contain unrendered Handlebars placeholders');
+			console.warn(
+				'[PDF-GENERATOR] Warning: HTML may contain unrendered Handlebars placeholders',
+			);
 			// Log a sample of the HTML for debugging
-			console.log('[PDF-GENERATOR] HTML sample (first 500 chars):', html.substring(0, 500));
+			console.log(
+				'[PDF-GENERATOR] HTML sample (first 500 chars):',
+				html.substring(0, 500),
+			);
 		}
 
 		// Set content and wait for DOM to be ready
@@ -218,7 +271,10 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 			);
 			console.log('[PDF-GENERATOR] Content rendering verified');
 		} catch (waitError) {
-			console.warn('[PDF-GENERATOR] Content wait timeout, proceeding anyway:', waitError.message);
+			console.warn(
+				'[PDF-GENERATOR] Content wait timeout, proceeding anyway:',
+				waitError.message,
+			);
 			// Continue anyway - sometimes the content is already rendered
 		}
 
@@ -228,7 +284,7 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		// Ensure content is painted before PDF generation
 		// This is critical - PDF generation needs the content to be visually rendered
 		await page.evaluate(() => {
-			return new Promise((resolve) => {
+			return new Promise(resolve => {
 				// Force a repaint by reading layout properties
 				const doc = document.querySelector('.document');
 				if (doc) {
@@ -279,8 +335,15 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		}
 
 		// Verify content is visible (not hidden by CSS)
-		if (contentCheck.display === 'none' || contentCheck.visibility === 'hidden' || contentCheck.opacity === '0') {
-			console.warn('[PDF-GENERATOR] Warning: Content may be hidden by CSS:', contentCheck);
+		if (
+			contentCheck.display === 'none' ||
+			contentCheck.visibility === 'hidden' ||
+			contentCheck.opacity === '0'
+		) {
+			console.warn(
+				'[PDF-GENERATOR] Warning: Content may be hidden by CSS:',
+				contentCheck,
+			);
 		}
 
 		// Additional debug: Check if content is actually visible in viewport
@@ -302,19 +365,35 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 				overflow: style.overflow,
 			};
 		});
-		console.log('[PDF-GENERATOR] Viewport check:', JSON.stringify(viewportCheck));
+		console.log(
+			'[PDF-GENERATOR] Viewport check:',
+			JSON.stringify(viewportCheck),
+		);
 
 		if (!viewportCheck.visible) {
-			console.error('[PDF-GENERATOR] Content has zero dimensions in viewport!', viewportCheck);
+			console.error(
+				'[PDF-GENERATOR] Content has zero dimensions in viewport!',
+				viewportCheck,
+			);
 		}
 
 		// Debug: Capture screenshot to verify rendering (optional, can be disabled in production)
 		if (process.env.NODE_ENV !== 'production') {
 			try {
-				const screenshot = await page.screenshot({ type: 'png', fullPage: true });
-				console.log('[PDF-GENERATOR] Screenshot captured, size:', screenshot.length, 'bytes');
+				const screenshot = await page.screenshot({
+					type: 'png',
+					fullPage: true,
+				});
+				console.log(
+					'[PDF-GENERATOR] Screenshot captured, size:',
+					screenshot.length,
+					'bytes',
+				);
 			} catch (screenshotError) {
-				console.warn('[PDF-GENERATOR] Screenshot capture failed (non-critical):', screenshotError.message);
+				console.warn(
+					'[PDF-GENERATOR] Screenshot capture failed (non-critical):',
+					screenshotError.message,
+				);
 			}
 		}
 
@@ -336,10 +415,10 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 			preferCSSPageSize: false, // Use format instead of CSS page size
 			displayHeaderFooter: false,
 			margin: {
-				top: '15mm',    // Reduced from 20mm for more content space
-				right: '15mm',  // Reduced from 20mm for more content space
+				top: '15mm', // Reduced from 20mm for more content space
+				right: '15mm', // Reduced from 20mm for more content space
 				bottom: '15mm', // Reduced from 20mm for more content space
-				left: '15mm',   // Reduced from 20mm for more content space
+				left: '15mm', // Reduced from 20mm for more content space
 			},
 		});
 		console.log(
