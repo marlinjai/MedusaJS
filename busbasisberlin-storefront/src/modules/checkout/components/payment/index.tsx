@@ -1,8 +1,13 @@
 'use client';
 
-import { isStripe as isStripeFunc, paymentInfoMap } from '@lib/constants';
+import {
+	isManual,
+	isStripe as isStripeFunc,
+	paymentInfoMap,
+} from '@lib/constants';
 import { initiatePaymentSession } from '@lib/data/cart';
 import { CheckCircleSolid, CreditCard } from '@medusajs/icons';
+import { HttpTypes } from '@medusajs/types';
 import { Button, Container, Heading, Text, clx } from '@medusajs/ui';
 import ErrorMessage from '@modules/checkout/components/error-message';
 import Divider from '@modules/common/components/divider';
@@ -20,9 +25,11 @@ import { StripeContext } from '../payment-wrapper/stripe-wrapper';
 const Payment = ({
 	cart,
 	availablePaymentMethods,
+	availableShippingMethods,
 }: {
 	cart: any;
 	availablePaymentMethods: any[];
+	availableShippingMethods?: HttpTypes.StoreCartShippingOption[] | null;
 }) => {
 	const t = useTranslations('checkout.payment');
 	const activeSession = cart.payment_collection?.payment_sessions?.find(
@@ -69,11 +76,32 @@ const Payment = ({
 			await initiatePaymentSession(cart, {
 				provider_id: method,
 			});
+		} else if (isManual(method)) {
+			// Initialize manual payment session for pickup orders
+			await initiatePaymentSession(cart, {
+				provider_id: method,
+			});
 		}
 	};
 
 	const paidByGiftcard =
 		cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0;
+
+	// Check if selected shipping method is pickup
+	const selectedShippingMethodId =
+		cart?.shipping_methods?.at(-1)?.shipping_option_id;
+	const isPickupShipping =
+		selectedShippingMethodId &&
+		availableShippingMethods?.some(
+			sm =>
+				sm.id === selectedShippingMethodId &&
+				(sm as any).service_zone?.fulfillment_set?.type === 'pickup',
+		);
+
+	// Filter payment methods: show manual payment (pp_system) only for pickup
+	const filteredPaymentMethods = isPickupShipping
+		? availablePaymentMethods?.filter(pm => isManual(pm.id)) || []
+		: availablePaymentMethods?.filter(pm => !isManual(pm.id)) || [];
 
 	const paymentReady =
 		(activeSession && cart?.shipping_methods.length !== 0) || paidByGiftcard;
@@ -99,6 +127,16 @@ const Payment = ({
 		setError(null);
 
 		try {
+			// For pickup orders with manual payment, skip Stripe validation
+			if (isPickupShipping && isManual(activeSession?.provider_id)) {
+				// Manual payment for pickup - just navigate to review
+				router.push(pathname + '?' + createQueryString('step', 'review'), {
+					scroll: false,
+				});
+				return;
+			}
+
+			// For regular shipping with Stripe, validate payment
 			// Check if the necessary context is ready
 			if (!stripe || !elements) {
 				setError(t('notReady'));
@@ -123,22 +161,24 @@ const Payment = ({
 		}
 	};
 
-	const initStripe = async () => {
+	const initPaymentSession = async () => {
 		try {
+			// Initialize manual payment for pickup, Stripe for regular shipping
+			const providerId = isPickupShipping ? 'pp_system' : 'pp_stripe_stripe';
 			await initiatePaymentSession(cart, {
-				provider_id: 'pp_stripe_stripe',
+				provider_id: providerId,
 			});
 		} catch (err) {
-			console.error('Failed to initialize Stripe session:', err);
+			console.error('Failed to initialize payment session:', err);
 			setError(t('initFailed'));
 		}
 	};
 
 	useEffect(() => {
 		if (!activeSession && isOpen) {
-			initStripe();
+			initPaymentSession();
 		}
-	}, [cart, isOpen, activeSession]);
+	}, [cart, isOpen, activeSession, isPickupShipping]);
 
 	useEffect(() => {
 		setError(null);
@@ -175,7 +215,8 @@ const Payment = ({
 			<div>
 				<div className={isOpen ? 'block' : 'hidden'}>
 					{!paidByGiftcard &&
-						availablePaymentMethods?.length &&
+						!isPickupShipping &&
+						filteredPaymentMethods?.length &&
 						stripeReady && (
 							<div className="mt-5 transition-all duration-150 ease-in-out">
 								<PaymentElement
@@ -186,6 +227,15 @@ const Payment = ({
 								/>
 							</div>
 						)}
+
+					{!paidByGiftcard && isPickupShipping && (
+						<div className="mt-5">
+							<Text className="txt-medium text-ui-fg-subtle">
+								{t('pickupPaymentNote') ||
+									'Bei Abholung am Lager erfolgt die Zahlung direkt vor Ort.'}
+							</Text>
+						</div>
+					)}
 
 					{paidByGiftcard && (
 						<div className="flex flex-col w-1/3">
@@ -212,10 +262,14 @@ const Payment = ({
 						onClick={handleSubmit}
 						isLoading={isLoading}
 						disabled={
-							!stripeComplete ||
-							!stripe ||
-							!elements ||
-							(!selectedPaymentMethod && !paidByGiftcard)
+							// For pickup: only need active session (manual payment)
+							// For regular shipping: need Stripe completion
+							isPickupShipping
+								? !activeSession && !paidByGiftcard
+								: !stripeComplete ||
+								  !stripe ||
+								  !elements ||
+								  (!selectedPaymentMethod && !paidByGiftcard)
 						}
 						data-testid="submit-payment-button"
 					>

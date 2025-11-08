@@ -192,7 +192,8 @@
 			"anotherStep": "Another step may appear",
 			"edit": "Edit",
 			"notReady": "Payment processing not ready. Please try again.",
-			"initFailed": "Failed to initialize payment. Please try again."
+			"initFailed": "Failed to initialize payment. Please try again.",
+			"pickupPaymentNote": "For pickup orders, payment will be made directly at the store."
 		},
 		"review": {
 			"title": "Review",

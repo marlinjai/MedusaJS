@@ -151,6 +151,7 @@ export default function OfferDetailPage() {
 		pdf: { base64: string; filename: string };
 		email: { html: string; subject: string; to: string };
 	} | null>(null);
+	const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 	const [loadingPreview, setLoadingPreview] = useState(false);
 	const [previewTab, setPreviewTab] = useState<'pdf' | 'email'>('pdf');
 	const [showInfoModal, setShowInfoModal] = useState(false);
@@ -256,6 +257,15 @@ export default function OfferDetailPage() {
 		};
 	}, [pdfUrl]);
 
+	// Cleanup PDF preview blob URL when component unmounts or preview closes
+	useEffect(() => {
+		return () => {
+			if (pdfPreviewUrl) {
+				URL.revokeObjectURL(pdfPreviewUrl);
+			}
+		};
+	}, [pdfPreviewUrl]);
+
 	// Preview email and PDF before sending
 	const previewEmail = async (eventType?: string) => {
 		if (!offer) return;
@@ -279,6 +289,24 @@ export default function OfferDetailPage() {
 
 			const result = await response.json();
 			setPreviewData(result);
+
+			// Create blob URL for PDF preview (more reliable than data: URL)
+			if (result.pdf?.base64) {
+				try {
+					const binaryString = atob(result.pdf.base64);
+					const bytes = new Uint8Array(binaryString.length);
+					for (let i = 0; i < binaryString.length; i++) {
+						bytes[i] = binaryString.charCodeAt(i);
+					}
+					const blob = new Blob([bytes], { type: 'application/pdf' });
+					const blobUrl = URL.createObjectURL(blob);
+					setPdfPreviewUrl(blobUrl);
+				} catch (error) {
+					console.error('Error creating PDF blob URL:', error);
+					setPdfPreviewUrl(null);
+				}
+			}
+
 			setShowPreview(true);
 			setPreviewTab('email'); // Start with email preview
 		} catch (error) {
@@ -2125,12 +2153,42 @@ export default function OfferDetailPage() {
 
 							{/* PDF Preview */}
 							{previewTab === 'pdf' && (
-								<div className="h-full w-full">
-									<iframe
-										src={`data:application/pdf;base64,${previewData.pdf.base64}`}
-										className="w-full h-full border-0"
-										title="PDF Preview"
-									/>
+								<div className="h-full w-full flex flex-col">
+									{pdfPreviewUrl ? (
+										<>
+											<iframe
+												src={pdfPreviewUrl}
+												className="w-full h-full border-0 flex-1"
+												title="PDF Preview"
+												onError={() => {
+													console.error('PDF preview iframe error');
+												}}
+											/>
+											{/* Fallback download link */}
+											<div className="p-4 bg-ui-bg-subtle border-t border-ui-border-base">
+												<a
+													href={pdfPreviewUrl}
+													download={previewData.pdf.filename}
+													className="text-sm text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline"
+												>
+													PDF herunterladen ({previewData.pdf.filename})
+												</a>
+											</div>
+										</>
+									) : (
+										<div className="h-full flex items-center justify-center p-8">
+											<div className="text-center">
+												<Text className="text-ui-fg-subtle mb-4">
+													PDF-Vorschau konnte nicht geladen werden.
+												</Text>
+												{previewData.pdf?.base64 && (
+													<Text size="small" className="text-ui-fg-muted">
+														Die PDF-Daten sind vorhanden, aber die Vorschau konnte nicht gerendert werden.
+													</Text>
+												)}
+											</div>
+										</div>
+									)}
 								</div>
 							)}
 						</div>
@@ -2143,6 +2201,11 @@ export default function OfferDetailPage() {
 								onClick={() => {
 									setShowPreview(false);
 									setPreviewData(null);
+									// Cleanup blob URL
+									if (pdfPreviewUrl) {
+										URL.revokeObjectURL(pdfPreviewUrl);
+										setPdfPreviewUrl(null);
+									}
 								}}
 							>
 								Abbrechen

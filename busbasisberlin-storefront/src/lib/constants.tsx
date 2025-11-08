@@ -35,6 +35,10 @@ export const paymentInfoMap: Record<
 		title: 'Manuelle Zahlung',
 		icon: <CreditCard />,
 	},
+	pp_system: {
+		title: 'Manuelle Zahlung',
+		icon: <CreditCard />,
+	},
 
 	// Payment method types from Stripe Payment Element
 	card: {
@@ -71,7 +75,7 @@ export const isPaypal = (providerId?: string) => {
 	return providerId?.startsWith('pp_paypal');
 };
 export const isManual = (providerId?: string) => {
-	return providerId?.startsWith('pp_system_default');
+	return providerId?.startsWith('pp_system') || providerId === 'pp_system';
 };
 
 // Add currencies that don't need to be divided by 100

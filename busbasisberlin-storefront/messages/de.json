@@ -218,7 +218,8 @@
 			"stripe": "Kreditkarte",
 			"paypal": "PayPal",
 			"notReady": "Zahlungsverarbeitung nicht bereit. Bitte versuchen Sie es erneut.",
-			"initFailed": "Zahlung konnte nicht initialisiert werden. Bitte versuchen Sie es erneut."
+			"initFailed": "Zahlung konnte nicht initialisiert werden. Bitte versuchen Sie es erneut.",
+			"pickupPaymentNote": "Bei Abholung am Lager erfolgt die Zahlung direkt vor Ort."
 		},
 		"review": {
 			"title": "Überprüfung",
