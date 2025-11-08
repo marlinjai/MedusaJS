@@ -148,6 +148,7 @@ const getModules = () => {
 							apiKey: process.env.STRIPE_API_KEY,
 							webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
 							automaticPaymentMethods: true,
+							automaticCapture: true, // Automatically capture payments when orders are placed
 						},
 					},
 				],
