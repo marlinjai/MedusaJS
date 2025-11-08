@@ -14,6 +14,7 @@ import { offerCancelledEmail } from '../../../../../modules/resend/emails/offer-
 import { offerCompletedEmail } from '../../../../../modules/resend/emails/offer-completed';
 import { resolveOfferService } from '../../../../../types/services';
 import { generateOfferPdfBuffer } from '../../../../../utils/pdf-generator';
+import { generateOfferAcceptanceUrl } from '../../../../../utils/offer-token';
 
 interface PreviewEmailParams {
 	id: string;
@@ -98,11 +99,23 @@ export async function POST(
 			`[PREVIEW-EMAIL] Rendering email template for status: ${emailStatus}`,
 		);
 		const emailTemplate = getEmailTemplate(emailStatus);
+
+		// Generate acceptance URL for active offers
+		let acceptanceUrl: string | undefined;
+		if (emailStatus === 'active' && offer.customer_email) {
+			acceptanceUrl = generateOfferAcceptanceUrl(
+				offer.id,
+				offer.customer_email,
+			);
+		}
+
 		const emailProps = {
 			offer_id: offer.id,
 			offer_number: offer.offer_number,
 			customer_name: offer.customer_name || undefined,
+			customer_email: offer.customer_email || undefined,
 			status: emailStatus,
+			acceptance_url: acceptanceUrl,
 		};
 		const emailComponent = emailTemplate(emailProps);
 		const emailHtml = renderToString(createElement(() => emailComponent));

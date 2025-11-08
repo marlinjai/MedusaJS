@@ -2163,6 +2163,9 @@ export default function OfferDetailPage() {
 												onError={() => {
 													console.error('PDF preview iframe error');
 												}}
+												onLoad={() => {
+													// PDF loaded successfully
+												}}
 											/>
 											{/* Fallback download link */}
 											<div className="p-4 bg-ui-bg-subtle border-t border-ui-border-base">

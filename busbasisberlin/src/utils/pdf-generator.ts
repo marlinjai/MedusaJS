@@ -336,10 +336,10 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 			preferCSSPageSize: false, // Use format instead of CSS page size
 			displayHeaderFooter: false,
 			margin: {
-				top: '20mm',
-				right: '20mm',
-				bottom: '20mm',
-				left: '20mm',
+				top: '15mm',    // Reduced from 20mm for more content space
+				right: '15mm',  // Reduced from 20mm for more content space
+				bottom: '15mm', // Reduced from 20mm for more content space
+				left: '15mm',   // Reduced from 20mm for more content space
 			},
 		});
 		console.log(
@@ -399,9 +399,9 @@ function getHTMLTemplate(data: any): string {
 
         .document {
           width: 100%;
-          max-width: 210mm;
+          max-width: 180mm; /* Increased from 210mm to use more page width (210mm - 30mm margins) */
           margin: 0 auto;
-          padding: 20mm;
+          padding: 0; /* Removed padding - margins are handled by @page */
           min-height: 100vh; /* Ensure document has minimum height */
           background: white; /* Explicit white background */
           color: #333; /* Explicit text color */
@@ -410,7 +410,7 @@ function getHTMLTemplate(data: any): string {
 
         @page {
           size: A4;
-          margin: 20mm;
+          margin: 15mm; /* Reduced from 20mm for more content space */
         }
 
         @media print {
@@ -435,12 +435,12 @@ function getHTMLTemplate(data: any): string {
 
         /* Header with company information */
         .header {
-          margin-bottom: 30mm;
+          margin-bottom: 20mm; /* Reduced from 30mm for more compact layout */
           position: relative;
         }
 
         .logo-section {
-          margin-bottom: 20mm;
+          margin-bottom: 15mm; /* Reduced from 20mm for more compact layout */
         }
 
         .logo {
@@ -468,10 +468,10 @@ function getHTMLTemplate(data: any): string {
           position: absolute;
           right: 0;
           top: 0;
-          width: 85mm;
-          min-height: 40mm;
+          width: 90mm; /* Increased from 85mm to use more space */
+          min-height: 35mm; /* Reduced from 40mm for more compact layout */
           border: 1px solid #ddd;
-          padding: 5mm;
+          padding: 4mm; /* Reduced from 5mm */
         }
 
         .address-window {
@@ -493,7 +493,7 @@ function getHTMLTemplate(data: any): string {
 
         /* Document metadata */
         .document-info {
-          margin-bottom: 15mm;
+          margin-bottom: 10mm; /* Reduced from 15mm for more compact layout */
           display: flex;
           justify-content: space-between;
         }
@@ -509,7 +509,7 @@ function getHTMLTemplate(data: any): string {
         .document-title {
           font-size: 18pt;
           font-weight: bold;
-          margin-bottom: 10mm;
+          margin-bottom: 8mm; /* Reduced from 10mm for more compact layout */
           color: #2c5aa0;
         }
 
@@ -517,7 +517,7 @@ function getHTMLTemplate(data: any): string {
         .items-table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 15mm;
+          margin-bottom: 10mm; /* Reduced from 15mm for more compact layout */
           font-size: 10pt;
           page-break-inside: auto;
         }
@@ -570,8 +570,8 @@ function getHTMLTemplate(data: any): string {
         /* Totals section - German tax display */
         .totals-section {
           float: right;
-          width: 60mm;
-          margin-bottom: 15mm;
+          width: 70mm; /* Increased from 60mm to use more space */
+          margin-bottom: 10mm; /* Reduced from 15mm for more compact layout */
         }
 
         .totals-table {
@@ -603,7 +603,7 @@ function getHTMLTemplate(data: any): string {
         /* Notes section */
         .notes {
           clear: both;
-          margin-top: 15mm;
+          margin-top: 10mm; /* Reduced from 15mm for more compact layout */
           font-size: 10pt;
         }
 
@@ -618,12 +618,12 @@ function getHTMLTemplate(data: any): string {
 
         /* Footer */
         .footer {
-          margin-top: 20mm;
+          margin-top: 15mm; /* Reduced from 20mm for more compact layout */
           font-size: 9pt;
           color: #666;
           text-align: center;
           border-top: 1px solid #ddd;
-          padding-top: 5mm;
+          padding-top: 4mm; /* Reduced from 5mm */
         }
 
         /* German formatting helpers */

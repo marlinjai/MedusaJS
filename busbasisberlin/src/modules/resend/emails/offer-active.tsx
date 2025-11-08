@@ -4,22 +4,24 @@
  */
 
 import {
-	EmailWrapper,
-	EmailTitle,
-	EmailText,
 	EmailInfoBox,
+	EmailText,
+	EmailTitle,
+	EmailWrapper,
 } from '../utils/email-wrapper';
 
 interface OfferActiveEmailProps {
 	offer_number: string;
 	customer_name?: string;
+	customer_email?: string;
 	offer_id: string;
 	status: string;
+	acceptance_url?: string; // URL for accepting the offer
 }
 
 // Main email component
 function OfferActiveEmailComponent(props: OfferActiveEmailProps) {
-	const { offer_number, customer_name } = props;
+	const { offer_number, customer_name, acceptance_url } = props;
 
 	return (
 		<EmailWrapper headerVariant="primary">
@@ -42,6 +44,27 @@ function OfferActiveEmailComponent(props: OfferActiveEmailProps) {
 				E-Mail. Gerne stehen wir Ihnen für Rückfragen zur Verfügung.
 			</EmailText>
 
+			{/* Acceptance Button */}
+			{acceptance_url && (
+				<div style={{ margin: '32px 0', textAlign: 'center' }}>
+					<a
+						href={acceptance_url}
+						style={{
+							display: 'inline-block',
+							padding: '16px 32px',
+							backgroundColor: '#0066cc',
+							color: '#ffffff',
+							textDecoration: 'none',
+							borderRadius: '6px',
+							fontWeight: 'bold',
+							fontSize: '16px',
+						}}
+					>
+						✅ Angebot annehmen
+					</a>
+				</div>
+			)}
+
 			<EmailInfoBox title="📋 Angebots-Details" variant="info">
 				<p style={{ margin: '8px 0' }}>
 					<strong>Angebotsnummer:</strong> {offer_number}
@@ -53,6 +76,14 @@ function OfferActiveEmailComponent(props: OfferActiveEmailProps) {
 					<strong>Anhang:</strong> PDF-Angebot im Anhang dieser E-Mail
 				</p>
 			</EmailInfoBox>
+
+			{acceptance_url && (
+				<p style={{ fontSize: '12px', color: '#666666', marginBottom: '15px' }}>
+					Sie können das Angebot auch direkt über den obigen Button annehmen.
+					Alternativ können Sie uns auch telefonisch oder per E-Mail
+					kontaktieren.
+				</p>
+			)}
 		</EmailWrapper>
 	);
 }
@@ -66,8 +97,11 @@ export const offerActiveEmail = (props: OfferActiveEmailProps) => (
 const mockData: OfferActiveEmailProps = {
 	offer_number: 'ANG-2024-001',
 	customer_name: 'Max Mustermann',
+	customer_email: 'max.mustermann@example.com',
 	offer_id: 'offer_123456',
 	status: 'active',
+	acceptance_url:
+		'https://basiscamp-berlin.de/de/offers/offer_123456/accept?token=mocktoken&email=max.mustermann@example.com',
 };
 
 // Default export for React Email preview

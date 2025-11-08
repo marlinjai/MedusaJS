@@ -233,6 +233,17 @@ async function sendOfferEmail(
 			data.new_status || data.status,
 		);
 
+		// Generate acceptance URL for active offers
+		let acceptanceUrl: string | undefined;
+		const emailStatus = data.new_status || data.status;
+		if (emailStatus === 'active' && data.customer_email) {
+			const { generateOfferAcceptanceUrl } = require('../../utils/offer-token');
+			acceptanceUrl = generateOfferAcceptanceUrl(
+				data.offer_id,
+				data.customer_email,
+			);
+		}
+
 		await notificationModuleService.createNotifications({
 			to: data.customer_email,
 			channel: 'email',
@@ -241,8 +252,10 @@ async function sendOfferEmail(
 				offer_id: data.offer_id,
 				offer_number: data.offer_number,
 				customer_name: data.customer_name,
-				status: data.new_status || data.status,
+				customer_email: data.customer_email,
+				status: emailStatus,
 				previous_status: data.previous_status,
+				acceptance_url: acceptanceUrl,
 			},
 			attachments: [
 				{

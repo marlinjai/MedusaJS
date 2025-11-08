@@ -666,5 +666,17 @@
 			"vereinsEmail": "klassische-wohnmobile@gmx.de",
 			"viewStatute": "Vereinssatzung anzeigen"
 		}
+	},
+	"offers": {
+		"accepting": "Angebot wird verarbeitet...",
+		"pleaseWait": "Bitte warten Sie einen Moment.",
+		"success": "Angebot erfolgreich angenommen!",
+		"offerNumber": "Angebotsnummer",
+		"thankYou": "Vielen Dank für Ihre Bestätigung. Wir werden uns in Kürze bei Ihnen melden, um die nächsten Schritte zu besprechen.",
+		"goToHome": "Zur Startseite",
+		"error": "Fehler beim Akzeptieren",
+		"contactUs": "Bitte kontaktieren Sie uns direkt:",
+		"invalidRequest": "Ungültige Anfrage. Bitte verwenden Sie den Link aus der E-Mail.",
+		"errorMessage": "Fehler beim Akzeptieren des Angebots. Bitte kontaktieren Sie uns direkt."
 	}
 }

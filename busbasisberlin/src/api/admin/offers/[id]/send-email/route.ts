@@ -10,6 +10,7 @@ import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import { resolveOfferService } from '../../../../../types/services';
 import { generateOfferPdfBuffer } from '../../../../../utils/pdf-generator';
+import { generateOfferAcceptanceUrl } from '../../../../../utils/offer-token';
 
 interface SendEmailRequest {
 	event_type?: string; // Optional: 'offer_active', 'offer_accepted', 'offer_completed', 'offer_cancelled'
@@ -125,6 +126,15 @@ export async function POST(
 			}
 		}
 
+		// Generate acceptance URL for active offers
+		let acceptanceUrl: string | undefined;
+		if (emailStatus === 'active' && offer.customer_email) {
+			acceptanceUrl = generateOfferAcceptanceUrl(
+				offer.id,
+				offer.customer_email,
+			);
+		}
+
 		// Create notification - must be an array
 		const notificationData: any = {
 			to: offer.customer_email,
@@ -134,7 +144,9 @@ export async function POST(
 				offer_id: offer.id,
 				offer_number: offer.offer_number,
 				customer_name: offer.customer_name,
+				customer_email: offer.customer_email,
 				status: emailStatus,
+				acceptance_url: acceptanceUrl,
 			},
 		};
 
