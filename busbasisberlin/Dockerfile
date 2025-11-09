@@ -57,6 +57,9 @@ COPY --from=builder /server/.medusa ./.medusa
 COPY --from=builder /server/package.json ./
 COPY --from=builder /server/start.sh ./
 
+# Copy source scripts for medusa exec commands (needed for admin scripts)
+COPY --from=builder /server/src ./src
+
 # Change to the built application directory (official Medusa recommendation)
 WORKDIR /server/.medusa/server
 

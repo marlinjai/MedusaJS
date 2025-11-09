@@ -55,6 +55,7 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 	);
 
 	let browser;
+	let page;
 	try {
 		console.log('[PDF-GENERATOR] Launching Puppeteer browser...');
 
@@ -130,7 +131,7 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 			console.error('[PDF-GENERATOR] Browser disconnected unexpectedly');
 		});
 
-		const page = await browser.newPage();
+		page = await browser.newPage();
 
 		// Set page format for German A4 standard
 		// Use a larger viewport to ensure content fits
@@ -432,9 +433,23 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		console.error('[PDF-GENERATOR] Error during PDF generation:', error);
 		throw error;
 	} finally {
-		if (browser) {
-			console.log('[PDF-GENERATOR] Closing browser...');
-			await browser.close();
+		// Clean up resources in correct order: page first, then browser
+		try {
+			if (page) {
+				console.log('[PDF-GENERATOR] Closing page...');
+				await page.close();
+			}
+		} catch (pageCloseError) {
+			console.error('[PDF-GENERATOR] Error closing page:', pageCloseError);
+		}
+		
+		try {
+			if (browser) {
+				console.log('[PDF-GENERATOR] Closing browser...');
+				await browser.close();
+			}
+		} catch (browserCloseError) {
+			console.error('[PDF-GENERATOR] Error closing browser:', browserCloseError);
 		}
 	}
 }
