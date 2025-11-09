@@ -48,19 +48,18 @@ const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
         {showStatus && (
           <>
             <Text>
-              Order status:{" "}
+              {t('orderStatus')}{" "}
               <span className="text-ui-fg-subtle " data-testid="order-status">
-                {/* TODO: Check where the statuses should come from */}
-                {/* {formatStatus(order.fulfillment_status)} */}
+                {order.fulfillment_status ? formatStatus(order.fulfillment_status) : '-'}
               </span>
             </Text>
             <Text>
-              Payment status:{" "}
+              {t('paymentStatus')}{" "}
               <span
                 className="text-ui-fg-subtle "
                 data-testid="order-payment-status"
               >
-                {/* {formatStatus(order.payment_status)} */}
+                {order.payment_status ? formatStatus(order.payment_status) : '-'}
               </span>
             </Text>
           </>

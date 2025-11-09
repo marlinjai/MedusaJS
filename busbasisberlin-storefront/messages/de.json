@@ -436,11 +436,16 @@
 			}
 		},
 		"details": {
+			"title": "Bestelldetails",
+			"backToOverview": "Zurück zur Übersicht",
 			"emailSent": "Wir haben die Bestellbestätigung an",
 			"emailSentEnd": "gesendet",
 			"orderDate": "Bestelldatum:",
-			"orderNumber": "Bestellnummer:"
+			"orderNumber": "Bestellnummer:",
+			"orderStatus": "Bestellstatus:",
+			"paymentStatus": "Zahlungsstatus:"
 		},
+		"seeDetails": "Details anzeigen",
 		"delivery": {
 			"title": "Lieferung",
 			"shippingAddress": "Lieferadresse",

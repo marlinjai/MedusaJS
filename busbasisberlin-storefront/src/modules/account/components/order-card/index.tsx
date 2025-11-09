@@ -5,12 +5,14 @@ import { convertToLocale } from '@lib/util/money';
 import { HttpTypes } from '@medusajs/types';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
 import Thumbnail from '@modules/products/components/thumbnail';
+import { useTranslations } from 'next-intl';
 
 type OrderCardProps = {
 	order: HttpTypes.StoreOrder;
 };
 
 const OrderCard = ({ order }: OrderCardProps) => {
+	const t = useTranslations('account.orders');
 	const numberOfLines = useMemo(() => {
 		return (
 			order.items?.reduce((acc, item) => {
@@ -24,61 +26,54 @@ const OrderCard = ({ order }: OrderCardProps) => {
 	}, [order]);
 
 	return (
-		<div className="bg-card flex flex-col" data-testid="order-card">
-			<div className="uppercase text-large-semi mb-1">
-				#<span data-testid="order-display-id">{order.display_id}</span>
-			</div>
-			<div className="flex items-center divide-x divide-gray-200 text-small-regular text-ui-fg-base">
-				<span className="pr-2" data-testid="order-created-at">
-					{new Date(order.created_at).toDateString()}
-				</span>
-				<span className="px-2" data-testid="order-amount">
-					{convertToLocale({
-						amount: order.total,
-						currency_code: order.currency_code,
-					})}
-				</span>
-				<span className="pl-2">{`${numberOfLines} ${
-					numberOfLines > 1 ? 'items' : 'item'
-				}`}</span>
-			</div>
-			<div className="grid grid-cols-2 small:grid-cols-4 gap-4 my-4">
-				{order.items?.slice(0, 3).map(i => {
-					return (
-						<div
-							key={i.id}
-							className="flex flex-col gap-y-2"
-							data-testid="order-item"
-						>
-							<Thumbnail thumbnail={i.thumbnail} images={[]} size="full" />
-							<div className="flex items-center text-small-regular text-ui-fg-base">
-								<span
-									className="text-ui-fg-base font-semibold"
-									data-testid="item-title"
-								>
-									{i.title}
-								</span>
-								<span className="ml-2">x</span>
-								<span data-testid="item-quantity">{i.quantity}</span>
-							</div>
-						</div>
-					);
-				})}
-				{numberOfProducts > 4 && (
-					<div className="w-full h-full flex flex-col items-center justify-center">
-						<span className="text-small-regular text-ui-fg-base">
-							+ {numberOfLines - 4}
-						</span>
-						<span className="text-small-regular text-ui-fg-base">more</span>
+		<div className="bg-card flex flex-col md:flex-row gap-4 p-4 rounded-lg border border-neutral-700" data-testid="order-card">
+			{/* Product Images - Left Side */}
+			<div className="flex gap-2 md:w-48 shrink-0">
+				{order.items?.slice(0, 1).map(i => (
+					<div key={i.id} className="w-full aspect-square" data-testid="order-item">
+						<Thumbnail thumbnail={i.thumbnail} images={[]} size="full" />
 					</div>
-				)}
+				))}
 			</div>
-			<div className="flex justify-end">
-				<LocalizedClientLink href={`/account/orders/details/${order.id}`}>
-					<Button data-testid="order-details-link" variant="secondary">
-						See details
-					</Button>
-				</LocalizedClientLink>
+
+			{/* Order Info - Right Side */}
+			<div className="flex flex-col flex-1 gap-3">
+				{/* Order Number & Date */}
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+					<div className="uppercase text-large-semi">
+						#<span data-testid="order-display-id">{order.display_id}</span>
+					</div>
+					<span className="text-small-regular text-ui-fg-subtle" data-testid="order-created-at">
+						{new Date(order.created_at).toLocaleDateString('de-DE', {
+							day: '2-digit',
+							month: 'short',
+							year: 'numeric'
+						})}
+					</span>
+				</div>
+
+				{/* Order Details */}
+				<div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-small-regular text-ui-fg-base">
+					<span className="font-semibold" data-testid="order-amount">
+						{convertToLocale({
+							amount: order.total,
+							currency_code: order.currency_code,
+						})}
+					</span>
+					<span className="text-ui-fg-subtle">•</span>
+					<span className="text-ui-fg-subtle">{`${numberOfLines} ${
+						numberOfLines > 1 ? 'items' : 'item'
+					}`}</span>
+				</div>
+
+				{/* Action Button */}
+				<div className="flex justify-end mt-auto">
+					<LocalizedClientLink href={`/account/orders/details/${order.id}`}>
+						<Button data-testid="order-details-link" variant="secondary" size="small">
+							{t('seeDetails')}
+						</Button>
+					</LocalizedClientLink>
+				</div>
 			</div>
 		</div>
 	);

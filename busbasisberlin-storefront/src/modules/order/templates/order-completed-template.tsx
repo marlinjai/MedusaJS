@@ -72,8 +72,8 @@ export default async function OrderCompletedTemplate({
 							<span className="text-orange-200">{t('pickupWithCash.message')}</span>
 						</p>
 						<LocalizedClientLink href="/contact" className="inline-block mt-3">
-							<Button 
-								variant="secondary" 
+							<Button
+								variant="secondary"
 								size="small"
 								className="bg-orange-600 hover:bg-orange-700 text-white border-orange-500"
 							>
