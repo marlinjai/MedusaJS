@@ -231,7 +231,7 @@
 			"termsAgreement": "Durch Klicken auf die Schaltfläche \"Bestellung aufgeben\" bestätigen Sie, dass Sie unsere Nutzungsbedingungen, Verkaufsbedingungen und Rückgaberichtlinien gelesen, verstanden und akzeptiert haben und anerkennen, dass Sie die Datenschutzrichtlinie von Medusa Store gelesen haben.",
 			"termsAgreeStart": "Ich habe die",
 			"termsLink": "Allgemeinen Geschäftsbedingungen",
-			"and": "und die",
+			"and": "inklusive der",
 			"cancellationPolicy": "Widerrufsbelehrung",
 			"termsAgreeEnd": "gelesen und akzeptiere diese.",
 			"processing": "Verarbeitung läuft..."
@@ -589,7 +589,7 @@
 			},
 			"shipping": {
 				"title": "4. Lieferung und Versand",
-				"content": "Die Lieferung erfolgt innerhalb Deutschlands in 2-3 Werktagen, EU-weit in 5-7 Werktagen.\n\nVersandkosten werden separat ausgewiesen und richten sich nach Größe und Gewicht der Sendung.\n\nSelbstabholung in unserer Werkstatt in Birkenwerder ist nach Vereinbarung möglich."
+				"content": "Die Lieferzeiten und Versandkosten variieren je nach Produktklasse:\n\nLAGERWARE (STANDARD-PRODUKTE):\nLieferzeit: 2-6 Werktage innerhalb Deutschlands\nVersandkostenpauschale: 8,95 EUR\n\nNICHT-LAGERWARE:\nLieferzeit: 7-10 Werktage\nVersandkostenpauschale: 8,95 EUR\nDie Lieferzeit wird auf der jeweiligen Produktdetailseite angezeigt\n\nSPERRGUT-PRODUKTE:\nVersandkosten und Lieferzeitraum werden individuell vereinbart\nBitte nutzen Sie das Anfrageformular auf der Produktdetailseite\n\nPRODUKTE AUF ANFRAGE:\nDiese Produkte erfordern eine vorherige Absprache\nBitte nutzen Sie das Kontaktformular auf der Produktdetailseite\n\nVERSANDGEBIET:\nDer Versand erfolgt aktuell nur innerhalb Deutschlands\nVersand ins europäische Ausland ist auf Anfrage über unser Kontaktformular möglich\n\nSELBSTABHOLUNG:\nSelbstabholer können während des Bezahlprozesses 'Abholung am Lager' als Versandmethode und 'Barzahlung bei Abholung' als Zahlungsmethode wählen\nAbholung in unserer Werkstatt in Birkenwerder nach Vereinbarung"
 			},
 			"returns": {
 				"title": "5. Widerrufsrecht",

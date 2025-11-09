@@ -1,20 +1,20 @@
 'use client';
 
-import { Heading, Text, clx } from '@medusajs/ui';
+import { Heading, clx } from '@medusajs/ui';
 
 import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import LegalModal from '@modules/layout/components/legal-modal';
 import PaymentButton from '../payment-button';
 
 const Review = ({ cart }: { cart: any }) => {
 	const t = useTranslations('checkout.review');
 	const searchParams = useSearchParams();
+	const params = useParams();
+	const countryCode = (params?.countryCode as string) || 'de';
 
-	const isOpen = searchParams.get('step') === 'review';
+	const isOpen = searchParams?.get('step') === 'review';
 	const [termsAccepted, setTermsAccepted] = useState(false);
-	const [modalOpen, setModalOpen] = useState<'terms' | null>(null);
 
 	const paidByGiftcard =
 		cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0;
@@ -43,7 +43,7 @@ const Review = ({ cart }: { cart: any }) => {
 				<>
 					{/* Terms and Conditions Checkbox */}
 					<div className="mb-6">
-						<label className="flex items-start gap-3 cursor-pointer group">
+						<label className="flex items-start gap-3 group">
 							<input
 								type="checkbox"
 								checked={termsAccepted}
@@ -54,22 +54,15 @@ const Review = ({ cart }: { cart: any }) => {
 							/>
 							<span className="text-ui-fg-base text-small-regular leading-relaxed">
 								{t('termsAgreeStart')}{' '}
-								<button
-									type="button"
-									onClick={() => setModalOpen('terms')}
+								<a
+									href={`/${countryCode}/terms`}
+									target="_blank"
+									rel="noopener noreferrer"
 									className="underline hover:text-blue-400 transition-colors"
 								>
 									{t('termsLink')}
-								</button>{' '}
-								{t('and')}{' '}
-								<button
-									type="button"
-									onClick={() => setModalOpen('terms')}
-									className="underline hover:text-blue-400 transition-colors"
-								>
-									{t('cancellationPolicy')}
-								</button>{' '}
-								{t('termsAgreeEnd')}
+								</a>{' '}
+								{t('and')} {t('cancellationPolicy')} {t('termsAgreeEnd')}
 							</span>
 						</label>
 					</div>
@@ -77,11 +70,6 @@ const Review = ({ cart }: { cart: any }) => {
 						cart={cart}
 						termsAccepted={termsAccepted}
 						data-testid="submit-order-button"
-					/>
-					<LegalModal
-						isOpen={modalOpen === 'terms'}
-						onClose={() => setModalOpen(null)}
-						type="terms"
 					/>
 				</>
 			)}
