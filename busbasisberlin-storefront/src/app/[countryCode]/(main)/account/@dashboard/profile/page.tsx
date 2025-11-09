@@ -1,9 +1,9 @@
 import { Metadata } from 'next';
 
-import ProfilePhone from '@modules/account//components/profile-phone';
 import ProfileBillingAddress from '@modules/account/components/profile-billing-address';
 import ProfileEmail from '@modules/account/components/profile-email';
 import ProfileName from '@modules/account/components/profile-name';
+import ProfilePhone from '@modules/account/components/profile-phone';
 
 import { retrieveCustomer } from '@lib/data/customer';
 import { listRegions } from '@lib/data/regions';
@@ -18,7 +18,12 @@ export async function generateMetadata(): Promise<Metadata> {
 	};
 }
 
-export default async function Profile() {
+export default async function Profile(props: {
+	params: Promise<{ countryCode: string }>;
+}) {
+	const params = await props.params;
+	const { countryCode } = params;
+
 	const customer = await retrieveCustomer();
 	const regions = await listRegions();
 	const t = await getTranslations('account.profile');

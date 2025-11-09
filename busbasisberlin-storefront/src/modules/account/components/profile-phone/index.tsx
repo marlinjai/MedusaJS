@@ -7,12 +7,14 @@ import Input from "@modules/common/components/input"
 import AccountInfo from "../account-info"
 import { HttpTypes } from "@medusajs/types"
 import { updateCustomer } from "@lib/data/customer"
+import { useTranslations } from 'next-intl'
 
 type MyInformationProps = {
   customer: HttpTypes.StoreCustomer
 }
 
 const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
+  const t = useTranslations('account.profile')
   const [successState, setSuccessState] = React.useState(false)
 
   const updateCustomerPhone = async (
