@@ -215,7 +215,7 @@
 			"giftCard": "Geschenkkarte",
 			"anotherStep": "Ein weiterer Schritt wird angezeigt",
 			"edit": "Bearbeiten",
-			"manualPayment": "Manuelle Zahlung",
+			"manualPayment": "Barzahlung bei Abholung",
 			"testingOnly": "Achtung: Nur für Testzwecke.",
 			"stripe": "Kreditkarte",
 			"paypal": "PayPal",
@@ -425,9 +425,14 @@
 			"summary": "Zusammenfassung",
 			"continueShopping": "Weiter einkaufen",
 			"viewOrder": "Bestellung anzeigen",
-			"manualPayment": {
-				"title": "Zahlung ausstehend",
-				"message": "Ihre Bestellung wurde erfolgreich aufgenommen. Sie erhalten eine Benachrichtigung, sobald wir Ihre Zahlung bestätigt haben und Ihr Paket versandbereit ist."
+			"pickupWithCash": {
+				"title": "Abholung mit Barzahlung",
+				"message": "Bitte vereinbaren Sie über unser Kontaktformular einen Termin zur Abholung Ihrer Bestellung. Die Zahlung erfolgt bar bei Abholung.",
+				"scheduleButton": "Termin vereinbaren"
+			},
+			"bankTransfer": {
+				"title": "Banküberweisung",
+				"message": "Ihre Bestellung wurde erfolgreich aufgenommen. Nach Zahlungseingang werden wir Ihre Bestellung versenden. Sie erhalten eine Benachrichtigung, sobald Ihr Paket versandbereit ist."
 			}
 		},
 		"details": {

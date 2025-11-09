@@ -32,11 +32,11 @@ export const paymentInfoMap: Record<
 		icon: <PayPal />,
 	},
 	pp_system_default: {
-		title: 'Manuelle Zahlung',
+		title: 'Barzahlung bei Abholung',
 		icon: <CreditCard />,
 	},
 	pp_system: {
-		title: 'Manuelle Zahlung',
+		title: 'Barzahlung bei Abholung',
 		icon: <CreditCard />,
 	},
 

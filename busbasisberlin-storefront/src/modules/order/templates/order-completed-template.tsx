@@ -27,6 +27,15 @@ export default async function OrderCompletedTemplate({
 	const payment = order.payment_collections?.[0]?.payments?.[0];
 	const isManualPayment = payment?.provider_id === 'pp_system' || payment?.provider_id === 'pp_system_default';
 
+	// Check if this is a pickup order
+	const shippingMethod = order.shipping_methods?.[0];
+	const isPickupOrder = shippingMethod?.shipping_option?.name?.toLowerCase().includes('abholung') ||
+		shippingMethod?.shipping_option?.name?.toLowerCase().includes('pickup');
+
+	// Determine the scenario
+	const isPickupWithCash = isPickupOrder && isManualPayment;
+	const isShippingWithBankTransfer = !isPickupOrder && isManualPayment;
+
 	return (
 		<div className="py-12 min-h-[calc(100vh-64px)] bg-gradient-to-b from-neutral-900 to-black">
 			<div className="content-container flex flex-col justify-center items-center gap-y-10 max-w-5xl h-full w-full">
@@ -52,19 +61,39 @@ export default async function OrderCompletedTemplate({
 					<Heading level="h1" className="text-4xl font-bold text-white">
 						{t('title')}
 					</Heading>
-					<p className="text-xl text-neutral-300">{t('subtitle')}</p>
+				<p className="text-xl text-neutral-300">{t('subtitle')}</p>
 
-					{/* Manual payment notice */}
-					{isManualPayment && (
-						<div className="mt-4 p-4 bg-blue-600/20 border border-blue-500/30 rounded-lg max-w-2xl">
-							<p className="text-blue-300 text-sm">
-								<strong className="font-semibold">📋 {t('manualPayment.title')}</strong>
-								<br />
-								{t('manualPayment.message')}
-							</p>
-						</div>
-					)}
-				</div>
+				{/* Pickup with Cash - Schedule pickup appointment */}
+				{isPickupWithCash && (
+					<div className="mt-4 p-4 bg-orange-600/20 border border-orange-500/30 rounded-lg max-w-2xl">
+						<p className="text-orange-300 text-sm">
+							<strong className="font-semibold">📦 {t('pickupWithCash.title')}</strong>
+							<br />
+							<span className="text-orange-200">{t('pickupWithCash.message')}</span>
+						</p>
+						<LocalizedClientLink href="/contact" className="inline-block mt-3">
+							<Button 
+								variant="secondary" 
+								size="small"
+								className="bg-orange-600 hover:bg-orange-700 text-white border-orange-500"
+							>
+								📅 {t('pickupWithCash.scheduleButton')}
+							</Button>
+						</LocalizedClientLink>
+					</div>
+				)}
+
+				{/* Shipping with Bank Transfer - Awaiting payment */}
+				{isShippingWithBankTransfer && (
+					<div className="mt-4 p-4 bg-blue-600/20 border border-blue-500/30 rounded-lg max-w-2xl">
+						<p className="text-blue-300 text-sm">
+							<strong className="font-semibold">💳 {t('bankTransfer.title')}</strong>
+							<br />
+							<span className="text-blue-200">{t('bankTransfer.message')}</span>
+						</p>
+					</div>
+				)}
+			</div>
 
 				<div
 					className="flex flex-col gap-8 max-w-5xl w-full bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl"
