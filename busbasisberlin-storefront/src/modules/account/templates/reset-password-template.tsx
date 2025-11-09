@@ -1,6 +1,5 @@
 'use client';
 
-import { sdk } from '@lib/config';
 import { Button, Heading, Input, Label, Text } from '@medusajs/ui';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -21,8 +20,8 @@ const ResetPasswordTemplate = () => {
 	const searchParams = useSearchParams();
 
 	// Token und Email aus URL-Parametern extrahieren
-	const token = searchParams.get('token');
-	const email = searchParams.get('email');
+	const token = searchParams?.get('token');
+	const email = searchParams?.get('email');
 
 	// Validierung beim Laden der Seite
 	useEffect(() => {
@@ -76,18 +75,29 @@ const ResetPasswordTemplate = () => {
 
 		try {
 			// API Call zur Medusa Backend - Reset Password
-			await sdk.auth.resetPassword(
+			// Use direct fetch as SDK doesn't support token-based password reset
+			const backendUrl =
+				process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+
+			const response = await fetch(
+				`${backendUrl}/auth/customer/emailpass/update`,
 				{
-					email: email,
-					password: password,
-				},
-				{
-					// Token im Authorization Header (wie in der Dokumentation beschrieben)
+					method: 'POST',
 					headers: {
+						'Content-Type': 'application/json',
 						Authorization: `Bearer ${token}`,
 					},
+					body: JSON.stringify({
+						email: email,
+						password: password,
+					}),
 				},
 			);
+
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.message || 'Reset failed');
+			}
 
 			setIsSuccess(true);
 		} catch (err: any) {
