@@ -14,7 +14,7 @@ import { parseCorsOrigins } from '@medusajs/framework/utils';
 import cors from 'cors';
 
 /**
- * CORS middleware for offer acceptance route
+ * CORS middleware for public routes (offer acceptance, password reset, etc.)
  * Uses Medusa's CORS utilities to properly handle CORS
  */
 function corsMiddleware(
@@ -44,6 +44,21 @@ export default defineMiddlewares({
 			// Route is now under /public instead of /store to avoid publishable API key requirement
 			// Using string pattern instead of regex for better compatibility
 			matcher: '/public/offers/*/accept',
+			middlewares: [corsMiddleware],
+		},
+		{
+			// Contact form endpoint (no authentication required)
+			matcher: '/store/contact',
+			middlewares: [corsMiddleware],
+		},
+		{
+			// Quote request endpoint for Sperrgut items (no authentication required)
+			matcher: '/store/quote-request',
+			middlewares: [corsMiddleware],
+		},
+		{
+			// Product inquiry endpoint (no authentication required)
+			matcher: '/store/product-inquiry',
 			middlewares: [corsMiddleware],
 		},
 	],

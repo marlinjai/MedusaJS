@@ -13,7 +13,7 @@ export default async function resetPasswordTokenHandler({
 	// Bestimme die korrekte Frontend-URL basierend auf dem Actor-Type
 	const urlPrefix =
 		actor_type === 'customer'
-			? process.env.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3000'
+			? process.env.STOREFRONT_URL || 'http://localhost:8000'
 			: process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000';
 
 	// Für Customer verwenden wir die deutsche Storefront URL
