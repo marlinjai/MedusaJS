@@ -442,14 +442,17 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 		} catch (pageCloseError) {
 			console.error('[PDF-GENERATOR] Error closing page:', pageCloseError);
 		}
-		
+
 		try {
 			if (browser) {
 				console.log('[PDF-GENERATOR] Closing browser...');
 				await browser.close();
 			}
 		} catch (browserCloseError) {
-			console.error('[PDF-GENERATOR] Error closing browser:', browserCloseError);
+			console.error(
+				'[PDF-GENERATOR] Error closing browser:',
+				browserCloseError,
+			);
 		}
 	}
 }

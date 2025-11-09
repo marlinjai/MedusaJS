@@ -63,8 +63,8 @@ COPY --from=builder /server/src ./src
 # Change to the built application directory (official Medusa recommendation)
 WORKDIR /server/.medusa/server
 
-# Install production dependencies in the built directory
-RUN npm install
+# Install production dependencies only (no dev dependencies needed in production)
+RUN npm install --production
 
 # Copy startup script to the built directory and make it executable
 COPY --from=builder /server/start.sh ./

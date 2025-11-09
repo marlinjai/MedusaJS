@@ -195,6 +195,11 @@ start_deployment() {
     log_info "Starting $target deployment..."
 
     cd "$PROJECT_DIR"
+
+    # Enable BuildKit for better caching and parallel builds (production-safe)
+    export DOCKER_BUILDKIT=1
+    export COMPOSE_DOCKER_CLI_BUILD=1
+
     # Ensure environment variables are available to Docker Compose
     export POSTGRES_PASSWORD JWT_SECRET COOKIE_SECRET RESEND_API_KEY RESEND_FROM_EMAIL
     export S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_REGION S3_BUCKET S3_ENDPOINT S3_FILE_URL
