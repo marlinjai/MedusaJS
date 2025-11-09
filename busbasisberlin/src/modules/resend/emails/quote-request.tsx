@@ -129,4 +129,3 @@ const mockData: QuoteRequestEmailProps = {
 
 // Default export for React Email preview
 export default () => <QuoteRequestEmailComponent {...mockData} />;
-
