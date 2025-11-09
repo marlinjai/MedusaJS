@@ -40,8 +40,11 @@ export default function TransparentHeader() {
           ? "rgba(0, 0, 0, 0.8)"
           : "rgba(0, 0, 0, 0.45)"};
         backdrop-filter: ${isScrolled ? "blur(8px)" : "blur(3px)"};
+        transition: background-color 0.3s ease-in-out;
+      }
+      .fixed.group {
         transform: translateY(${isVisible ? "0" : "-100%"});
-        transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out;
+        transition: transform 0.3s ease-in-out;
       }
     `}</style>
   )

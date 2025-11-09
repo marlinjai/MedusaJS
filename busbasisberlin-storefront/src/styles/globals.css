@@ -178,4 +178,21 @@
 	.text-3xl-semi {
 		@apply text-[32px] leading-[44px] font-semibold;
 	}
+
+	/* Marquee animation for announcement banner */
+	/* We have 12 copies of the content, so we animate by 1/12 (8.33%) to loop seamlessly */
+	/* When one copy scrolls out, the next identical copy seamlessly takes its place */
+	@keyframes marquee {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-8.33%);
+		}
+	}
+
+	.animate-marquee {
+		animation: marquee 30s linear infinite;
+		will-change: transform;
+	}
 }

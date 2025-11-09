@@ -9,6 +9,7 @@ import Services from '@modules/home/components/services';
 import StorePrefetch from '@modules/home/components/store-prefetch';
 import Team from '@modules/home/components/team';
 import Verein from '@modules/home/components/verein';
+import AnnouncementBanner from '@modules/home/components/announcement-banner';
 
 export const metadata: Metadata = {
 	title: 'BusBasis Berlin - Ihr Spezialist für Mercedes-Transporter',
@@ -33,6 +34,7 @@ export default async function Home(props: {
 		<div className="scroll-smooth">
 			<StorePrefetch />
 			<Hero />
+			<AnnouncementBanner />
 			<Services />
 			<ImageSection />
 			<Team />

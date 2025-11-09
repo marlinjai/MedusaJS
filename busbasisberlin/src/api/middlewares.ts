@@ -61,5 +61,10 @@ export default defineMiddlewares({
 			matcher: '/store/product-inquiry',
 			middlewares: [corsMiddleware],
 		},
+		{
+			// Public settings endpoint for announcement banners (no authentication required)
+			matcher: '/public/settings',
+			middlewares: [corsMiddleware],
+		},
 	],
 });

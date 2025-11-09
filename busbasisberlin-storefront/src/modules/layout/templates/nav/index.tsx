@@ -1,6 +1,7 @@
 import { listRegions } from '@lib/data/regions';
 import { StoreRegion } from '@medusajs/types';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
+import HeroAlert from '@modules/home/components/hero-alert';
 import CartButton from '@modules/layout/components/cart-button';
 import MobileMenu from '@modules/layout/components/mobile-menu';
 import TransparentHeader from '@modules/layout/components/transparent-header';
@@ -85,6 +86,8 @@ export default async function Nav() {
 						</div>
 					</nav>
 				</header>
+				{/* Hero Alert - positioned below header, moves with header on scroll */}
+				<HeroAlert />
 			</div>
 		</>
 	);
