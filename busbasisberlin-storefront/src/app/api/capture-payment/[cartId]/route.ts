@@ -22,33 +22,56 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 		console.log(
 			'[CAPTURE-PAYMENT] Cart not found - likely already converted to order by webhook',
 		);
-		return NextResponse.redirect(`${origin}/${countryCode}`);
+		return NextResponse.redirect(`${origin}/${countryCode}/account/orders`);
 	}
 
-	const paymentSession = cart.payment_collection?.payment_sessions?.find(
-		payment => payment.data.id === paymentIntent,
-	);
+	// Find payment session - handle different payment methods differently
+	let paymentSession;
 
-	// If payment session is missing or client secret doesn't match, redirect to cart
-	if (
-		!paymentSession ||
-		paymentSession.data.client_secret !== paymentIntentClientSecret
-	) {
+	// For card payments and some methods, we have payment_intent
+	if (paymentIntent) {
+		paymentSession = cart.payment_collection?.payment_sessions?.find(
+			payment => payment.data.id === paymentIntent,
+		);
+
+		// For card payments, validate client secret
+		if (paymentSession && paymentIntentClientSecret &&
+			paymentSession.data.client_secret !== paymentIntentClientSecret) {
+			console.log('[CAPTURE-PAYMENT] Client secret mismatch');
+			return NextResponse.redirect(
+				`${origin}/${countryCode}/cart?step=review&error=payment_failed`,
+			);
+		}
+	} else {
+		// For PayPal and other methods that don't provide payment_intent in URL,
+		// find the active payment session
+		paymentSession = cart.payment_collection?.payment_sessions?.find(
+			payment => payment.status !== 'canceled' && payment.status !== 'error',
+		);
+	}
+
+	// If no valid payment session found, redirect to checkout
+	if (!paymentSession) {
+		console.log('[CAPTURE-PAYMENT] No valid payment session found');
 		return NextResponse.redirect(
 			`${origin}/${countryCode}/cart?step=review&error=payment_failed`,
 		);
 	}
 
-	// If Stripe redirect failed, go back to checkout
-	if (!['pending', 'succeeded'].includes(redirectStatus)) {
+	// Check Stripe redirect status if provided
+	// PayPal and other methods may not provide this
+	if (redirectStatus && !['pending', 'succeeded'].includes(redirectStatus)) {
+		console.log('[CAPTURE-PAYMENT] Invalid redirect status:', redirectStatus);
 		return NextResponse.redirect(
 			`${origin}/${countryCode}/cart?step=review&error=payment_failed`,
 		);
 	}
 
-	// Allow payment session in any valid payment state (not just pending/authorized)
-	// Stripe may have already moved the session to 'captured' or other states
-	if (!['pending', 'authorized', 'captured'].includes(paymentSession.status)) {
+	// Allow payment session in any valid payment state
+	// Different payment methods use different status flows
+	const validStatuses = ['pending', 'authorized', 'captured'];
+	if (!validStatuses.includes(paymentSession.status)) {
+		console.log('[CAPTURE-PAYMENT] Invalid payment session status:', paymentSession.status);
 		return NextResponse.redirect(
 			`${origin}/${countryCode}/cart?step=review&error=payment_failed`,
 		);

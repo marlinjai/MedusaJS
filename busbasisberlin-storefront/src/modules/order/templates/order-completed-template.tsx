@@ -23,6 +23,10 @@ export default async function OrderCompletedTemplate({
 
 	const isOnboarding = cookies.get('_medusa_onboarding')?.value === 'true';
 
+	// Check if manual payment method was used
+	const payment = order.payment_collections?.[0]?.payments?.[0];
+	const isManualPayment = payment?.provider_id === 'pp_system' || payment?.provider_id === 'pp_system_default';
+
 	return (
 		<div className="py-12 min-h-[calc(100vh-64px)] bg-gradient-to-b from-neutral-900 to-black">
 			<div className="content-container flex flex-col justify-center items-center gap-y-10 max-w-5xl h-full w-full">
@@ -49,6 +53,17 @@ export default async function OrderCompletedTemplate({
 						{t('title')}
 					</Heading>
 					<p className="text-xl text-neutral-300">{t('subtitle')}</p>
+
+					{/* Manual payment notice */}
+					{isManualPayment && (
+						<div className="mt-4 p-4 bg-blue-600/20 border border-blue-500/30 rounded-lg max-w-2xl">
+							<p className="text-blue-300 text-sm">
+								<strong className="font-semibold">📋 {t('manualPayment.title')}</strong>
+								<br />
+								{t('manualPayment.message')}
+							</p>
+						</div>
+					)}
 				</div>
 
 				<div

@@ -422,7 +422,11 @@
 			"message": "Wir haben Ihre Bestellung erhalten und bearbeiten sie. Sie erhalten in Kürze eine Bestätigungs-E-Mail.",
 			"summary": "Zusammenfassung",
 			"continueShopping": "Weiter einkaufen",
-			"viewOrder": "Bestellung anzeigen"
+			"viewOrder": "Bestellung anzeigen",
+			"manualPayment": {
+				"title": "Zahlung ausstehend",
+				"message": "Ihre Bestellung wurde erfolgreich aufgenommen. Sie erhalten eine Benachrichtigung, sobald wir Ihre Zahlung bestätigt haben und Ihr Paket versandbereit ist."
+			}
 		},
 		"details": {
 			"emailSent": "Wir haben die Bestellbestätigung an",
