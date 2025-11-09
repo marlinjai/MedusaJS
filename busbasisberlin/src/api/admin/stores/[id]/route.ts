@@ -5,8 +5,12 @@ import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { Modules } from '@medusajs/framework/utils';
 import { updateStoresWorkflow } from '@medusajs/medusa/core-flows';
 
+interface UpdateStoreRequest {
+	metadata?: Record<string, any>;
+}
+
 export const POST = async (
-	req: MedusaRequest,
+	req: MedusaRequest<UpdateStoreRequest>,
 	res: MedusaResponse,
 ): Promise<void> => {
 	try {
