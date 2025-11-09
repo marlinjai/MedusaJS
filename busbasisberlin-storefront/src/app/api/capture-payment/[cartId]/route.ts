@@ -35,8 +35,11 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 		);
 
 		// For card payments, validate client secret
-		if (paymentSession && paymentIntentClientSecret &&
-			paymentSession.data.client_secret !== paymentIntentClientSecret) {
+		if (
+			paymentSession &&
+			paymentIntentClientSecret &&
+			paymentSession.data.client_secret !== paymentIntentClientSecret
+		) {
 			console.log('[CAPTURE-PAYMENT] Client secret mismatch');
 			return NextResponse.redirect(
 				`${origin}/${countryCode}/cart?step=review&error=payment_failed`,
@@ -71,7 +74,10 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 	// Different payment methods use different status flows
 	const validStatuses = ['pending', 'authorized', 'captured'];
 	if (!validStatuses.includes(paymentSession.status)) {
-		console.log('[CAPTURE-PAYMENT] Invalid payment session status:', paymentSession.status);
+		console.log(
+			'[CAPTURE-PAYMENT] Invalid payment session status:',
+			paymentSession.status,
+		);
 		return NextResponse.redirect(
 			`${origin}/${countryCode}/cart?step=review&error=payment_failed`,
 		);
@@ -86,6 +92,16 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 			`${origin}/${countryCode}/order/${order.id}/confirmed`,
 		);
 	} catch (error: any) {
+		// NEXT_REDIRECT is thrown by redirect() in Server Actions - this is EXPECTED
+		// The redirect happens inside placeOrder() after successful order placement
+		if (error.message === 'NEXT_REDIRECT' || error.digest === 'NEXT_REDIRECT') {
+			console.log(
+				'[CAPTURE-PAYMENT] Order placed successfully, redirect in progress',
+			);
+			// The redirect is already happening, just re-throw it
+			throw error;
+		}
+
 		// If order placement fails, webhook may have already completed it
 		console.log('[CAPTURE-PAYMENT] placeOrder failed:', error.message);
 
@@ -102,6 +118,7 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 		}
 
 		// For other errors, go back to checkout
+		console.error('[CAPTURE-PAYMENT] Unexpected error:', error);
 		return NextResponse.redirect(
 			`${origin}/${countryCode}/cart?step=review&error=payment_failed`,
 		);

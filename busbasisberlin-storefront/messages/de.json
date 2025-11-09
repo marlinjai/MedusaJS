@@ -114,7 +114,9 @@
 		"saturdaySunday": "Samstag - Sonntag:",
 		"closed": "Geschlossen",
 		"submitButton": "Nachricht senden",
+		"submitting": "Wird gesendet...",
 		"successMessage": "Vielen Dank für Ihre Nachricht! Wir melden uns bald bei Ihnen.",
+		"errorMessage": "Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.",
 		"phoneNote": "Telefonisch eingeschränkt erreichbar. Für Terminvereinbarung bitte per E-Mail melden.",
 		"form": {
 			"name": "Name",
