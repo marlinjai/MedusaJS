@@ -164,7 +164,7 @@ const Payment = ({
 	const initPaymentSession = async () => {
 		try {
 			// Initialize manual payment for pickup, Stripe for regular shipping
-			const providerId = isPickupShipping ? 'pp_system' : 'pp_stripe_stripe';
+			const providerId = isPickupShipping ? 'pp_system_default' : 'pp_stripe_stripe';
 
 			// Check if we already have a payment session for this provider
 			// If so, don't create a new one to avoid deleting succeeded PaymentIntents
