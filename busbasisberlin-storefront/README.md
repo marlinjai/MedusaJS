@@ -66,11 +66,17 @@ Features include:
   - Static Pre-Rendering
 - Advanced Search:
   - Meilisearch integration for fast product search
-  - Category faceting and filtering
+  - Category faceting and hierarchical filtering
   - Real-time product availability
+  - SKU and handle search support
 - German Language Support:
-  - Full i18n implementation
+  - Full i18n implementation with next-intl
   - Localized content and messaging
+  - Tax-inclusive pricing ("inkl. MwSt.")
+- Legal Compliance:
+  - Dedicated pages for Terms, Privacy Policy, Imprint
+  - Linkable from emails and external sources
+  - Accessible via modal or direct URL
 
 # Quickstart
 
@@ -116,6 +122,49 @@ NEXT_PUBLIC_STRIPE_KEY=<your-stripe-public-key>
 ```
 
 You'll also need to setup the integrations in your Medusa server. See the [Medusa documentation](https://docs.medusajs.com) for more information on how to configure [Stripe](https://docs.medusajs.com/resources/commerce-modules/payment/payment-provider/stripe#main).
+
+# Deployment
+
+This storefront is deployed to Vercel with automatic deployments triggered by the backend deployment.
+
+## Deployment Sequence
+
+1. **Backend deploys first** (blue-green, ~19 mins) via GitHub Actions
+2. **Vercel auto-deploys** after backend completion via deploy hook
+3. This ensures frontend always builds against a stable backend
+
+See the [Backend README](../busbasisberlin/README.md) for complete deployment documentation and the [Deployment Optimization Docs](../deployment/) for performance improvements.
+
+## Required Environment Variables
+
+```bash
+# Backend Connection
+NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://your-domain.de
+
+# Meilisearch (read-only search key)
+NEXT_PUBLIC_MEILISEARCH_HOST=https://your-domain.de/meilisearch
+NEXT_PUBLIC_MEILISEARCH_API_KEY=<read-only-search-key>
+
+# Stripe
+NEXT_PUBLIC_STRIPE_KEY=pk_live_...
+
+# Base URL (for redirects and links)
+NEXT_PUBLIC_BASE_URL=https://storefront.vercel.app
+```
+
+**Important:** Never use master Meilisearch keys in frontend environment variables. Always create a read-only search key.
+
+# Meilisearch Integration
+
+The storefront uses Meilisearch for advanced product search with:
+
+- **Instant search** as-you-type
+- **Category faceting** with hierarchical filtering
+- **Real-time availability** from inventory sync
+- **SKU search** for quick product lookup
+- **Sorted results** by relevance, price, or name
+
+Search configuration is in `src/lib/search/` with dedicated hooks and utilities.
 
 # Resources
 

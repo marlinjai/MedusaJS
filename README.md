@@ -17,10 +17,21 @@ For complete production deployment instructions, see **[DEPLOYMENT_GUIDE.md](./D
 
 **Live Application:** https://basiscamp-berlin.de
 
+### Deployment Optimization
+
+Our deployment has been optimized through multiple phases:
+
+- **[Phase 1 Optimization](./deployment/phase1-optimization.md)** - Production-ready optimizations (19min deployments, 13% faster)
+- **[Phase 2 Optimization](./deployment/phase2-optimization.md)** - Aggressive caching strategies (10-12min target, 50%+ faster)
+- **[Optimization Guide](./deployment/optimization-guide.md)** - Conservative implementation approach and risk assessment
+
+Current deployment time: ~19 minutes with Phase 1 optimizations applied.
+
 ## 📚 Documentation
 
 - **[Backend README](./busbasisberlin/README.md)** - Complete backend documentation including custom modules, search integration, and transactional emails
 - **[Frontend README](./busbasisberlin-storefront/README.md)** - Frontend documentation and setup guide
+- **[Deployment Docs](./deployment/)** - Docker optimization guides and deployment strategies
 
 ## 🏗️ Project Structure
 
@@ -47,7 +58,7 @@ MedusaJS/
 │   │   └── lib/                 # Utilities & data fetching
 │   ├── README.md               # Frontend documentation
 │   └── package.json            # Frontend dependencies
-├── change-docu/                # Implementation documentation
+├── deployment/                 # Deployment optimization guides
 ├── .vscode/                     # VSCode workspace settings
 ├── package.json                # Monorepo scripts
 └── README.md                   # This file

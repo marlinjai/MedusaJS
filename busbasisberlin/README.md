@@ -1,15 +1,14 @@
+# BusBasisBerlin - Medusa Backend
+
 <p align="center">
   <a href="https://www.medusajs.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/59018053/229103275-b5e482bb-4601-46e6-8142-244f531cebdb.svg">
     <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
+    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-c6af37f087bf.svg">
     </picture>
   </a>
 </p>
-<h1 align="center">
-  Medusa
-</h1>
 
 <h4 align="center">
   <a href="https://docs.medusajs.com">Documentation</a> |
@@ -18,18 +17,6 @@
 
 <p align="center">
   Building blocks for digital commerce
-</p>
-<p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/master/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
-  </a>
-    <a href="https://www.producthunt.com/posts/medusa"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%20Day-%23DA552E" alt="Product Hunt"></a>
-  <a href="https://discord.gg/xpCwq3Kfn8">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
-    <img src="https://img.shields.io/twitter/follow/medusajs.svg?label=Follow%20@medusajs" alt="Follow @medusajs" />
-  </a>
 </p>
 
 ## Compatibility
@@ -44,11 +31,13 @@ Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to le
 
 ## Features
 
-- **Meilisearch Integration**: Advanced product search with category faceting
-- **Automatic Product Sync**: Products sync to Meilisearch on create/update
+- **Meilisearch Integration**: Advanced product search with category faceting and real-time sync
+- **Automatic Product Sync**: Products sync to Meilisearch on create/update via event subscribers
 - **Custom Modules**: Complete ERP functionality with Offer, Supplier, Manual Customer, and Service modules
 - **Transactional Emails**: Pre-configured email templates for orders, offers, and customer communications
-- **Search Integration**: Enhanced search functionality across products, services, and customers
+- **Tax-Inclusive Pricing**: German tax-inclusive pricing with "inkl. MwSt." display
+- **Stripe Payment Integration**: Best practices compliant with webhook-driven order completion
+- **PDF Generation**: DIN 5008 compliant PDFs for offers and invoices using Puppeteer
 
 ## Custom Modules
 
@@ -101,12 +90,11 @@ Service catalog management with:
 
 Advanced product search powered by Meilisearch with:
 
-- Real-time product synchronization
-- Category faceting and filtering
+- Real-time product synchronization via subscribers
+- Category faceting and hierarchical filtering
 - SKU and handle search support
 - Product availability integration
-
-## Meilisearch Configuration
+- Automatic index management
 
 ### Required Environment Variables
 
@@ -156,38 +144,213 @@ curl -X POST 'http://localhost:7700/keys' \
   }'
 ```
 
+### Event-Driven Sync Architecture
+
+Product data flows to Meilisearch automatically:
+
+```
+Product Update → product.updated event → OfferModule Subscriber → Meilisearch Index
+```
+
+Subscribers are located in [`src/subscribers/`](./src/subscribers/) and handle:
+- Product creation and updates
+- Inventory changes
+- Category modifications
+- Automatic index updates
+
+See [`src/subscribers/README.md`](./src/subscribers/README.md) for detailed subscriber documentation.
+
 ## Transactional Emails
 
-The backend includes pre-configured transactional email templates using React Email and Resend:
+The backend includes pre-configured transactional email templates using React Email and Resend.
 
-### Order Emails
+### Quick Start
 
-- Order placed confirmation
-- Order shipped notification
-- Order delivered notification
-- Order cancelled notification
+**Preview all templates** (recommended first step):
 
-### Offer Emails
+```bash
+npm run dev:email
+# Open browser to: http://localhost:3000
+```
 
-- Offer active notification
-- Offer accepted confirmation
-- Offer completed notification
-- Offer cancelled notification
+### Email Templates
 
-### Customer Emails
+**Order Lifecycle (4):**
+1. ✅ **order-placed** - Order confirmation
+2. ✅ **order-shipped** - Shipping confirmation with tracking
+3. ✅ **order-delivered** - Delivery confirmation
+4. ✅ **order-cancelled** - Cancellation & refund
 
-- Welcome email for new customers
-- Password reset
-- User invitation
+**User Management (2):**
+5. ✅ **reset-password** - Password reset link
+6. ✅ **user-invited** - Admin team invitation
+
+**Offers (4):**
+7. ✅ **offer-active** - Offer ready notification
+8. ✅ **offer-accepted** - Offer acceptance confirmation
+9. ✅ **offer-completed** - Completion notification
+10. ✅ **offer-cancelled** - Cancellation notice
 
 All emails include:
 
 - Company branding and styling
 - Responsive design
 - German language support
-- PDF attachments (for offers)
+- PDF attachments (for offers and invoices)
+- Unified branding with configurable colors
 
-See [`src/modules/resend/emails/`](./src/modules/resend/emails/) for all email templates.
+### Email Configuration
+
+Configure notification preferences via Admin UI:
+
+1. Navigate to: **Settings** → **Offer Email Notifications**
+2. Toggle notifications ON/OFF for each status
+3. Default settings:
+   - Offer Active: ON ✅
+   - Offer Accepted: ON ✅
+   - Offer Completed: ON ✅
+   - Offer Created: OFF
+   - Offer Cancelled: OFF
+
+### Required Environment Variables
+
+```bash
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+
+# Company branding (for emails and PDFs)
+COMPANY_NAME="Your Company Name"
+COMPANY_EMAIL=info@yourdomain.com
+COMPANY_PHONE="+49 30 12345678"
+COMPANY_ADDRESS="Street 123"
+COMPANY_POSTAL_CODE="12345"
+COMPANY_CITY="Berlin"
+COMPANY_LOGO_URL=https://yourdomain.com/logo.png
+BRAND_PRIMARY_COLOR="#000000"
+BRAND_SECONDARY_COLOR="#666666"
+```
+
+See all email templates in [`src/modules/resend/emails/`](./src/modules/resend/emails/).
+
+## Payment Integration
+
+### Stripe Configuration
+
+The backend uses Stripe for payment processing with best practices:
+
+**✅ Webhook as Source of Truth:**
+- Webhooks are authoritative for payment status
+- Handles race conditions between webhook and redirect
+- Redirect callback provides UX fallback only
+
+**✅ Payment Intent Lifecycle:**
+- Handles all PaymentIntent states correctly
+- Never attempts to cancel succeeded intents
+- Webhook processes async state changes
+
+**Required Environment Variables:**
+
+```bash
+STRIPE_API_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+**Required Webhook Events** (configure in Stripe Dashboard):
+
+```
+payment_intent.succeeded
+payment_intent.payment_failed
+payment_intent.amount_capturable_updated
+payment_intent.requires_action
+payment_intent.processing
+```
+
+**Webhook URL:** `https://your-domain.de/hooks/payment/stripe`
+
+The redirect callback at `/api/capture-payment/[cartId]` handles:
+- Payment validation before order placement
+- Race conditions with webhook completion
+- Graceful error handling for async payment methods
+
+### Capture Strategy
+
+Current configuration: **Auto-capture enabled** (`capture: true`)
+
+This is appropriate for:
+- Standard card payments
+- Immediate payment confirmation
+- Real-time order fulfillment
+
+For delayed confirmation methods (bank transfer, etc.), the system:
+- Places order immediately
+- Webhook completes payment when confirmed
+- Order status updates automatically
+
+## Tax Configuration
+
+### German Tax-Inclusive Pricing
+
+All prices display with "inkl. MwSt." (including VAT):
+
+**Implementation:**
+- Product prices use `calculated_amount_with_tax`
+- `country_code` parameter ensures correct tax calculation
+- Tax rates: 19% standard, 7% reduced (books, food)
+
+**Key Files:**
+- `src/lib/data/products.ts` - Adds `country_code` to API calls
+- `src/lib/util/get-product-price.ts` - Uses tax-inclusive amounts
+- Price components display "inkl. MwSt." label
+
+**Cart Tax Calculation:**
+- Medusa calculates taxes with full address
+- Until checkout, estimated tax shown
+- Final tax calculated at payment step
+
+**Tax Provider:**
+- Uses Medusa's built-in tax calculation
+- Configured per region (Germany: 19%, 7%)
+- Automatic tax code assignment
+
+## PDF Generation
+
+### DIN 5008 Compliant Documents
+
+Offers and invoices generate as professional PDFs:
+
+**Features:**
+- German DIN 5008 business letter standard
+- Company branding and logo
+- Line item tables with SKU and pricing
+- Terms and conditions footer
+- Privacy policy footer
+- Automatic PDF attachment to emails
+
+**Implementation:**
+- Uses Puppeteer with Alpine Chromium
+- HTML templates rendered to PDF
+- Async generation with error handling
+- Proper resource cleanup (prevents zombie processes)
+
+**Environment Variables:**
+
+```bash
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# PDF footer content
+PDF_FOOTER_TEXT="Impressum: ..."
+COMPANY_TAX_ID="DE123456789"
+COMPANY_BANK_INFO="Bank Details..."
+```
+
+**Resource Management:**
+- Pages explicitly closed after generation
+- Browser instances properly disposed
+- Prevents zombie Chromium processes
+- Docker Alpine image includes Chromium + dependencies
+
+See [`src/utils/pdf-generator.ts`](./src/utils/pdf-generator.ts) for implementation.
 
 ## Maintenance Scripts
 
@@ -207,11 +370,31 @@ This validates:
 - ✅ /search/ location properly configured
 - ✅ Nginx syntax is valid
 
-**Deployment scripts:**
+### Deployment Scripts
 
 - `scripts/setup-vps.sh` - Complete VPS setup including SSL and Docker
 - `scripts/deploy.sh` - Blue-green deployment with rollback support
+- `scripts/deploy-with-domain.sh` - Domain-specific deployment wrapper
 - `scripts/cleanup-disk.sh` - Automated disk space management
+
+### Database Scripts
+
+Execute scripts using Medusa CLI:
+
+```bash
+# Assign default shipping profiles to all products
+npx medusa exec ./src/scripts/assign-default-shipping-profile.js
+
+# Clean up orphaned S3 files
+npx medusa exec ./src/scripts/cleanup-s3-files.ts
+```
+
+**Available Scripts:**
+- `assign-default-shipping-profile.ts` - Fixes products without shipping profiles
+- `cleanup-s3-files.ts` - Removes orphaned Supabase Storage files
+- `import-products-with-relations.ts` - CSV import with categories and suppliers
+
+See [`src/scripts/README.md`](./src/scripts/README.md) for detailed script documentation.
 
 ### Cleanup Orphaned S3 Files
 
@@ -221,14 +404,52 @@ To clean up orphaned files in your Supabase Storage that are no longer reference
 npx medusa exec ./src/scripts/cleanup-s3-files.ts
 ```
 
-This script scans all products for image references, compares them with files in your storage bucket, and removes any files that are no longer being used.
+This script:
+- Scans all products for image references
+- Compares with files in storage bucket
+- Removes unreferenced files
+- Logs all deletions for audit trail
 
-## Deployment Sequencing
+## Deployment
+
+### Blue-Green Deployment Strategy
+
+The backend uses blue-green deployments for zero-downtime updates:
+
+**Architecture:**
+- Two identical environments (blue/green)
+- Only one active at a time
+- Health checks before switching
+- Automatic rollback on failure
+
+**Deployment Flow:**
+
+1. **Build Phase** (~19 minutes with Phase 1 optimizations)
+   - Docker image build with BuildKit
+   - Production dependencies only
+   - Multi-stage build for optimization
+
+2. **Deploy Phase**
+   - Start new environment (blue or green)
+   - Wait for health checks (max 12 minutes)
+   - Switch Nginx to new environment
+   - Stop old environment
+
+3. **Rollback** (if needed)
+   - Automatic on health check failure
+   - Manual via `./scripts/deploy.sh rollback`
+   - Switches back to previous environment
+
+**Current Optimization:** Phase 1 applied (19 min deployments, 13% faster)
+
+See [Deployment Optimization Docs](../deployment/) for Phase 2 strategies.
+
+### Deployment Sequencing
 
 To prevent frontend build failures, the deployment is sequenced:
 
-1. **Backend deploys first** (blue-green, ~30 mins)
-2. **Vercel auto-deploys after** backend completes
+1. **Backend deploys first** (blue-green, ~19 mins)
+2. **Vercel auto-deploys after** backend completes via deploy hook
 
 ### Setup Vercel Deploy Hook
 
@@ -239,6 +460,77 @@ To prevent frontend build failures, the deployment is sequenced:
 5. **Disable auto-deploy in Vercel:** Settings → Git → Ignored Build Step → `exit 1`
 
 This ensures frontend always builds against a stable backend.
+
+### Required GitHub Secrets
+
+Complete list of required secrets for deployment:
+
+```bash
+# Domain & SSL
+DOMAIN_NAME=your-domain.de
+SSL_CERT_NAME=fullchain.pem
+SSL_KEY_NAME=privkey.pem
+
+# Database
+POSTGRES_PASSWORD=secure_password
+
+# Medusa Core
+JWT_SECRET=jwt_secret_key
+COOKIE_SECRET=cookie_secret_key
+
+# Email
+RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=noreply@your-domain.de
+
+# Storage (Supabase)
+S3_ACCESS_KEY_ID=xxxxx
+S3_SECRET_ACCESS_KEY=xxxxx
+S3_REGION=eu-central-1
+S3_BUCKET=your-bucket
+S3_ENDPOINT=https://xxxxx.supabase.co/storage/v1
+S3_FILE_URL=https://xxxxx.supabase.co/storage/v1/object/public/
+
+# Meilisearch
+MEILISEARCH_HOST=http://medusa_meilisearch:7700
+MEILISEARCH_MASTER_KEY=your_master_key
+MEILISEARCH_API_KEY=your_api_key
+MEILISEARCH_PRODUCT_INDEX_NAME=products
+
+# Payment
+STRIPE_API_KEY=sk_live_xxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+
+# Company Info
+COMPANY_NAME="Your Company"
+COMPANY_EMAIL=info@your-domain.de
+COMPANY_PHONE="+49 30 12345678"
+COMPANY_ADDRESS="Street 123"
+COMPANY_POSTAL_CODE="12345"
+COMPANY_CITY="Berlin"
+COMPANY_TAX_ID="DE123456789"
+COMPANY_BANK_INFO="Bank Details"
+COMPANY_LOGO_URL=https://your-domain.de/logo.png
+COMPANY_SUPPORT_EMAIL=support@your-domain.de
+BRAND_PRIMARY_COLOR="#000000"
+BRAND_SECONDARY_COLOR="#666666"
+
+# URLs
+MEDUSA_BACKEND_URL=https://your-domain.de
+STOREFRONT_URL=https://storefront.vercel.app
+STORE_CORS=https://storefront.vercel.app,http://localhost:8000
+ADMIN_CORS=https://your-domain.de
+AUTH_CORS=https://your-domain.de
+
+# Email Content
+PDF_FOOTER_TEXT="Your footer text"
+EMAIL_SIGNATURE="Your signature"
+EMAIL_FOOTER="Your email footer"
+
+# Vercel Integration
+VERCEL_DEPLOY_HOOK=https://api.vercel.com/v1/integrations/deploy/xxxxx
+```
+
+Use `./setup-deployment/set-github-secrets.sh` to set all secrets at once.
 
 ## What is Medusa
 
@@ -258,5 +550,3 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [Twitter](https://twitter.com/medusajs)
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
-
-<!-- Deployment trigger: Tue Nov 08 11:00:00 CET 2025 - Test build -->

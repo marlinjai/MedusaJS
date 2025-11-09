@@ -146,7 +146,6 @@ CMD ["./start.sh"]
 ```
 
 **Changes:**
-
 - Line 18-19: Added cache mount to builder npm install
 - Line 67-68: Added cache mount to production npm install
 
@@ -207,7 +206,6 @@ docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" \
 ```
 
 **Benefits:**
-
 1. Only builds target deployment (not both blue and green)
 2. Uses inline cache for better layer reuse
 3. Separates build and start phases (cleaner logs)
@@ -217,7 +215,6 @@ docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" \
 ## 📊 Expected Results
 
 ### Current (After Phase 1):
-
 ```
 Total: 19m 00s
 ├─ npm install (builder):    11m 00s
@@ -227,7 +224,6 @@ Total: 19m 00s
 ```
 
 ### After Phase 2:
-
 ```
 Total: 10m 30s (45% faster!)
 ├─ npm install (builder):     2m 30s  ← 8.5 min saved! 🎉
@@ -245,7 +241,6 @@ Total: 10m 30s (45% faster!)
 ## ⚠️ Risk Assessment
 
 ### BuildKit Cache Mounts:
-
 - **Risk:** LOW-MEDIUM
 - **Why:** Requires BuildKit (already enabled in Phase 1)
 - **Potential Issues:**
@@ -254,7 +249,6 @@ Total: 10m 30s (45% faster!)
   - First build after cache clear is slow (same as now)
 
 ### Separate Build Command:
-
 - **Risk:** MEDIUM
 - **Why:** Changes deployment flow
 - **Potential Issues:**
@@ -266,7 +260,6 @@ Total: 10m 30s (45% faster!)
 ## 🔧 Implementation Steps
 
 ### Step 1: Update Dockerfile (Low Risk)
-
 ```bash
 cd /Users/marlin.pohl/software\ development/MedusaJS/busbasisberlin
 
@@ -277,7 +270,6 @@ cp Dockerfile Dockerfile.phase1.backup
 ```
 
 ### Step 2: Test Locally (Optional but Recommended)
-
 ```bash
 # Build with cache mount locally
 DOCKER_BUILDKIT=1 docker build \
@@ -289,7 +281,6 @@ DOCKER_BUILDKIT=1 docker build \
 ```
 
 ### Step 3: Configure Server (One-Time)
-
 ```bash
 ssh deploy@basiscamp-berlin.de
 
@@ -297,7 +288,6 @@ ssh deploy@basiscamp-berlin.de
 ```
 
 ### Step 4: Update deploy.sh (Medium Risk)
-
 ```bash
 # Backup current deploy.sh
 cp scripts/deploy.sh scripts/deploy.sh.phase1.backup
@@ -306,7 +296,6 @@ cp scripts/deploy.sh scripts/deploy.sh.phase1.backup
 ```
 
 ### Step 5: Deploy and Monitor
-
 ```bash
 git add Dockerfile scripts/deploy.sh
 git commit -m "perf: Phase 2 - BuildKit cache mounts (target 10-12 min)"
@@ -318,7 +307,6 @@ git push
 ## 🚨 Rollback Plan
 
 ### If Build Fails:
-
 ```bash
 # Restore Phase 1 files
 git checkout HEAD~1 -- busbasisberlin/Dockerfile busbasisberlin/scripts/deploy.sh
@@ -327,7 +315,6 @@ git push
 ```
 
 ### If Cache Issues:
-
 ```bash
 # SSH to server
 ssh deploy@basiscamp-berlin.de
@@ -357,7 +344,6 @@ docker builder prune --all --force
 If you want **some** benefit without the risk of changing deploy.sh:
 
 ### Just Add Cache Mounts to Dockerfile:
-
 ```dockerfile
 # Only change these two lines:
 RUN --mount=type=cache,target=/root/.npm npm install
@@ -372,21 +358,18 @@ RUN --mount=type=cache,target=/root/.npm npm install --production
 ## 🤔 Which Phase Should You Do?
 
 ### Choose Phase 2 Full If:
-
 - ✅ You want maximum speed (10-12 min deployments)
 - ✅ You're comfortable with moderate-risk changes
 - ✅ You can monitor the first deployment closely
 - ✅ You have a good rollback plan ready
 
 ### Choose Phase 2 Lite If:
-
 - ✅ You want good speed gains (14 min deployments)
 - ✅ You prefer lower risk
 - ✅ You want to deploy Phase 1 first, then Phase 2 Lite later
 - ✅ You're okay with incremental improvements
 
 ### Stick with Phase 1 If:
-
 - ✅ 19 minutes is acceptable
 - ✅ You want zero risk
 - ✅ You prefer proven, stable builds
@@ -398,18 +381,15 @@ RUN --mount=type=cache,target=/root/.npm npm install --production
 Once Phase 2 is stable, consider:
 
 1. **Pre-built Base Image** (saves 1-2 min)
-
    - Create `medusa-base:latest` with Chromium pre-installed
    - Update monthly
 
 2. **Parallel Builds** (saves 30-60 sec)
-
    ```bash
    docker compose build --parallel
    ```
 
 3. **Layer Optimization** (saves 30-60 sec)
-
    - Reorder Dockerfile layers for better caching
    - Combine RUN commands where possible
 
@@ -450,9 +430,9 @@ This gives you **incremental improvements** with **controlled risk**.
 **Phase 2 Lite is safe to implement right now** since it's just adding cache mounts to the Dockerfile we already modified.
 
 Want me to:
-
 - **Option A:** Implement Phase 2 Lite now (add cache mounts)
 - **Option B:** Deploy Phase 1 first, Phase 2 Lite next week
 - **Option C:** Go straight to Phase 2 Full (maximum speed)
 
 **What's your preference?** 🚀
+
