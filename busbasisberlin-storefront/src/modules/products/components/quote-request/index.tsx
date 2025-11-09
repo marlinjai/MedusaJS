@@ -3,7 +3,6 @@
 'use client';
 
 import { HttpTypes } from '@medusajs/types';
-import { Button } from '@medusajs/ui';
 import { useState } from 'react';
 
 type QuoteRequestProps = {
@@ -12,15 +11,20 @@ type QuoteRequestProps = {
 	customer?: HttpTypes.StoreCustomer | null;
 };
 
-export default function QuoteRequest({ product, variant, customer }: QuoteRequestProps) {
+export default function QuoteRequest({
+	product,
+	variant,
+	customer,
+}: QuoteRequestProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSuccess, setIsSuccess] = useState(false);
 	const [isFormVisible, setIsFormVisible] = useState(false);
 	const [formData, setFormData] = useState({
 		email: customer?.email || '',
-		name: customer?.first_name && customer?.last_name
-			? `${customer.first_name} ${customer.last_name}`
-			: '',
+		name:
+			customer?.first_name && customer?.last_name
+				? `${customer.first_name} ${customer.last_name}`
+				: '',
 		phone: customer?.phone || '',
 		address: '',
 		city: '',
@@ -28,7 +32,9 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 		message: '',
 	});
 
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+	const handleInputChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+	) => {
 		const { name, value } = e.target;
 		setFormData(prev => ({
 			...prev,
@@ -44,11 +50,13 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 		setSubmitError(null);
 
 		try {
-			const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+			const backendUrl =
+				process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
 			const response = await fetch(`${backendUrl}/store/quote-request`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					Authorization: `Bearer ${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}`,
 				},
 				body: JSON.stringify({
 					product: {
@@ -70,9 +78,10 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 			setIsSuccess(true);
 			setFormData({
 				email: customer?.email || '',
-				name: customer?.first_name && customer?.last_name
-					? `${customer.first_name} ${customer.last_name}`
-					: '',
+				name:
+					customer?.first_name && customer?.last_name
+						? `${customer.first_name} ${customer.last_name}`
+						: '',
 				phone: customer?.phone || '',
 				address: '',
 				city: '',
@@ -82,7 +91,10 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 			setIsFormVisible(false);
 		} catch (error: any) {
 			console.error('Quote request error:', error);
-			setSubmitError(error.message || 'Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.');
+			setSubmitError(
+				error.message ||
+					'Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.',
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -91,9 +103,12 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 	if (isSuccess) {
 		return (
 			<div className="px-6 py-8 bg-green-600/10 border border-green-600/20 rounded-lg text-center">
-				<h3 className="text-lg font-semibold text-green-600 mb-2">Anfrage erfolgreich gesendet!</h3>
+				<h3 className="text-lg font-semibold text-green-600 mb-2">
+					Anfrage erfolgreich gesendet!
+				</h3>
 				<p className="text-sm text-muted-foreground mb-4">
-					Wir melden uns innerhalb von 24 Stunden bei Ihnen mit einem Versandangebot.
+					Wir melden uns innerhalb von 24 Stunden bei Ihnen mit einem
+					Versandangebot.
 				</p>
 				<button
 					onClick={() => setIsSuccess(false)}
@@ -118,7 +133,8 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 							⚠️ Sperrgut - Versandkosten auf Anfrage
 						</p>
 						<p className="text-xs text-muted-foreground mt-1">
-							Aufgrund der Größe/Gewicht müssen wir die Versandkosten individuell berechnen.
+							Aufgrund der Größe/Gewicht müssen wir die Versandkosten
+							individuell berechnen.
 						</p>
 					</div>
 					<svg
@@ -129,7 +145,12 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 						viewBox="0 0 24 24"
 						stroke="currentColor"
 					>
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M19 9l-7 7-7-7"
+						/>
 					</svg>
 				</div>
 			</button>
@@ -141,121 +162,142 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 				}`}
 			>
 				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						<div>
+							<label
+								htmlFor="name"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
+								Name *
+							</label>
+							<input
+								type="text"
+								id="name"
+								name="name"
+								value={formData.name}
+								onChange={handleInputChange}
+								required
+								disabled={!!customer}
+								className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm disabled:opacity-50"
+								placeholder="Ihr Name"
+							/>
+						</div>
+
+						<div>
+							<label
+								htmlFor="email"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
+								E-Mail *
+							</label>
+							<input
+								type="email"
+								id="email"
+								name="email"
+								value={formData.email}
+								onChange={handleInputChange}
+								required
+								disabled={!!customer}
+								className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm disabled:opacity-50"
+								placeholder="ihre.email@beispiel.de"
+							/>
+						</div>
+					</div>
+
 					<div>
-						<label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
-							Name *
+						<label
+							htmlFor="phone"
+							className="block text-sm font-medium text-foreground mb-1"
+						>
+							Telefon (optional)
 						</label>
 						<input
-							type="text"
-							id="name"
-							name="name"
-							value={formData.name}
+							type="tel"
+							id="phone"
+							name="phone"
+							value={formData.phone}
 							onChange={handleInputChange}
-							required
-							disabled={!!customer}
-							className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm disabled:opacity-50"
-							placeholder="Ihr Name"
+							className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm"
+							placeholder="Ihre Telefonnummer"
 						/>
 					</div>
 
 					<div>
-						<label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-							E-Mail *
-						</label>
-						<input
-							type="email"
-							id="email"
-							name="email"
-							value={formData.email}
-							onChange={handleInputChange}
-							required
-							disabled={!!customer}
-							className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm disabled:opacity-50"
-							placeholder="ihre.email@beispiel.de"
-						/>
-					</div>
-				</div>
-
-				<div>
-					<label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">
-						Telefon (optional)
-					</label>
-					<input
-						type="tel"
-						id="phone"
-						name="phone"
-						value={formData.phone}
-						onChange={handleInputChange}
-						className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm"
-						placeholder="Ihre Telefonnummer"
-					/>
-				</div>
-
-				<div>
-					<label htmlFor="address" className="block text-sm font-medium text-foreground mb-1">
-						Lieferadresse *
-					</label>
-					<input
-						type="text"
-						id="address"
-						name="address"
-						value={formData.address}
-						onChange={handleInputChange}
-						required
-						className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm"
-						placeholder="Straße und Hausnummer"
-					/>
-				</div>
-
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-					<div>
-						<label htmlFor="postalCode" className="block text-sm font-medium text-foreground mb-1">
-							PLZ *
+						<label
+							htmlFor="address"
+							className="block text-sm font-medium text-foreground mb-1"
+						>
+							Lieferadresse *
 						</label>
 						<input
 							type="text"
-							id="postalCode"
-							name="postalCode"
-							value={formData.postalCode}
+							id="address"
+							name="address"
+							value={formData.address}
 							onChange={handleInputChange}
 							required
 							className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm"
-							placeholder="12345"
+							placeholder="Straße und Hausnummer"
 						/>
+					</div>
+
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						<div>
+							<label
+								htmlFor="postalCode"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
+								PLZ *
+							</label>
+							<input
+								type="text"
+								id="postalCode"
+								name="postalCode"
+								value={formData.postalCode}
+								onChange={handleInputChange}
+								required
+								className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm"
+								placeholder="12345"
+							/>
+						</div>
+
+						<div>
+							<label
+								htmlFor="city"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
+								Stadt *
+							</label>
+							<input
+								type="text"
+								id="city"
+								name="city"
+								value={formData.city}
+								onChange={handleInputChange}
+								required
+								className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm"
+								placeholder="Berlin"
+							/>
+						</div>
 					</div>
 
 					<div>
-						<label htmlFor="city" className="block text-sm font-medium text-foreground mb-1">
-							Stadt *
+						<label
+							htmlFor="message"
+							className="block text-sm font-medium text-foreground mb-1"
+						>
+							Nachricht (optional)
 						</label>
-						<input
-							type="text"
-							id="city"
-							name="city"
-							value={formData.city}
+						<textarea
+							id="message"
+							name="message"
+							value={formData.message}
 							onChange={handleInputChange}
-							required
-							className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground text-sm"
-							placeholder="Berlin"
+							rows={3}
+							className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground resize-none text-sm"
+							placeholder="Besondere Wünsche oder Anmerkungen..."
 						/>
 					</div>
-				</div>
-
-				<div>
-					<label htmlFor="message" className="block text-sm font-medium text-foreground mb-1">
-						Nachricht (optional)
-					</label>
-					<textarea
-						id="message"
-						name="message"
-						value={formData.message}
-						onChange={handleInputChange}
-						rows={3}
-						className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-background text-foreground resize-none text-sm"
-						placeholder="Besondere Wünsche oder Anmerkungen..."
-					/>
-				</div>
 
 					{submitError && (
 						<div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -274,4 +316,3 @@ export default function QuoteRequest({ product, variant, customer }: QuoteReques
 		</div>
 	);
 }
-

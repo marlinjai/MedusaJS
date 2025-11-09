@@ -33,11 +33,13 @@ export default function ContactSection() {
 		setSubmitError(null);
 
 		try {
-			const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+			const backendUrl =
+				process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
 			const response = await fetch(`${backendUrl}/store/contact`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					Authorization: `Bearer ${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}`,
 				},
 				body: JSON.stringify({
 					customer: formData,
@@ -54,7 +56,11 @@ export default function ContactSection() {
 			setFormData({ name: '', email: '', phone: '', message: '' });
 		} catch (error: any) {
 			console.error('Contact form error:', error);
-			setSubmitError(error.message || t('errorMessage') || 'Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.');
+			setSubmitError(
+				error.message ||
+					t('errorMessage') ||
+					'Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut.',
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -171,7 +177,9 @@ export default function ContactSection() {
 								disabled={isSubmitting}
 								className="w-full sm:w-auto contrast-btn disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								{isSubmitting ? t('submitting') || 'Wird gesendet...' : t('submitButton')}
+								{isSubmitting
+									? t('submitting') || 'Wird gesendet...'
+									: t('submitButton')}
 							</button>
 						</form>
 					</div>

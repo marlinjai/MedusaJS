@@ -4,23 +4,27 @@
 'use client';
 
 import { HttpTypes } from '@medusajs/types';
-import { FiInfo } from 'react-icons/fi';
 import { useState } from 'react';
+import { FiInfo } from 'react-icons/fi';
 
 type OnRequestProductProps = {
 	product: HttpTypes.StoreProduct;
 	customer?: HttpTypes.StoreCustomer | null;
 };
 
-export default function OnRequestProduct({ product, customer }: OnRequestProductProps) {
+export default function OnRequestProduct({
+	product,
+	customer,
+}: OnRequestProductProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSuccess, setIsSuccess] = useState(false);
 	const [isFormVisible, setIsFormVisible] = useState(false);
 	const [formData, setFormData] = useState({
 		email: customer?.email || '',
-		name: customer?.first_name && customer?.last_name
-			? `${customer.first_name} ${customer.last_name}`
-			: '',
+		name:
+			customer?.first_name && customer?.last_name
+				? `${customer.first_name} ${customer.last_name}`
+				: '',
 		phone: customer?.phone || '',
 		address: '',
 		city: '',
@@ -28,7 +32,9 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 		message: '',
 	});
 
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+	const handleInputChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+	) => {
 		const { name, value } = e.target;
 		setFormData(prev => ({
 			...prev,
@@ -41,11 +47,13 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 		setIsSubmitting(true);
 
 		try {
-			const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+			const backendUrl =
+				process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
 			const response = await fetch(`${backendUrl}/store/product-inquiry`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					Authorization: `Bearer ${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}`,
 				},
 				body: JSON.stringify({
 					product: {
@@ -61,9 +69,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 				setIsSuccess(true);
 				setFormData({
 					email: customer?.email || '',
-					name: customer?.first_name && customer?.last_name
-						? `${customer.first_name} ${customer.last_name}`
-						: '',
+					name:
+						customer?.first_name && customer?.last_name
+							? `${customer.first_name} ${customer.last_name}`
+							: '',
 					phone: customer?.phone || '',
 					address: '',
 					city: '',
@@ -77,7 +86,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 			}
 		} catch (error: any) {
 			console.error('Product inquiry error:', error);
-			alert(error.message || 'Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.');
+			alert(
+				error.message ||
+					'Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.',
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -86,9 +98,12 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 	if (isSuccess) {
 		return (
 			<div className="px-6 py-8 bg-green-600/10 border border-green-600/20 rounded-lg text-center">
-				<h3 className="text-lg font-semibold text-green-600 mb-2">Anfrage erfolgreich gesendet!</h3>
+				<h3 className="text-lg font-semibold text-green-600 mb-2">
+					Anfrage erfolgreich gesendet!
+				</h3>
 				<p className="text-sm text-muted-foreground mb-4">
-					Wir melden uns innerhalb von 24 Stunden bei Ihnen mit weiteren Informationen.
+					Wir melden uns innerhalb von 24 Stunden bei Ihnen mit weiteren
+					Informationen.
 				</p>
 				<button
 					onClick={() => {
@@ -114,9 +129,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 							Artikel auf Anfrage
 						</h3>
 						<p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
-							Dieser Artikel kann auf Anfrage bestellt werden. Da die Teile zu individuell sind,
-							ist eine vorherige Besprechung notwendig. Bitte kontaktieren Sie uns für weitere
-							Informationen und ein individuelles Angebot.
+							Dieser Artikel kann auf Anfrage bestellt werden. Da die Teile zu
+							individuell sind, ist eine vorherige Besprechung notwendig. Bitte
+							kontaktieren Sie uns für weitere Informationen und ein
+							individuelles Angebot.
 						</p>
 					</div>
 				</div>
@@ -144,7 +160,12 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 						viewBox="0 0 24 24"
 						stroke="currentColor"
 					>
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M19 9l-7 7-7-7"
+						/>
 					</svg>
 				</div>
 			</button>
@@ -155,10 +176,16 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 					isFormVisible ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
 				}`}
 			>
-				<form onSubmit={handleSubmit} className="space-y-4 pt-2 px-6 py-4 bg-card border border-border rounded-lg">
+				<form
+					onSubmit={handleSubmit}
+					className="space-y-4 pt-2 px-6 py-4 bg-card border border-border rounded-lg"
+				>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div>
-							<label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+							<label
+								htmlFor="name"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
 								Name *
 							</label>
 							<input
@@ -175,7 +202,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 						</div>
 
 						<div>
-							<label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
+							<label
+								htmlFor="email"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
 								E-Mail *
 							</label>
 							<input
@@ -193,7 +223,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 					</div>
 
 					<div>
-						<label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">
+						<label
+							htmlFor="phone"
+							className="block text-sm font-medium text-foreground mb-1"
+						>
 							Telefon (optional)
 						</label>
 						<input
@@ -208,7 +241,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 					</div>
 
 					<div>
-						<label htmlFor="address" className="block text-sm font-medium text-foreground mb-1">
+						<label
+							htmlFor="address"
+							className="block text-sm font-medium text-foreground mb-1"
+						>
 							Adresse (optional)
 						</label>
 						<input
@@ -224,7 +260,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div>
-							<label htmlFor="postalCode" className="block text-sm font-medium text-foreground mb-1">
+							<label
+								htmlFor="postalCode"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
 								PLZ (optional)
 							</label>
 							<input
@@ -239,7 +278,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 						</div>
 
 						<div>
-							<label htmlFor="city" className="block text-sm font-medium text-foreground mb-1">
+							<label
+								htmlFor="city"
+								className="block text-sm font-medium text-foreground mb-1"
+							>
 								Stadt (optional)
 							</label>
 							<input
@@ -255,7 +297,10 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 					</div>
 
 					<div>
-						<label htmlFor="message" className="block text-sm font-medium text-foreground mb-1">
+						<label
+							htmlFor="message"
+							className="block text-sm font-medium text-foreground mb-1"
+						>
 							Nachricht (optional)
 						</label>
 						<textarea
@@ -281,4 +326,3 @@ export default function OnRequestProduct({ product, customer }: OnRequestProduct
 		</div>
 	);
 }
-
