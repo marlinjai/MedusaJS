@@ -19,7 +19,9 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 	// If cart doesn't exist, webhook may have already completed the order
 	// This is expected behavior for successful payments processed by webhook
 	if (!cart) {
-		console.log('[CAPTURE-PAYMENT] Cart not found - likely already converted to order by webhook');
+		console.log(
+			'[CAPTURE-PAYMENT] Cart not found - likely already converted to order by webhook',
+		);
 		return NextResponse.redirect(`${origin}/${countryCode}`);
 	}
 
@@ -56,21 +58,26 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
 	// Note: Webhook may have already completed it - handle that gracefully
 	try {
 		const order = await placeOrder(cartId);
-		
+
 		return NextResponse.redirect(
 			`${origin}/${countryCode}/order/${order.id}/confirmed`,
 		);
 	} catch (error: any) {
 		// If order placement fails, webhook may have already completed it
 		console.log('[CAPTURE-PAYMENT] placeOrder failed:', error.message);
-		
+
 		// If cart is already completed, redirect to orders page
 		// Webhook is authoritative - this is expected behavior
-		if (error.message?.includes('cart') || error.message?.includes('completed')) {
-			console.log('[CAPTURE-PAYMENT] Cart already completed by webhook, redirecting to orders');
+		if (
+			error.message?.includes('cart') ||
+			error.message?.includes('completed')
+		) {
+			console.log(
+				'[CAPTURE-PAYMENT] Cart already completed by webhook, redirecting to orders',
+			);
 			return NextResponse.redirect(`${origin}/${countryCode}/account/orders`);
 		}
-		
+
 		// For other errors, go back to checkout
 		return NextResponse.redirect(
 			`${origin}/${countryCode}/cart?step=review&error=payment_failed`,

@@ -169,12 +169,15 @@ const Payment = ({
 			// Check if we already have a payment session for this provider
 			// If so, don't create a new one to avoid deleting succeeded PaymentIntents
 			const existingSession = cart.payment_collection?.payment_sessions?.find(
-				(session: any) => session.provider_id === providerId
+				(session: any) => session.provider_id === providerId,
 			);
 
 			if (existingSession) {
 				// Session already exists for this provider, skip initialization
-				console.log('[PAYMENT] Reusing existing payment session:', existingSession.id);
+				console.log(
+					'[PAYMENT] Reusing existing payment session:',
+					existingSession.id,
+				);
 				return;
 			}
 

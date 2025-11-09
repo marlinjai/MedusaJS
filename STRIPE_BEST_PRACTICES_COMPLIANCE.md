@@ -1,6 +1,6 @@
 # Stripe Payment Integration - Best Practices Compliance Check
 
-**Date:** November 9, 2025  
+**Date:** November 9, 2025
 **Status:** ✅ Compliant with Best Practices
 
 ---
@@ -146,7 +146,7 @@ await stripe.confirmPayment({
         setErrorMessage(error.message);
         return;
     }
-    
+
     // Payment succeeded immediately (cards, Apple Pay)
     if (paymentIntent.status === 'requires_capture' || paymentIntent.status === 'succeeded') {
         onPaymentCompleted();
@@ -261,7 +261,7 @@ https://dashboard.stripe.com/test/webhooks
 
 # Verify:
 - URL: https://basiscamp-berlin.de/hooks/payment/stripe
-- Events: payment_intent.succeeded, payment_intent.payment_failed, 
+- Events: payment_intent.succeeded, payment_intent.payment_failed,
           payment_intent.amount_capturable_updated, payment_intent.requires_action,
           payment_intent.processing
 - Status: Active
