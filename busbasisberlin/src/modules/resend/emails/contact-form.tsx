@@ -36,23 +36,11 @@ function ContactFormEmailComponent(props: ContactFormEmailProps) {
 					<strong>Name:</strong> {customer_name}
 				</p>
 				<p style={{ margin: '8px 0' }}>
-					<strong>E-Mail:</strong>{' '}
-					<a
-						href={`mailto:${customer_email}`}
-						style={{ color: '#0066cc', textDecoration: 'none' }}
-					>
-						{customer_email}
-					</a>
+					<strong>E-Mail:</strong> {customer_email}
 				</p>
 				{customer_phone && (
 					<p style={{ margin: '8px 0' }}>
-						<strong>Telefon:</strong>{' '}
-						<a
-							href={`tel:${customer_phone}`}
-							style={{ color: '#0066cc', textDecoration: 'none' }}
-						>
-							{customer_phone}
-						</a>
+						<strong>Telefon:</strong> {customer_phone}
 					</p>
 				)}
 			</EmailInfoBox>
