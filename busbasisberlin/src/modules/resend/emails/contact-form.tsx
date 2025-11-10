@@ -1,14 +1,17 @@
 /**
  * contact-form.tsx
  * Email template for contact form submissions
+ * Uses React Email components to ensure proper email client compatibility
  */
 
 import {
-	EmailInfoBox,
-	EmailText,
-	EmailTitle,
-	EmailWrapper,
-} from '../utils/email-wrapper';
+	Body,
+	Container,
+	Heading,
+	Html,
+	Section,
+	Text,
+} from '@react-email/components';
 
 interface ContactFormEmailProps {
 	customer_name: string;
@@ -17,44 +20,110 @@ interface ContactFormEmailProps {
 	customer_message: string;
 }
 
-// Main email component
+// Main email component using React Email components
 function ContactFormEmailComponent(props: ContactFormEmailProps) {
 	const { customer_name, customer_email, customer_phone, customer_message } =
 		props;
 
 	return (
-		<EmailWrapper headerVariant="primary">
-			<EmailTitle>📧 Neue Kontaktanfrage</EmailTitle>
+		<Html>
+			<Body
+				style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#ffffff' }}
+			>
+				<Container
+					style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}
+				>
+					<Heading
+						style={{ color: '#333', fontSize: '20px', marginBottom: '20px' }}
+					>
+						Neue Kontaktanfrage
+					</Heading>
 
-			<EmailText>
-				Es wurde eine neue Kontaktanfrage über das Kontaktformular auf der
-				Website eingegangen.
-			</EmailText>
+					<Text
+						style={{
+							fontSize: '14px',
+							lineHeight: '1.6',
+							color: '#333',
+							marginBottom: '20px',
+						}}
+					>
+						Es wurde eine neue Kontaktanfrage über das Kontaktformular
+						eingegangen.
+					</Text>
 
-			<EmailInfoBox title="👤 Kontaktinformationen" variant="info">
-				<p style={{ margin: '8px 0' }}>
-					<strong>Name:</strong> {customer_name}
-				</p>
-				<p style={{ margin: '8px 0' }}>
-					<strong>E-Mail:</strong> {customer_email}
-				</p>
-				{customer_phone && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Telefon:</strong> {customer_phone}
-					</p>
-				)}
-			</EmailInfoBox>
+					<Section
+						style={{
+							backgroundColor: '#f5f5f5',
+							border: '1px solid #ddd',
+							borderRadius: '4px',
+							padding: '15px',
+							marginBottom: '20px',
+						}}
+					>
+						<Heading
+							as="h3"
+							style={{
+								fontSize: '16px',
+								marginTop: '0',
+								marginBottom: '15px',
+								color: '#333',
+							}}
+						>
+							Kontaktinformationen
+						</Heading>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>Name:</strong> {customer_name}
+						</Text>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>E-Mail:</strong> {customer_email}
+						</Text>
+						{customer_phone && (
+							<Text
+								style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}
+							>
+								<strong>Telefon:</strong> {customer_phone}
+							</Text>
+						)}
+					</Section>
 
-			<EmailInfoBox title="💬 Nachricht" variant="info">
-				<p style={{ margin: '8px 0', whiteSpace: 'pre-wrap' }}>
-					{customer_message}
-				</p>
-			</EmailInfoBox>
+					<Section
+						style={{
+							backgroundColor: '#f5f5f5',
+							border: '1px solid #ddd',
+							borderRadius: '4px',
+							padding: '15px',
+							marginBottom: '20px',
+						}}
+					>
+						<Heading
+							as="h3"
+							style={{
+								fontSize: '16px',
+								marginTop: '0',
+								marginBottom: '15px',
+								color: '#333',
+							}}
+						>
+							Nachricht
+						</Heading>
+						<Text
+							style={{
+								margin: '8px 0',
+								fontSize: '14px',
+								color: '#333',
+								whiteSpace: 'pre-wrap',
+							}}
+						>
+							{customer_message}
+						</Text>
+					</Section>
 
-			<EmailText>
-				Bitte antworten Sie dem Kunden zeitnah auf seine Anfrage.
-			</EmailText>
-		</EmailWrapper>
+					<Text style={{ fontSize: '14px', lineHeight: '1.6', color: '#333' }}>
+						Bitte antworten Sie dem Kunden zeitnah auf seine Anfrage.
+					</Text>
+				</Container>
+			</Body>
+		</Html>
 	);
 }
 

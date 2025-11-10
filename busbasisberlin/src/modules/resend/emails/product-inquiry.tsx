@@ -1,14 +1,17 @@
 /**
  * product-inquiry.tsx
  * Email template for product inquiry requests (Artikel auf Anfrage)
+ * Uses React Email components to ensure proper email client compatibility
  */
 
 import {
-	EmailWrapper,
-	EmailTitle,
-	EmailText,
-	EmailInfoBox,
-} from '../utils/email-wrapper';
+	Body,
+	Container,
+	Heading,
+	Html,
+	Section,
+	Text,
+} from '@react-email/components';
 
 interface ProductInquiryEmailProps {
 	product_title: string;
@@ -23,7 +26,7 @@ interface ProductInquiryEmailProps {
 	customer_message?: string;
 }
 
-// Main email component
+// Main email component using React Email components
 function ProductInquiryEmailComponent(props: ProductInquiryEmailProps) {
 	const {
 		product_title,
@@ -39,62 +42,138 @@ function ProductInquiryEmailComponent(props: ProductInquiryEmailProps) {
 	} = props;
 
 	return (
-		<EmailWrapper headerVariant="primary">
-			<EmailTitle>📦 Neue Anfrage für ein Artikel</EmailTitle>
+		<Html>
+			<Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#ffffff' }}>
+				<Container style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+					<Heading style={{ color: '#333', fontSize: '20px', marginBottom: '20px' }}>
+						Neue Anfrage für ein Artikel
+					</Heading>
 
-			<EmailText>
-				Es wurde eine neue Anfrage für einen Artikel auf Anfrage eingegangen.
-			</EmailText>
+					<Text
+						style={{
+							fontSize: '14px',
+							lineHeight: '1.6',
+							color: '#333',
+							marginBottom: '20px',
+						}}
+					>
+						Es wurde eine neue Anfrage für einen Artikel auf Anfrage eingegangen.
+					</Text>
 
-			<EmailInfoBox title="📋 Produktinformationen" variant="info">
-				<p style={{ margin: '8px 0' }}>
-					<strong>Produkt:</strong> {product_title}
-				</p>
-				<p style={{ margin: '8px 0' }}>
-					<strong>Produkt-ID:</strong> {product_id}
-				</p>
-				{product_handle && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Handle:</strong> {product_handle}
-					</p>
-				)}
-			</EmailInfoBox>
+					<Section
+						style={{
+							backgroundColor: '#f5f5f5',
+							border: '1px solid #ddd',
+							borderRadius: '4px',
+							padding: '15px',
+							marginBottom: '20px',
+						}}
+					>
+						<Heading
+							as="h3"
+							style={{
+								fontSize: '16px',
+								marginTop: '0',
+								marginBottom: '15px',
+								color: '#333',
+							}}
+						>
+							Produktinformationen
+						</Heading>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>Produkt:</strong> {product_title}
+						</Text>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>Produkt-ID:</strong> {product_id}
+						</Text>
+						{product_handle && (
+							<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+								<strong>Handle:</strong> {product_handle}
+							</Text>
+						)}
+					</Section>
 
-			<EmailInfoBox title="👤 Kundeninformationen" variant="info">
-				<p style={{ margin: '8px 0' }}>
-					<strong>Name:</strong> {customer_name}
-				</p>
-				<p style={{ margin: '8px 0' }}>
-					<strong>E-Mail:</strong> {customer_email}
-				</p>
-				{customer_phone && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Telefon:</strong> {customer_phone}
-					</p>
-				)}
-				{(customer_address || customer_city || customer_postal_code) && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Adresse:</strong>{' '}
-						{customer_address && `${customer_address}, `}
-						{customer_postal_code && `${customer_postal_code} `}
-						{customer_city}
-					</p>
-				)}
-			</EmailInfoBox>
+					<Section
+						style={{
+							backgroundColor: '#f5f5f5',
+							border: '1px solid #ddd',
+							borderRadius: '4px',
+							padding: '15px',
+							marginBottom: '20px',
+						}}
+					>
+						<Heading
+							as="h3"
+							style={{
+								fontSize: '16px',
+								marginTop: '0',
+								marginBottom: '15px',
+								color: '#333',
+							}}
+						>
+							Kundeninformationen
+						</Heading>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>Name:</strong> {customer_name}
+						</Text>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>E-Mail:</strong> {customer_email}
+						</Text>
+						{customer_phone && (
+							<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+								<strong>Telefon:</strong> {customer_phone}
+							</Text>
+						)}
+						{(customer_address || customer_city || customer_postal_code) && (
+							<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+								<strong>Adresse:</strong>{' '}
+								{customer_address && `${customer_address}, `}
+								{customer_postal_code && `${customer_postal_code} `}
+								{customer_city}
+							</Text>
+						)}
+					</Section>
 
-			{customer_message && (
-				<EmailInfoBox title="💬 Nachricht vom Kunden" variant="info">
-					<p style={{ margin: '8px 0', whiteSpace: 'pre-wrap' }}>
-						{customer_message}
-					</p>
-				</EmailInfoBox>
-			)}
+					{customer_message && (
+						<Section
+							style={{
+								backgroundColor: '#f5f5f5',
+								border: '1px solid #ddd',
+								borderRadius: '4px',
+								padding: '15px',
+								marginBottom: '20px',
+							}}
+						>
+							<Heading
+								as="h3"
+								style={{
+									fontSize: '16px',
+									marginTop: '0',
+									marginBottom: '15px',
+									color: '#333',
+								}}
+							>
+								Nachricht vom Kunden
+							</Heading>
+							<Text
+								style={{
+									margin: '8px 0',
+									fontSize: '14px',
+									color: '#333',
+									whiteSpace: 'pre-wrap',
+								}}
+							>
+								{customer_message}
+							</Text>
+						</Section>
+					)}
 
-			<EmailText>
-				Bitte kontaktieren Sie den Kunden zeitnah, um weitere Details zu
-				besprechen und ein individuelles Angebot zu erstellen.
-			</EmailText>
-		</EmailWrapper>
+					<Text style={{ fontSize: '14px', lineHeight: '1.6', color: '#333' }}>
+						Bitte kontaktieren Sie den Kunden zeitnah, um weitere Details zu besprechen und ein individuelles Angebot zu erstellen.
+					</Text>
+				</Container>
+			</Body>
+		</Html>
 	);
 }
 

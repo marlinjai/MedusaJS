@@ -1,14 +1,17 @@
 /**
  * quote-request.tsx
  * Email template for shipping quote requests (Sperrgut)
+ * Uses React Email components to ensure proper email client compatibility
  */
 
 import {
-	EmailInfoBox,
-	EmailText,
-	EmailTitle,
-	EmailWrapper,
-} from '../utils/email-wrapper';
+	Body,
+	Container,
+	Heading,
+	Html,
+	Section,
+	Text,
+} from '@react-email/components';
 
 interface QuoteRequestEmailProps {
 	product_title: string;
@@ -24,7 +27,7 @@ interface QuoteRequestEmailProps {
 	customer_message?: string;
 }
 
-// Main email component
+// Main email component using React Email components
 function QuoteRequestEmailComponent(props: QuoteRequestEmailProps) {
 	const {
 		product_title,
@@ -41,68 +44,159 @@ function QuoteRequestEmailComponent(props: QuoteRequestEmailProps) {
 	} = props;
 
 	return (
-		<EmailWrapper headerVariant="primary">
-			<EmailTitle>📦 Neue Versandkosten-Anfrage (Sperrgut)</EmailTitle>
+		<Html>
+			<Body
+				style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#ffffff' }}
+			>
+				<Container
+					style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}
+				>
+					<Heading
+						style={{ color: '#333', fontSize: '20px', marginBottom: '20px' }}
+					>
+						Neue Versandkosten-Anfrage (Sperrgut)
+					</Heading>
 
-			<EmailText>
-				Es wurde eine neue Anfrage für Versandkosten für ein Sperrgut-Produkt
-				eingegangen.
-			</EmailText>
+					<Text
+						style={{
+							fontSize: '14px',
+							lineHeight: '1.6',
+							color: '#333',
+							marginBottom: '20px',
+						}}
+					>
+						Es wurde eine neue Anfrage für Versandkosten für ein
+						Sperrgut-Produkt eingegangen.
+					</Text>
 
-			<EmailInfoBox title="📋 Produktinformationen" variant="info">
-				<p style={{ margin: '8px 0' }}>
-					<strong>Produkt:</strong> {product_title}
-				</p>
-				<p style={{ margin: '8px 0' }}>
-					<strong>Produkt-ID:</strong> {product_id}
-				</p>
-				{product_handle && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Handle:</strong> {product_handle}
-					</p>
-				)}
-				{variant_id && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Variante-ID:</strong> {variant_id}
-					</p>
-				)}
-			</EmailInfoBox>
+					<Section
+						style={{
+							backgroundColor: '#f5f5f5',
+							border: '1px solid #ddd',
+							borderRadius: '4px',
+							padding: '15px',
+							marginBottom: '20px',
+						}}
+					>
+						<Heading
+							as="h3"
+							style={{
+								fontSize: '16px',
+								marginTop: '0',
+								marginBottom: '15px',
+								color: '#333',
+							}}
+						>
+							Produktinformationen
+						</Heading>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>Produkt:</strong> {product_title}
+						</Text>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>Produkt-ID:</strong> {product_id}
+						</Text>
+						{product_handle && (
+							<Text
+								style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}
+							>
+								<strong>Handle:</strong> {product_handle}
+							</Text>
+						)}
+						{variant_id && (
+							<Text
+								style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}
+							>
+								<strong>Variante-ID:</strong> {variant_id}
+							</Text>
+						)}
+					</Section>
 
-			<EmailInfoBox title="👤 Kundeninformationen" variant="info">
-				<p style={{ margin: '8px 0' }}>
-					<strong>Name:</strong> {customer_name}
-				</p>
-				<p style={{ margin: '8px 0' }}>
-					<strong>E-Mail:</strong> {customer_email}
-				</p>
-				{customer_phone && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Telefon:</strong> {customer_phone}
-					</p>
-				)}
-				{(customer_address || customer_city || customer_postal_code) && (
-					<p style={{ margin: '8px 0' }}>
-						<strong>Lieferadresse:</strong>{' '}
-						{customer_address && `${customer_address}, `}
-						{customer_postal_code && `${customer_postal_code} `}
-						{customer_city}
-					</p>
-				)}
-			</EmailInfoBox>
+					<Section
+						style={{
+							backgroundColor: '#f5f5f5',
+							border: '1px solid #ddd',
+							borderRadius: '4px',
+							padding: '15px',
+							marginBottom: '20px',
+						}}
+					>
+						<Heading
+							as="h3"
+							style={{
+								fontSize: '16px',
+								marginTop: '0',
+								marginBottom: '15px',
+								color: '#333',
+							}}
+						>
+							Kundeninformationen
+						</Heading>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>Name:</strong> {customer_name}
+						</Text>
+						<Text style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}>
+							<strong>E-Mail:</strong> {customer_email}
+						</Text>
+						{customer_phone && (
+							<Text
+								style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}
+							>
+								<strong>Telefon:</strong> {customer_phone}
+							</Text>
+						)}
+						{(customer_address || customer_city || customer_postal_code) && (
+							<Text
+								style={{ margin: '8px 0', fontSize: '14px', color: '#333' }}
+							>
+								<strong>Lieferadresse:</strong>{' '}
+								{customer_address && `${customer_address}, `}
+								{customer_postal_code && `${customer_postal_code} `}
+								{customer_city}
+							</Text>
+						)}
+					</Section>
 
-			{customer_message && (
-				<EmailInfoBox title="💬 Nachricht vom Kunden" variant="info">
-					<p style={{ margin: '8px 0', whiteSpace: 'pre-wrap' }}>
-						{customer_message}
-					</p>
-				</EmailInfoBox>
-			)}
+					{customer_message && (
+						<Section
+							style={{
+								backgroundColor: '#f5f5f5',
+								border: '1px solid #ddd',
+								borderRadius: '4px',
+								padding: '15px',
+								marginBottom: '20px',
+							}}
+						>
+							<Heading
+								as="h3"
+								style={{
+									fontSize: '16px',
+									marginTop: '0',
+									marginBottom: '15px',
+									color: '#333',
+								}}
+							>
+								Nachricht vom Kunden
+							</Heading>
+							<Text
+								style={{
+									margin: '8px 0',
+									fontSize: '14px',
+									color: '#333',
+									whiteSpace: 'pre-wrap',
+								}}
+							>
+								{customer_message}
+							</Text>
+						</Section>
+					)}
 
-			<EmailText>
-				Bitte berechnen Sie die Versandkosten für dieses Sperrgut-Produkt und
-				kontaktieren Sie den Kunden zeitnah mit einem Versandangebot.
-			</EmailText>
-		</EmailWrapper>
+					<Text style={{ fontSize: '14px', lineHeight: '1.6', color: '#333' }}>
+						Bitte berechnen Sie die Versandkosten für dieses Sperrgut-Produkt
+						und kontaktieren Sie den Kunden zeitnah mit einem Versandangebot.
+					</Text>
+				</Container>
+			</Body>
+		</Html>
 	);
 }
 

@@ -50,29 +50,16 @@ export const EmailWrapper = ({
 					borderBottom: `3px solid ${headerStyles.borderColor}`,
 				}}
 			>
-				{company.logoUrl ? (
-					<img
-						src={company.logoUrl}
-						alt={company.name}
-						style={{
-							maxHeight: '60px',
-							maxWidth: '250px',
-							display: 'block',
-							margin: '0 auto',
-						}}
-					/>
-				) : (
-					<h1
-						style={{
-							color: '#ffffff',
-							margin: '0',
-							fontSize: '28px',
-							fontWeight: 'bold',
-						}}
-					>
-						{company.name}
-					</h1>
-				)}
+				<h1
+					style={{
+						color: '#ffffff',
+						margin: '0',
+						fontSize: '28px',
+						fontWeight: 'bold',
+					}}
+				>
+					{company.name}
+				</h1>
 			</div>
 
 			{/* Main Content Area */}
@@ -116,21 +103,6 @@ export const EmailWrapper = ({
 						</>
 					)}
 					📞 Telefon auf Anfrage per E-Mail
-					<br />
-					{company.website && (
-						<>
-							🌐{' '}
-							<a
-								href={company.website}
-								style={{
-									color: company.primaryColor,
-									textDecoration: 'none',
-								}}
-							>
-								{company.website.replace('https://', '').replace('http://', '')}
-							</a>
-						</>
-					)}
 				</p>
 				<p
 					style={{
