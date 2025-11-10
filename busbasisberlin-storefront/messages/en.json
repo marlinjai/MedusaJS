@@ -222,6 +222,10 @@
 			"welcome": "Hello",
 			"recentOrders": "Recent Orders",
 			"noOrders": "No orders yet",
+			"datePlaced": "Date placed",
+			"orderNumber": "Order number",
+			"totalAmount": "Total amount",
+			"goToOrder": "Go to order #{orderNumber}",
 			"viewAll": "View all orders"
 		},
 		"profile": {

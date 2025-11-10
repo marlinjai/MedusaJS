@@ -257,7 +257,11 @@
 			"saved": "Gespeichert",
 			"recentOrders": "Letzte Bestellungen",
 			"noOrders": "Noch keine Bestellungen",
-			"viewAll": "Alle Bestellungen anzeigen"
+			"viewAll": "Alle Bestellungen anzeigen",
+			"datePlaced": "Bestelldatum",
+			"orderNumber": "Bestellnummer",
+			"totalAmount": "Gesamtbetrag",
+			"goToOrder": "Zur Bestellung #{orderNumber} gehen"
 		},
 		"profile": {
 			"title": "Profil",
