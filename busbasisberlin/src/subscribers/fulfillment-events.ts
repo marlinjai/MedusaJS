@@ -52,6 +52,15 @@ export async function handleFulfillmentCreated({
 		}
 
 		const order = fulfillment.order;
+
+		// Validate email exists
+		if (!order.email) {
+			logger.warn(
+				`[FULFILLMENT-SUBSCRIBER] Order ${order.id} has no email, skipping notification`,
+			);
+			return;
+		}
+
 		const customerName = order.customer
 			? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
 			: undefined;
@@ -62,6 +71,9 @@ export async function handleFulfillmentCreated({
 		const carrier = fulfillment.metadata?.carrier;
 		const estimatedDelivery = fulfillment.metadata?.estimated_delivery;
 
+		// Get display_id from order (may be null, use order.id as fallback)
+		const orderDisplayId = (order as any).display_id || order.id;
+
 		// Send shipping confirmation email
 		const notificationModuleService = container.resolve(Modules.NOTIFICATION);
 		await notificationModuleService.createNotifications({
@@ -69,7 +81,7 @@ export async function handleFulfillmentCreated({
 			channel: 'email',
 			template: 'order-shipped',
 			data: {
-				order_display_id: order.display_id,
+				order_display_id: String(orderDisplayId),
 				customer_name: customerName,
 				customer_email: order.email,
 				tracking_number: trackingNumber,
@@ -80,7 +92,7 @@ export async function handleFulfillmentCreated({
 		});
 
 		logger.info(
-			`[FULFILLMENT-SUBSCRIBER] Shipped email sent for order #${order.display_id}`,
+			`[FULFILLMENT-SUBSCRIBER] Shipped email sent for order #${orderDisplayId}`,
 		);
 	} catch (error) {
 		logger.error(
@@ -133,6 +145,15 @@ export async function handleFulfillmentDelivered({
 		}
 
 		const order = fulfillment.order;
+
+		// Validate email exists
+		if (!order.email) {
+			logger.warn(
+				`[FULFILLMENT-SUBSCRIBER] Order ${order.id} has no email, skipping notification`,
+			);
+			return;
+		}
+
 		const customerName = order.customer
 			? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
 			: undefined;
@@ -148,6 +169,9 @@ export async function handleFulfillmentDelivered({
 			  })
 			: undefined;
 
+		// Get display_id from order (may be null, use order.id as fallback)
+		const orderDisplayId = (order as any).display_id || order.id;
+
 		// Send delivery confirmation email
 		const notificationModuleService = container.resolve(Modules.NOTIFICATION);
 		await notificationModuleService.createNotifications({
@@ -155,7 +179,7 @@ export async function handleFulfillmentDelivered({
 			channel: 'email',
 			template: 'order-delivered',
 			data: {
-				order_display_id: order.display_id,
+				order_display_id: String(orderDisplayId),
 				customer_name: customerName,
 				customer_email: order.email,
 				delivery_date: deliveryDate,
@@ -163,7 +187,7 @@ export async function handleFulfillmentDelivered({
 		});
 
 		logger.info(
-			`[FULFILLMENT-SUBSCRIBER] Delivered email sent for order #${order.display_id}`,
+			`[FULFILLMENT-SUBSCRIBER] Delivered email sent for order #${orderDisplayId}`,
 		);
 	} catch (error) {
 		logger.error(

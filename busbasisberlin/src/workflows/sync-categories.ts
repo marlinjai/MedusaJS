@@ -47,10 +47,12 @@ export const syncCategoriesWorkflow = createWorkflow(
 			filters: filters || {},
 		});
 
+		// @ts-ignore - Type conversion needed for workflow data
 		syncCategoriesStep({
 			categories: data,
 		} as SyncCategoriesStepInput);
 
+		// @ts-ignore - Type conversion needed for workflow response
 		return new WorkflowResponse({
 			categories: data,
 			metadata,

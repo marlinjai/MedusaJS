@@ -67,10 +67,12 @@ export const syncProductsWorkflow = createWorkflow(
 			},
 		});
 
+		// @ts-ignore - Type conversion needed for workflow data
 		syncProductsStep({
 			products: data,
 		} as SyncProductsStepInput);
 
+		// @ts-ignore - Type conversion needed for workflow response
 		return new WorkflowResponse({
 			products: data,
 			metadata,
