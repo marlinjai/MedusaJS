@@ -285,3 +285,9 @@ Bei Fragen oder Problemen:
 - Dokumentation prüfen
 - Browser-Konsole checken
 - API-Response testen
+
+
+
+
+
+

@@ -18,9 +18,21 @@ type HeroAlert = {
 	text: string;
 };
 
+type FAQ = {
+	enabled: boolean;
+	items: Array<{ question: string; answer: string }>;
+};
+
+type SearchSettings = {
+	enabled: boolean;
+	sort_order: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'relevance';
+};
+
 type StoreSettingsResponse = {
 	announcement_banner: AnnouncementBanner;
 	hero_alert: HeroAlert;
+	faq: FAQ;
+	search: SearchSettings;
 };
 
 export const GET = async (
@@ -51,6 +63,20 @@ export const GET = async (
 			JSON.stringify(metadata, null, 2),
 		);
 
+		// Parse FAQs from metadata (stored as JSON string or array)
+		let faqs: Array<{ question: string; answer: string }> = [];
+		if (metadata.faqs) {
+			try {
+				faqs =
+					typeof metadata.faqs === 'string'
+						? JSON.parse(metadata.faqs)
+						: (metadata.faqs as Array<{ question: string; answer: string }>);
+			} catch (e) {
+				console.error('[STORE-SETTINGS] Failed to parse FAQs:', e);
+				faqs = [];
+			}
+		}
+
 		// Prepare response with default values if metadata is not set
 		const settings: StoreSettingsResponse = {
 			announcement_banner: {
@@ -67,6 +93,16 @@ export const GET = async (
 			hero_alert: {
 				enabled: metadata.hero_alert_enabled === true,
 				text: (metadata.hero_alert_text as string) || '',
+			},
+			faq: {
+				enabled: metadata.faq_enabled === true,
+				items: faqs || [],
+			},
+			search: {
+				enabled: metadata.search_enabled !== false, // Default to true
+				sort_order:
+					(metadata.search_sort_order as SearchSettings['sort_order']) ||
+					'price_asc',
 			},
 		};
 
