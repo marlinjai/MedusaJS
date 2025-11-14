@@ -67,7 +67,6 @@ export function generateVariantsFromOptions(
 			sku: '',
 			manage_inventory: false,
 			allow_backorder: false,
-			with_inventory_set: false,
 			price_eur: 0,
 			price_europe: 0,
 			enabled: true, // Default to enabled

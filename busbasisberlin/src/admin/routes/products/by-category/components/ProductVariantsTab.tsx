@@ -28,7 +28,6 @@ const variantColumns = [
 	{ key: 'sku', label: 'Artikelnummer', width: 200 },
 	{ key: 'manage_inventory', label: 'Verwalteter Bestand', width: 120 },
 	{ key: 'allow_backorder', label: 'Rückstand zulassen', width: 120 },
-	{ key: 'with_inventory_set', label: 'Mit Inventarset', width: 120 },
 	{ key: 'price_eur', label: 'Preis EUR', width: 150 },
 	{ key: 'price_europe', label: 'Preis Europe', width: 150 },
 ];
@@ -167,7 +166,6 @@ const ProductVariantsTab = ({
 				return 150;
 			case 'manage_inventory':
 			case 'allow_backorder':
-			case 'with_inventory_set':
 				return 120;
 			case 'price_eur':
 			case 'price_europe':
@@ -206,7 +204,6 @@ const ProductVariantsTab = ({
 			sku: '',
 			manage_inventory: false,
 			allow_backorder: false,
-			with_inventory_set: false,
 			price_eur: 0,
 			price_europe: 0,
 			enabled: true,
@@ -571,15 +568,6 @@ function renderCellContent(
 					checked={variant.allow_backorder || false}
 					onCheckedChange={checked =>
 						updateVariant(index, 'allow_backorder', checked)
-					}
-				/>
-			);
-		case 'with_inventory_set':
-			return (
-				<Checkbox
-					checked={variant.with_inventory_set || false}
-					onCheckedChange={checked =>
-						updateVariant(index, 'with_inventory_set', checked)
 					}
 				/>
 			);

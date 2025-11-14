@@ -3,7 +3,7 @@
 
 import { Button, Input, Label, Text } from '@medusajs/ui';
 import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ProductOption } from './ProductEditorModal';
 
 interface ProductOptionsSectionProps {
@@ -16,6 +16,13 @@ const ProductOptionsSection = ({
 	onChange,
 }: ProductOptionsSectionProps) => {
 	const [localOptions, setLocalOptions] = useState<ProductOption[]>(options);
+	// Track input values separately to avoid overwriting while typing
+	const [inputValues, setInputValues] = useState<Record<number, string>>({});
+
+	// Sync localOptions when options prop changes
+	useEffect(() => {
+		setLocalOptions(options);
+	}, [options]);
 
 	const updateOptions = (newOptions: ProductOption[]) => {
 		setLocalOptions(newOptions);
@@ -43,29 +50,47 @@ const ProductOptionsSection = ({
 		updateOptions(newOptions);
 	};
 
-	const updateOptionValues = (index: number, valuesString: string) => {
-		// Parse comma-separated values
-		const values = valuesString
-			.split(',')
-			.map(v => v.trim())
-			.filter(v => v.length > 0);
-
-		const newOptions = [...localOptions];
-		newOptions[index] = {
-			...newOptions[index],
-			values,
-		};
-		updateOptions(newOptions);
+	const updateInputValue = (index: number, value: string) => {
+		// Just update the input state, don't parse yet
+		setInputValues(prev => ({ ...prev, [index]: value }));
 	};
 
-	const addValueToOption = (optionIndex: number, value: string) => {
-		if (!value.trim()) return;
+	const addValueToOption = (optionIndex: number, value?: string) => {
+		// Use provided value or get from input state
+		const valueToAdd = value || inputValues[optionIndex] || '';
+		if (!valueToAdd.trim()) return;
 
+		const trimmedValue = valueToAdd.trim();
 		const newOptions = [...localOptions];
 		const option = newOptions[optionIndex];
-		if (!option.values.includes(value.trim())) {
-			option.values = [...option.values, value.trim()];
+
+		// Check if value already exists
+		if (!option.values.includes(trimmedValue)) {
+			option.values = [...option.values, trimmedValue];
 			updateOptions(newOptions);
+		}
+
+		// Clear the input for this option
+		setInputValues(prev => {
+			const newInputValues = { ...prev };
+			delete newInputValues[optionIndex];
+			return newInputValues;
+		});
+	};
+
+	const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			addValueToOption(index);
+		} else if (e.key === ',') {
+			// When comma is pressed, add the value before the comma
+			e.preventDefault();
+			const input = e.target as HTMLInputElement;
+			const value = input.value;
+			const beforeComma = value.substring(0, value.length - 1).trim();
+			if (beforeComma) {
+				addValueToOption(index, beforeComma);
+			}
 		}
 	};
 
@@ -127,22 +152,10 @@ const ProductOptionsSection = ({
 										<div className="space-y-2">
 											<Input
 												id={`option-values-${index}`}
-												value={option.values.join(', ')}
-												onChange={e =>
-													updateOptionValues(index, e.target.value)
-												}
-												onKeyDown={e => {
-													if (e.key === 'Enter') {
-														e.preventDefault();
-														const input = e.target as HTMLInputElement;
-														const value = input.value.trim();
-														if (value) {
-															addValueToOption(index, value);
-															input.value = '';
-														}
-													}
-												}}
-												placeholder="Rot, Blau, Grün"
+												value={inputValues[index] ?? ''}
+												onChange={e => updateInputValue(index, e.target.value)}
+												onKeyDown={e => handleInputKeyDown(e, index)}
+												placeholder="Rot, Blau, Grün (Enter oder Komma zum Hinzufügen)"
 												size="small"
 											/>
 											{option.values.length > 0 && (

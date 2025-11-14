@@ -6,7 +6,10 @@ import {
 	ContainerRegistrationKeys,
 	Modules,
 } from '@medusajs/framework/utils';
-import { createProductsWorkflow } from '@medusajs/medusa/core-flows';
+import {
+	createProductsWorkflow,
+	updateProductsWorkflow,
+} from '@medusajs/medusa/core-flows';
 
 export const POST = async (
 	req: MedusaRequest,
@@ -74,16 +77,11 @@ export const POST = async (
 		}
 
 		// Add optional fields
-		if (type_id) {
-			productData.type_id = type_id;
-		}
+		// Note: type_id and shipping_profile_id are set after product creation
+		// to avoid workflow conflicts
 
 		if (collection_id) {
 			productData.collection_id = collection_id;
-		}
-
-		if (shipping_profile_id) {
-			productData.shipping_profile_id = shipping_profile_id;
 		}
 
 		// Convert category_ids to correct format for workflow: categories: [{id: string}]
@@ -152,10 +150,12 @@ export const POST = async (
 				if (variant.option_values && variant.option_values.length > 0) {
 					options.forEach((option: any, optionIndex: number) => {
 						const value = variant.option_values[optionIndex];
-						if (value && option.values.includes(value)) {
+						// Ensure value is a string, not an object
+						const valueStr = typeof value === 'string' ? value : String(value || '');
+						if (valueStr && option.values && option.values.includes(valueStr)) {
 							variantOptions.push({
 								option_id: option.title, // Medusa will match by title during creation
-								value: value,
+								value: valueStr,
 							});
 						}
 					});
@@ -166,9 +166,6 @@ export const POST = async (
 					sku: variant.sku || undefined,
 					manage_inventory: variant.manage_inventory || false,
 					allow_backorder: variant.allow_backorder || false,
-					metadata: {
-						with_inventory_set: variant.with_inventory_set || false,
-					},
 					options: variantOptions,
 					prices: [
 						...(variant.price_eur
@@ -197,9 +194,6 @@ export const POST = async (
 				sku: variant.sku || undefined,
 				manage_inventory: variant.manage_inventory || false,
 				allow_backorder: variant.allow_backorder || false,
-				metadata: {
-					with_inventory_set: variant.with_inventory_set || false,
-				},
 				prices: [
 					...(variant.price_eur
 						? [
@@ -258,6 +252,46 @@ export const POST = async (
 						add: [createdProduct.id],
 					},
 				});
+			}
+		}
+
+		// Set product type after creation (multi-step workflow)
+		if (type_id) {
+			try {
+				await updateProductsWorkflow(req.scope).run({
+					input: {
+						products: [
+							{
+								id: createdProduct.id,
+								type_id: type_id,
+							},
+						],
+					},
+				});
+				logger.info(`[PRODUCT-CREATE] Product type set: ${type_id}`);
+			} catch (error) {
+				logger.error('[PRODUCT-CREATE] Error setting product type:', error);
+				// Don't fail the entire request if type setting fails
+			}
+		}
+
+		// Set shipping profile after creation (multi-step workflow)
+		if (shipping_profile_id) {
+			try {
+				await updateProductsWorkflow(req.scope).run({
+					input: {
+						products: [
+							{
+								id: createdProduct.id,
+								shipping_profile_id: shipping_profile_id,
+							},
+						],
+					},
+				});
+				logger.info(`[PRODUCT-CREATE] Shipping profile set: ${shipping_profile_id}`);
+			} catch (error) {
+				logger.error('[PRODUCT-CREATE] Error setting shipping profile:', error);
+				// Don't fail the entire request if shipping profile setting fails
 			}
 		}
 

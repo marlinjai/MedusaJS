@@ -137,7 +137,7 @@ const ProductEditorModal = ({
 
 	return (
 		<FocusModal open={open} onOpenChange={onOpenChange}>
-			<FocusModal.Content className="max-w-6xl max-h-[90vh]">
+			<FocusModal.Content className="max-w-[95vw] w-full max-h-[95vh] h-full m-auto">
 				<FocusModal.Header>
 					<Heading level="h1" className="text-2xl font-bold">
 						{product ? 'Produkt bearbeiten' : 'Neues Produkt'}
