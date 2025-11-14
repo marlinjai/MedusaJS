@@ -25,6 +25,9 @@ export const sendOrderConfirmationWorkflow = createWorkflow(
 				'shipping_address.*',
 				'billing_address.*',
 				'shipping_methods.*',
+				'shipping_methods.shipping_option.*',
+				'payment_collections.*',
+				'payment_collections.payments.*',
 				'customer.*',
 				'total',
 				'subtotal',
@@ -40,13 +43,26 @@ export const sendOrderConfirmationWorkflow = createWorkflow(
 			},
 		});
 
-		const email = orders[0]?.email ?? '';
+		const order = orders[0];
+		const email = order?.email ?? '';
+
+		// Check if this is a pickup order with manual payment
+		const shippingMethod = order?.shipping_methods?.[0];
+		const shippingOptionName = shippingMethod?.shipping_option?.name?.toLowerCase() || '';
+		const isPickupOrder = shippingOptionName.includes('abholung') || shippingOptionName.includes('pickup');
+
+		const payment = order?.payment_collections?.[0]?.payments?.[0];
+		const isManualPayment = payment?.provider_id === 'pp_system' || payment?.provider_id === 'pp_system_default';
+
+		// Use pickup template if both conditions are met
+		const template = (isPickupOrder && isManualPayment) ? 'order-placed-pickup' : 'order-placed';
+
 		const notification = sendNotificationStep([
 			{
 				to: email,
 				channel: 'email',
-				template: 'order-placed',
-				data: { order: orders[0] },
+				template: template,
+				data: { order: order },
 			},
 		]);
 

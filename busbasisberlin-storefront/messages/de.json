@@ -455,13 +455,22 @@
 			"title": "Lieferung",
 			"shippingAddress": "Lieferadresse",
 			"contact": "Kontakt",
-			"method": "Versandart"
+			"method": "Versandart",
+			"pickupLocation": "Abholort",
+			"pickupAddress": "Hauptstraße 51, 16547 Birkenwerder",
+			"pickupInstructions": "Bitte vereinbaren Sie über unser Kontaktformular einen Termin zur Abholung.",
+			"contactViaEmail": "Kontakt per E-Mail"
 		},
 		"payment": {
 			"title": "Zahlung",
 			"paymentMethod": "Zahlungsart",
 			"paymentDetails": "Zahlungsdetails",
-			"paidAt": "bezahlt am"
+			"paidAt": "bezahlt am",
+			"pickupPayment": {
+				"title": "Barzahlung bei Abholung",
+				"message": "Die Zahlung erfolgt bar bei Abholung. Bitte bringen Sie den Gesamtbetrag in bar mit.",
+				"amount": "Zu zahlender Betrag"
+			}
 		},
 		"help": {
 			"title": "Benötigen Sie Hilfe?",

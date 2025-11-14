@@ -18,6 +18,7 @@ import { offerCompletedEmail } from './emails/offer-completed';
 import { orderCancelledEmail } from './emails/order-cancelled';
 import { orderDeliveredEmail } from './emails/order-delivered';
 import { orderPlacedEmail } from './emails/order-placed';
+import { orderPlacedPickupEmail } from './emails/order-placed-pickup';
 import { orderShippedEmail } from './emails/order-shipped';
 import { productInquiryEmail } from './emails/product-inquiry';
 import { quoteRequestEmail } from './emails/quote-request';
@@ -42,6 +43,7 @@ type InjectedDependencies = {
 
 enum Templates {
 	ORDER_PLACED = 'order-placed',
+	ORDER_PLACED_PICKUP = 'order-placed-pickup',
 	ORDER_SHIPPED = 'order-shipped',
 	ORDER_DELIVERED = 'order-delivered',
 	ORDER_CANCELLED = 'order-cancelled',
@@ -72,6 +74,7 @@ const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } =
 	{
 		// Order templates
 		[Templates.ORDER_PLACED]: orderPlacedEmail,
+		[Templates.ORDER_PLACED_PICKUP]: orderPlacedPickupEmail,
 		[Templates.ORDER_SHIPPED]: orderShippedEmail,
 		[Templates.ORDER_DELIVERED]: orderDeliveredEmail,
 		[Templates.ORDER_CANCELLED]: orderCancelledEmail,
@@ -144,6 +147,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 			// Order templates
 			case Templates.ORDER_PLACED:
 				return 'Bestellbestätigung';
+			case Templates.ORDER_PLACED_PICKUP:
+				return 'Bestellbestätigung - Abholung am Lager';
 			case Templates.ORDER_SHIPPED:
 				return 'Ihre Bestellung wurde versandt';
 			case Templates.ORDER_DELIVERED:
