@@ -1,0 +1,559 @@
+// busbasisberlin/src/admin/routes/products/by-category/components/ProductTable.tsx
+// Product table component with draggable column widths and inline editing
+
+import { Badge, Button, Checkbox, Input, Select, Table, Text, toast } from '@medusajs/ui';
+import { Edit } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+
+type Product = {
+	id: string;
+	title: string;
+	handle: string;
+	status: 'published' | 'draft';
+	sales_channels?: Array<{ id: string; name: string }>;
+	categories?: Array<{ id: string; name: string }>;
+	collection?: { id: string; title: string };
+	variants?: Array<{ id: string; sku: string }>;
+};
+
+interface ProductTableProps {
+	products: Product[];
+	onEdit?: (product: Product) => void;
+	onUpdate?: (productId: string, updates: Partial<Product>) => Promise<any>;
+	isLoading: boolean;
+	rowSelection?: Record<string, boolean>;
+	onRowSelectionChange?: (selection: Record<string, boolean>) => void;
+}
+
+interface EditableCell {
+	productId: string;
+	field: string;
+}
+
+// Column configuration
+const columns = [
+	{
+		key: 'select',
+		label: '',
+		width: 50,
+	},
+	{
+		key: 'title',
+		label: 'Titel',
+		width: 300,
+	},
+	{
+		key: 'status',
+		label: 'Status',
+		width: 120,
+	},
+	{
+		key: 'collection',
+		label: 'Sammlung',
+		width: 200,
+	},
+	{
+		key: 'sales_channels',
+		label: 'Vertriebskanäle',
+		width: 200,
+	},
+	{
+		key: 'variants',
+		label: 'Artikelnummern',
+		width: 250,
+	},
+	{
+		key: 'actions',
+		label: 'Aktionen',
+		width: 100,
+	},
+];
+
+const STORAGE_KEY = 'products-by-category-column-widths';
+
+const ProductTable = ({
+	products,
+	onEdit,
+	onUpdate,
+	isLoading,
+	rowSelection = {},
+	onRowSelectionChange,
+}: ProductTableProps) => {
+	// Inline editing state
+	const [editingCell, setEditingCell] = useState<EditableCell | null>(null);
+	const [tempValues, setTempValues] = useState<Record<string, any>>({});
+	const editInputRef = useRef<HTMLInputElement>(null);
+
+	// Load column widths from localStorage or use defaults
+	const loadColumnWidths = () => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				// Merge with defaults to ensure all columns exist
+				const widths: { [key: string]: number } = {};
+				columns.forEach(col => {
+					widths[col.key] = parsed[col.key] || col.width;
+				});
+				return widths;
+			} catch (e) {
+				// If parsing fails, use defaults
+			}
+		}
+		// Default widths
+		const widths: { [key: string]: number } = {};
+		columns.forEach(col => {
+			widths[col.key] = col.width;
+		});
+		return widths;
+	};
+
+	const [columnWidths, setColumnWidths] = useState<{ [key: string]: number }>(
+		loadColumnWidths,
+	);
+	const [isResizing, setIsResizing] = useState<string | null>(null);
+	const tableRef = useRef<HTMLTableElement>(null);
+
+	// Save column widths to localStorage
+	useEffect(() => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(columnWidths));
+	}, [columnWidths]);
+
+	// Focus on edit input when editing starts
+	useEffect(() => {
+		if (editingCell && editInputRef.current) {
+			editInputRef.current.focus();
+			editInputRef.current.select();
+		}
+	}, [editingCell]);
+
+	// Start editing a cell
+	const startEditing = (productId: string, field: string, currentValue: any) => {
+		setEditingCell({ productId, field });
+		setTempValues({
+			...tempValues,
+			[`${productId}-${field}`]: currentValue,
+		});
+	};
+
+	// Save edited value
+	const saveEdit = async () => {
+		if (!editingCell || !onUpdate) return;
+
+		const key = `${editingCell.productId}-${editingCell.field}`;
+		const newValue = tempValues[key];
+
+		// Don't save if value hasn't changed
+		const currentValue = products.find(p => p.id === editingCell.productId)?.[editingCell.field as keyof Product];
+		if (newValue === currentValue) {
+			setEditingCell(null);
+			return;
+		}
+
+		try {
+			await onUpdate(editingCell.productId, {
+				[editingCell.field]: newValue,
+			} as Partial<Product>);
+			toast.success('Produkt erfolgreich aktualisiert');
+			setEditingCell(null);
+		} catch (error) {
+			toast.error('Fehler beim Aktualisieren des Produkts');
+			console.error('Error updating product:', error);
+			// Keep editing state on error so user can retry
+		}
+	};
+
+	// Cancel editing
+	const cancelEdit = () => {
+		setEditingCell(null);
+		setTempValues({});
+	};
+
+	// Calculate total table width
+	const totalTableWidth = Object.values(columnWidths).reduce(
+		(sum, width) => sum + width,
+		0,
+	);
+
+	// Handle column resize
+	const handleMouseDown = (e: React.MouseEvent, columnKey: string) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		setIsResizing(columnKey);
+
+		const startX = e.clientX;
+		const startWidth = columnWidths[columnKey];
+
+		const handleMouseMove = (e: MouseEvent) => {
+			const diff = e.clientX - startX;
+			const minWidth = getMinimumWidth(columnKey);
+			const newWidth = Math.max(minWidth, startWidth + diff);
+			setColumnWidths(prev => ({ ...prev, [columnKey]: newWidth }));
+		};
+
+		const handleMouseUp = () => {
+			setIsResizing(null);
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+	};
+
+	// Get minimum width for each column type
+	const getMinimumWidth = (columnKey: string) => {
+		switch (columnKey) {
+			case 'status':
+				return 80;
+			case 'actions':
+				return 80;
+			case 'title':
+				return 150;
+			default:
+				return 100;
+		}
+	};
+
+	// Handle row selection
+	const handleSelectRow = (productId: string, checked: boolean) => {
+		if (!onRowSelectionChange) return;
+		const newSelection = { ...rowSelection };
+		if (checked) {
+			newSelection[productId] = true;
+		} else {
+			delete newSelection[productId];
+		}
+		onRowSelectionChange(newSelection);
+	};
+
+	// Handle select all
+	const handleSelectAll = (checked: boolean) => {
+		if (!onRowSelectionChange) return;
+		if (checked) {
+			const newSelection: Record<string, boolean> = {};
+			products.forEach(product => {
+				newSelection[product.id] = true;
+			});
+			onRowSelectionChange(newSelection);
+		} else {
+			onRowSelectionChange({});
+		}
+	};
+
+	const allSelected = products.length > 0 && products.every(p => rowSelection[p.id]);
+	const someSelected = products.some(p => rowSelection[p.id]);
+
+	// Render cell content with inline editing support
+	const renderCellContent = (product: Product, columnKey: string) => {
+		const isEditing =
+			editingCell?.productId === product.id && editingCell?.field === columnKey;
+		const key = `${product.id}-${columnKey}`;
+
+		switch (columnKey) {
+			case 'select':
+				return (
+					<div className="flex items-center justify-center">
+						<Checkbox
+							checked={!!rowSelection[product.id]}
+							onCheckedChange={checked =>
+								handleSelectRow(product.id, checked as boolean)
+							}
+							onClick={e => e.stopPropagation()}
+						/>
+					</div>
+				);
+			case 'title':
+				if (isEditing && onUpdate) {
+					return (
+						<Input
+							ref={editInputRef}
+							value={tempValues[key] || product.title || ''}
+							onChange={e =>
+								setTempValues({ ...tempValues, [key]: e.target.value })
+							}
+							onBlur={saveEdit}
+							onKeyDown={e => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									saveEdit();
+								} else if (e.key === 'Escape') {
+									cancelEdit();
+								}
+							}}
+							className="text-sm border-none bg-transparent focus:bg-ui-bg-field focus:border-ui-border-base h-7 px-2"
+							onClick={e => e.stopPropagation()}
+							onMouseDown={e => e.stopPropagation()}
+						/>
+					);
+				}
+				return (
+					<div
+						className="cursor-pointer hover:bg-ui-bg-subtle px-1 py-0.5 rounded h-7 flex items-center w-full"
+						onClick={e => {
+							e.stopPropagation();
+							if (onUpdate) {
+								startEditing(product.id, 'title', product.title);
+							}
+						}}
+					>
+						<Text
+							className="font-medium truncate"
+							title={product.title}
+							size="small"
+						>
+							{product.title}
+						</Text>
+					</div>
+				);
+			case 'status':
+				if (isEditing && onUpdate) {
+					const currentStatus = tempValues[key] || product.status;
+					const isPublished = currentStatus === 'published';
+					return (
+						<Select
+							value={currentStatus}
+							onValueChange={async value => {
+								setTempValues({ ...tempValues, [key]: value });
+								try {
+									await onUpdate(product.id, { status: value as 'published' | 'draft' });
+									setEditingCell(null);
+								} catch (error) {
+									console.error('Error updating status:', error);
+								}
+							}}
+							onOpenChange={open => {
+								if (!open && editingCell) {
+									setEditingCell(null);
+								}
+							}}
+						>
+						<Select.Trigger className="h-auto border-none bg-transparent shadow-none p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 w-auto">
+							<div
+								className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+									isPublished
+										? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+										: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+								}`}
+							>
+								{isPublished ? 'Veröffentlicht' : 'Entwurf'}
+							</div>
+						</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="published">Veröffentlicht</Select.Item>
+								<Select.Item value="draft">Entwurf</Select.Item>
+							</Select.Content>
+						</Select>
+					);
+				}
+				// Notion-style status pill
+				const isPublished = product.status === 'published';
+				return (
+					<div
+						className="cursor-pointer group"
+						onClick={e => {
+							e.stopPropagation();
+							if (onUpdate) {
+								startEditing(product.id, 'status', product.status);
+							}
+						}}
+					>
+						<div
+							className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+								isPublished
+									? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+									: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+							} group-hover:opacity-80`}
+						>
+							{isPublished ? 'Veröffentlicht' : 'Entwurf'}
+						</div>
+					</div>
+				);
+			case 'collection':
+				if (isEditing && onUpdate) {
+					// For now, collection editing would need a dropdown - skip inline editing for this
+					return (
+						<Text size="small" className="truncate" title={product.collection?.title}>
+							{product.collection?.title || '-'}
+						</Text>
+					);
+				}
+				return (
+					<div
+						className="cursor-pointer hover:bg-ui-bg-subtle px-1 py-0.5 rounded h-7 flex items-center w-full"
+						onClick={() => onEdit && onEdit(product)}
+					>
+						<Text size="small" className="truncate" title={product.collection?.title}>
+							{product.collection?.title || '-'}
+						</Text>
+					</div>
+				);
+			case 'sales_channels':
+				// Sales channels editing is complex - use modal for now
+				return (
+					<div
+						className="cursor-pointer hover:bg-ui-bg-subtle px-1 py-0.5 rounded h-7 flex items-center w-full"
+						onClick={() => onEdit && onEdit(product)}
+					>
+						{!product.sales_channels || product.sales_channels.length === 0 ? (
+							<Text size="small">-</Text>
+						) : (
+							<Text size="small" className="truncate">
+								{product.sales_channels.map(sc => sc.name).join(', ')}
+							</Text>
+						)}
+					</div>
+				);
+			case 'variants':
+				// Variants are read-only in table - use modal for editing
+				if (!product.variants || product.variants.length === 0) {
+					return <Text size="small">-</Text>;
+				}
+				return (
+					<Text size="small" className="truncate">
+						{product.variants
+							.map(v => v.sku)
+							.filter(Boolean)
+							.join(', ')}
+					</Text>
+				);
+			case 'actions':
+				return (
+					<div className="flex items-center gap-2">
+						{onEdit && (
+							<Button
+								variant="transparent"
+								size="small"
+								onClick={e => {
+									e.stopPropagation();
+									onEdit(product);
+								}}
+							>
+								<Edit className="h-4 w-4" />
+							</Button>
+						)}
+					</div>
+				);
+			default:
+				return null;
+		}
+	};
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<Text>Lade Produkte...</Text>
+			</div>
+		);
+	}
+
+	if (products.length === 0) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<Text>Keine Produkte gefunden</Text>
+			</div>
+		);
+	}
+
+	return (
+		<div className="relative overflow-x-auto">
+			<Table
+				ref={tableRef}
+				style={{
+					width: `${totalTableWidth}px`,
+					minWidth: `${totalTableWidth}px`,
+					tableLayout: 'fixed',
+				}}
+			>
+				<Table.Header>
+					<Table.Row>
+						{columns.map((column, index) => (
+							<Table.HeaderCell
+								key={column.key}
+								style={{
+									width: `${columnWidths[column.key]}px`,
+									maxWidth: `${columnWidths[column.key]}px`,
+									minWidth: `${columnWidths[column.key]}px`,
+									position: 'relative',
+									overflow: 'visible',
+								}}
+								className="select-none"
+							>
+								{column.key === 'select' ? (
+									<div className="flex items-center justify-center">
+									<Checkbox
+										checked={allSelected}
+										onCheckedChange={handleSelectAll}
+										{...(someSelected && !allSelected ? { indeterminate: true } : {})}
+									/>
+									</div>
+								) : (
+									<div className="flex items-center min-w-0 text-sm">
+										<div
+											className="mr-1.5"
+											style={{
+												whiteSpace: 'nowrap',
+												overflow: 'hidden',
+												textOverflow: 'ellipsis',
+											}}
+											title={column.label}
+										>
+											{column.label}
+										</div>
+									</div>
+								)}
+
+								{/* Resize handle */}
+								{index < columns.length - 1 && (
+									<div
+										className={`absolute top-0 right-0 w-4 h-full cursor-col-resize hover:bg-blue-200 hover:border-l-2 hover:border-blue-400 transition-all duration-200 z-30 ${
+											isResizing === column.key
+												? 'bg-blue-300 border-l-2 border-blue-500'
+												: ''
+										}`}
+										onMouseDown={e => handleMouseDown(e, column.key)}
+										style={{
+											right: '-2px',
+											zIndex: 30,
+										}}
+										title="Drag to resize column"
+									/>
+								)}
+							</Table.HeaderCell>
+						))}
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{products.map(product => (
+						<Table.Row key={product.id}>
+							{columns.map(column => (
+								<Table.Cell
+									key={column.key}
+									style={{
+										width: `${columnWidths[column.key]}px`,
+										maxWidth: `${columnWidths[column.key]}px`,
+										minWidth: `${columnWidths[column.key]}px`,
+										overflow: 'visible',
+									}}
+									className="px-2 py-1"
+									onClick={e => {
+										// Prevent row click from interfering with cell editing
+										if (column.key !== 'actions') {
+											e.stopPropagation();
+										}
+									}}
+								>
+									{renderCellContent(product, column.key)}
+								</Table.Cell>
+							))}
+						</Table.Row>
+					))}
+				</Table.Body>
+			</Table>
+		</div>
+	);
+};
+
+export default ProductTable;
+
