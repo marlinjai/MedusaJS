@@ -6,7 +6,7 @@ import CartButton from '@modules/layout/components/cart-button';
 import MobileMenu from '@modules/layout/components/mobile-menu';
 import TransparentHeader from '@modules/layout/components/transparent-header';
 import { mainNavItems } from '@modules/layout/config/navigation';
-import SearchModal from '@modules/search/components/modal';
+import ConditionalSearch from '@modules/search/components/conditional-search';
 import Image from 'next/image';
 import { Suspense } from 'react';
 
@@ -20,7 +20,7 @@ export default async function Nav() {
 				<header className="nav-header relative py-4 mx-auto">
 					<nav className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 txt-xsmall-plus text-white flex items-center justify-between h-full text-small-regular">
 						{/* Logo */}
-						<div className="flex items-center h-full">
+						<div className="flex items-center h-full flex-shrink-0 min-w-0">
 							<LocalizedClientLink
 								href="/"
 								className="txt-compact-xlarge-plus hover:text-white/80 uppercase"
@@ -28,7 +28,7 @@ export default async function Nav() {
 							>
 								<Image
 									//src="/logo basiscamp.png"
-									className="w-auto h-16"
+									className="w-auto h-10 md:h-16"
 									src="/logo-with-font.png"
 									alt="BusBasis Berlin"
 									width={400}
@@ -51,9 +51,9 @@ export default async function Nav() {
 						</div>
 
 						{/* Right Section - Search, Account, Cart, & Mobile Menu */}
-						<div className="flex items-center gap-x-6 h-full">
-							{/* Search Modal - Hidden on Mobile */}
-							<SearchModal />
+						<div className="flex items-center gap-x-3 md:gap-x-6 h-full flex-shrink-0">
+							{/* Search Modal - Conditionally rendered based on settings */}
+							<ConditionalSearch />
 
 							{/* Account Link - Hidden on Mobile */}
 							<div className="hidden md:flex items-center gap-x-6 h-full">

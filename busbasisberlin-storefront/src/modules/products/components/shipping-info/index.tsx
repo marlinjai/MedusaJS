@@ -3,7 +3,6 @@
 
 'use client';
 
-import { HttpTypes } from '@medusajs/types';
 import { FiTruck } from 'react-icons/fi';
 
 type ShippingInfoProps = {
@@ -41,20 +40,24 @@ export default function ShippingInfo({
 		profileName.includes('langere lieferzeit') ||
 		isBackorder;
 
-	const deliveryDays = hasExtendedShipping ? '7-10' : '2-3';
+	const deliveryDays = hasExtendedShipping ? '3-9' : '2-6';
 	const deliveryMessage = hasExtendedShipping
-		? 'Lieferzeit: 7-10 Werktage'
-		: 'Lieferzeit: 2-3 Werktage';
+		? 'Lieferzeit: 3-9 Werktag3e'
+		: 'Lieferzeit: 2-6 Werktage';
 
 	return (
 		<div className="border-t border-border pt-4 mt-4">
 			<div className="flex items-center gap-2 text-sm">
 				<FiTruck
-					className={`w-5 h-5 ${hasExtendedShipping ? 'text-orange-600' : 'text-green-600'}`}
+					className={`w-5 h-5 ${
+						hasExtendedShipping ? 'text-orange-600' : 'text-green-600'
+					}`}
 				/>
 				<span className="font-medium text-foreground">Versand:</span>
 				<span
-					className={`font-semibold ${hasExtendedShipping ? 'text-orange-600' : 'text-green-600'}`}
+					className={`font-semibold ${
+						hasExtendedShipping ? 'text-orange-600' : 'text-green-600'
+					}`}
 				>
 					{deliveryMessage}
 				</span>
@@ -68,5 +71,3 @@ export default function ShippingInfo({
 		</div>
 	);
 }
-
-

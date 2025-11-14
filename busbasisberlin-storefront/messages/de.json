@@ -163,6 +163,7 @@
 			"subtotal": "Zwischensumme",
 			"goToCart": "Zum Warenkorb",
 			"goToCheckout": "Zur Kasse",
+			"variant": "Variante",
 			"empty": {
 				"title": "Ihr Warenkorb ist leer",
 				"subtitle": "Fügen Sie Produkte hinzu, um mit dem Einkauf zu beginnen",
@@ -626,7 +627,7 @@
 			},
 			"management": {
 				"title": "Vertreten durch",
-				"content": "Vertretungsberechtigte Geschäftsführer: Andreas Bremm\n\nVerantwortlich für den Inhalt nach § 55 Abs. 2 RStV:\nAndreas Bremm\nHauptstraße 51, 16547 Birkenwerder"
+				"content": "Vertretungsberechtigte Geschäftsführer: Conny Malenke\n\nVerantwortlich für den Inhalt nach § 55 Abs. 2 RStV:\nConny Malenke\nHauptstraße 51, 16547 Birkenwerder"
 			},
 			"register": {
 				"title": "Registereintrag",

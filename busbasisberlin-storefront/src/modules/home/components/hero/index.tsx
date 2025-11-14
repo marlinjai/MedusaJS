@@ -5,11 +5,29 @@
 import { Heading } from '@medusajs/ui';
 import SearchModal from '@modules/search/components/modal';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const Hero = () => {
 	const t = useTranslations('hero');
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
+	const [searchEnabled, setSearchEnabled] = useState(true);
+
+	useEffect(() => {
+		const loadSettings = async () => {
+			try {
+				const response = await fetch('/api/public/settings');
+				if (response.ok) {
+					const data = await response.json();
+					setSearchEnabled(data.search?.enabled !== false);
+				}
+			} catch (error) {
+				console.error('Failed to load search settings:', error);
+				// Default to enabled if settings can't be loaded
+				setSearchEnabled(true);
+			}
+		};
+		loadSettings();
+	}, []);
 
 	const scrollToServices = () => {
 		const servicesSection = document.getElementById('services');
@@ -62,13 +80,15 @@ const Hero = () => {
 					</Heading>
 				</div>
 
-				{/* Search CTA Button - opens search modal */}
-				<button
-					onClick={() => setIsSearchOpen(true)}
-					className="mt-8 px-8 py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-lg font-medium rounded-full transition-all z-30 duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-				>
-					{t('cta')}
-				</button>
+				{/* Search CTA Button - opens search modal (only if search is enabled) */}
+				{searchEnabled && (
+					<button
+						onClick={() => setIsSearchOpen(true)}
+						className="mt-8 px-8 py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-lg font-medium rounded-full transition-all z-30 duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+					>
+						{t('cta')}
+					</button>
+				)}
 			</div>
 
 			{/* Search Modal */}

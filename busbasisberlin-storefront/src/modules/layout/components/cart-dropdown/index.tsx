@@ -87,6 +87,18 @@ const CartDropdown = ({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [totalItems, itemRef.current]);
 
+	// Handle Escape key to close cart dropdown
+	useEffect(() => {
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && cartDropdownOpen) {
+				close();
+			}
+		};
+
+		window.addEventListener('keydown', handleEscape);
+		return () => window.removeEventListener('keydown', handleEscape);
+	}, [cartDropdownOpen]);
+
 	return (
 		<div
 			className="h-full z-50"

@@ -3,7 +3,8 @@
 import { searchClient } from '@lib/config';
 import { createRouting } from '@lib/search-routing';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
 import {
 	Configure,
 	HitsPerPage,
@@ -12,12 +13,387 @@ import {
 	SearchBox,
 	SortBy,
 	Stats,
+	useCurrentRefinements,
 	useInstantSearch,
 	usePagination,
 	useStats,
 } from 'react-instantsearch';
 import CategoryTree from './category-tree';
 import ProductGrid from './product-grid';
+
+// View Toggle Component (Grid/List)
+function ViewToggle() {
+	const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+	useEffect(() => {
+		// Store view preference in sessionStorage
+		const stored = sessionStorage.getItem('productViewMode');
+		if (stored === 'grid' || stored === 'list') {
+			setViewMode(stored);
+		}
+	}, []);
+
+	useEffect(() => {
+		sessionStorage.setItem('productViewMode', viewMode);
+		// Dispatch custom event to notify ProductGrid
+		window.dispatchEvent(
+			new CustomEvent('viewModeChange', { detail: viewMode }),
+		);
+	}, [viewMode]);
+
+	return (
+		<div className="flex items-center gap-2">
+			<span className="text-sm font-medium text-gray-400">Ansicht:</span>
+			<div className="flex items-center gap-1 bg-stone-800 border border-stone-700 rounded-lg p-1">
+				<button
+					onClick={() => setViewMode('grid')}
+					className={`p-2 rounded transition-colors ${
+						viewMode === 'grid'
+							? 'bg-blue-600 text-white'
+							: 'text-gray-400 hover:text-white hover:bg-stone-700'
+					}`}
+					aria-label="Grid-Ansicht"
+				>
+					<BsGrid3X3 className="w-4 h-4" />
+				</button>
+				<button
+					onClick={() => setViewMode('list')}
+					className={`p-2 rounded transition-colors ${
+						viewMode === 'list'
+							? 'bg-blue-600 text-white'
+							: 'text-gray-400 hover:text-white hover:bg-stone-700'
+					}`}
+					aria-label="Listen-Ansicht"
+				>
+					<BsList className="w-4 h-4" />
+				</button>
+			</div>
+		</div>
+	);
+}
+
+// Custom Filter Sidebar Component
+function FilterSidebar() {
+	const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+	return (
+		<>
+			{/* Mobile Filter Toggle Button */}
+			<button
+				onClick={() => setIsMobileOpen(!isMobileOpen)}
+				className="lg:hidden w-full mb-4 flex items-center justify-center gap-2 px-4 py-3 bg-stone-950 border border-stone-800 rounded-xl text-white font-medium hover:bg-stone-900 transition-colors"
+			>
+				<BsFilter className="w-5 h-5" />
+				Filter {isMobileOpen ? 'ausblenden' : 'anzeigen'}
+			</button>
+
+			{/* Filters Sidebar */}
+			<aside
+				className={`w-full lg:w-80 flex-shrink-0 ${
+					isMobileOpen ? 'block' : 'hidden lg:block'
+				}`}
+			>
+				<div className="space-y-6">
+					{/* Category Tree */}
+					<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
+						<h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+							<svg
+								className="w-5 h-5 text-blue-400"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M4 6h16M4 12h16M4 18h16"
+								/>
+							</svg>
+							Kategorien
+						</h2>
+						<CategoryTree />
+					</div>
+
+					{/* Other Filters */}
+					<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
+						<h3 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
+							<BsFilter className="w-5 h-5 text-blue-400" />
+							Filter
+						</h3>
+
+						<div className="space-y-6">
+							{/* Availability */}
+							<div>
+								<h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+									<svg
+										className="w-4 h-4 text-green-400"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+									Verfügbarkeit
+								</h4>
+								<RefinementList
+									attribute="is_available"
+									transformItems={items =>
+										items.map(item => ({
+											...item,
+											label:
+												item.label === 'true'
+													? 'Verfügbar'
+													: 'Zurzeit nicht lieferbar',
+										}))
+									}
+									classNames={{
+										root: 'space-y-2',
+										item: 'py-2 px-3 rounded-lg hover:bg-stone-800 transition-colors border border-transparent hover:border-stone-700',
+										label: 'flex items-center gap-3 cursor-pointer group',
+										checkbox:
+											'h-4 w-4 rounded border-stone-600 bg-stone-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-stone-950 cursor-pointer transition-colors',
+										labelText:
+											'text-sm text-gray-300 group-hover:text-white flex-1 font-medium',
+										count:
+											'text-xs text-gray-400 bg-stone-800 px-2.5 py-1 rounded-full min-w-[32px] text-center font-medium',
+									}}
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
+			</aside>
+		</>
+	);
+}
+
+// Custom Toolbar Component with improved UI
+function Toolbar() {
+	const { items: refinements, refine: clearRefinement } =
+		useCurrentRefinements();
+	const hasActiveFilters = refinements.length > 0;
+	const [isFilterOpen, setIsFilterOpen] = useState(false);
+	const filterRef = useRef<HTMLDivElement>(null);
+
+	// Close filter dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				filterRef.current &&
+				!filterRef.current.contains(event.target as Node)
+			) {
+				setIsFilterOpen(false);
+			}
+		};
+
+		if (isFilterOpen) {
+			document.addEventListener('mousedown', handleClickOutside);
+		}
+
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isFilterOpen]);
+
+	return (
+		<div className="bg-stone-950 rounded-xl border border-stone-800 p-4 mb-6 shadow-lg">
+			<div className="flex flex-col gap-4">
+				{/* Top Row: Stats and Clear Filters */}
+				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+					{/* Results Count */}
+					<div className="text-sm font-medium text-gray-300">
+						<Stats
+							translations={{
+								rootElementText({ nbHits, nbSortedHits }) {
+									const count = nbSortedHits ?? nbHits;
+									return `${count.toLocaleString('de-DE')} Produkte gefunden`;
+								},
+							}}
+							classNames={{
+								root: 'inline',
+							}}
+						/>
+					</div>
+
+					{/* Clear Filters Button */}
+					{hasActiveFilters && (
+						<button
+							onClick={() => {
+								refinements.forEach(refinement => {
+									refinement.refinements.forEach(r => {
+										clearRefinement(r);
+									});
+								});
+							}}
+							className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-300 bg-stone-800 hover:bg-stone-700 border border-stone-700 rounded-lg transition-colors"
+						>
+							<BsX className="w-4 h-4" />
+							Filter zurücksetzen
+						</button>
+					)}
+				</div>
+
+				{/* Bottom Row: Filters, Sort and Display Options */}
+				<div className="flex flex-wrap items-center gap-3 pt-3 border-t border-stone-800">
+					{/* Quick Filter: Availability */}
+					<div className="flex items-center gap-2">
+						<BsFilter className="w-4 h-4 text-gray-400" />
+						<span className="text-sm font-medium text-gray-400">Filter:</span>
+						<div className="relative" ref={filterRef}>
+							<button
+								onClick={() => setIsFilterOpen(!isFilterOpen)}
+								className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-stone-800 border border-stone-700 rounded-lg hover:bg-stone-700 hover:border-stone-600 transition-colors"
+							>
+								Verfügbarkeit
+								<svg
+									className={`w-4 h-4 transition-transform ${
+										isFilterOpen ? 'rotate-180' : ''
+									}`}
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</button>
+							{isFilterOpen && (
+								<div className="absolute top-full left-0 mt-2 w-64 bg-stone-800 border border-stone-700 rounded-lg shadow-xl z-50 p-3">
+									<RefinementList
+										attribute="is_available"
+										transformItems={items =>
+											items.map(item => ({
+												...item,
+												label:
+													item.label === 'true'
+														? 'Verfügbar'
+														: 'Zurzeit nicht lieferbar',
+											}))
+										}
+										classNames={{
+											root: 'space-y-2',
+											item: 'py-2 px-3 rounded-lg hover:bg-stone-700 transition-colors',
+											label: 'flex items-center gap-3 cursor-pointer group',
+											checkbox:
+												'h-4 w-4 rounded border-stone-600 bg-stone-900 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors',
+											labelText:
+												'text-sm text-gray-300 group-hover:text-white flex-1 font-medium',
+											count:
+												'text-xs text-gray-400 bg-stone-900 px-2.5 py-1 rounded-full min-w-[32px] text-center font-medium',
+										}}
+									/>
+								</div>
+							)}
+						</div>
+					</div>
+
+					{/* Divider */}
+					<div className="h-6 w-px bg-stone-700" />
+
+					{/* Sort options */}
+					<div className="flex items-center gap-2">
+						<BsSortDown className="w-4 h-4 text-gray-400" />
+						<span className="text-sm font-medium text-gray-400">
+							Sortieren:
+						</span>
+						<div className="relative">
+							<SortBy
+								items={[
+									{ label: 'Neueste zuerst', value: 'products' },
+									{
+										label: 'Preis: Niedrig → Hoch',
+										value: 'products:min_price:asc',
+									},
+									{
+										label: 'Preis: Hoch → Niedrig',
+										value: 'products:max_price:desc',
+									},
+									{ label: 'Name: A-Z', value: 'products:title:asc' },
+									{ label: 'Name: Z-A', value: 'products:title:desc' },
+								]}
+								classNames={{
+									root: 'relative',
+									select:
+										'bg-stone-800 border border-stone-700 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
+								}}
+							/>
+							<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+								<svg
+									className="w-4 h-4 text-gray-400"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</div>
+						</div>
+					</div>
+
+					{/* Divider */}
+					<div className="h-6 w-px bg-stone-700" />
+
+					{/* View Toggle: Grid/List */}
+					<ViewToggle />
+
+					{/* Divider */}
+					<div className="h-6 w-px bg-stone-700" />
+
+					{/* Results per page */}
+					<div className="flex items-center gap-2">
+						<BsGrid3X3 className="w-4 h-4 text-gray-400" />
+						<span className="text-sm font-medium text-gray-400">Anzeigen:</span>
+						<div className="relative">
+							<HitsPerPage
+								items={[
+									{ label: '12', value: 12, default: true },
+									{ label: '24', value: 24 },
+									{ label: '48', value: 48 },
+									{ label: '96', value: 96 },
+								]}
+								classNames={{
+									root: 'relative',
+									select:
+										'bg-stone-800 border border-stone-700 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
+								}}
+							/>
+							<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+								<svg
+									className="w-4 h-4 text-gray-400"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
 
 // Custom Pagination Component
 function CustomPagination() {
@@ -62,7 +438,7 @@ function CustomPagination() {
 				<button
 					key="prev"
 					onClick={() => refine(currentPage - 1)}
-					className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+					className="px-4 py-2 text-sm font-medium text-gray-300 bg-stone-800 border border-stone-700 rounded-lg hover:bg-stone-700 hover:border-stone-600 transition-colors"
 				>
 					←
 				</button>,
@@ -76,8 +452,8 @@ function CustomPagination() {
 				onClick={() => refine(0)}
 				className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
 					currentPage === 0
-						? 'bg-blue-600 text-white border border-blue-600'
-						: 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+						? 'bg-blue-600 text-white border border-blue-600 shadow-lg shadow-blue-600/20'
+						: 'text-gray-300 bg-stone-800 border border-stone-700 hover:bg-stone-700 hover:border-stone-600'
 				}`}
 			>
 				1
@@ -105,8 +481,8 @@ function CustomPagination() {
 					onClick={() => refine(i)}
 					className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
 						currentPage === i
-							? 'bg-blue-600 text-white border border-blue-600'
-							: 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+							? 'bg-blue-600 text-white border border-blue-600 shadow-lg shadow-blue-600/20'
+							: 'text-gray-300 bg-stone-800 border border-stone-700 hover:bg-stone-700 hover:border-stone-600'
 					}`}
 				>
 					{i + 1}
@@ -131,8 +507,8 @@ function CustomPagination() {
 					onClick={() => refine(totalPages - 1)}
 					className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
 						currentPage === totalPages - 1
-							? 'bg-blue-600 text-white border border-blue-600'
-							: 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+							? 'bg-blue-600 text-white border border-blue-600 shadow-lg shadow-blue-600/20'
+							: 'text-gray-300 bg-stone-800 border border-stone-700 hover:bg-stone-700 hover:border-stone-600'
 					}`}
 				>
 					{totalPages}
@@ -146,7 +522,7 @@ function CustomPagination() {
 				<button
 					key="next"
 					onClick={() => refine(currentPage + 1)}
-					className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+					className="px-4 py-2 text-sm font-medium text-gray-300 bg-stone-800 border border-stone-700 rounded-lg hover:bg-stone-700 hover:border-stone-600 transition-colors"
 				>
 					→
 				</button>,
@@ -174,6 +550,7 @@ export default function StoreSearch() {
 			searchClient={searchClient}
 			indexName={process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME || 'products'}
 			routing={routing}
+			future={{ preserveSharedStateOnUnmount: true }}
 		>
 			{/* Texture Background - rotated 90 degrees for vertical aspect */}
 			<div className="relative min-h-screen">
@@ -188,186 +565,64 @@ export default function StoreSearch() {
 						transformOrigin: 'center center',
 					}}
 				/>
-				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24 lg:pt-8">
+					{/* Header with Search in one row - Full width */}
+					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+						{/* Title */}
+						<div>
+							<h1 className="text-2xl sm:text-3xl font-bold text-gray-300">
+								Teile Shop
+							</h1>
+							<p className="text-sm text-gray-400 mt-1 hidden sm:block">
+								Durchsuchen Sie unseren vollständigen Produktkatalog
+							</p>
+						</div>
+
+						{/* Search Box */}
+						<div className="w-full sm:w-auto sm:flex-1 sm:max-w-md bg-stone-950 rounded-xl p-4">
+							<SearchBox
+								placeholder="Suche nach Produkten..."
+								submitIconComponent={({ classNames }) => (
+									<svg
+										className={classNames.submitIcon}
+										width="20"
+										height="20"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									>
+										<circle cx="11" cy="11" r="8" />
+										<path d="m21 21-4.35-4.35" />
+									</svg>
+								)}
+								classNames={{
+									root: 'relative',
+									form: 'relative',
+									input:
+										'w-full px-4 py-3 pl-12 pr-12 bg-stone-800 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-gray-600 text-sm text-white placeholder:text-gray-500',
+									submit:
+										'absolute left-4 top-1/2 -translate-y-1/2 p-1.5 text-gray-300 hover:text-white transition-colors',
+									submitIcon: 'w-4 h-4',
+									reset: 'hidden',
+								}}
+							/>
+						</div>
+					</div>
+
+					{/* Main Content Area with Sidebar and Toolbar aligned */}
 					<div className="flex flex-col lg:flex-row gap-8">
 						{/* Filters Sidebar */}
-						<aside className="w-full lg:w-80 flex-shrink-0">
-							<div className="sticky top-8 space-y-6">
-								{/* Category Tree */}
-								<div className="bg-stone-950 rounded-lg p-4">
-									<h2 className="text-lg font-semibold text-white mb-3">
-										Kategorien
-									</h2>
-									<CategoryTree />
-								</div>
-
-								{/* Other Filters */}
-								<div className="bg-stone-950 rounded-lg p-4">
-									<h3 className="text-lg font-semibold text-white mb-4">
-										Filter
-									</h3>
-
-									<div className="space-y-6">
-										{/* Availability */}
-										<div>
-											<h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-												<svg
-													className="w-4 h-4"
-													fill="none"
-													viewBox="0 0 24 24"
-													stroke="currentColor"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-													/>
-												</svg>
-												Verfügbarkeit
-											</h3>
-											<RefinementList
-												attribute="is_available"
-												transformItems={items =>
-													items.map(item => ({
-														...item,
-														label:
-															item.label === 'true'
-																? 'Verfügbar'
-																: 'Zurzeit nicht lieferbar',
-													}))
-												}
-												classNames={{
-													root: 'space-y-1',
-													item: 'py-1.5 px-2 rounded-lg hover:bg-gray-800/50 transition-colors',
-													label: 'flex items-center gap-2 cursor-pointer group',
-													checkbox:
-														'h-4 w-4 rounded border-gray-600 bg-gray-800 text-gray-300 focus:ring-gray-500 cursor-pointer',
-													labelText:
-														'text-sm text-gray-300 group-hover:text-white flex-1',
-													count:
-														'text-xs text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded-full min-w-[32px] text-center',
-												}}
-											/>
-										</div>
-									</div>
-								</div>
-							</div>
-						</aside>
+						<FilterSidebar />
 
 						{/* Main Content Area */}
 						<div className="flex-1 min-w-0">
-							{/* Header */}
-							<div className="mb-6">
-								<h1 className="text-3xl font-bold text-gray-300 mb-2">
-									Teile Shop
-								</h1>
-								<p className="text-gray-400">
-									Durchsuchen Sie unseren vollständigen Produktkatalog
-								</p>
-							</div>
-
-							{/* Search Box */}
-							<div className="mb-6 bg-stone-950 rounded-xl p-4">
-								<SearchBox
-									placeholder="Suche nach Produkten, Teilen oder Stichwörtern..."
-									submitIconComponent={({ classNames }) => (
-										<svg
-											className={classNames.submitIcon}
-											width="20"
-											height="20"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="2"
-											strokeLinecap="round"
-											strokeLinejoin="round"
-										>
-											<circle cx="11" cy="11" r="8" />
-											<path d="m21 21-4.35-4.35" />
-										</svg>
-									)}
-									classNames={{
-										root: 'relative',
-										form: 'relative',
-										input:
-											'w-full px-4 py-4 pl-12 pr-12 bg-stone-800 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-gray-600 text-base text-white placeholder:text-gray-500',
-										submit:
-											'absolute left-4 top-1/2 -translate-y-1/2 p-1.5 text-gray-300 hover:text-white transition-colors',
-										submitIcon: 'w-5 h-5',
-										reset: 'hidden',
-									}}
-								/>
-							</div>
-
 							{/* Toolbar: Results Stats and Sort */}
-							<div className="bg-stone-950 rounded-xl p-4 mb-6">
-								<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-									{/* Results Count */}
-									<Stats
-										translations={{
-											rootElementText({ nbHits, nbSortedHits }) {
-												const count = nbSortedHits ?? nbHits;
-												return `${count.toLocaleString(
-													'de-DE',
-												)} Produkte gefunden`;
-											},
-										}}
-										classNames={{
-											root: 'text-sm text-gray-300',
-										}}
-									/>
+							<Toolbar />
 
-									{/* Sort and Display Options */}
-									<div className="flex flex-wrap items-center gap-4">
-										{/* Results per page */}
-										<div className="flex items-center gap-2">
-											<span className="text-sm font-medium text-gray-300">
-												Anzeigen:
-											</span>
-											<HitsPerPage
-												items={[
-													{ label: '12', value: 12, default: true },
-													{ label: '24', value: 24 },
-													{ label: '48', value: 48 },
-													{ label: '96', value: 96 },
-												]}
-												classNames={{
-													select:
-														'bg-stone-700 border border-stone-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 focus:outline-none focus:border-stone-600 cursor-pointer',
-												}}
-											/>
-										</div>
-
-										{/* Sort options */}
-										<div className="flex items-center gap-2">
-											<span className="text-sm font-medium text-gray-300">
-												Sortieren:
-											</span>
-											<SortBy
-												items={[
-													{ label: 'Neueste zuerst', value: 'products' },
-													{
-														label: 'Preis: Niedrig bis Hoch',
-														value: 'products:min_price:asc',
-													},
-													{
-														label: 'Preis: Hoch bis Niedrig',
-														value: 'products:max_price:desc',
-													},
-													{ label: 'Name: A-Z', value: 'products:title:asc' },
-												]}
-												classNames={{
-													select:
-														'bg-stone-700 border border-stone-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 focus:outline-none focus:border-stone-600 cursor-pointer',
-												}}
-											/>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							{/* Products Grid */}
+							{/* Products Grid/List */}
 							<ProductGrid />
 
 							{/* Pagination */}

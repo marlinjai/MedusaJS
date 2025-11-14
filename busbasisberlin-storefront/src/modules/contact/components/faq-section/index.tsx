@@ -2,58 +2,64 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type FAQ = {
 	question: string;
 	answer: string;
 };
 
-const faqs: FAQ[] = [
-	{
-		question: 'Welche Zahlungsmethoden akzeptieren Sie?',
-		answer:
-			'Wir akzeptieren alle gängigen Zahlungsmethoden: Kreditkarte, PayPal, Banküberweisung und Vorkasse. Für Firmenkunden bieten wir auch Rechnungskauf nach Prüfung an.',
-	},
-	{
-		question: 'Wie lange dauert die Lieferung?',
-		answer:
-			'Innerhalb Deutschlands dauert die Lieferung in der Regel 2-3 Werktage. Für EU-Länder rechnen Sie bitte mit 5-7 Werktagen. Express-Versand ist auf Anfrage möglich.',
-	},
-	{
-		question: 'Kann ich Teile vor Ort abholen?',
-		answer:
-			'Ja, Sie können bestellte Teile gerne in unserer Werkstatt in Berlin abholen. Bitte kontaktieren Sie uns vorher, damit wir die Teile für Sie bereitstellen können.',
-	},
-	{
-		question: 'Bieten Sie auch Einbau-Service an?',
-		answer:
-			'Ja, in unserer Werkstatt in Berlin bieten wir professionellen Einbau-Service für alle Teile an. Vereinbaren Sie einfach einen Termin mit uns.',
-	},
-	{
-		question: 'Was ist Ihre Rückgabepolitik?',
-		answer:
-			'Sie können unbeschädigte Teile innerhalb von 14 Tagen nach Erhalt zurückgeben. Die Rücksendekosten übernimmt der Kunde. Bei defekten oder falschen Teilen übernehmen wir natürlich alle Kosten.',
-	},
-	{
-		question: 'Haben Sie auch gebrauchte Teile?',
-		answer:
-			'Ja, wir führen auch hochwertige gebrauchte Teile, die sorgfältig geprüft wurden. Diese sind deutlich günstiger und eine umweltfreundliche Alternative.',
-	},
-	{
-		question: 'Wie kann ich die richtigen Teile für meinen Bus finden?',
-		answer:
-			'Nutzen Sie unsere Suchfunktion mit der Fahrzeug-Identifikationsnummer (FIN) oder kontaktieren Sie uns mit den Details Ihres Busses. Unser Team hilft Ihnen gerne bei der Auswahl.',
-	},
-];
+type FAQData = {
+	enabled: boolean;
+	items: FAQ[];
+};
 
 export default function FAQSection() {
+	const [faqs, setFaqs] = useState<FAQ[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [enabled, setEnabled] = useState(false);
 	const [openIndex, setOpenIndex] = useState<number | null>(null);
 	const [showAllMobile, setShowAllMobile] = useState(false);
+
+	useEffect(() => {
+		const fetchFAQSettings = async () => {
+			try {
+				const backendUrl =
+					process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+				const response = await fetch(`${backendUrl}/public/settings`, {
+					cache: 'no-store',
+				});
+
+				if (response.ok) {
+					const data = await response.json();
+					const faqData: FAQData = data.faq || { enabled: false, items: [] };
+					setEnabled(faqData.enabled);
+					setFaqs(faqData.items || []);
+				} else {
+					console.error('[FAQ-SECTION] Failed to load FAQ settings');
+				}
+			} catch (error) {
+				console.error('[FAQ-SECTION] Error loading FAQ settings:', error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchFAQSettings();
+	}, []);
 
 	const toggleFAQ = (index: number) => {
 		setOpenIndex(openIndex === index ? null : index);
 	};
+
+	// Don't render if disabled or loading
+	if (isLoading) {
+		return null;
+	}
+
+	if (!enabled || faqs.length === 0) {
+		return null;
+	}
 
 	// Show first 3 FAQs on mobile initially
 	const mobileFaqs = faqs.slice(0, 3);

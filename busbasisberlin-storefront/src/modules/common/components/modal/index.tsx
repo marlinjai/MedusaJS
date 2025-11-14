@@ -40,10 +40,9 @@ const Modal = ({
 				<div className="fixed inset-0 overflow-y-auto">
 					<div
 						className={clx(
-							'flex min-h-full h-full justify-center p-4 text-center',
+							'flex min-h-full h-full justify-center items-center p-4 text-center',
 							{
-								'items-center': !search,
-								'items-start': search,
+								'overflow-hidden': search,
 							},
 						)}
 					>
@@ -59,14 +58,16 @@ const Modal = ({
 							<Dialog.Panel
 								data-testid={dataTestId}
 								className={clx(
-									'flex flex-col justify-start w-full transform p-5 text-left align-middle transition-all',
+									'flex flex-col justify-start transform text-left align-middle transition-all',
 									{
-										'max-w-md': size === 'small',
-										'max-w-xl': size === 'medium',
-										'max-w-3xl': size === 'large',
-										'bg-transparent shadow-none': search,
-										'bg-card shadow-xl border rounded-rounded': !search,
-										'max-h-[85vh] h-full': search,
+										'w-full': !search,
+										'w-auto': search,
+										'max-w-md': size === 'small' && !search,
+										'max-w-xl': size === 'medium' && !search,
+										'max-w-3xl': size === 'large' && !search,
+										'bg-transparent shadow-none p-0': search,
+										'bg-card shadow-xl border rounded-rounded p-5': !search,
+										'max-h-[85vh] h-[85vh]': search,
 										'max-h-[75vh] h-fit': !search,
 									},
 								)}

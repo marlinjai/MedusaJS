@@ -108,7 +108,7 @@ const Verein = () => {
 								</div>
 								<p className="text-neutral-300 text-sm">
 									Wir bieten nach Absprache und in enger Zusammenarbeit mit der
-									Firma BusBasis Stellplätze und Selbstschrauberplätze an.
+									Firma BasisCampBerlin Stellplätze und Selbstschrauberplätze an.
 								</p>
 							</div>
 
