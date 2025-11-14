@@ -9,6 +9,7 @@ import { mainNavItems } from '@modules/layout/config/navigation';
 import ConditionalSearch from '@modules/search/components/conditional-search';
 import Image from 'next/image';
 import { Suspense } from 'react';
+import NavClient from './nav-client';
 
 export default async function Nav() {
 	const regions = await listRegions().then((regions: StoreRegion[]) => regions);
@@ -38,17 +39,7 @@ export default async function Nav() {
 						</div>
 
 						{/* Desktop Navigation */}
-						<div className="hidden md:flex items-center space-x-8">
-							{mainNavItems.map(item => (
-								<LocalizedClientLink
-									key={item.href}
-									href={item.href}
-									className="hover:text-white/80 transition-colors duration-200 text-neutral-200 text-sm md:text-lg max-w-sm"
-								>
-									{item.label}
-								</LocalizedClientLink>
-							))}
-						</div>
+						<NavClient />
 
 						{/* Right Section - Search, Account, Cart, & Mobile Menu */}
 						<div className="flex items-center gap-x-3 md:gap-x-6 h-full flex-shrink-0">
@@ -58,11 +49,24 @@ export default async function Nav() {
 							{/* Account Link - Hidden on Mobile */}
 							<div className="hidden md:flex items-center gap-x-6 h-full">
 								<LocalizedClientLink
-									className="hover:text-white/80 transition-colors duration-200"
+									className="hover:text-white/80 transition-colors duration-200 flex items-center"
 									href="/account"
 									data-testid="nav-account-link"
+									aria-label="Konto"
 								>
-									Konto
+									<svg
+										className="w-5 h-5"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										strokeWidth="2"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+										/>
+									</svg>
 								</LocalizedClientLink>
 							</div>
 

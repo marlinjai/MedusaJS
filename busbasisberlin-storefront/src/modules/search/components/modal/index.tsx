@@ -412,6 +412,10 @@ export default function SearchModal({
 	const setIsOpen =
 		externalSetIsOpen !== undefined ? externalSetIsOpen : setInternalIsOpen;
 
+	// Hide search button on store page
+	const isStorePage =
+		pathname?.includes('/store') || pathname?.includes('/shop');
+
 	// Load search settings
 	useEffect(() => {
 		const loadSettings = async () => {
@@ -429,8 +433,14 @@ export default function SearchModal({
 	}, []);
 
 	// Keyboard shortcuts: Cmd/Ctrl+K and Cmd/Ctrl+F
+	// Disabled on store page
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			// Disable search shortcuts on store page
+			if (isStorePage) {
+				return;
+			}
+
 			if (
 				(e.metaKey || e.ctrlKey) &&
 				(e.key === 'k' || e.key === 'K' || e.key === 'f' || e.key === 'F')
@@ -445,15 +455,11 @@ export default function SearchModal({
 
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [setIsOpen, searchSettings]);
+	}, [setIsOpen, searchSettings, isStorePage]);
 
 	useEffect(() => {
 		setIsOpen(false);
 	}, [pathname, setIsOpen]);
-
-	// Hide search button on store page
-	const isStorePage =
-		pathname?.includes('/store') || pathname?.includes('/shop');
 
 	return (
 		<>

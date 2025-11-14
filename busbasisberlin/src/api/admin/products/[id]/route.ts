@@ -277,7 +277,46 @@ export const PUT = async (
 				if (variant.sku) variantData.sku = variant.sku;
 				if (variant.manage_inventory !== undefined) variantData.manage_inventory = variant.manage_inventory;
 				if (variant.allow_backorder !== undefined) variantData.allow_backorder = variant.allow_backorder;
-				if (variant.prices) variantData.prices = variant.prices;
+
+				// Handle variant options - convert to Record<string, string> format
+				if (has_variants && options && variant.option_values && variant.option_values.length > 0) {
+					const variantOptions: Record<string, string> = {};
+					options.forEach((option: any, optionIndex: number) => {
+						const value = variant.option_values[optionIndex];
+						const valueStr = typeof value === 'string' ? value : String(value || '');
+						if (valueStr && option.values && option.values.includes(valueStr)) {
+							variantOptions[option.title] = valueStr;
+						}
+					});
+					if (Object.keys(variantOptions).length > 0) {
+						variantData.options = variantOptions;
+					}
+				}
+
+				// Handle prices
+				if (variant.prices) {
+					variantData.prices = variant.prices;
+				} else if (variant.price_eur || variant.price_europe) {
+					variantData.prices = [
+						...(variant.price_eur
+							? [
+									{
+										currency_code: 'eur',
+										amount: Math.round((variant.price_eur || 0) * 100),
+									},
+								]
+							: []),
+						...(variant.price_europe
+							? [
+									{
+										currency_code: 'eur',
+										amount: Math.round((variant.price_europe || 0) * 100),
+									},
+								]
+							: []),
+					];
+				}
+
 				return variantData;
 			});
 		}

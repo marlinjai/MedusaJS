@@ -164,18 +164,17 @@ export const POST = async (
 			);
 			variantData = enabledVariants.map((variant: any) => {
 				// Map option values to variant options
-				// Each variant should have options matching the product options structure
-				const variantOptions: any[] = [];
+				// According to Medusa docs, options should be Record<string, string>
+				// where keys are option titles and values are option values
+				const variantOptions: Record<string, string> = {};
 				if (variant.option_values && variant.option_values.length > 0) {
 					options.forEach((option: any, optionIndex: number) => {
 						const value = variant.option_values[optionIndex];
 						// Ensure value is a string, not an object
 						const valueStr = typeof value === 'string' ? value : String(value || '');
 						if (valueStr && option.values && option.values.includes(valueStr)) {
-							variantOptions.push({
-								option_id: option.title, // Medusa will match by title during creation
-								value: valueStr,
-							});
+							// Use option title as key and value as the option value
+							variantOptions[option.title] = valueStr;
 						}
 					});
 				}
@@ -185,7 +184,7 @@ export const POST = async (
 					sku: variant.sku || undefined,
 					manage_inventory: variant.manage_inventory || false,
 					allow_backorder: variant.allow_backorder || false,
-					options: variantOptions,
+					options: variantOptions, // Record<string, string> format
 					prices: [
 						...(variant.price_eur
 							? [
