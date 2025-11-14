@@ -31,6 +31,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 log_info "Setting up production environment configuration..."
 
 # Required environment variables for production
+# Note: S3 variables are required for backup system
 REQUIRED_VARS=(
     "DOMAIN_NAME"
     "POSTGRES_PASSWORD"
@@ -102,6 +103,8 @@ COOKIE_SECRET=$COOKIE_SECRET
 # Database Configuration
 DATABASE_URL=postgres://postgres:$POSTGRES_PASSWORD@localhost/medusa-busbasisberlin
 DB_NAME=medusa-busbasisberlin
+POSTGRES_DB=medusa-store
+POSTGRES_USER=postgres
 
 # Supabase S3-Compatible Storage Configuration
 S3_FILE_URL=$S3_FILE_URL

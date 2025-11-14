@@ -101,6 +101,20 @@ jobs:
             sudo chmod -R u+w .
             sudo find . -type f -name "*.sh" -exec chmod +x {} \;
 
+            # Ensure backup scripts are executable
+            if [ -f "scripts/backup-database.sh" ]; then
+                chmod +x scripts/backup-database.sh
+                chmod +x scripts/restore-database.sh
+                chmod +x scripts/verify-backup.sh
+                chmod +x scripts/setup-backup-system.sh
+            fi
+
+            # Create .env.production file from GitHub secrets for backup scripts
+            if [ -f "scripts/setup-production-env.sh" ]; then
+                chmod +x scripts/setup-production-env.sh
+                ./scripts/setup-production-env.sh
+            fi
+
             # Export environment variables explicitly
             export DOMAIN_NAME="$DOMAIN_NAME"
             export SSL_CERT_NAME="$SSL_CERT_NAME"

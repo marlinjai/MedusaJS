@@ -19,7 +19,7 @@ apt update && apt upgrade -y
 
 # Install required packages
 echo "📦 Installing required packages..."
-apt install -y curl wget git unzip software-properties-common apt-transport-https ca-certificates gnupg lsb-release
+apt install -y curl wget git unzip software-properties-common apt-transport-https ca-certificates gnupg lsb-release gzip
 
 # Install Docker
 echo "🐳 Installing Docker..."
@@ -162,36 +162,21 @@ chmod +x /opt/medusa-app/monitor.sh
 echo "⏰ Setting up monitoring cron job..."
 (crontab -l 2>/dev/null; echo "*/5 * * * * /opt/medusa-app/monitor.sh") | crontab -
 
-# Create backup script
-echo "💾 Creating backup script..."
-cat > /opt/medusa-app/backup.sh << 'EOF'
-#!/bin/bash
+# Install AWS CLI for S3 backups
+echo "📦 Installing AWS CLI for S3 backups..."
+if ! command -v aws &> /dev/null; then
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+    unzip -q /tmp/awscliv2.zip -d /tmp
+    /tmp/aws/install
+    rm -rf /tmp/aws /tmp/awscliv2.zip
+    echo "✅ AWS CLI installed"
+else
+    echo "✅ AWS CLI already installed"
+fi
 
-# Backup script for Medusa deployment
-
-BACKUP_DIR="/opt/medusa-backups"
-DATE=$(date '+%Y%m%d_%H%M%S')
-BACKUP_FILE="medusa_backup_$DATE.sql"
-
-echo "Creating backup: $BACKUP_FILE"
-
-# Create database backup
-docker-compose exec -T postgres pg_dump -U medusa medusa > $BACKUP_DIR/$BACKUP_FILE
-
-# Compress backup
-gzip $BACKUP_DIR/$BACKUP_FILE
-
-# Keep only last 7 days of backups
-find $BACKUP_DIR -name "medusa_backup_*.sql.gz" -mtime +7 -delete
-
-echo "Backup completed: $BACKUP_FILE.gz"
-EOF
-
-chmod +x /opt/medusa-app/backup.sh
-
-# Set up daily backup cron job
-echo "⏰ Setting up backup cron job..."
-(crontab -l 2>/dev/null; echo "0 2 * * * /opt/medusa-app/backup.sh") | crontab -
+# Set up automated backup system (after repository is cloned)
+echo "💾 Backup system will be set up after repository clone..."
+echo "   Run: cd /opt/medusa-app/busbasisberlin && sudo ./scripts/setup-backup-system.sh"
 
 # Create SSH key for GitHub Actions
 echo "🔑 Setting up SSH key for GitHub Actions..."
