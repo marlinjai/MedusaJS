@@ -92,7 +92,7 @@ function OrderPlacedPickupEmailComponent({
 							!
 						</Heading>
 						<Text className="text-center text-gray-600 mt-2">
-							Ihre Bestellung ist zur Abholung am Lager bereit. Bitte vereinbaren Sie einen Termin zur Abholung.
+							Ihre Bestellung ist zur Abholung am Lager bereit. Bitte kommen Sie zu unseren Öffnungszeiten vorbei.
 						</Text>
 					</Container>
 
@@ -109,7 +109,16 @@ function OrderPlacedPickupEmailComponent({
 								📦 Abholung am Lager
 							</Heading>
 							<Text className="text-gray-700 mb-3">
-								<strong>Wichtig:</strong> Bitte vereinbaren Sie über unser Kontaktformular einen Termin zur Abholung Ihrer Bestellung.
+								<strong>Wichtig:</strong> Bitte kommen Sie zu unseren Öffnungszeiten vorbei, um Ihre Bestellung abzuholen.
+							</Text>
+							<Text className="text-gray-700 mb-2">
+								<strong>Öffnungszeiten:</strong>
+							</Text>
+							<Text className="text-gray-700 mb-1" style={{ paddingLeft: '16px' }}>
+								{company.openingHours?.weekdays || 'Montag - Freitag: 08:00–16:00'}
+							</Text>
+							<Text className="text-gray-700 mb-3" style={{ paddingLeft: '16px' }}>
+								{company.openingHours?.weekend || 'Samstag - Sonntag: Geschlossen'}
 							</Text>
 							<Text className="text-gray-700 mb-3">
 								<strong>Zahlung:</strong> Die Zahlung erfolgt bar bei Abholung. Bitte bringen Sie den Gesamtbetrag in bar mit.
@@ -117,13 +126,6 @@ function OrderPlacedPickupEmailComponent({
 							<Text className="text-gray-700">
 								<strong>Abholadresse:</strong> {company.address}, {company.postalCode} {company.city}
 							</Text>
-							<Link
-								href={`${company.website}/contact`}
-								className="inline-block mt-4 px-4 py-2 rounded text-white font-semibold"
-								style={{ backgroundColor: company.primaryColor }}
-							>
-								Termin vereinbaren
-							</Link>
 						</Section>
 					</Container>
 
@@ -267,4 +269,170 @@ function OrderPlacedPickupEmailComponent({
 export const orderPlacedPickupEmail = (props: OrderPlacedPickupEmailProps) => (
 	<OrderPlacedPickupEmailComponent {...props} />
 );
+
+// Mock data for preview/development
+const mockOrder = {
+	order: {
+		id: 'order_01JSNXDH9BPJWWKVW03B9E9KW8',
+		display_id: 1,
+		email: 'customer@example.com',
+		currency_code: 'eur',
+		total: 20,
+		subtotal: 20,
+		discount_total: 0,
+		shipping_total: 0,
+		tax_total: 0,
+		item_subtotal: 20,
+		item_total: 20,
+		item_tax_total: 0,
+		customer_id: 'cus_01JSNXD6VQC1YH56E4TGC81NWX',
+		items: [
+			{
+				id: 'ordli_01JSNXDH9C47KZ43WQ3TBFXZA9',
+				title: 'L',
+				subtitle: 'Medusa Sweatshirt',
+				thumbnail:
+					'https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatshirt-vintage-front.png',
+				variant_id: 'variant_01JSNXAQCZ5X81A3NRSVFJ3ZHQ',
+				product_id: 'prod_01JSNXAQBQ6MFV5VHKN420NXQW',
+				product_title: 'Medusa Sweatshirt',
+				product_description:
+					'Reimagine the feeling of a classic sweatshirt. With our cotton sweatshirt, everyday essentials no longer have to be ordinary.',
+				product_subtitle: null,
+				product_type: null,
+				product_type_id: null,
+				product_collection: null,
+				product_handle: 'sweatshirt',
+				variant_sku: 'SWEATSHIRT-L',
+				variant_barcode: null,
+				variant_title: 'L',
+				variant_option_values: null,
+				requires_shipping: true,
+				is_giftcard: false,
+				is_discountable: true,
+				is_tax_inclusive: false,
+				is_custom_price: false,
+				metadata: {},
+				raw_compare_at_unit_price: null,
+				raw_unit_price: {
+					value: '20',
+					precision: 20,
+				},
+				created_at: new Date(),
+				updated_at: new Date(),
+				deleted_at: null,
+				tax_lines: [],
+				adjustments: [],
+				compare_at_unit_price: null,
+				unit_price: 20,
+				quantity: 1,
+				raw_quantity: {
+					value: '1',
+					precision: 20,
+				},
+				subtotal: 20,
+				total: 20,
+				original_total: 20,
+				discount_total: 0,
+				discount_subtotal: 0,
+				discount_tax_total: 0,
+				tax_total: 0,
+				original_tax_total: 0,
+				refundable_total_per_unit: 20,
+				refundable_total: 20,
+				fulfilled_total: 0,
+				shipped_total: 0,
+				return_requested_total: 0,
+				return_received_total: 0,
+				return_dismissed_total: 0,
+				write_off_total: 0,
+			},
+		],
+		shipping_address: {
+			id: 'caaddr_01JSNXD6W0TGPH2JQD18K97B25',
+			customer_id: null,
+			company: '',
+			first_name: 'Max',
+			last_name: 'Mustermann',
+			address_1: 'Musterstraße 123',
+			address_2: '',
+			city: 'Berlin',
+			country_code: 'de',
+			province: '',
+			postal_code: '10115',
+			phone: '+49 30 12345678',
+			metadata: null,
+			created_at: '2025-04-25T07:25:48.801Z',
+			updated_at: '2025-04-25T07:25:48.801Z',
+			deleted_at: null,
+		},
+		billing_address: {
+			id: 'caaddr_01JSNXD6W0V7RNZH63CPG26K5W',
+			customer_id: null,
+			company: '',
+			first_name: 'Max',
+			last_name: 'Mustermann',
+			address_1: 'Musterstraße 123',
+			address_2: '',
+			city: 'Berlin',
+			country_code: 'de',
+			province: '',
+			postal_code: '10115',
+			phone: '+49 30 12345678',
+			metadata: null,
+			created_at: '2025-04-25T07:25:48.801Z',
+			updated_at: '2025-04-25T07:25:48.801Z',
+			deleted_at: null,
+		},
+		shipping_methods: [
+			{
+				id: 'ordsm_01JSNXDH9B9DDRQXJT5J5AE5V1',
+				name: 'Abholung am Lager',
+				description: null,
+				is_tax_inclusive: false,
+				is_custom_amount: false,
+				shipping_option_id: 'so_01JSNXAQA64APG6BNHGCMCTN6V',
+				data: {},
+				metadata: null,
+				raw_amount: {
+					value: '0',
+					precision: 20,
+				},
+				created_at: new Date(),
+				updated_at: new Date(),
+				deleted_at: null,
+				tax_lines: [],
+				adjustments: [],
+				amount: 0,
+				order_id: 'order_01JSNXDH9BPJWWKVW03B9E9KW8',
+				subtotal: 0,
+				total: 0,
+				original_total: 0,
+				discount_total: 0,
+				discount_subtotal: 0,
+				discount_tax_total: 0,
+				tax_total: 0,
+				original_tax_total: 0,
+			},
+		],
+		customer: {
+			id: 'cus_01JSNXD6VQC1YH56E4TGC81NWX',
+			company_name: null,
+			first_name: 'Max',
+			last_name: 'Mustermann',
+			email: 'customer@example.com',
+			phone: '+49 30 12345678',
+			has_account: false,
+			metadata: null,
+			created_by: null,
+			created_at: '2025-04-25T07:25:48.791Z',
+			updated_at: '2025-04-25T07:25:48.791Z',
+			deleted_at: null,
+		},
+	},
+};
+
+// Default export for React Email preview
+// @ts-ignore
+export default () => <OrderPlacedPickupEmailComponent {...mockOrder} />;
 

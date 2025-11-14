@@ -47,8 +47,8 @@ export const sendOrderConfirmationWorkflow = createWorkflow(
 		const email = order?.email ?? '';
 
 		// Check if this is a pickup order with manual payment
-		const shippingMethod = order?.shipping_methods?.[0];
-		const shippingOptionName = shippingMethod?.shipping_option?.name?.toLowerCase() || '';
+		const shippingMethod = order?.shipping_methods?.[0] as any;
+		const shippingOptionName = (shippingMethod?.shipping_option?.name || shippingMethod?.name || '').toLowerCase();
 		const isPickupOrder = shippingOptionName.includes('abholung') || shippingOptionName.includes('pickup');
 
 		const payment = order?.payment_collections?.[0]?.payments?.[0];

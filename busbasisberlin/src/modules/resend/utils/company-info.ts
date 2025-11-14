@@ -16,6 +16,10 @@ export interface CompanyInfo {
 	supportEmail?: string;
 	primaryColor: string;
 	secondaryColor: string;
+	openingHours?: {
+		weekdays: string;
+		weekend: string;
+	};
 }
 
 /**
@@ -41,6 +45,11 @@ export function getCompanyInfo(): CompanyInfo {
 		// Brand colors - can be customized via environment variables
 		primaryColor: process.env.BRAND_PRIMARY_COLOR || '#2c5aa0',
 		secondaryColor: process.env.BRAND_SECONDARY_COLOR || '#1e40af',
+		// Opening hours
+		openingHours: {
+			weekdays: 'Montag - Freitag: 08:00–16:00',
+			weekend: 'Samstag - Sonntag: Geschlossen',
+		},
 	};
 }
 
