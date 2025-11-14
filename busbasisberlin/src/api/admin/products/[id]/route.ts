@@ -9,6 +9,25 @@ import {
 	linkProductsToSalesChannelWorkflow,
 } from '@medusajs/medusa/core-flows';
 
+type ProductUpdateBody = {
+	title?: string;
+	subtitle?: string;
+	handle?: string;
+	description?: string;
+	status?: 'draft' | 'published';
+	discountable?: boolean;
+	type_id?: string;
+	collection_id?: string;
+	category_ids?: string[];
+	tags?: string[];
+	shipping_profile_id?: string;
+	sales_channel_ids?: string[];
+	variants?: any[];
+	has_variants?: boolean;
+	options?: Array<{ title: string; values: string[] }>;
+	images?: Array<{ url: string }>;
+};
+
 // GET handler to fetch a single product by ID
 export const GET = async (
 	req: MedusaRequest,
@@ -96,7 +115,7 @@ export const GET = async (
 };
 
 export const PUT = async (
-	req: MedusaRequest,
+	req: MedusaRequest<ProductUpdateBody>,
 	res: MedusaResponse,
 ): Promise<void> => {
 	const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
