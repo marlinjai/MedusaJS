@@ -59,12 +59,26 @@ REQUIRED_VARS=(
 )
 
 # Check if all required variables are set
+# Log which variables are missing for debugging
+missing_vars=()
 for var in "${REQUIRED_VARS[@]}"; do
-    if [[ -z "${!var}" ]]; then
-        log_error "Required environment variable $var is not set"
-        exit 1
-    fi
+	if [[ -z "${!var}" ]]; then
+		missing_vars+=("$var")
+	fi
 done
+
+if [[ ${#missing_vars[@]} -gt 0 ]]; then
+	log_error "Required environment variables are not set:"
+	for var in "${missing_vars[@]}"; do
+		log_error "  - $var"
+	done
+	log_error ""
+	log_error "This script requires all variables to be set. Please check:"
+	log_error "1. GitHub Secrets are configured"
+	log_error "2. Variables are passed in the workflow envs parameter"
+	log_error "3. Variables are exported before this script runs"
+	exit 1
+fi
 
 # Create production environment file from GitHub Secrets
 ENV_FILE="$PROJECT_DIR/.env.production"
