@@ -11,7 +11,7 @@ set -o pipefail  # Fail on pipe errors but allow conditional checks
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 CURRENT_STATE_FILE="$PROJECT_DIR/.current_deployment"
-HEALTH_CHECK_TIMEOUT=120
+HEALTH_CHECK_TIMEOUT=720  # 12 minutes - must be longer than docker-compose start_period (600s)
 HEALTH_CHECK_INTERVAL=5
 
 # Colors for output
