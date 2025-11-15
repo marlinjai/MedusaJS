@@ -35,7 +35,7 @@ WORKDIR /server
 
 # Install required packages for health checks, database connection, and Puppeteer
 # Chromium and dependencies needed for PDF generation
-RUN apk add --no-cache \
+RUN apk update && apk add --no-cache \
     curl \
     postgresql-client \
     chromium \
@@ -44,7 +44,8 @@ RUN apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
-    font-noto-emoji
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/*
 
 # Tell Puppeteer to use the installed Chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
