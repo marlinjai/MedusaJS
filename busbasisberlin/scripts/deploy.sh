@@ -90,11 +90,33 @@ check_health() {
         fi
 
         log_info "Attempt $attempt/$max_attempts: Server: $server_health, Worker: $worker_health"
+
+        # Show logs every 5 attempts to help debug startup issues
+        if [[ $((attempt % 5)) -eq 0 ]]; then
+            log_info "=== Progress check: Showing last 10 lines of logs ==="
+            docker logs --tail 10 "medusa_backend_server_$deployment" 2>&1 | tail -5 || true
+        fi
+
         sleep $HEALTH_CHECK_INTERVAL
         ((attempt++))
     done
 
     log_error "$deployment deployment failed health check after $HEALTH_CHECK_TIMEOUT seconds"
+
+    # Show container logs for debugging
+    log_info "=== Container Logs (last 50 lines) ==="
+    log_info "Server container logs:"
+    docker logs --tail 50 "medusa_backend_server_$deployment" 2>&1 || log_warning "Could not retrieve server logs"
+    log_info ""
+    log_info "Worker container logs:"
+    docker logs --tail 50 "medusa_backend_worker_$deployment" 2>&1 || log_warning "Could not retrieve worker logs"
+    log_info ""
+
+    # Show container status details
+    log_info "=== Container Status Details ==="
+    docker inspect --format='{{json .State}}' "medusa_backend_server_$deployment" 2>/dev/null | python3 -m json.tool 2>/dev/null || docker inspect "medusa_backend_server_$deployment" 2>/dev/null | grep -A 20 '"State"' || log_warning "Could not retrieve server status"
+    log_info ""
+
     return 1
 }
 

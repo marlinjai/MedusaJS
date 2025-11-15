@@ -59,45 +59,45 @@ const PaymentDetails = ({ order }: PaymentDetailsProps) => {
               </div>
             ) : (
               // Standard payment display
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col">
-                  <Text className="font-semibold text-white mb-2">
-                    {t('paymentMethod')}
-                  </Text>
-                  <Text
-                    className="text-neutral-400"
-                    data-testid="payment-method"
-                  >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col">
+              <Text className="font-semibold text-white mb-2">
+                {t('paymentMethod')}
+              </Text>
+              <Text
+                className="text-neutral-400"
+                data-testid="payment-method"
+              >
                     {paymentInfoMap[payment.provider_id]?.title || payment.provider_id}
-                  </Text>
-                </div>
-                <div className="flex flex-col">
-                  <Text className="font-semibold text-white mb-2">
-                    {t('paymentDetails')}
-                  </Text>
-                  <div className="flex gap-2 text-neutral-400 items-center">
-                    <Container className="flex items-center h-7 w-fit p-2 bg-neutral-700">
+              </Text>
+            </div>
+            <div className="flex flex-col">
+              <Text className="font-semibold text-white mb-2">
+                {t('paymentDetails')}
+              </Text>
+              <div className="flex gap-2 text-neutral-400 items-center">
+                <Container className="flex items-center h-7 w-fit p-2 bg-neutral-700">
                       {paymentInfoMap[payment.provider_id]?.icon}
-                    </Container>
-                    <Text data-testid="payment-amount">
-                      {isStripe(payment.provider_id) && payment.data?.card_last4
-                        ? `**** **** **** ${payment.data.card_last4}`
-                        : `${convertToLocale({
-                            amount: payment.amount,
-                            currency_code: order.currency_code,
-                          })} ${t('paidAt')} ${new Date(
-                            payment.created_at ?? ""
-                          ).toLocaleDateString('de-DE', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}`}
-                    </Text>
-                  </div>
-                </div>
+                </Container>
+                <Text data-testid="payment-amount">
+                  {isStripe(payment.provider_id) && payment.data?.card_last4
+                    ? `**** **** **** ${payment.data.card_last4}`
+                    : `${convertToLocale({
+                        amount: payment.amount,
+                        currency_code: order.currency_code,
+                      })} ${t('paidAt')} ${new Date(
+                        payment.created_at ?? ""
+                      ).toLocaleDateString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`}
+                </Text>
               </div>
+            </div>
+          </div>
             )}
           </>
         )}

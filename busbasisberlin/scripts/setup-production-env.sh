@@ -62,9 +62,9 @@ REQUIRED_VARS=(
 # Log which variables are missing for debugging
 missing_vars=()
 for var in "${REQUIRED_VARS[@]}"; do
-	if [[ -z "${!var}" ]]; then
+    if [[ -z "${!var}" ]]; then
 		missing_vars+=("$var")
-	fi
+    fi
 done
 
 if [[ ${#missing_vars[@]} -gt 0 ]]; then
