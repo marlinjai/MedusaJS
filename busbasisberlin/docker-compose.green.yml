@@ -80,7 +80,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 180s
 
   # Medusa Worker Service (Worker Mode) - Green
   medusa-worker-green:
@@ -154,7 +154,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 180s
 
 # Use shared network (will be created by base compose or reused if exists)
 networks:
