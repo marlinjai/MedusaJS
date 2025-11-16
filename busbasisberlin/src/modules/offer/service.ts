@@ -430,6 +430,7 @@ class OfferService extends MedusaService({
 
 		const stats = {
 			total_offers: allOffers.length,
+			draft_offers: allOffers.filter(o => o.status === 'draft').length,
 			active_offers: allOffers.filter(o => o.status === 'active').length,
 			pending_acceptance: allOffers.filter(o => o.status === 'accepted').length,
 			completed_offers: allOffers.filter(o => o.status === 'completed').length,

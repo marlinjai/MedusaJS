@@ -82,6 +82,7 @@ export type OfferWithInventory = OfferType & {
 // ✅ STATISTICS TYPE: For reporting
 export type OfferStatistics = {
 	total_offers: number;
+	draft_offers: number;
 	active_offers: number;
 	pending_acceptance: number;
 	completed_offers: number;

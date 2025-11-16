@@ -91,7 +91,18 @@ export async function GET(
 		const totalCount = await offerService.listOffers(filters);
 
 		// Get statistics for dashboard
-		const stats = await offerService.getOfferStatistics();
+		const backendStats = await offerService.getOfferStatistics();
+
+		// Transform stats to match frontend expectations
+		const stats = {
+			total: backendStats.total_offers,
+			draft: backendStats.draft_offers,
+			active: backendStats.active_offers,
+			accepted: backendStats.pending_acceptance,
+			completed: backendStats.completed_offers,
+			cancelled: backendStats.cancelled_offers,
+			totalValue: backendStats.total_value,
+		};
 
 		res.json({
 			offers,
