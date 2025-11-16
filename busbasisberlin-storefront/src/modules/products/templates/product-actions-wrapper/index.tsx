@@ -40,12 +40,6 @@ export default async function ProductActionsWrapper({
 	// Access the shipping_profile relation that was expanded in the query
 	const shippingProfile = (product as any).shipping_profile;
 
-	// Debug logging
-	console.log('🔍 Product:', product.title);
-	console.log('📦 Shipping Profile:', shippingProfile);
-	console.log('📦 Profile Name:', shippingProfile?.name);
-	console.log('📦 Profile ID:', shippingProfile?.id);
-
 	const profileName = shippingProfile?.name?.toLowerCase() || '';
 
 	// Check if product is "on request" (Artikel auf Anfrage)
@@ -61,9 +55,6 @@ export default async function ProductActionsWrapper({
 		profileName.includes('speergut') || // Handle typo
 		shippingProfile?.type?.toLowerCase() === 'oversized' ||
 		shippingProfile?.id === 'sperrgut';
-
-	console.log('✅ Is On Request:', isOnRequest);
-	console.log('✅ Requires Shipping Quote:', requiresShippingQuote);
 
 	// Priority: On Request > Sperrgut > Normal
 	if (isOnRequest) {

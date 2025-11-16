@@ -565,7 +565,7 @@ export default function StoreSearch() {
 						transformOrigin: 'center center',
 					}}
 				/>
-				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-32 lg:pt-16">
+				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-32 lg:pt-20">
 					{/* Header with Search in one row - Full width */}
 					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 						{/* Title */}

@@ -14,6 +14,7 @@ import QuantitySelector from "../quantity-selector"
 import ShippingInfo from "../shipping-info"
 import StockInfo from "../stock-info"
 import MobileActions from "./mobile-actions"
+import { useVariantContext } from "@modules/products/components/product-detail-section"
 
 type ProductActionsProps = {
   product: HttpTypes.StoreProduct & { shipping_profile?: any }
@@ -36,6 +37,7 @@ export default function ProductActions({
   disabled,
   lowStockThreshold = 5,
 }: ProductActionsProps) {
+  const { setSelectedVariant } = useVariantContext();
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
   const [quantity, setQuantity] = useState(1)
@@ -59,6 +61,11 @@ export default function ProductActions({
       return isEqual(variantOptions, options)
     })
   }, [product.variants, options])
+
+  // Notify context when selected variant changes
+  useEffect(() => {
+    setSelectedVariant(selectedVariant)
+  }, [selectedVariant, setSelectedVariant])
 
   // update the options when a variant is selected
   const setOptionValue = (optionId: string, value: string) => {

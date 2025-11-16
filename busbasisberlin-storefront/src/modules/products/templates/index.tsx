@@ -3,14 +3,14 @@
 import React, { Suspense } from 'react';
 
 import { HttpTypes } from '@medusajs/types';
-import ImageGallery from '@modules/products/components/image-gallery';
-import ProductActions from '@modules/products/components/product-actions';
-import ProductOnboardingCta from '@modules/products/components/product-onboarding-cta';
 import RelatedProducts from '@modules/products/components/related-products';
-import ProductInfo from '@modules/products/templates/product-info';
 import SkeletonRelatedProducts from '@modules/skeletons/templates/skeleton-related-products';
+import ProductOnboardingCta from '@modules/products/components/product-onboarding-cta';
 import { notFound } from 'next/navigation';
-import ProductActionsWrapper from './product-actions-wrapper';
+import ProductDetailSection from '@modules/products/components/product-detail-section';
+import { listProducts } from '@lib/data/products';
+import { getInventorySettings } from '@lib/data/inventory-settings';
+import { retrieveCustomer } from '@lib/data/customer';
 
 type ProductTemplateProps = {
 	product: HttpTypes.StoreProduct;
@@ -18,7 +18,7 @@ type ProductTemplateProps = {
 	countryCode: string;
 };
 
-const ProductTemplate: React.FC<ProductTemplateProps> = ({
+const ProductTemplate: React.FC<ProductTemplateProps> = async ({
 	product,
 	region,
 	countryCode,
@@ -26,6 +26,20 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
 	if (!product || !product.id) {
 		return notFound();
 	}
+
+	// Fetch additional data needed for ProductActions
+	// Re-fetch product to get latest pricing and shipping profile
+	const [freshProduct, customer, inventorySettings] = await Promise.all([
+		listProducts({
+			queryParams: { id: [product.id] },
+			regionId: region.id,
+		}).then(({ response }) => response.products[0]),
+		retrieveCustomer(),
+		getInventorySettings(),
+	]);
+
+	// Use fresh product if available, otherwise fall back to original
+	const productWithData = freshProduct || product;
 
 	return (
 		<div className="relative bg-background min-h-screen">
@@ -42,37 +56,18 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
 
 			{/* Product Detail Section */}
 			<div className="relative">
-				<div className="content-container py-12 md:py-20">
-					{/* Main Grid: Image Left, Content Right */}
+				<div className="content-container pt-32 md:pt-20 pb-12 md:pb-20">
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-						{/* Left: Image Gallery */}
-						<div className="w-full">
-							<ImageGallery images={product?.images || []} />
-						</div>
+						{/* Product Detail Section - returns grid with image and info/actions */}
+						<ProductDetailSection
+							product={productWithData}
+							region={region}
+							customer={customer}
+							inventorySettings={inventorySettings}
+						/>
 
-						{/* Right: Product Info and Actions */}
+						{/* Onboarding CTA - Server Component in right column */}
 						<div className="flex flex-col gap-y-8">
-							{/* Product Info */}
-							<div className="bg-card rounded-lg border border-border p-6 md:p-8">
-								<ProductInfo product={product} />
-							</div>
-
-							{/* Product Actions (Add to Cart, etc.) */}
-							<div className="bg-card rounded-lg border border-border p-6 md:p-8">
-								<Suspense
-									fallback={
-										<ProductActions
-											disabled={true}
-											product={product}
-											region={region}
-										/>
-									}
-								>
-									<ProductActionsWrapper id={product.id} region={region} />
-								</Suspense>
-							</div>
-
-							{/* Onboarding CTA if needed */}
 							<ProductOnboardingCta />
 						</div>
 					</div>
