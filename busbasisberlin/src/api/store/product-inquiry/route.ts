@@ -3,7 +3,7 @@
  * API route for product inquiry requests (Artikel auf Anfrage)
  *
  * This route receives product inquiry requests from the frontend
- * and sends an email notification to info@buzzerscampberlin.de using
+ * and sends an email notification to info@basiscampberlin.de using
  * Medusa's Notification Module with Resend.
  */
 
@@ -62,7 +62,7 @@ export async function POST(
 
 		// Prepare notification data
 		const notificationData = {
-			to: 'info@buzzerscampberlin.de',
+			to: 'info@basiscampberlin.de',
 			channel: 'email',
 			template: 'product-inquiry',
 			data: {
