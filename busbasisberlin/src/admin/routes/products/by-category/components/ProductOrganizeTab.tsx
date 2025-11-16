@@ -187,17 +187,17 @@ const ProductOrganizeTab = ({
 		queryKey: ['admin-sales-channels'],
 		queryFn: async () => {
 			try {
-				const res = await fetch('/admin/sales-channels', {
-					credentials: 'include',
-				});
+			const res = await fetch('/admin/sales-channels', {
+				credentials: 'include',
+			});
 				if (!res.ok) {
 					console.error('[ProductOrganizeTab] Sales channels fetch failed:', res.status, res.statusText);
 					return [];
 				}
-				const data = await res.json();
+			const data = await res.json();
 				console.log('[ProductOrganizeTab] Sales channels API response:', data);
 				// API returns { sales_channels: [...] }
-				return data?.sales_channels || data?.channels || [];
+			return data?.sales_channels || data?.channels || [];
 			} catch (error) {
 				console.error('[ProductOrganizeTab] Error fetching sales channels:', error);
 				return [];

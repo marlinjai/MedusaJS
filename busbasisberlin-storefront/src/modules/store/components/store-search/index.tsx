@@ -3,7 +3,7 @@
 import { searchClient } from '@lib/config';
 import { createRouting } from '@lib/search-routing';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
 import {
 	Configure,
@@ -167,39 +167,62 @@ function FilterSidebar() {
 							</div>
 						</div>
 					</div>
+
+					{/* Sort Options */}
+					<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
+						<h3 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
+							<BsSortDown className="w-5 h-5 text-blue-400" />
+							Sortieren
+						</h3>
+						<div className="relative">
+							<SortBy
+								items={[
+									{ label: 'Neueste zuerst', value: 'products' },
+									{
+										label: 'Preis: Niedrig → Hoch',
+										value: 'products:min_price:asc',
+									},
+									{
+										label: 'Preis: Hoch → Niedrig',
+										value: 'products:max_price:desc',
+									},
+									{ label: 'Name: A-Z', value: 'products:title:asc' },
+									{ label: 'Name: Z-A', value: 'products:title:desc' },
+								]}
+								classNames={{
+									root: 'relative',
+									select:
+										'w-full bg-stone-800 border border-stone-700 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
+								}}
+							/>
+							<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+								<svg
+									className="w-4 h-4 text-gray-400"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</div>
+						</div>
+					</div>
 				</div>
 			</aside>
 		</>
 	);
 }
 
-// Custom Toolbar Component with improved UI
+// Custom Toolbar Component - Simplified: Stats, Clear Filters, View Toggle, and Items Per Page
 function Toolbar() {
 	const { items: refinements, refine: clearRefinement } =
 		useCurrentRefinements();
 	const hasActiveFilters = refinements.length > 0;
-	const [isFilterOpen, setIsFilterOpen] = useState(false);
-	const filterRef = useRef<HTMLDivElement>(null);
-
-	// Close filter dropdown when clicking outside
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				filterRef.current &&
-				!filterRef.current.contains(event.target as Node)
-			) {
-				setIsFilterOpen(false);
-			}
-		};
-
-		if (isFilterOpen) {
-			document.addEventListener('mousedown', handleClickOutside);
-		}
-
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
-	}, [isFilterOpen]);
 
 	return (
 		<div className="bg-stone-950 rounded-xl border border-stone-800 p-4 mb-6 shadow-lg">
@@ -239,115 +262,8 @@ function Toolbar() {
 					)}
 				</div>
 
-				{/* Bottom Row: Filters, Sort and Display Options */}
+				{/* Bottom Row: View Toggle and Display Options */}
 				<div className="flex flex-wrap items-center gap-3 pt-3 border-t border-stone-800">
-					{/* Quick Filter: Availability */}
-					<div className="flex items-center gap-2">
-						<BsFilter className="w-4 h-4 text-gray-400" />
-						<span className="text-sm font-medium text-gray-400">Filter:</span>
-						<div className="relative" ref={filterRef}>
-							<button
-								onClick={() => setIsFilterOpen(!isFilterOpen)}
-								className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-stone-800 border border-stone-700 rounded-lg hover:bg-stone-700 hover:border-stone-600 transition-colors"
-							>
-								Verfügbarkeit
-								<svg
-									className={`w-4 h-4 transition-transform ${
-										isFilterOpen ? 'rotate-180' : ''
-									}`}
-									fill="none"
-									viewBox="0 0 24 24"
-									stroke="currentColor"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M19 9l-7 7-7-7"
-									/>
-								</svg>
-							</button>
-							{isFilterOpen && (
-								<div className="absolute top-full left-0 mt-2 w-64 bg-stone-800 border border-stone-700 rounded-lg shadow-xl z-50 p-3">
-									<RefinementList
-										attribute="is_available"
-										transformItems={items =>
-											items.map(item => ({
-												...item,
-												label:
-													item.label === 'true'
-														? 'Verfügbar'
-														: 'Zurzeit nicht lieferbar',
-											}))
-										}
-										classNames={{
-											root: 'space-y-2',
-											item: 'py-2 px-3 rounded-lg hover:bg-stone-700 transition-colors',
-											label: 'flex items-center gap-3 cursor-pointer group',
-											checkbox:
-												'h-4 w-4 rounded border-stone-600 bg-stone-900 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors',
-											labelText:
-												'text-sm text-gray-300 group-hover:text-white flex-1 font-medium',
-											count:
-												'text-xs text-gray-400 bg-stone-900 px-2.5 py-1 rounded-full min-w-[32px] text-center font-medium',
-										}}
-									/>
-								</div>
-							)}
-						</div>
-					</div>
-
-					{/* Divider */}
-					<div className="h-6 w-px bg-stone-700" />
-
-					{/* Sort options */}
-					<div className="flex items-center gap-2">
-						<BsSortDown className="w-4 h-4 text-gray-400" />
-						<span className="text-sm font-medium text-gray-400">
-							Sortieren:
-						</span>
-						<div className="relative">
-							<SortBy
-								items={[
-									{ label: 'Neueste zuerst', value: 'products' },
-									{
-										label: 'Preis: Niedrig → Hoch',
-										value: 'products:min_price:asc',
-									},
-									{
-										label: 'Preis: Hoch → Niedrig',
-										value: 'products:max_price:desc',
-									},
-									{ label: 'Name: A-Z', value: 'products:title:asc' },
-									{ label: 'Name: Z-A', value: 'products:title:desc' },
-								]}
-								classNames={{
-									root: 'relative',
-									select:
-										'bg-stone-800 border border-stone-700 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
-								}}
-							/>
-							<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-								<svg
-									className="w-4 h-4 text-gray-400"
-									fill="none"
-									viewBox="0 0 24 24"
-									stroke="currentColor"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M19 9l-7 7-7-7"
-									/>
-								</svg>
-							</div>
-						</div>
-					</div>
-
-					{/* Divider */}
-					<div className="h-6 w-px bg-stone-700" />
-
 					{/* View Toggle: Grid/List */}
 					<ViewToggle />
 
@@ -565,7 +481,7 @@ export default function StoreSearch() {
 						transformOrigin: 'center center',
 					}}
 				/>
-				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-32 lg:pt-20">
+				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-32 lg:pt-20 [.hero-alert-visible_&]:pt-40 [.hero-alert-visible_&]:lg:pt-28">
 					{/* Header with Search in one row - Full width */}
 					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 						{/* Title */}

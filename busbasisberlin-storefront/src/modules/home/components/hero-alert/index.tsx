@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type HeroAlertData = {
 	enabled: boolean;
@@ -13,6 +13,7 @@ type HeroAlertData = {
 const HeroAlert = () => {
 	const [alert, setAlert] = useState<HeroAlertData | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const previousVisibilityRef = useRef<boolean | null>(null);
 
 	useEffect(() => {
 		const fetchAlertSettings = async () => {
@@ -36,6 +37,38 @@ const HeroAlert = () => {
 
 		fetchAlertSettings();
 	}, []);
+
+	// Add/remove class on body when banner is visible
+	// Only update when visibility actually changes to prevent infinite loops
+	useEffect(() => {
+		if (typeof window === 'undefined' || !document.body) {
+			return;
+		}
+
+		const isVisible =
+			!isLoading && alert && alert.enabled && !!alert.text?.trim();
+
+		// Only update if visibility has changed
+		if (previousVisibilityRef.current === isVisible) {
+			return;
+		}
+
+		previousVisibilityRef.current = isVisible;
+
+		if (isVisible) {
+			document.body.classList.add('hero-alert-visible');
+		} else {
+			document.body.classList.remove('hero-alert-visible');
+		}
+
+		// Cleanup on unmount
+		return () => {
+			if (document.body) {
+				document.body.classList.remove('hero-alert-visible');
+			}
+			previousVisibilityRef.current = null;
+		};
+	}, [isLoading, alert?.enabled, alert?.text]);
 
 	// Don't render if loading, disabled, or empty text
 	if (isLoading || !alert || !alert.enabled || !alert.text.trim()) {
