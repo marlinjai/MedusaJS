@@ -49,8 +49,8 @@ const ProductOrganizeTab = ({
 				}
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Collections API response:', data);
-				// Try multiple possible response formats
-				const collections = data?.product_collections || data?.collections || data?.data || (Array.isArray(data) ? data : []);
+				// API returns { collections: [...] }
+				const collections = data?.collections || data?.product_collections || data?.data || (Array.isArray(data) ? data : []);
 				const result = Array.isArray(collections) ? collections : [];
 				console.log('[ProductOrganizeTab] Parsed collections:', result);
 				return result;
@@ -61,6 +61,8 @@ const ProductOrganizeTab = ({
 		},
 		initialData: [],
 		placeholderData: [],
+		retry: 2,
+		retryDelay: 1000,
 	});
 
 	// Fetch product types
@@ -77,6 +79,7 @@ const ProductOrganizeTab = ({
 				}
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Product types API response:', data);
+				// API returns { product_types: [...] }
 				const types = data?.product_types || data?.data || (Array.isArray(data) ? data : []);
 				const result = Array.isArray(types) ? types : [];
 				console.log('[ProductOrganizeTab] Parsed product types:', result);
@@ -88,6 +91,8 @@ const ProductOrganizeTab = ({
 		},
 		initialData: [],
 		placeholderData: [],
+		retry: 2,
+		retryDelay: 1000,
 	});
 
 	// Fetch shipping profiles
@@ -104,6 +109,7 @@ const ProductOrganizeTab = ({
 				}
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Shipping profiles API response:', data);
+				// API returns { shipping_profiles: [...] }
 				const profiles = data?.shipping_profiles || data?.data || (Array.isArray(data) ? data : []);
 				const result = Array.isArray(profiles) ? profiles : [];
 				console.log('[ProductOrganizeTab] Parsed shipping profiles:', result);
@@ -115,6 +121,8 @@ const ProductOrganizeTab = ({
 		},
 		initialData: [],
 		placeholderData: [],
+		retry: 2,
+		retryDelay: 1000,
 	});
 
 	// Fetch product tags
@@ -131,6 +139,7 @@ const ProductOrganizeTab = ({
 				}
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Product tags API response:', data);
+				// API returns { product_tags: [...] }
 				const tags = data?.product_tags || data?.data || (Array.isArray(data) ? data : []);
 				const result = Array.isArray(tags) ? tags : [];
 				console.log('[ProductOrganizeTab] Parsed product tags:', result);
@@ -142,6 +151,8 @@ const ProductOrganizeTab = ({
 		},
 		initialData: [],
 		placeholderData: [],
+		retry: 2,
+		retryDelay: 1000,
 	});
 
 	// Fetch categories tree and flatten it
@@ -172,16 +183,30 @@ const ProductOrganizeTab = ({
 	});
 
 	// Fetch sales channels
-	const { data: salesChannelsData } = useQuery({
+	const { data: salesChannelsData = [] } = useQuery({
 		queryKey: ['admin-sales-channels'],
 		queryFn: async () => {
-			const res = await fetch('/admin/sales-channels', {
-				credentials: 'include',
-			});
-			if (!res.ok) throw new Error('Failed to fetch sales channels');
-			const data = await res.json();
-			return data?.sales_channels || data?.channels || [];
+			try {
+				const res = await fetch('/admin/sales-channels', {
+					credentials: 'include',
+				});
+				if (!res.ok) {
+					console.error('[ProductOrganizeTab] Sales channels fetch failed:', res.status, res.statusText);
+					return [];
+				}
+				const data = await res.json();
+				console.log('[ProductOrganizeTab] Sales channels API response:', data);
+				// API returns { sales_channels: [...] }
+				return data?.sales_channels || data?.channels || [];
+			} catch (error) {
+				console.error('[ProductOrganizeTab] Error fetching sales channels:', error);
+				return [];
+			}
 		},
+		initialData: [],
+		placeholderData: [],
+		retry: 2,
+		retryDelay: 1000,
 	});
 
 	const handleAddTag = (tagValue?: string) => {
