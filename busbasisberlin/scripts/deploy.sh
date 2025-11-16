@@ -93,8 +93,12 @@ check_health() {
 
         # Show logs every 5 attempts to help debug startup issues
         if [[ $((attempt % 5)) -eq 0 ]]; then
-            log_info "=== Progress check: Showing last 10 lines of logs ==="
-            docker logs --tail 10 "medusa_backend_server_$deployment" 2>&1 | tail -5 || true
+            log_info "=== Progress check: Showing last 30 lines of logs ==="
+            docker logs --tail 30 "medusa_backend_server_$deployment" 2>&1 || true
+            log_info "=== Checking if process is running ==="
+            docker exec "medusa_backend_server_$deployment" ps aux 2>/dev/null | grep -E "(node|medusa|npm)" || log_warning "Could not check process status"
+            log_info "=== Checking if port is listening ==="
+            docker exec "medusa_backend_server_$deployment" netstat -tlnp 2>/dev/null | grep -E "(9000|9002|9003)" || docker exec "medusa_backend_server_$deployment" ss -tlnp 2>/dev/null | grep -E "(9000|9002|9003)" || log_warning "Could not check port status"
         fi
 
         sleep $HEALTH_CHECK_INTERVAL
@@ -103,13 +107,28 @@ check_health() {
 
     log_error "$deployment deployment failed health check after $HEALTH_CHECK_TIMEOUT seconds"
 
-    # Show container logs for debugging
-    log_info "=== Container Logs (last 50 lines) ==="
+    # Show container logs for debugging - show more lines to catch errors
+    log_info "=== Container Logs (last 200 lines) ==="
     log_info "Server container logs:"
-    docker logs --tail 50 "medusa_backend_server_$deployment" 2>&1 || log_warning "Could not retrieve server logs"
+    docker logs --tail 600 "medusa_backend_server_$deployment" 2>&1 || log_warning "Could not retrieve server logs"
     log_info ""
     log_info "Worker container logs:"
-    docker logs --tail 50 "medusa_backend_worker_$deployment" 2>&1 || log_warning "Could not retrieve worker logs"
+    docker logs --tail 600 "medusa_backend_worker_$deployment" 2>&1 || log_warning "Could not retrieve worker logs"
+    log_info ""
+
+    # Check process status
+    log_info "=== Process Status ==="
+    log_info "Server container processes:"
+    docker exec "medusa_backend_server_$deployment" ps aux 2>/dev/null || log_warning "Could not check server processes"
+    log_info ""
+    log_info "Worker container processes:"
+    docker exec "medusa_backend_worker_$deployment" ps aux 2>/dev/null || log_warning "Could not check worker processes"
+    log_info ""
+
+    # Check port status
+    log_info "=== Port Status ==="
+    log_info "Server container listening ports:"
+    docker exec "medusa_backend_server_$deployment" netstat -tlnp 2>/dev/null || docker exec "medusa_backend_server_$deployment" ss -tlnp 2>/dev/null || log_warning "Could not check server ports"
     log_info ""
 
     # Show container status details

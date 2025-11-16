@@ -45,6 +45,8 @@ RUN apk update && apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     font-noto-emoji \
+    net-tools \
+    procps \
     && rm -rf /var/cache/apk/*
 
 # Tell Puppeteer to use the installed Chromium
