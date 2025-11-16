@@ -161,6 +161,8 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 					process.env.COMPANY_SUPPORT_EMAIL || 'info@basiscampberlin.de',
 				primaryColor: process.env.BRAND_PRIMARY_COLOR || '#2c5aa0',
 				secondaryColor: process.env.BRAND_SECONDARY_COLOR || '#1e40af',
+				// Bank account information for payment
+				bankInfo: process.env.COMPANY_BANK_INFO || null,
 			},
 
 			// Offer information
@@ -851,7 +853,13 @@ function getHTMLTemplate(data: any): string {
         <!-- Footer -->
         <div class="footer">
           <div>{{company.name}} | {{company.address}} | {{company.postalCode}} {{company.city}} | {{company.email}}</div>
-          <div style="margin-top: 2mm;">Erstellt am {{generatedAt}}</div>
+          {{#if company.bankInfo}}
+          <div style="margin-top: 3mm; font-weight: 500; color: #333; line-height: 1.6;">
+            <strong>Zahlungsinformationen:</strong><br>
+            {{company.bankInfo}}
+          </div>
+          {{/if}}
+          <div style="margin-top: 2mm; font-size: 8pt;">Erstellt am {{generatedAt}}</div>
         </div>
       </div>
     </body>

@@ -266,12 +266,48 @@ export default function OfferDetailPage() {
 		};
 	}, [pdfPreviewUrl]);
 
+	// Verify PDF URL is accessible
+	const verifyPdfUrl = async (url: string): Promise<boolean> => {
+		try {
+			// Try a HEAD request first (lighter)
+			const response = await fetch(url, {
+				method: 'HEAD',
+				mode: 'no-cors', // Allow cross-origin checks
+			});
+			// With no-cors, we can't read the response, but if it doesn't throw, it's likely accessible
+			return true;
+		} catch (error) {
+			// Try a full fetch as fallback
+			try {
+				const response = await fetch(url, {
+					method: 'GET',
+					mode: 'no-cors',
+				});
+				// With no-cors, if it doesn't throw, assume it's accessible
+				return true;
+			} catch {
+				return false;
+			}
+		}
+	};
+
 	// Preview email and PDF before sending
 	const previewEmail = async (eventType?: string) => {
 		if (!offer) return;
 
 		setLoadingPreview(true);
 		try {
+			// First, check if we have a cached S3 PDF URL
+			// Use proxy endpoint to ensure accessibility (handles CORS and access issues)
+			let useS3Url = false;
+			if (offer.pdf_url) {
+				console.log('Using S3 PDF URL via proxy for preview:', offer.pdf_url);
+				// Use proxy endpoint to ensure the PDF is accessible
+				const proxyUrl = `/admin/offers/${offer.id}/get-cached-pdf?proxy=true`;
+				setPdfPreviewUrl(proxyUrl);
+				useS3Url = true;
+			}
+
 			const response = await fetch(`/admin/offers/${offer.id}/preview-email`, {
 				method: 'POST',
 				headers: {
@@ -290,9 +326,14 @@ export default function OfferDetailPage() {
 			const result = await response.json();
 			setPreviewData(result);
 
-			// Create blob URL for PDF preview (more reliable than data: URL)
-			if (result.pdf?.base64) {
+			// Only create blob URL if we're not using S3 URL
+			if (!useS3Url && result.pdf?.base64) {
 				try {
+					// Revoke old blob URL if it exists
+					if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
+						URL.revokeObjectURL(pdfPreviewUrl);
+					}
+
 					const binaryString = atob(result.pdf.base64);
 					const bytes = new Uint8Array(binaryString.length);
 					for (let i = 0; i < binaryString.length; i++) {
@@ -300,11 +341,34 @@ export default function OfferDetailPage() {
 					}
 					const blob = new Blob([bytes], { type: 'application/pdf' });
 					const blobUrl = URL.createObjectURL(blob);
-					setPdfPreviewUrl(blobUrl);
+
+					// Verify blob was created successfully
+					if (blob.size === 0) {
+						console.error('PDF blob is empty');
+						setPdfPreviewUrl(null);
+					} else {
+						console.log(`PDF blob created: ${blob.size} bytes`);
+						// Verify blob URL works by checking if we can read it
+						try {
+							const testResponse = await fetch(blobUrl);
+							if (testResponse.ok) {
+								setPdfPreviewUrl(blobUrl);
+							} else {
+								console.error('Blob URL verification failed');
+								setPdfPreviewUrl(null);
+							}
+						} catch (error) {
+							console.error('Error verifying blob URL:', error);
+							setPdfPreviewUrl(null);
+						}
+					}
 				} catch (error) {
 					console.error('Error creating PDF blob URL:', error);
 					setPdfPreviewUrl(null);
 				}
+			} else if (!useS3Url) {
+				console.warn('No PDF base64 data in preview result');
+				setPdfPreviewUrl(null);
 			}
 
 			setShowPreview(true);
@@ -2156,15 +2220,13 @@ export default function OfferDetailPage() {
 								<div className="h-full w-full flex flex-col">
 									{pdfPreviewUrl ? (
 										<>
-											<iframe
-												src={pdfPreviewUrl}
-												className="w-full h-full border-0 flex-1"
-												title="PDF Preview"
+											<embed
+												src={`${pdfPreviewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+												type="application/pdf"
+												className="w-full h-full flex-1 border-0"
+												style={{ minHeight: '600px' }}
 												onError={() => {
-													console.error('PDF preview iframe error');
-												}}
-												onLoad={() => {
-													// PDF loaded successfully
+													console.error('PDF preview embed error');
 												}}
 											/>
 											{/* Fallback download link */}

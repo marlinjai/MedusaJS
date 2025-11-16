@@ -76,7 +76,42 @@ export async function GET(
 			return;
 		}
 
-		// Redirect to S3 URL for direct access
+		// Check if we should proxy (for preview) or redirect (for download)
+		const proxy = req.query.proxy === 'true';
+
+		if (proxy) {
+			// Proxy the PDF through our server to ensure accessibility
+			// This is useful for previews when S3 URL might have CORS issues
+			try {
+				logger.info(
+					`[PDF-S3] Proxying PDF for offer ${offer.offer_number} from: ${offer.pdf_url}`,
+				);
+
+				const pdfResponse = await fetch(offer.pdf_url!);
+				if (!pdfResponse.ok) {
+					throw new Error(`S3 fetch failed with status: ${pdfResponse.status}`);
+				}
+
+				const pdfBuffer = await pdfResponse.arrayBuffer();
+
+				// Set headers for PDF
+				res.setHeader('Content-Type', 'application/pdf');
+				res.setHeader('Content-Disposition', `inline; filename="${offer.offer_number}.pdf"`);
+				res.setHeader('Content-Length', pdfBuffer.byteLength);
+				res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+
+				// Send PDF buffer
+				res.end(Buffer.from(pdfBuffer));
+				return;
+			} catch (error) {
+				logger.error(
+					`[PDF-S3] Failed to proxy PDF: ${error.message}, falling back to redirect`,
+				);
+				// Fall back to redirect if proxy fails
+			}
+		}
+
+		// Redirect to S3 URL for direct access (default behavior)
 		logger.info(
 			`[PDF-S3] Redirecting to S3 PDF for offer ${offer.offer_number}: ${offer.pdf_url}`,
 		);
