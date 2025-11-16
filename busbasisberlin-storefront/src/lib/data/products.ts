@@ -64,7 +64,7 @@ export const listProducts = async ({
 					region_id: region?.id,
 					country_code: region?.countries?.[0]?.iso_2 || 'de',
 					fields:
-						'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags,+shipping_profile.*',
+						'*variants.calculated_price,+variants.inventory_quantity,+variants.images.*,+images.*,+metadata,+tags,+shipping_profile.*',
 					...queryParams,
 				},
 				headers,
@@ -187,7 +187,7 @@ export const retrieveProduct = async ({
 				region_id: region?.id,
 				country_code: region?.countries?.[0]?.iso_2 || 'de',
 				fields:
-					'*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags,+shipping_profile.*',
+					'*variants.calculated_price,+variants.inventory_quantity,+variants.images.*,+images.*,+metadata,+tags,+shipping_profile.*',
 				limit: 1,
 			},
 			headers,
