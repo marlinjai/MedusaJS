@@ -87,6 +87,13 @@ export type OfferStatistics = {
 	pending_acceptance: number;
 	completed_offers: number;
 	cancelled_offers: number;
+	// Value sums by status (in cents)
+	draft_value: number;
+	active_value: number;
+	accepted_value: number;
+	completed_value: number;
+	cancelled_value: number;
+	// Total value excluding cancelled and draft offers (only active, accepted, completed)
 	total_value: number;
 	average_offer_value: number;
 };

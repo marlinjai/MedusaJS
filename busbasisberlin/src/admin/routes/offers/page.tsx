@@ -5,7 +5,7 @@
  */
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { MagnifyingGlass, Plus } from '@medusajs/icons';
-import { CheckCircle, Clock, FileText, TrendingUp } from 'lucide-react';
+import { CheckCircle, Clock, FileText, TrendingUp, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,6 +47,13 @@ interface OfferStatistics {
 	accepted: number;
 	completed: number;
 	cancelled: number;
+	// Value sums by status (in cents)
+	draftValue?: number;
+	activeValue?: number;
+	acceptedValue?: number;
+	completedValue?: number;
+	cancelledValue?: number;
+	// Total value (excludes cancelled and draft)
 	totalValue: number;
 }
 
@@ -115,6 +122,11 @@ const OffersPage = () => {
 						accepted: 0,
 						completed: 0,
 						cancelled: 0,
+						draftValue: 0,
+						activeValue: 0,
+						acceptedValue: 0,
+						completedValue: 0,
+						cancelledValue: 0,
 						totalValue: 0,
 					},
 				);
@@ -241,68 +253,156 @@ const OffersPage = () => {
 				</Button>
 			</div>
 
-			{/* Statistics Cards */}
-			<div className="px-6 py-4 border-b">
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					<div className="bg-ui-bg-subtle rounded-lg p-4">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<FileText className="h-6 w-6 text-ui-fg-muted" />
-							</div>
-							<div className="ml-3">
-								<Text className="text-xs font-medium text-ui-fg-subtle">
-									Angebote gesamt
-								</Text>
-								<Text className="text-lg font-semibold">{stats.total}</Text>
-							</div>
-						</div>
-					</div>
+			{/* Statistics Cards - Compact and Interactive */}
+			<div className="px-6 py-3 border-b bg-ui-bg-subtle">
+				<div className="flex items-center gap-2 flex-wrap">
+					{/* Total - Not clickable */}
+					<button
+						className={`px-3 py-2 rounded-md text-left transition-colors ${
+							statusFilter === 'all'
+								? 'bg-ui-bg-base border border-ui-border-interactive'
+								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
+						}`}
+						onClick={() => setStatusFilter('all')}
+					>
+						<Text className="text-xs text-ui-fg-subtle">Gesamt</Text>
+						<Text className="text-sm font-semibold block">{stats.total}</Text>
+					</button>
 
-					<div className="bg-ui-bg-subtle rounded-lg p-4">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<TrendingUp className="h-6 w-6 text-ui-fg-muted" />
-							</div>
-							<div className="ml-3">
-								<Text className="text-xs font-medium text-ui-fg-subtle">
-									Aktive Angebote
-								</Text>
-								<Text className="text-lg font-semibold">{stats.active}</Text>
-							</div>
-						</div>
-					</div>
-
-					<div className="bg-ui-bg-subtle rounded-lg p-4">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<Clock className="h-6 w-6 text-ui-fg-muted" />
-							</div>
-							<div className="ml-3">
-								<Text className="text-xs font-medium text-ui-fg-subtle">
-									Angenommene Angebote
-								</Text>
-								<Text className="text-lg font-semibold">{stats.accepted}</Text>
-							</div>
-						</div>
-					</div>
-
-					<div className="bg-ui-bg-subtle rounded-lg p-4">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<CheckCircle className="h-6 w-6 text-ui-fg-muted" />
-							</div>
-							<div className="ml-3">
-								<Text className="text-xs font-medium text-ui-fg-subtle">
-									Gesamtwert
-								</Text>
-								<Text className="text-lg font-semibold">
-									{new Intl.NumberFormat('de-DE', {
+					{/* Draft */}
+					<button
+						className={`px-3 py-2 rounded-md text-left transition-colors ${
+							statusFilter === 'draft'
+								? 'bg-ui-bg-base border border-ui-border-interactive'
+								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
+						}`}
+						onClick={() => setStatusFilter('draft')}
+					>
+						<Text className="text-xs text-ui-fg-subtle">Entwürfe</Text>
+						<div className="flex items-baseline gap-1">
+							<Text className="text-sm font-semibold">{stats.draft}</Text>
+							{stats.draftValue !== undefined && stats.draftValue > 0 && (
+								<Text className="text-xs text-ui-fg-muted">
+									({new Intl.NumberFormat('de-DE', {
 										style: 'currency',
 										currency: 'EUR',
-									}).format(stats.totalValue / 100)}
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 0,
+									}).format((stats.draftValue || 0) / 100)})
 								</Text>
-							</div>
+							)}
 						</div>
+					</button>
+
+					{/* Active */}
+					<button
+						className={`px-3 py-2 rounded-md text-left transition-colors ${
+							statusFilter === 'active'
+								? 'bg-ui-bg-base border border-ui-border-interactive'
+								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
+						}`}
+						onClick={() => setStatusFilter('active')}
+					>
+						<Text className="text-xs text-ui-fg-subtle">Aktiv</Text>
+						<div className="flex items-baseline gap-1">
+							<Text className="text-sm font-semibold">{stats.active}</Text>
+							{stats.activeValue !== undefined && stats.activeValue > 0 && (
+								<Text className="text-xs text-ui-fg-muted">
+									({new Intl.NumberFormat('de-DE', {
+										style: 'currency',
+										currency: 'EUR',
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 0,
+									}).format((stats.activeValue || 0) / 100)})
+								</Text>
+							)}
+						</div>
+					</button>
+
+					{/* Accepted */}
+					<button
+						className={`px-3 py-2 rounded-md text-left transition-colors ${
+							statusFilter === 'accepted'
+								? 'bg-ui-bg-base border border-ui-border-interactive'
+								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
+						}`}
+						onClick={() => setStatusFilter('accepted')}
+					>
+						<Text className="text-xs text-ui-fg-subtle">Angenommen</Text>
+						<div className="flex items-baseline gap-1">
+							<Text className="text-sm font-semibold">{stats.accepted}</Text>
+							{stats.acceptedValue !== undefined && stats.acceptedValue > 0 && (
+								<Text className="text-xs text-ui-fg-muted">
+									({new Intl.NumberFormat('de-DE', {
+										style: 'currency',
+										currency: 'EUR',
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 0,
+									}).format((stats.acceptedValue || 0) / 100)})
+								</Text>
+							)}
+						</div>
+					</button>
+
+					{/* Completed */}
+					<button
+						className={`px-3 py-2 rounded-md text-left transition-colors ${
+							statusFilter === 'completed'
+								? 'bg-ui-bg-base border border-ui-border-interactive'
+								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
+						}`}
+						onClick={() => setStatusFilter('completed')}
+					>
+						<Text className="text-xs text-ui-fg-subtle">Abgeschlossen</Text>
+						<div className="flex items-baseline gap-1">
+							<Text className="text-sm font-semibold">{stats.completed}</Text>
+							{stats.completedValue !== undefined && stats.completedValue > 0 && (
+								<Text className="text-xs text-ui-fg-muted">
+									({new Intl.NumberFormat('de-DE', {
+										style: 'currency',
+										currency: 'EUR',
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 0,
+									}).format((stats.completedValue || 0) / 100)})
+								</Text>
+							)}
+						</div>
+					</button>
+
+					{/* Cancelled */}
+					<button
+						className={`px-3 py-2 rounded-md text-left transition-colors ${
+							statusFilter === 'cancelled'
+								? 'bg-ui-bg-base border border-ui-border-interactive'
+								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
+						}`}
+						onClick={() => setStatusFilter('cancelled')}
+					>
+						<Text className="text-xs text-ui-fg-subtle">Storniert</Text>
+						<div className="flex items-baseline gap-1">
+							<Text className="text-sm font-semibold">{stats.cancelled}</Text>
+							{stats.cancelledValue !== undefined && stats.cancelledValue > 0 && (
+								<Text className="text-xs text-ui-fg-muted">
+									({new Intl.NumberFormat('de-DE', {
+										style: 'currency',
+										currency: 'EUR',
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 0,
+									}).format((stats.cancelledValue || 0) / 100)})
+								</Text>
+							)}
+						</div>
+					</button>
+
+					{/* Total Value - Not clickable, always visible */}
+					<div className="ml-auto px-3 py-2 rounded-md bg-ui-bg-base">
+						<Text className="text-xs text-ui-fg-subtle">Gesamtwert</Text>
+						<Text className="text-sm font-semibold">
+							{new Intl.NumberFormat('de-DE', {
+								style: 'currency',
+								currency: 'EUR',
+							}).format(stats.totalValue / 100)}
+						</Text>
 					</div>
 				</div>
 			</div>

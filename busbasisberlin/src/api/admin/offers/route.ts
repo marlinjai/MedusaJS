@@ -101,6 +101,13 @@ export async function GET(
 			accepted: backendStats.pending_acceptance,
 			completed: backendStats.completed_offers,
 			cancelled: backendStats.cancelled_offers,
+			// Value sums by status
+			draftValue: backendStats.draft_value,
+			activeValue: backendStats.active_value,
+			acceptedValue: backendStats.accepted_value,
+			completedValue: backendStats.completed_value,
+			cancelledValue: backendStats.cancelled_value,
+			// Total value (excludes cancelled and draft)
 			totalValue: backendStats.total_value,
 		};
 

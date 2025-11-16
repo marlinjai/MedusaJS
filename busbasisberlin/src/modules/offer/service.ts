@@ -428,19 +428,43 @@ class OfferService extends MedusaService({
 	async getOfferStatistics(): Promise<OfferStatistics> {
 		const allOffers = await this.listOffers({});
 
+		// Calculate counts by status
+		const draftOffers = allOffers.filter(o => o.status === 'draft');
+		const activeOffers = allOffers.filter(o => o.status === 'active');
+		const acceptedOffers = allOffers.filter(o => o.status === 'accepted');
+		const completedOffers = allOffers.filter(o => o.status === 'completed');
+		const cancelledOffers = allOffers.filter(o => o.status === 'cancelled');
+
+		// Calculate value sums by status
+		const draft_value = draftOffers.reduce((sum, o) => sum + o.total_amount, 0);
+		const active_value = activeOffers.reduce((sum, o) => sum + o.total_amount, 0);
+		const accepted_value = acceptedOffers.reduce((sum, o) => sum + o.total_amount, 0);
+		const completed_value = completedOffers.reduce((sum, o) => sum + o.total_amount, 0);
+		const cancelled_value = cancelledOffers.reduce((sum, o) => sum + o.total_amount, 0);
+
+		// Total value excludes cancelled and draft offers (only active, accepted, completed)
+		const total_value = active_value + accepted_value + completed_value;
+
 		const stats = {
 			total_offers: allOffers.length,
-			draft_offers: allOffers.filter(o => o.status === 'draft').length,
-			active_offers: allOffers.filter(o => o.status === 'active').length,
-			pending_acceptance: allOffers.filter(o => o.status === 'accepted').length,
-			completed_offers: allOffers.filter(o => o.status === 'completed').length,
-			cancelled_offers: allOffers.filter(o => o.status === 'cancelled').length,
-			total_value: allOffers.reduce((sum, o) => sum + o.total_amount, 0),
+			draft_offers: draftOffers.length,
+			active_offers: activeOffers.length,
+			pending_acceptance: acceptedOffers.length,
+			completed_offers: completedOffers.length,
+			cancelled_offers: cancelledOffers.length,
+			draft_value,
+			active_value,
+			accepted_value,
+			completed_value,
+			cancelled_value,
+			total_value,
 			average_offer_value: 0,
 		};
 
+		// Calculate average based on non-cancelled, non-draft offers
+		const relevantOffersCount = stats.active_offers + stats.pending_acceptance + stats.completed_offers;
 		stats.average_offer_value =
-			stats.total_offers > 0 ? stats.total_value / stats.total_offers : 0;
+			relevantOffersCount > 0 ? total_value / relevantOffersCount : 0;
 
 		return stats;
 	}
