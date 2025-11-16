@@ -45,7 +45,7 @@ function OfferActiveEmailComponent(props: OfferActiveEmailProps) {
 			</EmailText>
 
 			{/* Acceptance Button */}
-			{acceptance_url && (
+			{acceptance_url && acceptance_url !== '#' && acceptance_url.startsWith('http') && (
 				<div style={{ margin: '32px 0', textAlign: 'center' }}>
 					<a
 						href={acceptance_url}

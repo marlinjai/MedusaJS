@@ -133,6 +133,15 @@ export async function POST(
 				offer.id,
 				offer.customer_email,
 			);
+			if (!acceptanceUrl || acceptanceUrl === '#') {
+				logger.warn(
+					`[SEND-EMAIL] Failed to generate acceptance URL for offer ${offer.offer_number}. STOREFRONT_URL may not be configured.`,
+				);
+			} else {
+				logger.info(
+					`[SEND-EMAIL] Generated acceptance URL for offer ${offer.offer_number}: ${acceptanceUrl}`,
+				);
+			}
 		}
 
 		// Create notification - must be an array

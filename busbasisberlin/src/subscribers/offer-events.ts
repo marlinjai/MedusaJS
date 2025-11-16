@@ -242,6 +242,15 @@ async function sendOfferEmail(
 				data.offer_id,
 				data.customer_email,
 			);
+			if (!acceptanceUrl || acceptanceUrl === '#') {
+				logger.warn(
+					`[OFFER-SUBSCRIBER] Failed to generate acceptance URL for offer ${data.offer_number}. STOREFRONT_URL may not be configured.`,
+				);
+			} else {
+				logger.info(
+					`[OFFER-SUBSCRIBER] Generated acceptance URL for offer ${data.offer_number}: ${acceptanceUrl}`,
+				);
+			}
 		}
 
 		await notificationModuleService.createNotifications({

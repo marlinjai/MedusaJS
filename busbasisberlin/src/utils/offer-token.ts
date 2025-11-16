@@ -47,8 +47,16 @@ export function generateOfferAcceptanceUrl(
 	const token = generateOfferAcceptanceToken(offerId, customerEmail);
 	const storefrontUrl =
 		baseUrl ||
+		process.env.STOREFRONT_URL ||
 		process.env.NEXT_PUBLIC_STOREFRONT_URL ||
 		process.env.NEXT_PUBLIC_BASE_URL;
+
+	if (!storefrontUrl) {
+		console.warn(
+			'[OFFER-TOKEN] No storefront URL configured. Offer acceptance link will be invalid.',
+		);
+		return '#';
+	}
 
 	// Use storefront URL for better UX
 	const acceptPath = `/de/offers/${offerId}/accept?token=${token}&email=${encodeURIComponent(customerEmail)}`;
