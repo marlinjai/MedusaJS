@@ -49,7 +49,8 @@ export const sendOrderConfirmationWorkflow = createWorkflow(
 		// Check if this is a pickup order with manual payment
 		const shippingMethod = order?.shipping_methods?.[0] as any;
 		const shippingOptionNameRaw = shippingMethod?.shipping_option?.name || shippingMethod?.name || '';
-		const shippingOptionName = String(shippingOptionNameRaw).toLowerCase();
+		// Ensure we have a string before calling toLowerCase (String() is not available in compiled workflow code)
+		const shippingOptionName = (typeof shippingOptionNameRaw === 'string' ? shippingOptionNameRaw : '').toLowerCase();
 		const isPickupOrder = shippingOptionName.includes('abholung') || shippingOptionName.includes('pickup');
 
 		const payment = order?.payment_collections?.[0]?.payments?.[0];
