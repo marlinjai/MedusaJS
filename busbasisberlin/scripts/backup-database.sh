@@ -122,16 +122,16 @@ compress_backup() {
     local backup_file="$1"
     local compressed_file="${backup_file}.gz"
 
-    log_info "Compressing backup..."
+    log_info "Compressing backup..." >&2
     log_to_file "Compressing: $backup_file"
 
     if gzip -f "$backup_file"; then
-        log_success "Backup compressed successfully"
+        log_success "Backup compressed successfully" >&2
         log_to_file "Compressed: $compressed_file"
         echo "$compressed_file"
         return 0
     else
-        log_error "Failed to compress backup"
+        log_error "Failed to compress backup" >&2
         log_to_file "ERROR: Failed to compress backup"
         return 1
     fi
