@@ -85,7 +85,21 @@ ENV_FILE="$PROJECT_DIR/.env.production"
 
 log_info "Creating production environment file: $ENV_FILE"
 
+# Function to safely quote environment variable values
+# This prevents bash from interpreting special characters as commands
+quote_value() {
+    local value="$1"
+    # If value contains spaces, special chars, or starts with a number, quote it
+    if [[ "$value" =~ [[:space:]] ]] || [[ "$value" =~ [^a-zA-Z0-9_./:@=+-] ]] || [[ "$value" =~ ^[0-9] ]]; then
+        # Escape single quotes and wrap in single quotes
+        echo "'${value//\'/\'\"\'\"\'}'"
+    else
+        echo "$value"
+    fi
+}
+
 # Create production environment file from scratch
+# All values are properly quoted to prevent bash interpretation errors
 cat > "$ENV_FILE" << EOF
 # Production Environment Configuration
 # Generated on $(date)
@@ -97,62 +111,62 @@ MEDUSA_WORKER_MODE=server
 DISABLE_MEDUSA_ADMIN=false
 
 # Domain Configuration
-DOMAIN_NAME=$DOMAIN_NAME
+DOMAIN_NAME=$(quote_value "$DOMAIN_NAME")
 
 # CORS Configuration (Production domain)
-STORE_CORS=https://$DOMAIN_NAME/,https://docs.medusajs.com
-ADMIN_CORS=https://$DOMAIN_NAME/,https://docs.medusajs.com
-AUTH_CORS=https://$DOMAIN_NAME/,https://docs.medusajs.com
+STORE_CORS=$(quote_value "https://$DOMAIN_NAME/,https://docs.medusajs.com")
+ADMIN_CORS=$(quote_value "https://$DOMAIN_NAME/,https://docs.medusajs.com")
+AUTH_CORS=$(quote_value "https://$DOMAIN_NAME/,https://docs.medusajs.com")
 
 # Backend URL (CRITICAL for admin authentication)
-MEDUSA_BACKEND_URL=https://$DOMAIN_NAME/
+MEDUSA_BACKEND_URL=$(quote_value "https://$DOMAIN_NAME/")
 
 # Redis Configuration
 REDIS_URL=redis://localhost:6379
 
 # Security Secrets
-JWT_SECRET=$JWT_SECRET
-COOKIE_SECRET=$COOKIE_SECRET
+JWT_SECRET=$(quote_value "$JWT_SECRET")
+COOKIE_SECRET=$(quote_value "$COOKIE_SECRET")
 
 # Database Configuration
-DATABASE_URL=postgres://postgres:$POSTGRES_PASSWORD@localhost/medusa-busbasisberlin
+DATABASE_URL=$(quote_value "postgres://postgres:$POSTGRES_PASSWORD@localhost/medusa-busbasisberlin")
 DB_NAME=medusa-busbasisberlin
 POSTGRES_DB=medusa-store
 POSTGRES_USER=postgres
 
 # Supabase S3-Compatible Storage Configuration
-S3_FILE_URL=$S3_FILE_URL
-S3_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID
-S3_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY
-S3_REGION=$S3_REGION
-S3_BUCKET=$S3_BUCKET
-S3_ENDPOINT=$S3_ENDPOINT
+S3_FILE_URL=$(quote_value "$S3_FILE_URL")
+S3_ACCESS_KEY_ID=$(quote_value "$S3_ACCESS_KEY_ID")
+S3_SECRET_ACCESS_KEY=$(quote_value "$S3_SECRET_ACCESS_KEY")
+S3_REGION=$(quote_value "$S3_REGION")
+S3_BUCKET=$(quote_value "$S3_BUCKET")
+S3_ENDPOINT=$(quote_value "$S3_ENDPOINT")
 
 # Email Configuration
-RESEND_API_KEY=$RESEND_API_KEY
-RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL
+RESEND_API_KEY=$(quote_value "$RESEND_API_KEY")
+RESEND_FROM_EMAIL=$(quote_value "$RESEND_FROM_EMAIL")
 
 # Company Information (for PDF generation and emails)
-COMPANY_NAME=$COMPANY_NAME
-COMPANY_ADDRESS=$COMPANY_ADDRESS
-COMPANY_POSTAL_CODE=$COMPANY_POSTAL_CODE
-COMPANY_CITY=$COMPANY_CITY
-COMPANY_EMAIL=$COMPANY_EMAIL
+COMPANY_NAME=$(quote_value "$COMPANY_NAME")
+COMPANY_ADDRESS=$(quote_value "$COMPANY_ADDRESS")
+COMPANY_POSTAL_CODE=$(quote_value "$COMPANY_POSTAL_CODE")
+COMPANY_CITY=$(quote_value "$COMPANY_CITY")
+COMPANY_EMAIL=$(quote_value "$COMPANY_EMAIL")
 
 # Additional Company Details
-COMPANY_PHONE=$COMPANY_PHONE
-COMPANY_TAX_ID=$COMPANY_TAX_ID
-COMPANY_BANK_INFO=$COMPANY_BANK_INFO
+COMPANY_PHONE=$(quote_value "$COMPANY_PHONE")
+COMPANY_TAX_ID=$(quote_value "$COMPANY_TAX_ID")
+COMPANY_BANK_INFO=$(quote_value "$COMPANY_BANK_INFO")
 
 # PDF Template Customization
 # Logo URL wird aus COMPANY_LOGO_URL verwendet (siehe Company Information oben)
-PDF_FOOTER_TEXT=$PDF_FOOTER_TEXT
-PDF_TERMS_CONDITIONS=https://$DOMAIN_NAME/terms
-PDF_PRIVACY_POLICY=https://$DOMAIN_NAME/privacy
+PDF_FOOTER_TEXT=$(quote_value "$PDF_FOOTER_TEXT")
+PDF_TERMS_CONDITIONS=$(quote_value "https://$DOMAIN_NAME/terms")
+PDF_PRIVACY_POLICY=$(quote_value "https://$DOMAIN_NAME/privacy")
 
 # Email Template Customization
-EMAIL_SIGNATURE=$EMAIL_SIGNATURE
-EMAIL_FOOTER=$EMAIL_FOOTER
+EMAIL_SIGNATURE=$(quote_value "$EMAIL_SIGNATURE")
+EMAIL_FOOTER=$(quote_value "$EMAIL_FOOTER")
 
 # Storefront Configuration
 MEDUSA_ADMIN_ONBOARDING_NEXTJS_DIRECTORY=busbasisberlin-storefront
