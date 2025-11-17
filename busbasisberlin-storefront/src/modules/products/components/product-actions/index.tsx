@@ -64,6 +64,11 @@ export default function ProductActions({
 
   // Notify context when selected variant changes
   useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && selectedVariant) {
+      console.log('[ProductActions] Selected variant:', selectedVariant);
+      console.log('[ProductActions] Variant images:', (selectedVariant as any)?.images);
+      console.log('[ProductActions] Full variant object keys:', Object.keys(selectedVariant));
+    }
     setSelectedVariant(selectedVariant)
   }, [selectedVariant, setSelectedVariant])
 
