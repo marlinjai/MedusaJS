@@ -11,11 +11,13 @@ WORKDIR /server
 # Install dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
-COPY package.json ./
+# Copy package files (using npm - standardized package manager)
+COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with BuildKit cache mount (Phase 2 optimization)
+# This caches npm packages between builds, saving ~8 minutes
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
 
 # Copy source code
 COPY . .
@@ -66,8 +68,10 @@ COPY --from=builder /server/src ./src
 # Change to the built application directory (official Medusa recommendation)
 WORKDIR /server/.medusa/server
 
-# Install production dependencies only (no dev dependencies needed in production)
-RUN npm install --production
+# Install production dependencies only with BuildKit cache mount (Phase 2 optimization)
+# This caches npm packages between builds, saving ~1-2 minutes
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --production
 
 # Copy startup script to the built directory and make it executable
 COPY --from=builder /server/start.sh ./

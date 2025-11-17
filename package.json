@@ -1,49 +1,49 @@
 {
-  "name": "busbasisberlin-monorepo",
-  "version": "1.0.0",
-  "description": "BusBasisBerlin MedusaJS E-commerce Monorepo",
-  "private": true,
-  "workspaces": [
-    "busbasisberlin",
-    "busbasisberlin-storefront"
-  ],
-  "scripts": {
-    "format": "npm run format:backend && npm run format:frontend",
-    "format:backend": "cd busbasisberlin && npx prettier --write \"src/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
-    "format:frontend": "cd busbasisberlin-storefront && npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\" \"*.{ts,tsx,js,jsx,json}\"",
-    "lint": "npm run lint:backend && npm run lint:frontend",
-    "lint:backend": "cd busbasisberlin && npx eslint \"src/**/*.{ts,js}\" \"*.{ts,js}\" --fix || true",
-    "lint:frontend": "cd busbasisberlin-storefront && npx eslint \"src/**/*.{ts,tsx,js,jsx}\" \"*.{ts,tsx,js,jsx}\" --fix || true",
-    "format:all": "npm run format && npm run lint",
-    "dev:backend": "cd busbasisberlin && npm run dev",
-    "dev:frontend": "cd busbasisberlin-storefront && npm run dev",
-    "build:backend": "cd busbasisberlin && npm run build",
-    "build:frontend": "cd busbasisberlin-storefront && npm run build"
-  },
-  "devDependencies": {
-    "prettier": "^3.0.0"
-  },
-  "keywords": [
-    "medusajs",
-    "ecommerce",
-    "nextjs",
-    "typescript",
-    "monorepo"
-  ],
-  "author": "BusBasisBerlin",
-  "license": "MIT",
-  "dependencies": {
-    "ajv": "^8.17.1",
-    "csv-parse": "^6.1.0",
-    "csv-parser": "^3.2.0",
-    "csv-writer": "^1.6.0",
-    "gemeindeverzeichnis": "^0.1.0",
-    "google-libphonenumber": "^3.2.42",
-    "node-fetch": "^3.3.2",
-    "openai": "^5.9.0",
-    "p-limit": "^6.2.0",
-    "pg": "^8.16.3",
-    "postal-codes-js": "^2.5.2"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+	"name": "busbasisberlin-monorepo",
+	"version": "1.0.0",
+	"description": "BusBasisBerlin MedusaJS E-commerce Monorepo",
+	"private": true,
+	"workspaces": [
+		"busbasisberlin",
+		"busbasisberlin-storefront"
+	],
+	"scripts": {
+		"format": "npm run format:backend && npm run format:frontend",
+		"format:backend": "cd busbasisberlin && npx prettier --write \"src/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+		"format:frontend": "cd busbasisberlin-storefront && npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json}\" \"*.{ts,tsx,js,jsx,json}\"",
+		"lint": "npm run lint:backend && npm run lint:frontend",
+		"lint:backend": "cd busbasisberlin && npx eslint \"src/**/*.{ts,js}\" \"*.{ts,js}\" --fix || true",
+		"lint:frontend": "cd busbasisberlin-storefront && npx eslint \"src/**/*.{ts,tsx,js,jsx}\" \"*.{ts,tsx,js,jsx}\" --fix || true",
+		"format:all": "npm run format && npm run lint",
+		"dev:backend": "cd busbasisberlin && npm run dev",
+		"dev:frontend": "cd busbasisberlin-storefront && npm run dev",
+		"build:backend": "cd busbasisberlin && npm run build",
+		"build:frontend": "cd busbasisberlin-storefront && npm run build"
+	},
+	"devDependencies": {
+		"prettier": "^3.0.0"
+	},
+	"keywords": [
+		"medusajs",
+		"ecommerce",
+		"nextjs",
+		"typescript",
+		"monorepo"
+	],
+	"author": "BusBasisBerlin",
+	"license": "MIT",
+	"dependencies": {
+		"ajv": "^8.17.1",
+		"csv-parse": "^6.1.0",
+		"csv-parser": "^3.2.0",
+		"csv-writer": "^1.6.0",
+		"gemeindeverzeichnis": "^0.1.0",
+		"google-libphonenumber": "^3.2.42",
+		"node-fetch": "^3.3.2",
+		"openai": "^5.9.0",
+		"p-limit": "^6.2.0",
+		"pg": "^8.16.3",
+		"postal-codes-js": "^2.5.2"
+	},
+	"packageManager": "npm@10.9.0"
 }

@@ -29,9 +29,9 @@ ENV NEXT_PUBLIC_MEILISEARCH_INDEX_NAME=$NEXT_PUBLIC_MEILISEARCH_INDEX_NAME
 # Signal to Next.js that this is a Docker build to skip static generation
 ENV DOCKER_BUILD=true
 
-# Copy package files
+# Copy package files (using npm - standardized package manager)
 COPY package*.json ./
-COPY yarn.lock ./
+COPY package-lock.json* ./
 
 # Install dependencies
 RUN npm ci
@@ -52,9 +52,9 @@ RUN adduser -S nextjs -u 1001
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files (using npm - standardized package manager)
 COPY package*.json ./
-COPY yarn.lock ./
+COPY package-lock.json* ./
 
 # Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
