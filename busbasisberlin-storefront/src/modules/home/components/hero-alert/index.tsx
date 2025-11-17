@@ -27,7 +27,11 @@ const HeroAlert = () => {
 					const data = await response.json();
 					setAlert(data.hero_alert);
 				} else {
-					console.error('[HERO-ALERT] Failed to load alert:', response.status, response.statusText);
+					console.error(
+						'[HERO-ALERT] Failed to load alert:',
+						response.status,
+						response.statusText,
+					);
 				}
 			} catch (error) {
 				console.error('[HERO-ALERT] Failed to load alert:', error);
