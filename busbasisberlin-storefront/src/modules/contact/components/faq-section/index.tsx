@@ -24,9 +24,8 @@ export default function FAQSection() {
 	useEffect(() => {
 		const fetchFAQSettings = async () => {
 			try {
-				const backendUrl =
-					process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-				const response = await fetch(`${backendUrl}/public/settings`, {
+				// Use the API proxy route which handles backend URL correctly
+				const response = await fetch('/api/public/settings', {
 					cache: 'no-store',
 				});
 
@@ -36,7 +35,7 @@ export default function FAQSection() {
 					setEnabled(faqData.enabled);
 					setFaqs(faqData.items || []);
 				} else {
-					console.error('[FAQ-SECTION] Failed to load FAQ settings');
+					console.error('[FAQ-SECTION] Failed to load FAQ settings:', response.status, response.statusText);
 				}
 			} catch (error) {
 				console.error('[FAQ-SECTION] Error loading FAQ settings:', error);
