@@ -18,15 +18,16 @@ const HeroAlert = () => {
 	useEffect(() => {
 		const fetchAlertSettings = async () => {
 			try {
-				const backendUrl =
-					process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-				const response = await fetch(`${backendUrl}/public/settings`, {
+				// Use the API proxy route which handles backend URL correctly
+				const response = await fetch('/api/public/settings', {
 					cache: 'no-store',
 				});
 
 				if (response.ok) {
 					const data = await response.json();
 					setAlert(data.hero_alert);
+				} else {
+					console.error('[HERO-ALERT] Failed to load alert:', response.status, response.statusText);
 				}
 			} catch (error) {
 				console.error('[HERO-ALERT] Failed to load alert:', error);

@@ -22,7 +22,7 @@ export const sdk = new Medusa({
 const meilisearchHost =
 	process.env.NEXT_PUBLIC_MEILISEARCH_HOST ||
 	(process.env.NODE_ENV === 'production'
-		? 'https://busbasisberlin.de/search'
+		? 'https://basiscamp-berlin.de/search'
 		: 'http://localhost:7700');
 
 export const { searchClient } = instantMeiliSearch(
