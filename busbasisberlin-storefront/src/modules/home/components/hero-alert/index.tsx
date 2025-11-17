@@ -94,7 +94,7 @@ const HeroAlert = () => {
 	}
 
 	return (
-		<div className="w-full bg-red-600/40 backdrop-blur-md border-b border-red-500/50 relative z-50">
+		<div className="w-full bg-red-600/30 backdrop-blur-md border-b border-red-500/50 relative z-50">
 			<div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3">
 				<p className="text-white text-center text-sm md:text-base font-medium">
 					{alert.text}
