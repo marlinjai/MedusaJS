@@ -5,7 +5,6 @@ import HeroAlert from '@modules/home/components/hero-alert';
 import CartButton from '@modules/layout/components/cart-button';
 import MobileMenu from '@modules/layout/components/mobile-menu';
 import TransparentHeader from '@modules/layout/components/transparent-header';
-import { mainNavItems } from '@modules/layout/config/navigation';
 import ConditionalSearch from '@modules/search/components/conditional-search';
 import Image from 'next/image';
 import { Suspense } from 'react';
@@ -17,7 +16,7 @@ export default async function Nav() {
 	return (
 		<>
 			<TransparentHeader />
-			<div className="fixed top-0 inset-x-0 z-50 group bg-stone-950">
+			<div className="fixed top-0 inset-x-0 z-50 group bg-stone-950/70 backdrop-blur-md">
 				<header className="nav-header relative py-4 mx-auto">
 					<nav className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 txt-xsmall-plus text-white flex items-center justify-between h-full text-small-regular">
 						{/* Logo */}

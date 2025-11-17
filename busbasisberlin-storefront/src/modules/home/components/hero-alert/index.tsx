@@ -25,6 +25,8 @@ const HeroAlert = () => {
 
 				if (response.ok) {
 					const data = await response.json();
+					console.log('[HERO-ALERT] Settings data:', data);
+					console.log('[HERO-ALERT] Hero alert data:', data.hero_alert);
 					setAlert(data.hero_alert);
 				} else {
 					console.error(
@@ -75,13 +77,24 @@ const HeroAlert = () => {
 		};
 	}, [isLoading, alert?.enabled, alert?.text]);
 
+	// Debug logging
+	if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+		console.log('[HERO-ALERT] Render check:', {
+			isLoading,
+			alert,
+			enabled: alert?.enabled,
+			text: alert?.text,
+			willRender: !isLoading && alert && alert.enabled && !!alert.text?.trim(),
+		});
+	}
+
 	// Don't render if loading, disabled, or empty text
-	if (isLoading || !alert || !alert.enabled || !alert.text.trim()) {
+	if (isLoading || !alert || !alert.enabled || !alert.text?.trim()) {
 		return null;
 	}
 
 	return (
-		<div className="w-full bg-red-600/30 backdrop-blur-sm border-b border-red-500/50 relative z-50">
+		<div className="w-full bg-red-600/40 backdrop-blur-md border-b border-red-500/50 relative z-50">
 			<div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3">
 				<p className="text-white text-center text-sm md:text-base font-medium">
 					{alert.text}
