@@ -358,6 +358,8 @@ See [`src/utils/pdf-generator.ts`](./src/utils/pdf-generator.ts) for implementat
 
 **⚠️ Always run this before deploying** to catch nginx configuration issues early (saves 20+ minutes per failed deployment):
 
+<!-- Deployment trigger: 2025-01-16 - Updated environment variables for production storefront integration -->
+
 ```bash
 ./scripts/test-nginx-config.sh
 ```
