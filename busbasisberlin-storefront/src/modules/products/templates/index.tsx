@@ -11,6 +11,7 @@ import ProductDetailSection from '@modules/products/components/product-detail-se
 import { listProducts } from '@lib/data/products';
 import { getInventorySettings } from '@lib/data/inventory-settings';
 import { retrieveCustomer } from '@lib/data/customer';
+import { PAGE_PADDING_TOP_LARGE } from '@lib/util/page-padding';
 
 type ProductTemplateProps = {
 	product: HttpTypes.StoreProduct;
@@ -56,7 +57,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = async ({
 
 			{/* Product Detail Section */}
 			<div className="relative">
-				<div className="content-container pt-32 md:pt-20 pb-12 md:pb-20 [.hero-alert-visible_&]:pt-40 [.hero-alert-visible_&]:md:pt-28">
+				<div className={`content-container pb-12 md:pb-20 ${PAGE_PADDING_TOP_LARGE}`}>
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
 						{/* Product Detail Section - returns grid with image and info/actions */}
 						<ProductDetailSection

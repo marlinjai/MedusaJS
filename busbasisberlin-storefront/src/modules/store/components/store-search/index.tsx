@@ -2,6 +2,7 @@
 
 import { searchClient } from '@lib/config';
 import { createRouting } from '@lib/search-routing';
+import { PAGE_PADDING_TOP_LARGE } from '@lib/util/page-padding';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
@@ -481,7 +482,9 @@ export default function StoreSearch() {
 						transformOrigin: 'center center',
 					}}
 				/>
-				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-32 lg:pt-20 [.hero-alert-visible_&]:pt-40 [.hero-alert-visible_&]:lg:pt-28">
+				<div
+					className={`relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 ${PAGE_PADDING_TOP_LARGE}`}
+				>
 					{/* Header with Search in one row - Full width */}
 					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 						{/* Title */}

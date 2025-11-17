@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { listCartOptions, retrieveCart } from '@lib/data/cart';
 import { retrieveCustomer } from '@lib/data/customer';
 import { getBaseURL } from '@lib/util/env';
+import { PAGE_PADDING_TOP } from '@lib/util/page-padding';
 import { StoreCartShippingOption } from '@medusajs/types';
 import CartMismatchBanner from '@modules/layout/components/cart-mismatch-banner';
 import Footer from '@modules/layout/templates/footer';
@@ -33,7 +34,7 @@ export default async function PageLayout(props: {
 	return (
 		<>
 			<Nav />
-			<main className="relative pt-24">
+			<main className={`relative ${PAGE_PADDING_TOP}`}>
 				{customer && cart && (
 					<CartMismatchBanner customer={customer} cart={cart} />
 				)}

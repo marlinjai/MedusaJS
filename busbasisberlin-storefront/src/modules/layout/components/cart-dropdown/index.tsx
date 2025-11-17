@@ -101,7 +101,7 @@ const CartDropdown = ({
 
 	return (
 		<div
-			className="h-full z-50"
+			className="h-full relative z-[60]"
 			onMouseEnter={openAndCancel}
 			onMouseLeave={close}
 		>
@@ -124,7 +124,7 @@ const CartDropdown = ({
 				>
 					<PopoverPanel
 						static
-						className="hidden small:block absolute top-[calc(100%+8px)] right-0  rounded-lg  w-[40vw] text-white  pt-8"
+						className="hidden small:block absolute top-[calc(100%+8px)] right-0 rounded-lg w-[40vw] text-white pt-8 z-[60]"
 						data-testid="nav-cart-dropdown"
 					>
 						<div className="border border-neutral-800 bg-neutral-900 rounded-lg">
