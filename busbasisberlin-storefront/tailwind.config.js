@@ -192,5 +192,11 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-radix")()],
+  plugins: [
+    require("tailwindcss-radix")(),
+    // Custom plugin to add hero-alert-visible variant
+    function ({ addVariant }) {
+      addVariant('hero-alert-visible', 'body.hero-alert-visible &');
+    },
+  ],
 }
