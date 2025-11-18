@@ -122,7 +122,7 @@ export default function NavClient() {
 	};
 
 	return (
-		<div className="hidden md:flex items-center space-x-8">
+		<div className="hidden small:flex items-center space-x-8">
 			{mainNavItems.map(item => {
 				const active = isActive(item.href);
 				return (

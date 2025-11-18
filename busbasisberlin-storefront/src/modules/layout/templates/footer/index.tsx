@@ -81,6 +81,71 @@ const NavigationAccordion = ({ title }: { title: string }) => {
 	);
 };
 
+// Footer accordion for mobile - Contact Section
+const ContactAccordion = ({ title }: { title: string }) => {
+	const t = useTranslations('footer');
+	const [isOpen, setIsOpen] = useState(false);
+
+	return (
+		<div className="border-b border-border">
+			<button
+				onClick={() => setIsOpen(!isOpen)}
+				className="w-full flex justify-between items-center py-4 text-left"
+			>
+				<span className="text-lg font-semibold text-foreground">{title}</span>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					strokeWidth={1.5}
+					stroke="currentColor"
+					className={`w-6 h-6 text-foreground transition-transform duration-300 ${
+						isOpen ? 'rotate-180' : ''
+					}`}
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d={isOpen ? 'M18 12H6' : 'M12 6v12m6-6H6'}
+					/>
+				</svg>
+			</button>
+			<div
+				className="overflow-hidden transition-all duration-300 ease-in-out"
+				style={{ maxHeight: isOpen ? '500px' : '0' }}
+			>
+				<ul className="pb-4 space-y-4 px-2">
+					<li>
+						<a
+							href="mailto:info@basiscampberlin.de"
+							className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
+						>
+							<MdOutlineMail className="w-5 h-5 flex-shrink-0" />
+							<span>info@basiscampberlin.de</span>
+						</a>
+					</li>
+					<li className="flex items-start gap-3 text-muted-foreground">
+						<FiMapPin className="w-5 h-5 flex-shrink-0 mt-0.5" />
+						<span>
+							BCB GmbH
+							<br />
+							Hauptstraße 51
+							<br />
+							16547 Birkenwerder
+						</span>
+					</li>
+					<li className="flex items-start gap-3 text-muted-foreground">
+						<FiPhone className="w-5 h-5 flex-shrink-0 mt-0.5" />
+						<span className="leading-relaxed">
+							{t('phoneNote')}
+						</span>
+					</li>
+				</ul>
+			</div>
+		</div>
+	);
+};
+
 // Footer accordion for mobile - Legal Section
 const LegalAccordion = ({
 	title,
@@ -196,8 +261,8 @@ export default function Footer() {
 							{t('description')}
 						</p>
 
-						{/* Social Links */}
-						<div className="flex gap-4 mt-6">
+						{/* Social Links - Commented out for now */}
+						{/* <div className="flex gap-4 mt-6">
 							<a
 								href="#"
 								className="text-muted-foreground hover:text-foreground transition-colors"
@@ -219,7 +284,7 @@ export default function Footer() {
 							>
 								<FaLinkedin className="w-5 h-5" />
 							</a>
-						</div>
+						</div> */}
 					</div>
 
 					{/* Opening Hours */}
@@ -336,8 +401,8 @@ export default function Footer() {
 						</ul>
 					</div>
 
-					{/* Column 3: Contact Info */}
-					<div>
+					{/* Column 3: Contact Info - Desktop only */}
+					<div className="hidden md:block">
 						<h3 className="text-lg font-semibold text-foreground mb-4">
 							{t('contact')}
 						</h3>
@@ -361,9 +426,9 @@ export default function Footer() {
 									16547 Birkenwerder
 								</span>
 							</li>
-							<li className="flex items-start gap-3">
-								<FiPhone className="w-5 h-5 flex-shrink-0 mt-0.5 text-muted-foreground" />
-								<span className="text-xs text-muted-foreground leading-relaxed">
+							<li className="flex items-start gap-3 text-muted-foreground">
+								<FiPhone className="w-5 h-5 flex-shrink-0 mt-0.5" />
+								<span className="leading-relaxed">
 									{t('phoneNote')}
 								</span>
 							</li>
@@ -373,6 +438,7 @@ export default function Footer() {
 					{/* Mobile Accordions */}
 					<div className="md:hidden space-y-0">
 						<NavigationAccordion title={t('navigation')} />
+						<ContactAccordion title={t('contact')} />
 						<LegalAccordion
 							title={t('legal')}
 							onPrivacyClick={() => setModalOpen('privacy')}

@@ -3,7 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useHits } from 'react-instantsearch';
+import { useHits, useInstantSearch } from 'react-instantsearch';
+import SkeletonProductCard from './skeleton-product-card';
 
 type ProductHit = {
 	id: string;
@@ -285,6 +286,9 @@ function Hit({
 
 export default function ProductGrid() {
 	const { hits } = useHits<ProductHit & { objectID: string }>();
+	const { status } = useInstantSearch();
+	const isLoading = status === 'loading' || status === 'stalled';
+
 	// Initialize viewMode from sessionStorage immediately to avoid hydration issues
 	const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
 		if (typeof window !== 'undefined') {
@@ -314,6 +318,30 @@ export default function ProductGrid() {
 			);
 		};
 	}, []);
+
+	// Show skeleton loaders while loading
+	if (isLoading && hits.length === 0) {
+		const skeletonCount = 12; // Match default hits per page
+
+		if (viewMode === 'list') {
+			return (
+				<div className="flex flex-col gap-4">
+					{Array.from({ length: skeletonCount }).map((_, index) => (
+						<SkeletonProductCard key={index} viewMode="list" />
+					))}
+				</div>
+			);
+		}
+
+		// Grid view skeleton
+		return (
+			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+				{Array.from({ length: skeletonCount }).map((_, index) => (
+					<SkeletonProductCard key={index} viewMode="grid" />
+				))}
+			</div>
+		);
+	}
 
 	// Render hits based on view mode
 	if (viewMode === 'list') {

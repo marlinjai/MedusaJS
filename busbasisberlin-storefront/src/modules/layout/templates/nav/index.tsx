@@ -45,8 +45,8 @@ export default async function Nav() {
 							{/* Search Modal - Conditionally rendered based on settings */}
 							<ConditionalSearch />
 
-							{/* Account Link - Hidden on Mobile */}
-							<div className="hidden md:flex items-center gap-x-6 h-full">
+							{/* Account Link - Hidden below 1024px */}
+							<div className="hidden small:flex items-center gap-x-6 h-full">
 								<LocalizedClientLink
 									className="hover:text-white/80 transition-colors duration-200 flex items-center"
 									href="/account"

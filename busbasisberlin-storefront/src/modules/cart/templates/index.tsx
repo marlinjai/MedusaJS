@@ -12,8 +12,10 @@ const CartTemplate = ({
 	cart: HttpTypes.StoreCart | null;
 	customer: HttpTypes.StoreCustomer | null;
 }) => {
+	// Padding-top is handled by the main layout's HeroAlertPaddingWrapper
+	// Only add bottom padding here
 	return (
-		<div className="py-12 min-h-[60vh]">
+		<div className="pb-12 min-h-[60vh]">
 			<div className="content-container" data-testid="cart-container">
 				{cart?.items?.length ? (
 					<div className="grid grid-cols-1 small:grid-cols-[1fr_420px] gap-8">

@@ -1,6 +1,5 @@
-import { PAGE_PADDING_TOP } from '@lib/util/page-padding';
-import Nav from '@modules/layout/templates/nav';
 import Footer from '@modules/layout/templates/footer';
+import Nav from '@modules/layout/templates/nav';
 
 export default function CheckoutLayout({
 	children,
@@ -10,9 +9,7 @@ export default function CheckoutLayout({
 	return (
 		<>
 			<Nav />
-			<main className={`relative min-h-screen ${PAGE_PADDING_TOP}`}>
-				{children}
-			</main>
+			<main className="relative min-h-screen">{children}</main>
 			<Footer />
 		</>
 	);

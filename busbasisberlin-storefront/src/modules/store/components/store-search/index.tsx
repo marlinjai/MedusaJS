@@ -2,7 +2,7 @@
 
 import { searchClient } from '@lib/config';
 import { createRouting } from '@lib/search-routing';
-import { PAGE_PADDING_TOP_LARGE } from '@lib/util/page-padding';
+import { useHeroAlertPadding } from '@lib/util/use-hero-alert-padding';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
@@ -21,6 +21,7 @@ import {
 } from 'react-instantsearch';
 import CategoryTree from './category-tree';
 import ProductGrid from './product-grid';
+import SkeletonToolbar from './skeleton-toolbar';
 
 // View Toggle Component (Grid/List)
 function ViewToggle() {
@@ -89,10 +90,14 @@ function FilterSidebar() {
 			</button>
 
 			{/* Filters Sidebar */}
+			{/* Always render to preserve filter state - use max-height/overflow instead of display:none */}
 			<aside
-				className={`w-full lg:w-80 flex-shrink-0 ${
-					isMobileOpen ? 'block' : 'hidden lg:block'
+				className={`w-full lg:w-80 flex-shrink-0 transition-all duration-300 ${
+					isMobileOpen
+						? 'max-h-[9999px] opacity-100'
+						: 'max-h-0 lg:max-h-[9999px] opacity-0 lg:opacity-100 overflow-hidden lg:overflow-visible'
 				}`}
+				aria-hidden={!isMobileOpen}
 			>
 				<div className="space-y-6">
 					{/* Category Tree */}
@@ -223,7 +228,15 @@ function FilterSidebar() {
 function Toolbar() {
 	const { items: refinements, refine: clearRefinement } =
 		useCurrentRefinements();
+	const { status, results } = useInstantSearch();
+	const isLoading =
+		(status === 'loading' || status === 'stalled') && !results?.nbHits;
 	const hasActiveFilters = refinements.length > 0;
+
+	// Show skeleton while loading (only on initial load when no results yet)
+	if (isLoading) {
+		return <SkeletonToolbar />;
+	}
 
 	return (
 		<div className="bg-stone-950 rounded-xl border border-stone-800 p-4 mb-6 shadow-lg">
@@ -461,6 +474,19 @@ function CustomPagination() {
 export default function StoreSearch() {
 	// Create routing configuration client-side only
 	const routing = useMemo(() => createRouting(), []);
+	// Get dynamic padding based on hero alert visibility
+	const { large: paddingTop } = useHeroAlertPadding();
+
+	// Hide skeleton and show content after hydration
+	useEffect(() => {
+		const skeletonWrapper = document.getElementById('store-skeleton');
+		const contentWrapper = document.getElementById('store-content');
+
+		if (skeletonWrapper && contentWrapper) {
+			skeletonWrapper.style.display = 'none';
+			contentWrapper.style.display = 'block';
+		}
+	}, []);
 
 	return (
 		<InstantSearch
@@ -483,7 +509,7 @@ export default function StoreSearch() {
 					}}
 				/>
 				<div
-					className={`relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 ${PAGE_PADDING_TOP_LARGE}`}
+					className={`relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8`}
 				>
 					{/* Header with Search in one row - Full width */}
 					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

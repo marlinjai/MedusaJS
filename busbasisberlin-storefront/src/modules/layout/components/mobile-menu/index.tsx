@@ -90,7 +90,7 @@ export default function MobileMenu() {
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden text-white hover:text-white/80 transition-colors duration-200"
+        className="small:hidden text-white hover:text-white/80 transition-colors duration-200"
         aria-label="Toggle mobile menu"
       >
         <svg

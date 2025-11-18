@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout(props: { children: React.ReactNode }) {
 	return (
-		<html lang="de" data-mode="dark" className="dark">
-			<body>
+		<html lang="de" data-mode="dark" className="dark overflow-x-hidden">
+			<body className="overflow-x-hidden">
 				<NextIntlClientProvider locale="de" messages={messages}>
-					<main className="relative">{props.children}</main>
+					<main className="relative overflow-x-hidden">{props.children}</main>
 				</NextIntlClientProvider>
 			</body>
 		</html>

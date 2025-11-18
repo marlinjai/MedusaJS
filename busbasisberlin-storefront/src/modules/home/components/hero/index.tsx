@@ -35,7 +35,12 @@ const Hero = () => {
 	};
 
 	return (
-		<div className="relative h-screen md:h-[112vh] w-full overflow-hidden -mt-24">
+		<div
+			className="relative w-full overflow-hidden -mt-24 overflow-x-hidden"
+			style={{
+				height: 'clamp(65vh, 10vh + 53vw, 100vh)',
+			}}
+		>
 			{/* Video Background */}
 			<video
 				autoPlay
@@ -52,29 +57,30 @@ const Hero = () => {
 			<div className="absolute inset-0 bg-black bg-opacity-20" />
 
 			{/* Content Overlay */}
-			<div className="relative z-10 h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8">
-				{/* Title Background with Feathered Edges */}
-				<div className="absolute inset-x-48 -inset-y-36">
+			<div className="relative z-10 h-full flex flex-col justify-center items-center text-center px-3 sm:px-4 md:px-6 lg:px-8 overflow-x-hidden">
+				{/* Title Background with Feathered Edges - 95vw on mobile, wider on desktop */}
+				{/* Use max-width to prevent overflow on small screens */}
+				<div className="absolute w-[95vw] max-w-[95vw] small:w-auto small:max-w-none small:inset-x-48 md:-inset-y-36 overflow-hidden h-full">
 					<div
 						className="absolute inset-0 bg-black/90"
 						style={{
-							mask: 'radial-gradient(ellipse at center, black, transparent 50%)',
+							mask: 'radial-gradient(ellipse at center, black, transparent 60%)',
 							WebkitMask:
 								'radial-gradient(ellipse at center, black, transparent 50%)',
 						}}
 					/>
 				</div>
 
-				<div className="relative max-w-3xl mx-auto">
+				<div className="relative max-w-3xl mx-auto w-full px-2">
 					<Heading
 						level="h1"
-						className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 [text-shadow:_2px_2px_10px_rgb(0_0_0_/_40%)]"
+						className="text-2xl 2xsmall:text-3xl xsmall:text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 [text-shadow:_2px_2px_10px_rgb(0_0_0_/_40%)] break-words"
 					>
 						{t('title')}
 					</Heading>
 					<Heading
 						level="h2"
-						className="text-xl sm:text-2xl lg:text-3xl text-white/90 font-light [text-shadow:_1px_1px_5px_rgb(0_0_0_/_40%)]"
+						className="text-sm 2xsmall:text-base xsmall:text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/90 font-light [text-shadow:_1px_1px_5px_rgb(0_0_0_/_40%)] break-words px-1 2xsmall:px-2"
 					>
 						{t('subtitle')}
 					</Heading>
@@ -84,7 +90,7 @@ const Hero = () => {
 				{searchEnabled && (
 					<button
 						onClick={() => setIsSearchOpen(true)}
-						className="mt-8 px-8 py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-lg font-medium rounded-full transition-all z-30 duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+						className="mt-6 sm:mt-8 px-6 sm:px-8 py-2.5 sm:py-3 bg-white bg-opacity-10 hover:bg-opacity-20 border-2 border-white text-white text-base sm:text-lg font-medium rounded-full transition-all z-30 duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
 					>
 						{t('cta')}
 					</button>
@@ -100,7 +106,7 @@ const Hero = () => {
 			{/* Scroll Indicator with Rotating Text */}
 			<button
 				onClick={scrollToServices}
-				className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 group cursor-pointer"
+				className="absolute bottom-8 sm:bottom-12 left-1/2 transform -translate-x-1/2 z-10 group cursor-pointer"
 			>
 				{/* Blur Background for Scroll Indicator */}
 				<div className="absolute -inset-4">
@@ -114,8 +120,8 @@ const Hero = () => {
 					/>
 				</div>
 
-				{/* Rotating Text Container */}
-				<div className="relative w-32 h-32">
+				{/* Rotating Text Container - smaller on mobile */}
+				<div className="relative w-24 h-24 sm:w-32 sm:h-32">
 					{/* Rotating Text */}
 					<div className="absolute inset-0 animate-[spin_12s_linear_infinite]">
 						<svg viewBox="0 0 100 100" className="w-full h-full">

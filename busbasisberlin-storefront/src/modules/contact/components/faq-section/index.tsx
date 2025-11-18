@@ -108,7 +108,7 @@ export default function FAQSection() {
 						</div>
 					))}
 
-					{!showAllMobile && (
+					{!showAllMobile && remainingFaqs.length > 0 && (
 						<div className="text-center mt-8">
 							<button
 								onClick={() => setShowAllMobile(true)}
@@ -151,6 +151,7 @@ export default function FAQSection() {
 								))}
 							</div>
 
+							{remainingFaqs.length > 0 && (
 							<div className="text-center mt-8">
 								<button
 									onClick={() => {
@@ -176,6 +177,7 @@ export default function FAQSection() {
 									Weniger FAQs
 								</button>
 							</div>
+							)}
 						</>
 					)}
 				</div>

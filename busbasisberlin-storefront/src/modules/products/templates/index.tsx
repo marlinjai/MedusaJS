@@ -2,16 +2,16 @@
 
 import React, { Suspense } from 'react';
 
+import { retrieveCustomer } from '@lib/data/customer';
+import { getInventorySettings } from '@lib/data/inventory-settings';
+import { listProducts } from '@lib/data/products';
+import HeroAlertPaddingWrapper from '@lib/util/hero-alert-padding-wrapper';
 import { HttpTypes } from '@medusajs/types';
+import ProductDetailSection from '@modules/products/components/product-detail-section';
+import ProductOnboardingCta from '@modules/products/components/product-onboarding-cta';
 import RelatedProducts from '@modules/products/components/related-products';
 import SkeletonRelatedProducts from '@modules/skeletons/templates/skeleton-related-products';
-import ProductOnboardingCta from '@modules/products/components/product-onboarding-cta';
 import { notFound } from 'next/navigation';
-import ProductDetailSection from '@modules/products/components/product-detail-section';
-import { listProducts } from '@lib/data/products';
-import { getInventorySettings } from '@lib/data/inventory-settings';
-import { retrieveCustomer } from '@lib/data/customer';
-import { PAGE_PADDING_TOP_LARGE } from '@lib/util/page-padding';
 
 type ProductTemplateProps = {
 	product: HttpTypes.StoreProduct;
@@ -32,7 +32,8 @@ const ProductTemplate: React.FC<ProductTemplateProps> = async ({
 	// Re-fetch product to get latest pricing and shipping profile
 	const [freshProduct, customer, inventorySettings] = await Promise.all([
 		listProducts({
-			queryParams: { id: [product.id] },
+			// id is a valid query param for Medusa API but not in TypeScript type definition
+			queryParams: { id: [product.id] } as any,
 			regionId: region.id,
 		}).then(({ response }) => response.products[0]),
 		retrieveCustomer(),
@@ -57,7 +58,10 @@ const ProductTemplate: React.FC<ProductTemplateProps> = async ({
 
 			{/* Product Detail Section */}
 			<div className="relative">
-				<div className={`content-container pb-12 md:pb-20 ${PAGE_PADDING_TOP_LARGE}`}>
+				<HeroAlertPaddingWrapper
+					size="large"
+					className="content-container pb-12 md:pb-20"
+				>
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
 						{/* Product Detail Section - returns grid with image and info/actions */}
 						<ProductDetailSection
@@ -72,7 +76,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = async ({
 							<ProductOnboardingCta />
 						</div>
 					</div>
-				</div>
+				</HeroAlertPaddingWrapper>
 			</div>
 
 			{/* Related Products Section */}
