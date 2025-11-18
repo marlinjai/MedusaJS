@@ -25,10 +25,72 @@ const meilisearchHost =
 		? 'https://basiscamp-berlin.de/search'
 		: 'http://localhost:7700');
 
-export const { searchClient } = instantMeiliSearch(
-	meilisearchHost,
-	process.env.NEXT_PUBLIC_MEILISEARCH_API_KEY || '',
-	{
-		primaryKey: 'id',
-	},
-);
+const meilisearchApiKey = process.env.NEXT_PUBLIC_MEILISEARCH_API_KEY || '';
+
+// Create searchClient with error handling
+// If Meilisearch is not configured, create a mock client to prevent crashes
+let searchClient: {
+	search: (requests: any[]) => Promise<{
+		results: Array<{
+			hits: any[];
+			nbHits: number;
+			page: number;
+			nbPages: number;
+			hitsPerPage: number;
+			processingTimeMS: number;
+			query: string;
+			params: string;
+		}>;
+	}>;
+};
+
+try {
+	if (!meilisearchHost || !meilisearchApiKey) {
+		console.warn(
+			'[MEILISEARCH] Missing configuration - Meilisearch search will not work. Please set NEXT_PUBLIC_MEILISEARCH_HOST and NEXT_PUBLIC_MEILISEARCH_API_KEY',
+		);
+		// Create a mock search client that returns empty results
+		searchClient = {
+			search: async () => ({
+				results: [
+					{
+						hits: [],
+						nbHits: 0,
+						page: 0,
+						nbPages: 0,
+						hitsPerPage: 0,
+						processingTimeMS: 0,
+						query: '',
+						params: '',
+					},
+				],
+			}),
+		};
+	} else {
+		const client = instantMeiliSearch(meilisearchHost, meilisearchApiKey, {
+			primaryKey: 'id',
+		});
+		searchClient = client.searchClient;
+	}
+} catch (error) {
+	console.error('[MEILISEARCH] Failed to initialize search client:', error);
+	// Fallback to mock client
+	searchClient = {
+		search: async () => ({
+			results: [
+				{
+					hits: [],
+					nbHits: 0,
+					page: 0,
+					nbPages: 0,
+					hitsPerPage: 0,
+					processingTimeMS: 0,
+					query: '',
+					params: '',
+				},
+			],
+		}),
+	};
+}
+
+export { searchClient };
