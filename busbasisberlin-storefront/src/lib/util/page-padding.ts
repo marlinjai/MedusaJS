@@ -12,10 +12,10 @@ export const PAGE_PADDING_TOP = 'pt-24 [.hero-alert-visible_&]:pt-32';
  * Large page padding for pages with more spacing needs
  * Use this for pages like store search, product details
  */
-export const PAGE_PADDING_TOP_LARGE = 'pt-32 lg:pt-20 [.hero-alert-visible_&]:pt-40 [.hero-alert-visible_&]:lg:pt-28';
+export const PAGE_PADDING_TOP_LARGE =
+	'pt-32 lg:pt-20 [.hero-alert-visible_&]:pt-40 [.hero-alert-visible_&]:lg:pt-44';
 
 /**
  * Extra large padding for hero sections and special pages
  */
 export const PAGE_PADDING_TOP_XLARGE = 'pt-40 [.hero-alert-visible_&]:pt-48';
-
