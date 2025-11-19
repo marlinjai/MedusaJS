@@ -3,6 +3,7 @@ import { StoreRegion } from '@medusajs/types';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
 import HeroAlert from '@modules/home/components/hero-alert';
 import CartButton from '@modules/layout/components/cart-button';
+import MobileHeaderIcons from '@modules/layout/components/mobile-header-icons';
 import MobileMenu from '@modules/layout/components/mobile-menu';
 import TransparentHeader from '@modules/layout/components/transparent-header';
 import ConditionalSearch from '@modules/search/components/conditional-search';
@@ -19,7 +20,7 @@ export default async function Nav() {
 			<div className="fixed top-0 inset-x-0 z-50 group bg-stone-950/40 backdrop-blur-md">
 				<header className="nav-header relative py-4 mx-auto">
 					<nav className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 txt-xsmall-plus text-white flex items-center justify-between h-full text-small-regular">
-						{/* Logo */}
+						{/* Logo - smaller on very small screens to fit all icons */}
 						<div className="flex items-center h-full flex-shrink-0 min-w-0">
 							<LocalizedClientLink
 								href="/"
@@ -28,7 +29,7 @@ export default async function Nav() {
 							>
 								<Image
 									//src="/logo basiscamp.png"
-									className="w-auto h-10 md:h-16"
+									className="w-auto h-8 sm:h-10 md:h-16"
 									src="/logo-with-font.png"
 									alt="BusBasis Berlin"
 									width={400}
@@ -41,11 +42,14 @@ export default async function Nav() {
 						<NavClient />
 
 						{/* Right Section - Search, Account, Cart, & Mobile Menu */}
-						<div className="flex items-center gap-x-3 md:gap-x-6 h-full flex-shrink-0">
-							{/* Search Modal - Conditionally rendered based on settings */}
+						<div className="flex items-center gap-x-2 sm:gap-x-3 md:gap-x-6 h-full flex-shrink-0">
+							{/* Mobile Header Icons - Account & Search (only on mobile) */}
+							<MobileHeaderIcons />
+
+							{/* Search Modal - Conditionally rendered based on settings (desktop only) */}
 							<ConditionalSearch />
 
-							{/* Account Link - Hidden below 1024px */}
+							{/* Account Link - Hidden below 1024px (desktop only) */}
 							<div className="hidden small:flex items-center gap-x-6 h-full">
 								<LocalizedClientLink
 									className="hover:text-white/80 transition-colors duration-200 flex items-center"
