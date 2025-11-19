@@ -150,8 +150,15 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 				postalCode: process.env.COMPANY_POSTAL_CODE || '16547',
 				city: process.env.COMPANY_CITY || 'Birkenwerder',
 				email: process.env.COMPANY_EMAIL || 'info@basiscampberlin.de',
+				// Use dark logo for white background PDFs
+				// Use dark logo for white background PDFs (offers and invoices)
 				logoUrl:
-					process.env.COMPANY_LOGO_URL || 'https://basiscampberlin.de/logo.png',
+					process.env.COMPANY_LOGO_URL ||
+					(process.env.STOREFRONT_URL
+						? `${process.env.STOREFRONT_URL.replace(/\/$/, '')}/bbb-logo-dark.png`
+						: process.env.NEXT_PUBLIC_STOREFRONT_URL
+							? `${process.env.NEXT_PUBLIC_STOREFRONT_URL.replace(/\/$/, '')}/bbb-logo-dark.png`
+							: 'https://www.basiscampberlin.de/bbb-logo-dark.png'),
 				phone: process.env.COMPANY_PHONE || '+49 3303 5365540',
 				website:
 					process.env.STOREFRONT_URL ||
@@ -162,7 +169,9 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 				primaryColor: process.env.BRAND_PRIMARY_COLOR || '#2c5aa0',
 				secondaryColor: process.env.BRAND_SECONDARY_COLOR || '#1e40af',
 				// Bank account information for payment
-				bankInfo: process.env.COMPANY_BANK_INFO || null,
+				bankInfo:
+					process.env.COMPANY_BANK_INFO ||
+					'Mittelbrandenburgische Sparkasse<br>DE85160500001000968894<br>BCB GmbH',
 			},
 
 			// Offer information
@@ -856,7 +865,7 @@ function getHTMLTemplate(data: any): string {
           {{#if company.bankInfo}}
           <div style="margin-top: 3mm; font-weight: 500; color: #333; line-height: 1.6;">
             <strong>Zahlungsinformationen:</strong><br>
-            {{company.bankInfo}}
+            {{{company.bankInfo}}}
           </div>
           {{/if}}
           <div style="margin-top: 2mm; font-size: 8pt;">Erstellt am {{generatedAt}}</div>
