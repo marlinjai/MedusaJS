@@ -433,11 +433,21 @@ export default function SearchModal({
 	}, []);
 
 	// Keyboard shortcuts: Cmd/Ctrl+K and Cmd/Ctrl+F
+	// Also handle Escape key to close modal on first press
 	// Disabled on store page
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			// Disable search shortcuts on store page
 			if (isStorePage) {
+				return;
+			}
+
+			// Handle Escape key - close modal immediately on first press
+			// This prevents SearchBox from clearing input first, then closing on second press
+			if (e.key === 'Escape' && isOpen) {
+				e.preventDefault();
+				e.stopPropagation();
+				setIsOpen(false);
 				return;
 			}
 
@@ -450,12 +460,11 @@ export default function SearchModal({
 					setIsOpen(true);
 				}
 			}
-			// Escape key is handled by Modal component (Dialog from Headless UI)
 		};
 
-		window.addEventListener('keydown', handleKeyDown);
-		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [setIsOpen, searchSettings, isStorePage]);
+		window.addEventListener('keydown', handleKeyDown, true); // Use capture phase to intercept before SearchBox
+		return () => window.removeEventListener('keydown', handleKeyDown, true);
+	}, [setIsOpen, searchSettings, isStorePage, isOpen]);
 
 	useEffect(() => {
 		setIsOpen(false);

@@ -44,16 +44,7 @@ export default function ProductDetailSection({
 	// This implements the fallback logic as recommended by Medusa
 	// Use useMemo to recalculate when selectedVariant changes
 	const imagesToShow = useMemo(() => {
-		// Debug: Log product structure
-		if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-			console.log('[ProductDetailSection] Product variants:', product.variants);
-			if (product.variants && product.variants.length > 0) {
-				console.log('[ProductDetailSection] First variant structure:', product.variants[0]);
-				console.log('[ProductDetailSection] First variant images:', (product.variants[0] as any)?.images);
-			}
-		}
-
-		// If a variant is selected, try to get its images
+		// If a variant is selected, try to get its images first
 		if (selectedVariant?.id) {
 			// First, try to get images from the selected variant object
 			const variantImages = (selectedVariant as any)?.images;
@@ -65,31 +56,31 @@ export default function ProductDetailSection({
 				const fullVariantImages = (fullVariant as any)?.images;
 
 				if (fullVariantImages && Array.isArray(fullVariantImages) && fullVariantImages.length > 0) {
-					if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-						console.log('[ProductDetailSection] Using variant images from product.variants:', fullVariantImages);
-					}
 					return fullVariantImages;
 				}
 			} else if (Array.isArray(variantImages) && variantImages.length > 0) {
-				if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-					console.log('[ProductDetailSection] Using variant images from selectedVariant:', variantImages);
-				}
 				return variantImages;
 			}
 		}
 
-		// Fall back to product images
+		// If no variant selected or selected variant has no images, check product images
 		if (product.images && Array.isArray(product.images) && product.images.length > 0) {
-			if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-				console.log('[ProductDetailSection] Falling back to product images:', product.images);
-			}
 			return product.images;
 		}
 
-		// If neither has images, return empty array
-		if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-			console.log('[ProductDetailSection] No images found anywhere');
+		// If product has no images, check all variants for images (some products only have variant images)
+		if (product.variants && product.variants.length > 0) {
+			// Try to find any variant with images
+			for (const variant of product.variants) {
+				const variantImages = (variant as any)?.images;
+				if (variantImages && Array.isArray(variantImages) && variantImages.length > 0) {
+					// Return first variant's images found
+					return variantImages;
+				}
+			}
 		}
+
+		// If no images found anywhere, return empty array
 		return [];
 	}, [selectedVariant, product.images, product.variants]);
 
