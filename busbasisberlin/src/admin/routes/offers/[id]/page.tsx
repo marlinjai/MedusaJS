@@ -257,15 +257,15 @@ export default function OfferDetailPage() {
 		};
 	}, [pdfUrl]);
 
-		// Cleanup PDF preview blob URL when component unmounts or preview closes
-		// Only revoke blob URLs, not data URLs
-		useEffect(() => {
-			return () => {
-				if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
-					URL.revokeObjectURL(pdfPreviewUrl);
-				}
-			};
-		}, [pdfPreviewUrl]);
+	// Cleanup PDF preview blob URL when component unmounts or preview closes
+	// Only revoke blob URLs, not data URLs
+	useEffect(() => {
+		return () => {
+			if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
+				URL.revokeObjectURL(pdfPreviewUrl);
+			}
+		};
+	}, [pdfPreviewUrl]);
 
 	// Verify PDF URL is accessible
 	const verifyPdfUrl = async (url: string): Promise<boolean> => {
@@ -335,7 +335,9 @@ export default function OfferDetailPage() {
 						// Create data URL directly from base64
 						// This avoids CSP issues with blob URLs
 						const dataUrl = `data:application/pdf;base64,${result.pdf.base64}`;
-						console.log(`PDF data URL created successfully (${result.pdf.base64.length} chars base64)`);
+						console.log(
+							`PDF data URL created successfully (${result.pdf.base64.length} chars base64)`,
+						);
 						setPdfPreviewUrl(dataUrl);
 					}
 				} catch (error) {
@@ -2222,7 +2224,8 @@ export default function OfferDetailPage() {
 													download={previewData?.pdf?.filename || 'offer.pdf'}
 													className="text-sm text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline"
 												>
-													PDF herunterladen ({previewData?.pdf?.filename || 'offer.pdf'})
+													PDF herunterladen (
+													{previewData?.pdf?.filename || 'offer.pdf'})
 												</a>
 											</div>
 										</>
@@ -2234,12 +2237,14 @@ export default function OfferDetailPage() {
 												</Text>
 												{previewData?.pdf?.base64 && (
 													<Text size="small" className="text-ui-fg-muted">
-														Die PDF-Daten sind vorhanden, aber die Vorschau konnte nicht gerendert werden.
+														Die PDF-Daten sind vorhanden, aber die Vorschau
+														konnte nicht gerendert werden.
 													</Text>
 												)}
 												{!previewData?.pdf?.base64 && (
 													<Text size="small" className="text-ui-fg-muted">
-														Bitte versuchen Sie es erneut oder generieren Sie die PDF neu.
+														Bitte versuchen Sie es erneut oder generieren Sie
+														die PDF neu.
 													</Text>
 												)}
 											</div>
