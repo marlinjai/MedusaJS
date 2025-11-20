@@ -557,8 +557,8 @@ function getHTMLTemplate(data: any): string {
         }
 
         .logo {
-          max-width: 150px;
-          max-height: 60px;
+          max-width: 200px;
+          max-height: 80px;
           height: auto;
           width: auto;
           margin-bottom: 10mm;
@@ -767,13 +767,13 @@ function getHTMLTemplate(data: any): string {
             <img src="{{company.logoUrl}}" alt="{{company.name}}" class="logo" />
             {{else}}
             <!-- Placeholder logo - set COMPANY_LOGO_URL environment variable to embed logo -->
-            <div style="width: 150px; height: 60px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; font-size: 10pt; color: #666;">
+            <div style="width: 200px; height: 80px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; font-size: 10pt; color: #666;">
               LOGO HIER
             </div>
             {{/if}}
 
             <div class="company-info">
-              <div class="company-name">{{company.name}}</div>
+              <!-- Company name removed - already included in logo -->
               <div>{{company.address}}</div>
               <div>{{company.postalCode}} {{company.city}}</div>
               <div>{{company.email}}</div>
