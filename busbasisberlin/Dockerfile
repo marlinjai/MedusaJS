@@ -15,10 +15,14 @@ RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json* ./
 
 # Install dependencies with BuildKit cache mount (optimized for speed)
-# Using npm ci instead of npm install: faster, more reliable, deterministic
+# Use npm ci if package-lock.json exists (faster, deterministic), otherwise fall back to npm install
 # Cache mount persists npm packages between builds, saving ~8 minutes
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+    if [ -f package-lock.json ]; then \
+        npm ci --prefer-offline --no-audit; \
+    else \
+        npm install --prefer-offline --no-audit; \
+    fi
 
 # Copy source code
 COPY . .
@@ -62,6 +66,7 @@ COPY --from=builder /server/.medusa ./.medusa
 
 # Copy only necessary files for production
 COPY --from=builder /server/package.json ./
+COPY --from=builder /server/package-lock.json* ./
 COPY --from=builder /server/start.sh ./
 
 # Copy source scripts for medusa exec commands (needed for admin scripts)
@@ -71,10 +76,15 @@ COPY --from=builder /server/src ./src
 WORKDIR /server/.medusa/server
 
 # Install production dependencies only with BuildKit cache mount (optimized)
-# Using npm ci for faster, deterministic installs
+# Use npm ci if package-lock.json exists (faster, deterministic), otherwise fall back to npm install
 # Cache mount persists npm packages between builds, saving ~1-2 minutes
+# Note: package-lock.json is in /server/, but npm will look for it relative to package.json location
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --production --prefer-offline --no-audit
+    if [ -f /server/package-lock.json ]; then \
+        cp /server/package-lock.json . && npm ci --production --prefer-offline --no-audit; \
+    else \
+        npm install --production --prefer-offline --no-audit; \
+    fi
 
 # Copy startup script to the built directory and make it executable
 # (Copy from /server since we're now in /server/.medusa/server)
