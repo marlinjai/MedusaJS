@@ -267,31 +267,6 @@ export default function OfferDetailPage() {
 		};
 	}, [pdfPreviewUrl]);
 
-	// Verify PDF URL is accessible
-	const verifyPdfUrl = async (url: string): Promise<boolean> => {
-		try {
-			// Try a HEAD request first (lighter)
-			const response = await fetch(url, {
-				method: 'HEAD',
-				mode: 'no-cors', // Allow cross-origin checks
-			});
-			// With no-cors, we can't read the response, but if it doesn't throw, it's likely accessible
-			return true;
-		} catch (error) {
-			// Try a full fetch as fallback
-			try {
-				const response = await fetch(url, {
-					method: 'GET',
-					mode: 'no-cors',
-				});
-				// With no-cors, if it doesn't throw, assume it's accessible
-				return true;
-			} catch {
-				return false;
-			}
-		}
-	};
-
 	// Preview email and PDF before sending
 	const previewEmail = async (eventType?: string) => {
 		if (!offer) return;
@@ -2209,7 +2184,6 @@ export default function OfferDetailPage() {
 											{/* Use iframe for better browser compatibility */}
 											<iframe
 												src={`${pdfPreviewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-												type="application/pdf"
 												className="w-full h-full flex-1 border-0"
 												style={{ minHeight: '600px' }}
 												title="PDF Preview"
