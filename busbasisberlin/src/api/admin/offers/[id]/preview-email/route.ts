@@ -13,8 +13,8 @@ import { offerActiveEmail } from '../../../../../modules/resend/emails/offer-act
 import { offerCancelledEmail } from '../../../../../modules/resend/emails/offer-cancelled';
 import { offerCompletedEmail } from '../../../../../modules/resend/emails/offer-completed';
 import { resolveOfferService } from '../../../../../types/services';
-import { generateOfferPdfBuffer } from '../../../../../utils/pdf-generator';
 import { generateOfferAcceptanceUrl } from '../../../../../utils/offer-token';
+import { generateOfferPdfBuffer } from '../../../../../utils/pdf-generator';
 
 interface PreviewEmailParams {
 	id: string;
@@ -91,7 +91,24 @@ export async function POST(
 		logger.info(
 			`[PREVIEW-EMAIL] Generating PDF for offer ${offer.offer_number}`,
 		);
-		const pdfBuffer = await generateOfferPdfBuffer(offer);
+		let pdfBuffer: Uint8Array;
+		try {
+			pdfBuffer = await generateOfferPdfBuffer(offer);
+			if (!pdfBuffer || pdfBuffer.length === 0) {
+				throw new Error('PDF buffer is empty');
+			}
+			logger.info(
+				`[PREVIEW-EMAIL] PDF generated successfully: ${pdfBuffer.length} bytes`,
+			);
+		} catch (pdfError) {
+			logger.error(
+				`[PREVIEW-EMAIL] PDF generation failed: ${pdfError.message}`,
+				pdfError,
+			);
+			throw new Error(
+				`PDF generation failed: ${pdfError.message}. Please check server logs for details.`,
+			);
+		}
 		const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
 
 		// Step 2: Render email template to HTML

@@ -296,18 +296,9 @@ export default function OfferDetailPage() {
 		if (!offer) return;
 
 		setLoadingPreview(true);
-		try {
-			// First, check if we have a cached S3 PDF URL
-			// Use proxy endpoint to ensure accessibility (handles CORS and access issues)
-			let useS3Url = false;
-			if (offer.pdf_url) {
-				console.log('Using S3 PDF URL via proxy for preview:', offer.pdf_url);
-				// Use proxy endpoint to ensure the PDF is accessible
-				const proxyUrl = `/admin/offers/${offer.id}/get-cached-pdf?proxy=true`;
-				setPdfPreviewUrl(proxyUrl);
-				useS3Url = true;
-			}
+		setPdfPreviewUrl(null); // Reset preview URL
 
+		try {
 			const response = await fetch(`/admin/offers/${offer.id}/preview-email`, {
 				method: 'POST',
 				headers: {
@@ -326,47 +317,39 @@ export default function OfferDetailPage() {
 			const result = await response.json();
 			setPreviewData(result);
 
-			// Only create blob URL if we're not using S3 URL
-			if (!useS3Url && result.pdf?.base64) {
+			// Always create blob URL from base64 data for reliable preview
+			// This works better than proxy URLs in all browsers and environments
+			if (result.pdf?.base64) {
 				try {
 					// Revoke old blob URL if it exists
 					if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
 						URL.revokeObjectURL(pdfPreviewUrl);
 					}
 
+					// Decode base64 to binary
 					const binaryString = atob(result.pdf.base64);
 					const bytes = new Uint8Array(binaryString.length);
 					for (let i = 0; i < binaryString.length; i++) {
 						bytes[i] = binaryString.charCodeAt(i);
 					}
+
+					// Create blob with correct MIME type
 					const blob = new Blob([bytes], { type: 'application/pdf' });
-					const blobUrl = URL.createObjectURL(blob);
 
 					// Verify blob was created successfully
 					if (blob.size === 0) {
 						console.error('PDF blob is empty');
 						setPdfPreviewUrl(null);
 					} else {
-						console.log(`PDF blob created: ${blob.size} bytes`);
-						// Verify blob URL works by checking if we can read it
-						try {
-							const testResponse = await fetch(blobUrl);
-							if (testResponse.ok) {
-								setPdfPreviewUrl(blobUrl);
-							} else {
-								console.error('Blob URL verification failed');
-								setPdfPreviewUrl(null);
-							}
-						} catch (error) {
-							console.error('Error verifying blob URL:', error);
-							setPdfPreviewUrl(null);
-						}
+						console.log(`PDF blob created successfully: ${blob.size} bytes`);
+						const blobUrl = URL.createObjectURL(blob);
+						setPdfPreviewUrl(blobUrl);
 					}
 				} catch (error) {
 					console.error('Error creating PDF blob URL:', error);
 					setPdfPreviewUrl(null);
 				}
-			} else if (!useS3Url) {
+			} else {
 				console.warn('No PDF base64 data in preview result');
 				setPdfPreviewUrl(null);
 			}
@@ -2218,25 +2201,35 @@ export default function OfferDetailPage() {
 							{/* PDF Preview */}
 							{previewTab === 'pdf' && (
 								<div className="h-full w-full flex flex-col">
-									{pdfPreviewUrl ? (
+									{loadingPreview ? (
+										<div className="h-full flex items-center justify-center p-8">
+											<div className="text-center">
+												<Text className="text-ui-fg-subtle">
+													PDF wird geladen...
+												</Text>
+											</div>
+										</div>
+									) : pdfPreviewUrl ? (
 										<>
-											<embed
+											{/* Use iframe for better browser compatibility */}
+											<iframe
 												src={`${pdfPreviewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
 												type="application/pdf"
 												className="w-full h-full flex-1 border-0"
 												style={{ minHeight: '600px' }}
+												title="PDF Preview"
 												onError={() => {
-													console.error('PDF preview embed error');
+													console.error('PDF preview iframe error');
 												}}
 											/>
 											{/* Fallback download link */}
 											<div className="p-4 bg-ui-bg-subtle border-t border-ui-border-base">
 												<a
 													href={pdfPreviewUrl}
-													download={previewData.pdf.filename}
+													download={previewData?.pdf?.filename || 'offer.pdf'}
 													className="text-sm text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline"
 												>
-													PDF herunterladen ({previewData.pdf.filename})
+													PDF herunterladen ({previewData?.pdf?.filename || 'offer.pdf'})
 												</a>
 											</div>
 										</>
@@ -2246,9 +2239,14 @@ export default function OfferDetailPage() {
 												<Text className="text-ui-fg-subtle mb-4">
 													PDF-Vorschau konnte nicht geladen werden.
 												</Text>
-												{previewData.pdf?.base64 && (
+												{previewData?.pdf?.base64 && (
 													<Text size="small" className="text-ui-fg-muted">
 														Die PDF-Daten sind vorhanden, aber die Vorschau konnte nicht gerendert werden.
+													</Text>
+												)}
+												{!previewData?.pdf?.base64 && (
+													<Text size="small" className="text-ui-fg-muted">
+														Bitte versuchen Sie es erneut oder generieren Sie die PDF neu.
 													</Text>
 												)}
 											</div>

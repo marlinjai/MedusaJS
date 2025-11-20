@@ -153,7 +153,7 @@ export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
 				// Use dark logo for white background PDFs
 				// Use dark logo for white background PDFs (offers and invoices)
 				logoUrl:
-					process.env.COMPANY_LOGO_URL ||
+					process.env.COMPANY_LOGO_URL_DARK ||
 					(process.env.STOREFRONT_URL
 						? `${process.env.STOREFRONT_URL.replace(/\/$/, '')}/bbb-logo-dark.png`
 						: process.env.NEXT_PUBLIC_STOREFRONT_URL
@@ -513,7 +513,12 @@ function getHTMLTemplate(data: any): string {
           min-height: 100vh; /* Ensure document has minimum height */
           background: white; /* Explicit white background */
           color: #333; /* Explicit text color */
-          display: block;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .document-content {
+          flex: 1;
         }
 
         @page {
@@ -690,6 +695,9 @@ function getHTMLTemplate(data: any): string {
 
         .totals-table td {
           padding: 2mm 3mm;
+        }
+
+        .totals-table tr:not(.total-final) td {
           border-bottom: 1px solid #eee;
         }
 
@@ -724,14 +732,14 @@ function getHTMLTemplate(data: any): string {
           margin-bottom: 2mm;
         }
 
-        /* Footer */
+        /* Footer - positioned at bottom of page */
         .footer {
-          margin-top: 15mm; /* Reduced from 20mm for more compact layout */
+          margin-top: auto;
+          padding-top: 4mm;
           font-size: 9pt;
           color: #666;
           text-align: center;
           border-top: 1px solid #ddd;
-          padding-top: 4mm; /* Reduced from 5mm */
         }
 
         /* German formatting helpers */
@@ -751,6 +759,7 @@ function getHTMLTemplate(data: any): string {
     </head>
     <body>
       <div class="document">
+        <div class="document-content">
         <!-- Header Section -->
         <div class="header">
           <div class="logo-section">
@@ -858,6 +867,7 @@ function getHTMLTemplate(data: any): string {
           </div>
         </div>
         {{/if}}
+        </div>
 
         <!-- Footer -->
         <div class="footer">
