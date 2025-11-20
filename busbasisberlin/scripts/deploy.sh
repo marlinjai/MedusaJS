@@ -240,6 +240,7 @@ start_deployment() {
     # Enable BuildKit for better caching and parallel builds (production-safe)
     export DOCKER_BUILDKIT=1
     export COMPOSE_DOCKER_CLI_BUILD=1
+    export BUILDKIT_PROGRESS=plain
 
     # Ensure environment variables are available to Docker Compose
     export POSTGRES_PASSWORD JWT_SECRET COOKIE_SECRET RESEND_API_KEY RESEND_FROM_EMAIL
@@ -254,10 +255,31 @@ start_deployment() {
     export VITE_MEDUSA_BACKEND_URL
     export STOREFRONT_URL
 
-    # Only build and start the target deployment containers
+    # Optimized build process: build in parallel, then start
+    # This allows Docker to build both services simultaneously, cutting build time in half
+    log_info "Building $target deployment containers in parallel..."
+
+    # Build services in parallel (server and worker build simultaneously)
+    # Use cache-from to reuse layers from previous builds when possible
+    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" \
+        build \
+        --parallel \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        medusa-server-$target medusa-worker-$target
+
+    if [[ $? -ne 0 ]]; then
+        log_error "Failed to build $target deployment containers"
+        return 1
+    fi
+
+    log_success "Build completed, starting containers..."
+
+    # Start containers without rebuilding (already built above)
     # Don't use --remove-orphans (would stop other deployment)
     # Don't use --force-recreate (would restart base services unnecessarily)
-    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" up -d --build
+    docker compose -f docker-compose.base.yml -f "docker-compose.$target.yml" \
+        up -d --no-build \
+        medusa-server-$target medusa-worker-$target
 
     if [[ $? -eq 0 ]]; then
         log_success "$target deployment started"

@@ -14,10 +14,11 @@ RUN apk add --no-cache python3 make g++
 # Copy package files (using npm - standardized package manager)
 COPY package.json package-lock.json* ./
 
-# Install dependencies with BuildKit cache mount (Phase 2 optimization)
-# This caches npm packages between builds, saving ~8 minutes
+# Install dependencies with BuildKit cache mount (optimized for speed)
+# Using npm ci instead of npm install: faster, more reliable, deterministic
+# Cache mount persists npm packages between builds, saving ~8 minutes
 RUN --mount=type=cache,target=/root/.npm \
-    npm install
+    npm ci --prefer-offline --no-audit
 
 # Copy source code
 COPY . .
@@ -37,6 +38,7 @@ WORKDIR /server
 
 # Install required packages for health checks, database connection, and Puppeteer
 # Chromium and dependencies needed for PDF generation
+# Combined into single RUN to reduce layers and improve caching
 RUN apk update && apk add --no-cache \
     curl \
     postgresql-client \
@@ -68,14 +70,15 @@ COPY --from=builder /server/src ./src
 # Change to the built application directory (official Medusa recommendation)
 WORKDIR /server/.medusa/server
 
-# Install production dependencies only with BuildKit cache mount (Phase 2 optimization)
-# This caches npm packages between builds, saving ~1-2 minutes
+# Install production dependencies only with BuildKit cache mount (optimized)
+# Using npm ci for faster, deterministic installs
+# Cache mount persists npm packages between builds, saving ~1-2 minutes
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --production
+    npm ci --production --prefer-offline --no-audit
 
 # Copy startup script to the built directory and make it executable
-COPY --from=builder /server/start.sh ./
-RUN chmod +x ./start.sh
+# (Copy from /server since we're now in /server/.medusa/server)
+RUN cp /server/start.sh ./start.sh && chmod +x ./start.sh
 
 # Change ownership to app user
 RUN chown -R medusa:nodejs /server
