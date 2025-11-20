@@ -257,14 +257,15 @@ export default function OfferDetailPage() {
 		};
 	}, [pdfUrl]);
 
-	// Cleanup PDF preview blob URL when component unmounts or preview closes
-	useEffect(() => {
-		return () => {
-			if (pdfPreviewUrl) {
-				URL.revokeObjectURL(pdfPreviewUrl);
-			}
-		};
-	}, [pdfPreviewUrl]);
+		// Cleanup PDF preview blob URL when component unmounts or preview closes
+		// Only revoke blob URLs, not data URLs
+		useEffect(() => {
+			return () => {
+				if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
+					URL.revokeObjectURL(pdfPreviewUrl);
+				}
+			};
+		}, [pdfPreviewUrl]);
 
 	// Verify PDF URL is accessible
 	const verifyPdfUrl = async (url: string): Promise<boolean> => {
@@ -317,36 +318,28 @@ export default function OfferDetailPage() {
 			const result = await response.json();
 			setPreviewData(result);
 
-			// Always create blob URL from base64 data for reliable preview
-			// This works better than proxy URLs in all browsers and environments
+			// Create data URL from base64 for reliable preview
+			// Data URLs work better with CSP and don't require blob URL cleanup
 			if (result.pdf?.base64) {
 				try {
-					// Revoke old blob URL if it exists
+					// Clean up old blob URL if it exists
 					if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
 						URL.revokeObjectURL(pdfPreviewUrl);
 					}
 
-					// Decode base64 to binary
-					const binaryString = atob(result.pdf.base64);
-					const bytes = new Uint8Array(binaryString.length);
-					for (let i = 0; i < binaryString.length; i++) {
-						bytes[i] = binaryString.charCodeAt(i);
-					}
-
-					// Create blob with correct MIME type
-					const blob = new Blob([bytes], { type: 'application/pdf' });
-
-					// Verify blob was created successfully
-					if (blob.size === 0) {
-						console.error('PDF blob is empty');
+					// Validate base64 string
+					if (!result.pdf.base64 || result.pdf.base64.trim() === '') {
+						console.error('PDF base64 data is empty');
 						setPdfPreviewUrl(null);
 					} else {
-						console.log(`PDF blob created successfully: ${blob.size} bytes`);
-						const blobUrl = URL.createObjectURL(blob);
-						setPdfPreviewUrl(blobUrl);
+						// Create data URL directly from base64
+						// This avoids CSP issues with blob URLs
+						const dataUrl = `data:application/pdf;base64,${result.pdf.base64}`;
+						console.log(`PDF data URL created successfully (${result.pdf.base64.length} chars base64)`);
+						setPdfPreviewUrl(dataUrl);
 					}
 				} catch (error) {
-					console.error('Error creating PDF blob URL:', error);
+					console.error('Error creating PDF data URL:', error);
 					setPdfPreviewUrl(null);
 				}
 			} else {
@@ -2264,11 +2257,11 @@ export default function OfferDetailPage() {
 								onClick={() => {
 									setShowPreview(false);
 									setPreviewData(null);
-									// Cleanup blob URL
-									if (pdfPreviewUrl) {
+									// Cleanup blob URL (if it's a blob URL, not data URL)
+									if (pdfPreviewUrl && pdfPreviewUrl.startsWith('blob:')) {
 										URL.revokeObjectURL(pdfPreviewUrl);
-										setPdfPreviewUrl(null);
 									}
+									setPdfPreviewUrl(null);
 								}}
 							>
 								Abbrechen
