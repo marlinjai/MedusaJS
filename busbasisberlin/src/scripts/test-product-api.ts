@@ -4,11 +4,12 @@
  * Run with: npx medusa exec ./src/scripts/test-product-api.ts
  */
 import { ExecArgs } from '@medusajs/framework/types';
-import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 
 export default async function testProductAPI({ container }: ExecArgs) {
 	const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
 	const query = container.resolve(ContainerRegistrationKeys.QUERY);
+	const productModuleService = container.resolve(Modules.PRODUCT);
 
 	// Test with the specific product mentioned: "Reflektor rot Schrauben M6x20/8,8 Senkkopfschrauben"
 	// Handle from the URL: /ab-99-012
@@ -44,9 +45,7 @@ export default async function testProductAPI({ container }: ExecArgs) {
 			const product = products[0];
 			logger.info(`   ✅ Found product: ${(product as any).title}`);
 			logger.info(`   Handle: ${(product as any).handle}`);
-			logger.info(
-				`   Thumbnail: ${(product as any).thumbnail || 'N/A'}`,
-			);
+			logger.info(`   Thumbnail: ${(product as any).thumbnail || 'N/A'}`);
 			logger.info(
 				`   Product images (query.graph): ${((product as any).images || []).length}`,
 			);
@@ -56,9 +55,7 @@ export default async function testProductAPI({ container }: ExecArgs) {
 				});
 			}
 
-			logger.info(
-				`   Variants: ${((product as any).variants || []).length}`,
-			);
+			logger.info(`   Variants: ${((product as any).variants || []).length}`);
 			if ((product as any).variants) {
 				(product as any).variants.forEach((variant: any, idx: number) => {
 					logger.info(
@@ -130,13 +127,73 @@ export default async function testProductAPI({ container }: ExecArgs) {
 					);
 					if (variantImages.length > 0) {
 						variantImages.forEach((img: any, idx: number) => {
-							logger.info(
-								`     Image ${idx + 1}: ${img.id} - ${img.url}`,
-							);
+							logger.info(`     Image ${idx + 1}: ${img.id} - ${img.url}`);
 						});
 					}
 				}
 			}
+		}
+
+		// Test 4: Use productModuleService.retrieveProduct with relations
+		logger.info('\n📋 Test 4: Using productModuleService.retrieveProduct');
+		try {
+			const productWithRelations = await productModuleService.retrieveProduct(
+				testProductId,
+				{
+					relations: ['images', 'variants', 'variants.images'],
+				},
+			);
+
+			logger.info(`   ✅ Retrieved product: ${productWithRelations.title}`);
+			logger.info(
+				`   Product images (module service): ${(productWithRelations.images || []).length}`,
+			);
+			if (
+				productWithRelations.images &&
+				productWithRelations.images.length > 0
+			) {
+				productWithRelations.images.forEach((img: any, idx: number) => {
+					logger.info(
+						`     Image ${idx + 1}: ${img.id} - ${img.url || img.url}`,
+					);
+				});
+			}
+
+			if (productWithRelations.variants) {
+				productWithRelations.variants.forEach((variant: any, idx: number) => {
+					logger.info(
+						`   Variant ${idx + 1}: ${variant.id} - ${variant.title || variant.sku}`,
+					);
+					const variantImages = variant.images || [];
+					logger.info(`     Variant images: ${variantImages.length}`);
+					if (variantImages.length > 0) {
+						variantImages.forEach((img: any, imgIdx: number) => {
+							logger.info(
+								`       Image ${imgIdx + 1}: ${img.id} - ${img.url || img.url}`,
+							);
+						});
+					}
+				});
+			}
+		} catch (error: any) {
+			logger.error(`   ❌ Error: ${error.message}`);
+		}
+
+		// Test 5: Query images entity directly
+		logger.info('\n📋 Test 5: Query images entity directly');
+		try {
+			const { data: allImages } = await query.graph({
+				entity: 'product_image',
+				fields: ['id', 'url', 'product_id'],
+				filters: { product_id: testProductId },
+			});
+
+			logger.info(`   Found ${allImages.length} images for product`);
+			allImages.forEach((img: any, idx: number) => {
+				logger.info(`     Image ${idx + 1}: ${img.id} - ${img.url}`);
+			});
+		} catch (error: any) {
+			logger.error(`   ❌ Error: ${error.message}`);
 		}
 
 		logger.info('\n✅ Test complete!');
@@ -145,4 +202,3 @@ export default async function testProductAPI({ container }: ExecArgs) {
 		throw error;
 	}
 }
-
