@@ -37,6 +37,26 @@ export async function GET(
 			return;
 		}
 
+		// Get offer to check status
+		const offer = await offerService.getOfferWithDetails(offerId);
+
+		if (!offer) {
+			res.status(404).json({
+				error: 'Not found',
+				message: 'Offer not found',
+			});
+			return;
+		}
+
+		// Don't check inventory for cancelled offers
+		if (offer.status === 'cancelled') {
+			res.status(400).json({
+				error: 'Invalid operation',
+				message: 'Cannot check inventory for cancelled offers',
+			});
+			return;
+		}
+
 		// ✅ USE SERVICE METHOD: Delegate to centralized inventory check logic
 		// This ensures reservation-based availability is handled correctly
 		// Pass the query service from the request scope to the service

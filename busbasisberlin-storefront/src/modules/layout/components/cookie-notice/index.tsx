@@ -8,11 +8,13 @@
 
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
 import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 const COOKIE_NOTICE_KEY = 'cookie-notice-dismissed';
 
 export default function CookieNotice() {
+	const t = useTranslations('cookieNotice');
 	const [isVisible, setIsVisible] = useState(false);
 
 	useEffect(() => {
@@ -69,23 +71,19 @@ export default function CookieNotice() {
 				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 					<div className="flex-1">
 						<p className="text-sm text-ui-fg-base">
-							<span className="font-semibold">Cookies:</span> Diese Website
-							verwendet essentielle Cookies, um die Funktionalität zu
-							gewährleisten (z.B. Warenkorb, Anmeldung). Diese Cookies sind für
-							den Betrieb der Website erforderlich und erfordern keine
-							Zustimmung.{' '}
+							<span className="font-semibold">{t('label')}</span> {t('message')}{' '}
 							<LocalizedClientLink
 								href="/privacy"
 								className="underline hover:text-ui-fg-subtle transition-colors"
 							>
-								Mehr erfahren
+								{t('learnMore')}
 							</LocalizedClientLink>
 						</p>
 					</div>
 					<button
 						onClick={handleDismiss}
 						className="flex-shrink-0 p-2 text-ui-fg-subtle hover:text-ui-fg-base transition-colors rounded-md hover:bg-ui-bg-subtle-hover"
-						aria-label="Cookie-Hinweis schließen"
+						aria-label={t('closeAriaLabel')}
 					>
 						<X className="w-5 h-5" />
 					</button>

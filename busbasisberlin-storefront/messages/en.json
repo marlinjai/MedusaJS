@@ -403,6 +403,12 @@
 		"invalidRequest": "Invalid request. Please use the link from the email.",
 		"errorMessage": "Error accepting offer. Please contact us directly."
 	},
+	"cookieNotice": {
+		"label": "Cookies:",
+		"message": "This website uses essential cookies to ensure functionality (e.g., shopping cart, login). These cookies are required for the website to function and do not require consent.",
+		"learnMore": "Learn more",
+		"closeAriaLabel": "Close cookie notice"
+	},
 	"faq": {
 		"title": "Frequently Asked Questions",
 		"subtitle": "Answers to the most important questions"

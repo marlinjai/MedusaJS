@@ -195,6 +195,13 @@ export default function OfferDetailPage() {
 	const checkInventoryAvailability = async () => {
 		if (!offer) return;
 
+		// Don't check inventory for cancelled offers
+		if (offer.status === 'cancelled') {
+			// Clear inventory status if offer is cancelled
+			setInventoryStatus(null);
+			return;
+		}
+
 		setCheckingInventory(true);
 		try {
 			const response = await fetch(`/admin/offers/${offer.id}/check-inventory`);
@@ -492,12 +499,16 @@ export default function OfferDetailPage() {
 	useEffect(() => {
 		if (
 			offer &&
+			offer.status !== 'cancelled' &&
 			offer.items.some(item => item.item_type === 'product' && item.variant_id)
 		) {
-			// Check inventory immediately after offer loads
+			// Check inventory immediately after offer loads (only for non-cancelled offers)
 			checkInventoryAvailability();
+		} else if (offer && offer.status === 'cancelled') {
+			// Clear inventory status for cancelled offers
+			setInventoryStatus(null);
 		}
-	}, [offer?.id, offer?.items?.length, offer?.items]); // Re-run when offer ID changes or items change
+	}, [offer?.id, offer?.status, offer?.items?.length, offer?.items]); // Re-run when offer ID, status, or items change
 
 	// Update offer status
 	const updateStatus = async (newStatus: string) => {
@@ -538,8 +549,11 @@ export default function OfferDetailPage() {
 				await loadOffer();
 				toast.success('Status erfolgreich aktualisiert');
 
-				// Refresh inventory status after status change
-				if (
+				// Clear inventory status if offer is cancelled
+				if (newStatus === 'cancelled') {
+					setInventoryStatus(null);
+				} else if (
+					// Refresh inventory status after status change (only for relevant statuses)
 					newStatus === 'accepted' ||
 					newStatus === 'completed' ||
 					newStatus === 'active'
@@ -810,7 +824,10 @@ export default function OfferDetailPage() {
 		}));
 
 		// Refresh inventory status immediately after variant selection to get real-time data
-		setTimeout(() => checkInventoryAvailability(), 200);
+		// Only check if offer is not cancelled
+		if (offer.status !== 'cancelled') {
+			setTimeout(() => checkInventoryAvailability(), 200);
+		}
 	};
 
 	// Handle service selection for an item
