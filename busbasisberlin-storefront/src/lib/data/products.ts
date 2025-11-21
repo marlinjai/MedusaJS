@@ -63,8 +63,8 @@ export const listProducts = async ({
 					offset,
 					region_id: region?.id,
 					country_code: region?.countries?.[0]?.iso_2 || 'de',
-				fields:
-					'*variants.calculated_price,+variants.inventory_quantity,+variants.images.*,+images.*,+metadata,+tags,+shipping_profile.*',
+					fields:
+						'+variants.calculated_price,+variants.inventory_quantity,+variants.images.*,+images.*,+metadata,+tags,+shipping_profile.*',
 					...queryParams,
 				},
 				headers,
@@ -187,7 +187,7 @@ export const retrieveProduct = async ({
 				region_id: region?.id,
 				country_code: region?.countries?.[0]?.iso_2 || 'de',
 				fields:
-					'*variants.calculated_price,+variants.inventory_quantity,+variants.images.*,+images.*,+metadata,+tags,+shipping_profile.*',
+					'id,title,handle,description,thumbnail,images.*,variants.*,variants.calculated_price,variants.inventory_quantity,variants.images.*,metadata,tags,shipping_profile.*',
 				limit: 1,
 			},
 			headers,
@@ -198,13 +198,34 @@ export const retrieveProduct = async ({
 		// Debug: Log API response structure
 		if (products.length > 0) {
 			const product = products[0];
-			console.log('[retrieveProduct] API Response for handle:', handle);
+			console.log('[retrieveProduct] ========== API RESPONSE DEBUG ==========');
+			console.log('[retrieveProduct] Handle:', handle);
 			console.log('[retrieveProduct] Product ID:', product.id);
 			console.log('[retrieveProduct] Product title:', product.title);
-			console.log('[retrieveProduct] Product thumbnail:', (product as any).thumbnail);
-			console.log('[retrieveProduct] Product images:', (product as any).images);
-			console.log('[retrieveProduct] Product images count:', (product as any).images?.length || 0);
-			console.log('[retrieveProduct] Variants count:', product.variants?.length || 0);
+			console.log(
+				'[retrieveProduct] Product thumbnail:',
+				(product as any).thumbnail,
+			);
+			console.log(
+				'[retrieveProduct] Product images (raw):',
+				(product as any).images,
+			);
+			console.log(
+				'[retrieveProduct] Product images count:',
+				(product as any).images?.length || 0,
+			);
+			console.log(
+				'[retrieveProduct] Product object keys:',
+				Object.keys(product),
+			);
+			console.log(
+				'[retrieveProduct] Full product object:',
+				JSON.stringify(product, null, 2),
+			);
+			console.log(
+				'[retrieveProduct] Variants count:',
+				product.variants?.length || 0,
+			);
 
 			// Log variant images
 			if (product.variants && product.variants.length > 0) {
@@ -215,11 +236,15 @@ export const retrieveProduct = async ({
 						sku: variant.sku,
 						images: variantImages,
 						imagesCount: variantImages?.length || 0,
+						variantKeys: Object.keys(variant),
 					});
 				});
 			} else {
 				console.log('[retrieveProduct] No variants found');
 			}
+			console.log(
+				'[retrieveProduct] =========================================',
+			);
 		} else {
 			console.log('[retrieveProduct] No product found for handle:', handle);
 		}
