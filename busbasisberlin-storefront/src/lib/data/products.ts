@@ -64,7 +64,7 @@ export const listProducts = async ({
 					region_id: region?.id,
 					country_code: region?.countries?.[0]?.iso_2 || 'de',
 					fields:
-						'+variants.calculated_price,+variants.inventory_quantity,+variants.images.*,+images.*,+metadata,+tags,+shipping_profile.*',
+						'id,title,handle,description,thumbnail,images.*,variants.*,variants.calculated_price,variants.inventory_quantity,variants.images.*,metadata,tags,shipping_profile.*',
 					...queryParams,
 				},
 				headers,

@@ -59,109 +59,67 @@ export default async function assignProductImagesToVariants({
 				continue;
 			}
 
-			// Track if we processed any images for this product
-			let productProcessed = false;
+			// Log first few products for debugging
+			if (processedCount + skippedCount < 5) {
+				logger.info(
+					`\n🔍 Processing product: ${(product as any).title} (${product.id})`,
+				);
+				logger.info(`   Product images: ${productImages.length}`);
+				logger.info(`   Variants: ${variants.length}`);
+			}
 
-			// For each image, check if it's already associated with all variants
-			// and associate it with variants that don't have it
+			// Build array of image-variant pairs to associate
+			// Use productModuleService.addImageToVariant() method directly
+			const imageVariantPairs: Array<{
+				image_id: string;
+				variant_id: string;
+			}> = [];
+
 			for (const image of productImages) {
-				// Query variant-image associations for this image
-				// Check which variants already have this image
-				const variantIdsWithImage: string[] = [];
-
-				// Query each variant to check if it has this image
 				for (const variant of variants) {
-					const { data: variantData } = await query.graph({
-						entity: 'product_variant',
-						fields: ['id', 'images.id'],
-						filters: { id: variant.id },
+					imageVariantPairs.push({
+						image_id: image.id,
+						variant_id: variant.id,
 					});
-
-					const variantWithImages = variantData?.[0];
-					const variantImages = (variantWithImages as any)?.images || [];
-					const hasImage = variantImages.some(
-						(img: any) => img.id === image.id,
-					);
-
-					if (hasImage) {
-						variantIdsWithImage.push(variant.id);
-					}
-				}
-
-				// Find variants that don't have this image
-				const variantIdsToAdd = variants
-					.map((v: any) => v.id)
-					.filter((id: string) => !variantIdsWithImage.includes(id));
-
-				// If all variants already have this image, skip
-				if (variantIdsToAdd.length === 0) {
-					continue;
-				}
-
-				// Associate image with variants that don't have it
-				// Use Admin API endpoint: POST /admin/products/{id}/images/{image_id}/variants/batch
-				try {
-					// Get the base URL from environment or use default
-					const baseUrl =
-						process.env.MEDUSA_BACKEND_URL ||
-						process.env.BACKEND_URL ||
-						'http://localhost:9000';
-
-					// Call Admin API to associate image with variants
-					const apiUrl = `${baseUrl}/admin/products/${product.id}/images/${image.id}/variants/batch`;
-
-					const response = await fetch(apiUrl, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							add: variantIdsToAdd,
-							remove: [],
-						}),
-					});
-
-					if (!response.ok) {
-						const errorData = await response.json().catch(() => ({}));
-						throw new Error(
-							`API call failed: ${response.status} ${response.statusText} - ${errorData.message || 'Unknown error'}`,
-						);
-					}
-
-					const result = await response.json();
-					totalAssociations += variantIdsToAdd.length;
-
-					logger.info(
-						`  ✅ Associated image ${image.id} with ${variantIdsToAdd.length} variants`,
-					);
-					productProcessed = true;
-				} catch (error: any) {
-					// If it's a 404, the endpoint might not exist (Medusa version < 2.11.2)
-					if (error.message?.includes('404')) {
-						logger.warn(
-							`⚠️  Admin API endpoint not available (Medusa < 2.11.2?). Skipping image ${image.id} for product ${product.id}`,
-						);
-						continue;
-					}
-
-					errorCount++;
-					logger.error(
-						`❌ Failed to associate image ${image.id} for product ${product.id}: ${error.message}`,
-					);
-					// Continue with next image instead of failing entire product
-					continue;
 				}
 			}
 
-			// Log product processing status
-			if (productProcessed) {
-				processedCount++;
-				logger.info(
-					`✅ Processed product: ${(product as any).title} (${(product as any).handle})`,
-				);
-			} else {
-				// All images were already associated or skipped
+			// Skip if no pairs to create
+			if (imageVariantPairs.length === 0) {
 				skippedCount++;
+				continue;
+			}
+
+			// Log first few for debugging
+			if (processedCount + skippedCount < 5) {
+				logger.info(
+					`   Creating ${imageVariantPairs.length} image-variant associations`,
+				);
+			}
+
+			// Associate images with variants using product module service
+			// This method is idempotent - it won't create duplicates if associations already exist
+			try {
+				await productModuleService.addImageToVariant(imageVariantPairs);
+				totalAssociations += imageVariantPairs.length;
+				processedCount++;
+
+				if (processedCount <= 10) {
+					logger.info(
+						`  ✅ Associated ${imageVariantPairs.length} image-variant pairs for product ${(product as any).title}`,
+					);
+				}
+			} catch (error: any) {
+				errorCount++;
+				logger.error(
+					`❌ Failed to associate images for product ${product.id} (${(product as any).title}): ${error.message}`,
+				);
+				// Log detailed error for first few failures
+				if (errorCount <= 5) {
+					logger.error(`   Error details:`, error);
+				}
+				// Continue with next product instead of failing entire migration
+				continue;
 			}
 		}
 
