@@ -19,19 +19,27 @@ export default async function assignProductImagesToVariants({
 	logger.info('🔄 Starting product image to variant association...');
 
 	try {
-		// Query all products - use product module service for more reliable data loading
-		logger.info('📦 Fetching all products...');
+		// Query all products with images and variants using query.graph
+		// This is more reliable than retrieveProduct for loading relations
+		logger.info('📦 Fetching all products with images and variants...');
 
-		// First, get all product IDs
-		const { data: allProducts } = await query.graph({
+		const { data: products } = await query.graph({
 			entity: 'product',
-			fields: ['id'],
+			fields: [
+				'id',
+				'title',
+				'handle',
+				'images.id',
+				'images.url',
+				'variants.id',
+				'variants.title',
+				'variants.sku',
+			],
 		});
 
-		logger.info(`📊 Found ${allProducts.length} total products`);
+		logger.info(`📊 Found ${products.length} total products`);
 
-		// Now fetch each product with full relations using product module service
-		// This ensures we get images and variants properly loaded
+		// Filter products that have images and variants
 		type ProductWithData = {
 			id: string;
 			title: string;
@@ -43,50 +51,38 @@ export default async function assignProductImagesToVariants({
 		const productsWithData: ProductWithData[] = [];
 		let productsWithImages = 0;
 		let productsWithoutImages = 0;
+		let productsWithoutVariants = 0;
 
-		logger.info('📦 Loading product details with images and variants...');
+		for (const product of products) {
+			const productImages = (product as any).images || [];
+			const variants = (product as any).variants || [];
 
-		for (let i = 0; i < allProducts.length; i++) {
-			const productId = allProducts[i].id;
-
-			try {
-				// Use product module service to get full product data with relations
-				const product = await productModuleService.retrieveProduct(productId, {
-					relations: ['images', 'variants'],
-				});
-
-				const productImages = (product as any).images || [];
-				const variants = (product as any).variants || [];
-
-				if (productImages.length > 0) {
-					productsWithImages++;
-					productsWithData.push({
-						id: product.id,
-						title: (product as any).title,
-						handle: (product as any).handle,
-						images: productImages.map((img: any) => ({ id: img.id })),
-						variants: variants.map((v: any) => ({ id: v.id })),
-					});
-				} else {
-					productsWithoutImages++;
-				}
-
-				// Log progress every 100 products
-				if ((i + 1) % 100 === 0) {
-					logger.info(
-						`   Loaded ${i + 1}/${allProducts.length} products (${productsWithImages} with images)`,
-					);
-				}
-			} catch (error: any) {
-				logger.warn(
-					`⚠️  Failed to load product ${productId}: ${error.message}`,
-				);
+			if (productImages.length === 0) {
+				productsWithoutImages++;
 				continue;
 			}
+
+			if (variants.length === 0) {
+				productsWithoutVariants++;
+				continue;
+			}
+
+			productsWithImages++;
+			productsWithData.push({
+				id: product.id,
+				title: (product as any).title || 'Untitled',
+				handle: (product as any).handle || '',
+				images: productImages.map((img: any) => ({ id: img.id })),
+				variants: variants.map((v: any) => ({ id: v.id })),
+			});
 		}
 
 		logger.info(
-			`📊 Loaded ${productsWithData.length} products with images (${productsWithoutImages} without images)`,
+			`📊 Found ${productsWithData.length} products with images and variants`,
+		);
+		logger.info(`   - ${productsWithoutImages} products without images`);
+		logger.info(
+			`   - ${productsWithoutVariants} products with images but no variants`,
 		);
 
 		let processedCount = 0;
