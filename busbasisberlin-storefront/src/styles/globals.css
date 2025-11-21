@@ -202,4 +202,15 @@
 		animation: marquee 30s linear infinite;
 		will-change: transform;
 	}
+
+	/* Add bottom padding when cookie notice is visible */
+	body.cookie-notice-visible {
+		padding-bottom: 100px; /* Space for cookie notice banner */
+	}
+
+	@media (min-width: 640px) {
+		body.cookie-notice-visible {
+			padding-bottom: 80px; /* Smaller padding on larger screens */
+		}
+	}
 }
