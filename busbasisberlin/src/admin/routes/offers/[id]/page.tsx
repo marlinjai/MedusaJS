@@ -1864,6 +1864,7 @@ export default function OfferDetailPage() {
 
 					{/* Inventory Status */}
 					{inventoryStatus &&
+						offer.status !== 'cancelled' &&
 						offer.items.some(item => item.item_type === 'product') && (
 							<div className="bg-ui-bg-subtle rounded-lg p-6">
 								<Text
@@ -2034,16 +2035,17 @@ export default function OfferDetailPage() {
 								</div>
 							)}
 
-							{offer.items.some(item => item.item_type === 'product') && (
-								<Button
-									variant="secondary"
-									size="small"
-									onClick={checkInventoryAvailability}
-									disabled={checkingInventory}
-								>
-									{checkingInventory ? <>⏳ Prüfe...</> : <>🔄 Lager prüfen</>}
-								</Button>
-							)}
+							{offer.items.some(item => item.item_type === 'product') &&
+								offer.status !== 'cancelled' && (
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={checkInventoryAvailability}
+										disabled={checkingInventory}
+									>
+										{checkingInventory ? <>⏳ Prüfe...</> : <>🔄 Lager prüfen</>}
+									</Button>
+								)}
 						</div>
 					</div>
 

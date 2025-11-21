@@ -137,6 +137,37 @@ const releaseOfferReservationsStep = createStep(
 	},
 );
 
+// Step: Update offer has_reservations flag to false
+const updateOfferReservationsFlagStep = createStep(
+	'update-offer-reservations-flag',
+	async (input: { offer_id: string }, { container }) => {
+		const logger = getLogger(container);
+		const offerService = resolveOfferService(container);
+
+		try {
+			// Update has_reservations flag to false after releasing reservations
+			await offerService.updateOffers([
+				{
+					id: input.offer_id,
+					has_reservations: false,
+				},
+			]);
+
+			logger.info(
+				`[RELEASE-WORKFLOW] Updated has_reservations flag to false for offer ${input.offer_id}`,
+			);
+
+			return new StepResponse({ updated: true });
+		} catch (error: any) {
+			logger.error(
+				`[RELEASE-WORKFLOW] Failed to update has_reservations flag: ${error.message}`,
+			);
+			// Don't throw - flag update failure shouldn't block reservation release
+			return new StepResponse({ updated: false, error: error.message });
+		}
+	},
+);
+
 // Main Workflow: Release Offer Reservations
 export const releaseOfferReservationsWorkflow = createWorkflow(
 	'release-offer-reservations',
@@ -154,10 +185,16 @@ export const releaseOfferReservationsWorkflow = createWorkflow(
 			reason: input.reason,
 		});
 
+		// Step 3: Update has_reservations flag to false
+		const updateFlag = updateOfferReservationsFlagStep({
+			offer_id: input.offer_id,
+		});
+
 		return new WorkflowResponse({
 			offer_id: input.offer_id,
 			reservations_released: release.releasedReservations.length,
 			status: 'released',
+			flag_updated: updateFlag.updated,
 		});
 	},
 );
