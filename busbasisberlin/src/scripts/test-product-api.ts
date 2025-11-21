@@ -179,19 +179,33 @@ export default async function testProductAPI({ container }: ExecArgs) {
 			logger.error(`   ❌ Error: ${error.message}`);
 		}
 
-		// Test 5: Query images entity directly
+		// Test 5: Query images entity directly (query all and filter in code)
 		logger.info('\n📋 Test 5: Query images entity directly');
 		try {
 			const { data: allImages } = await query.graph({
 				entity: 'product_image',
-				fields: ['id', 'url', 'product_id'],
-				filters: { product_id: testProductId },
+				fields: ['id', 'url'],
+				pagination: { take: 1000 }, // Get a sample
 			});
 
-			logger.info(`   Found ${allImages.length} images for product`);
-			allImages.forEach((img: any, idx: number) => {
-				logger.info(`     Image ${idx + 1}: ${img.id} - ${img.url}`);
+			logger.info(`   Found ${allImages.length} total images in database`);
+
+			// Try to find images related to this product by querying through product relation
+			const { data: productWithImageRelation } = await query.graph({
+				entity: 'product',
+				fields: ['id', 'images.id', 'images.url'],
+				filters: { id: testProductId },
 			});
+
+			if (productWithImageRelation.length > 0) {
+				const productImages = (productWithImageRelation[0] as any).images || [];
+				logger.info(
+					`   Images for this product (via relation): ${productImages.length}`,
+				);
+				productImages.forEach((img: any, idx: number) => {
+					logger.info(`     Image ${idx + 1}: ${img.id} - ${img.url}`);
+				});
+			}
 		} catch (error: any) {
 			logger.error(`   ❌ Error: ${error.message}`);
 		}
