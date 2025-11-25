@@ -203,6 +203,11 @@ export default class MeilisearchModuleService {
 				'primary_sales_channel',
 			]);
 
+			// Configure pagination settings to allow accurate total hit counts
+			await index.updatePaginationSettings({
+				maxTotalHits: 100000, // Set to a high value to show all products
+			});
+
 			console.log('✅ Meilisearch index configuration completed successfully');
 		} catch (error) {
 			console.warn('⚠️ Failed to configure Meilisearch index settings:', error);
@@ -277,6 +282,11 @@ export default class MeilisearchModuleService {
 				'created_at',
 				'updated_at',
 			]);
+
+			// Configure pagination settings to allow accurate total hit counts
+			await index.updatePaginationSettings({
+				maxTotalHits: 100000, // Set to a high value to show all categories
+			});
 
 			console.log(
 				'✅ Meilisearch category index configuration completed successfully',
