@@ -3,8 +3,8 @@ import { getVariantAvailability } from '@medusajs/framework/utils';
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
 import { MEILISEARCH_MODULE } from '../../modules/meilisearch';
 import MeilisearchModuleService from '../../modules/meilisearch/service';
-import { getDefaultSalesChannelIdFromQuery } from '../../utils/sales-channel-helper';
 import { calculateDeliveryDays } from '../../utils/inventory-helper';
+import { getDefaultSalesChannelIdFromQuery } from '../../utils/sales-channel-helper';
 
 export type SyncProductsStepInput = {
 	products: ProductDTO[];
@@ -70,6 +70,113 @@ export const syncProductsStep = createStep(
 				});
 			}
 		}
+
+		// Helper function to generate word parts for substring matching
+		// This enables finding "nippel" when searching for products like "schmiernippel"
+		const generateWordParts = (text: string): string[] => {
+			if (!text) return [];
+			const parts: string[] = [];
+			const lowerText = text.toLowerCase();
+
+			// Add the full text
+			parts.push(text);
+
+			// Split on common separators (space, dash, underscore)
+			const separated = text.split(/[\s\-_]+/);
+			parts.push(...separated);
+
+			// For German compound words, try splitting at common word boundaries
+			// Common prefixes/suffixes in German technical terms (extracted from product data)
+			const commonPrefixes = [
+				// Materials
+				'schmier',
+				'dicht',
+				'kupfer',
+				'stahl',
+				'gummi',
+				'metall',
+				// Parts/components
+				'kugel',
+				'zylinder',
+				'ventil',
+				'adapter',
+				'nippel',
+				'ring',
+				'schraube',
+				'mutter',
+				'scheibe',
+				'buchse',
+				'stecker',
+				'geber',
+				'schalter',
+				'lager',
+				'pumpe',
+				// Vehicle parts
+				'wasser',
+				'öl',
+				'bremse',
+				'kupplung',
+				'feder',
+				'blatt',
+				'stabilisator',
+				'kolben',
+				'rad',
+				'achse',
+				'vorder',
+				'hinter',
+				'seiten',
+				// Actions/descriptions
+				'reparatur',
+				'end',
+				'heck',
+				'haupt',
+				'nebel',
+				'rück',
+				'blink',
+				'kennzeichen',
+				'anlasser',
+				'licht',
+				'scheinwerfer',
+				'streu',
+				'reflektor',
+				'windschutz',
+				'front',
+				'kotflügel',
+				'spurstange',
+				'achsschenkel',
+				'radlauf',
+				'innenradlauf',
+				'ausgleich',
+				'druckplatte',
+				'stütz',
+				'schale',
+				'simmering',
+				'konus',
+				'nieten',
+				'gewinde',
+				'bohrung',
+				'anhänger',
+				'blech',
+				'leuchte',
+				'schlauch',
+				'hydraulik',
+				'druck',
+			];
+
+			for (const prefix of commonPrefixes) {
+				if (lowerText.startsWith(prefix) && text.length > prefix.length) {
+					parts.push(prefix, text.substring(prefix.length));
+				}
+				// Also check if the word contains the prefix anywhere
+				const index = lowerText.indexOf(prefix);
+				if (index > 0 && index < lowerText.length - prefix.length) {
+					parts.push(prefix, text.substring(index + prefix.length));
+				}
+			}
+
+			// Remove duplicates and filter out very short parts
+			return [...new Set(parts)].filter(p => p && p.length > 2);
+		};
 
 		// Transform products for better search functionality
 		const transformedProducts = await Promise.all(
@@ -292,6 +399,14 @@ export const syncProductsStep = createStep(
 							}
 						: { id: 'default', name: 'Default Sales Channel' };
 
+				// Generate word parts for substring matching (e.g., "schmiernippel" -> "schmier nippel")
+				// This enables finding "nippel" when searching for products like "schmiernippel"
+				const titleParts = generateWordParts(product.title || '');
+				const descriptionParts = product.description
+					? generateWordParts(product.description)
+					: [];
+				const skuParts = skus.flatMap(sku => generateWordParts(sku));
+
 				return {
 					objectID: product.id, // Required by Meilisearch
 					id: product.id,
@@ -333,35 +448,42 @@ export const syncProductsStep = createStep(
 					collection_title: product.collection?.title,
 					collection_handle: product.collection?.handle,
 
-				// Sales channel information - consolidated as JSON
-				sales_channels: salesChannelsJSON,
-				primary_sales_channel: primarySalesChannel,
+					// Sales channel information - consolidated as JSON
+					sales_channels: salesChannelsJSON,
+					primary_sales_channel: primarySalesChannel,
 
-				// Shipping profile information
-				shipping_profile_id: (product as any).shipping_profile?.id || null,
-				shipping_profile_name: (product as any).shipping_profile?.name || null,
-				shipping_profile_type: (product as any).shipping_profile?.type || null,
-				has_extended_delivery:
-					(product as any).shipping_profile?.name
-						?.toLowerCase()
-						.includes('längere lieferzeit') || false,
-				estimated_delivery_days: calculateDeliveryDays(
-					(product as any).shipping_profile,
-				),
+					// Shipping profile information
+					shipping_profile_id: (product as any).shipping_profile?.id || null,
+					shipping_profile_name:
+						(product as any).shipping_profile?.name || null,
+					shipping_profile_type:
+						(product as any).shipping_profile?.type || null,
+					has_extended_delivery:
+						(product as any).shipping_profile?.name
+							?.toLowerCase()
+							.includes('längere lieferzeit') || false,
+					estimated_delivery_days: calculateDeliveryDays(
+						(product as any).shipping_profile,
+					),
 
-				// Search-optimized fields
-				searchable_text: [
-					product.title,
-					product.description,
-					// Extract category names from hierarchical_categories for search
-					...Object.values(hierarchicalCategories),
-					...tagValues,
-					...skus,
-					product.collection?.title,
-				]
-					.filter(Boolean)
-					.join(' '),
-			};
+					// Search-optimized fields
+					// Include word parts for substring matching (e.g., "schmiernippel" -> "schmier nippel")
+					// This enables finding "nippel" when searching for products like "schmiernippel"
+					searchable_text: [
+						product.title,
+						...titleParts,
+						product.description,
+						...descriptionParts,
+						// Extract category names from hierarchical_categories for search
+						...Object.values(hierarchicalCategories),
+						...tagValues,
+						...skus,
+						...skuParts,
+						product.collection?.title,
+					]
+						.filter(Boolean)
+						.join(' '),
+				};
 			}),
 		);
 
