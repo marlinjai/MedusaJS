@@ -107,7 +107,14 @@ export async function middleware(request: NextRequest) {
 
   // if one of the country codes is in the url and the cache id is set, return next
   if (urlHasCountryCode && cacheIdCookie) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    // Set cache headers for HTML pages to enable stale-while-revalidate
+    // This ensures browsers get fresh content after deployment while still using cache for performance
+    response.headers.set(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=300'
+    );
+    return response;
   }
 
   // if one of the country codes is in the url and the cache id is not set, set the cache id and return next
@@ -116,6 +123,11 @@ export async function middleware(request: NextRequest) {
     response.cookies.set('_medusa_cache_id', cacheId, {
       maxAge: 60 * 60 * 24,
     });
+    // Set cache headers for HTML pages
+    response.headers.set(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=300'
+    );
     return response;
   }
 
@@ -139,10 +151,24 @@ export async function middleware(request: NextRequest) {
     response.cookies.set('_medusa_cache_id', cacheId, {
       maxAge: 60 * 60 * 24,
     });
+    // Set cache headers for redirects
+    response.headers.set(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=300'
+    );
     return response;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  // Set cache headers for all HTML pages
+  // s-maxage=60: Cache for 60 seconds at CDN/proxy level
+  // stale-while-revalidate=300: Serve stale content for up to 300 seconds while revalidating in background
+  // This ensures users get fresh content after deployment while maintaining performance
+  response.headers.set(
+    'Cache-Control',
+    'public, s-maxage=60, stale-while-revalidate=300'
+  );
+  return response;
 }
 
 export const config = {

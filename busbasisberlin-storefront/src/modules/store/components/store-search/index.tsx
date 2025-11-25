@@ -79,20 +79,41 @@ function FilterSidebar() {
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 
 	return (
-		<>
-			{/* Mobile Filter Toggle Button */}
+		<div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6">
+			{/* Category Tree - Always visible on mobile and desktop */}
+			<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
+				<h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+					<svg
+						className="w-5 h-5 text-blue-400"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M4 6h16M4 12h16M4 18h16"
+						/>
+					</svg>
+					Kategorien
+				</h2>
+				<CategoryTree />
+			</div>
+
+			{/* Mobile Filter Toggle Button - Only for other filters */}
 			<button
 				onClick={() => setIsMobileOpen(!isMobileOpen)}
-				className="lg:hidden w-full mb-4 flex items-center justify-center gap-2 px-4 py-3 bg-stone-950 border border-stone-800 rounded-xl text-white font-medium hover:bg-stone-900 transition-colors"
+				className="lg:hidden w-full flex items-center justify-center gap-2 px-4 py-3 bg-stone-950 border border-stone-800 rounded-xl text-white font-medium hover:bg-stone-900 transition-colors"
 			>
 				<BsFilter className="w-5 h-5" />
-				Filter {isMobileOpen ? 'ausblenden' : 'anzeigen'}
+				Weitere Filter {isMobileOpen ? 'ausblenden' : 'anzeigen'}
 			</button>
 
-			{/* Filters Sidebar */}
+			{/* Other Filters Sidebar - Toggleable on mobile, always visible on desktop */}
 			{/* Always render to preserve filter state - use max-height/overflow instead of display:none */}
 			<aside
-				className={`w-full lg:w-80 flex-shrink-0 transition-all duration-300 ${
+				className={`w-full transition-all duration-300 ${
 					isMobileOpen
 						? 'max-h-[9999px] opacity-100'
 						: 'max-h-0 lg:max-h-[9999px] opacity-0 lg:opacity-100 overflow-hidden lg:overflow-visible'
@@ -100,27 +121,6 @@ function FilterSidebar() {
 				aria-hidden={!isMobileOpen}
 			>
 				<div className="space-y-6">
-					{/* Category Tree */}
-					<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
-						<h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-							<svg
-								className="w-5 h-5 text-blue-400"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M4 6h16M4 12h16M4 18h16"
-								/>
-							</svg>
-							Kategorien
-						</h2>
-						<CategoryTree />
-					</div>
-
 					{/* Other Filters */}
 					<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
 						<h3 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
@@ -220,7 +220,7 @@ function FilterSidebar() {
 					</div>
 				</div>
 			</aside>
-		</>
+		</div>
 	);
 }
 
@@ -509,7 +509,7 @@ export default function StoreSearch() {
 					}}
 				/>
 				<div
-					className={`relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8`}
+					className={`relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 ${paddingTop}`}
 				>
 					{/* Header with Search in one row - Full width */}
 					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

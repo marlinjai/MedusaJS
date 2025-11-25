@@ -154,6 +154,32 @@ NEXT_PUBLIC_BASE_URL=https://storefront.vercel.app
 
 **Important:** Never use master Meilisearch keys in frontend environment variables. Always create a read-only search key.
 
+## Browser Cache & Hard Refresh
+
+After deployments, browsers may cache old JavaScript bundles. If you notice that new features or styling changes aren't appearing:
+
+### Hard Refresh Instructions
+
+**Windows/Linux:**
+- `Ctrl + Shift + R` or `Ctrl + F5`
+
+**Mac:**
+- `Cmd + Shift + R`
+
+**Firefox (alternative):**
+- `Ctrl + F5` (Windows/Linux) or `Cmd + Shift + R` (Mac)
+- Or: Open Developer Tools (F12) → Right-click refresh button → "Empty Cache and Hard Reload"
+
+### Cache Strategy
+
+The application uses a **stale-while-revalidate** cache strategy:
+- HTML pages are cached for 60 seconds
+- Browsers can serve stale content for up to 5 minutes while revalidating in the background
+- This ensures users get fresh content after deployment while maintaining performance
+- Static assets (JS/CSS) are automatically versioned by Next.js build IDs
+
+If issues persist after a hard refresh, clear your browser's cache completely or use an incognito/private window.
+
 # Meilisearch Integration
 
 The storefront uses Meilisearch for advanced product search with:
