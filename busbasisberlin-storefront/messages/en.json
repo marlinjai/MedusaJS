@@ -371,7 +371,7 @@
 		}
 	},
 	"footer": {
-		"companyName": "Bus Basis Berlin",
+		"companyName": "BasisCampBerlin",
 		"description": "Your specialist for Mercedes vans, campers and expedition vehicles. Professional maintenance, repair and individual conversions.",
 		"quickLinks": "Quick Links",
 		"contact": "Contact",
@@ -385,7 +385,7 @@
 	},
 	"team": {
 		"title": "Our Team",
-		"subtitle": "Meet the people behind Bus Basis Berlin"
+		"subtitle": "Meet the people behind BasisCampBerlin"
 	},
 	"verein": {
 		"title": "Our Association",
@@ -431,7 +431,7 @@
 	},
 	"about": {
 		"title": "Our Journey",
-		"subtitle": "The story of BusBasis Berlin - from a small workshop to Berlin's premier bus parts destination.",
+		"subtitle": "The story of BasisCampBerlin - from a small workshop to Berlin's premier bus parts destination.",
 		"timeline": {
 			"2024": {
 				"title": "2024",
@@ -459,19 +459,19 @@
 	},
 	"metadata": {
 		"home": {
-			"title": "BusBasis Berlin - Your Mercedes Van Specialist",
+			"title": "BasisCampBerlin - Your Mercedes Van Specialist",
 			"description": "Professional maintenance, repair and conversion of Mercedes vans. Specialized in campers and expedition vehicles."
 		},
 		"store": {
-			"title": "Shop - Bus Basis Berlin",
+			"title": "Shop - BasisCampBerlin",
 			"description": "Discover our range of spare parts and accessories for Mercedes vans."
 		},
 		"about": {
-			"title": "About Us - Bus Basis Berlin",
-			"description": "Learn more about Bus Basis Berlin and our team."
+			"title": "About Us - BasisCampBerlin",
+			"description": "Learn more about BasisCampBerlin and our team."
 		},
 		"contact": {
-			"title": "Contact - Bus Basis Berlin",
+			"title": "Contact - BasisCampBerlin",
 			"description": "Get in touch with us. We're happy to help."
 		}
 	}

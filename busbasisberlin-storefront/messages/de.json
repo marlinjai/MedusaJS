@@ -504,7 +504,7 @@
 	},
 	"team": {
 		"title": "Unser Team",
-		"subtitle": "Lernen Sie die Menschen kennen, die hinter Bus Basis Berlin stehen"
+		"subtitle": "Lernen Sie die Menschen kennen, die hinter BasisCampBerlin stehen"
 	},
 	"faq": {
 		"title": "Häufig gestellte Fragen",
@@ -528,7 +528,7 @@
 	},
 	"about": {
 		"title": "Unsere Geschichte",
-		"subtitle": "Die Geschichte von BusBasis Berlin - von einer kleinen Werkstatt zu Berlins führendem Anbieter für Busteile.",
+		"subtitle": "Die Geschichte von BasisCampBerlin - von einer kleinen Werkstatt zu Berlins führendem Anbieter für Busteile.",
 		"timeline": {
 			"2024": {
 				"title": "2024",
@@ -556,19 +556,19 @@
 	},
 	"metadata": {
 		"home": {
-			"title": "BusBasis Berlin - Ihr Spezialist für Mercedes-Transporter",
+			"title": "BasisCampBerlin - Ihr Spezialist für Mercedes-Transporter",
 			"description": "Professionelle Wartung, Reparatur und Umbau von Mercedes-Transportern. Spezialisiert auf Wohnmobile und Expeditionsfahrzeuge."
 		},
 		"store": {
-			"title": "Shop - Bus Basis Berlin",
+			"title": "Shop - BasisCampBerlin",
 			"description": "Entdecken Sie unser Sortiment an Ersatzteilen und Zubehör für Mercedes-Transporter."
 		},
 		"about": {
-			"title": "Über uns - Bus Basis Berlin",
-			"description": "Erfahren Sie mehr über Bus Basis Berlin und unser Team."
+			"title": "Über uns - BasisCampBerlin",
+			"description": "Erfahren Sie mehr über BasisCampBerlin und unser Team."
 		},
 		"contact": {
-			"title": "Kontakt - Bus Basis Berlin",
+			"title": "Kontakt - BasisCampBerlin",
 			"description": "Nehmen Sie Kontakt mit uns auf. Wir helfen Ihnen gerne weiter."
 		}
 	},
