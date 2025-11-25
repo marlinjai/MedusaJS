@@ -183,7 +183,10 @@ function FilterSidebar() {
 						<div className="relative">
 							<SortBy
 								items={[
-									{ label: 'Neueste zuerst', value: 'products' },
+									{
+										label: 'Neueste zuerst',
+										value: 'products:created_at:desc',
+									},
 									{
 										label: 'Preis: Niedrig → Hoch',
 										value: 'products:min_price:asc',

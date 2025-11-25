@@ -187,6 +187,8 @@ export default class MeilisearchModuleService {
 				'handle',
 				'thumbnail',
 				'status',
+				'created_at',
+				'updated_at',
 				'category_ids',
 				'hierarchical_categories',
 				'is_available',
