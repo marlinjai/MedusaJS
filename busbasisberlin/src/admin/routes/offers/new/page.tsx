@@ -671,9 +671,9 @@ export default function CreateOfferPage() {
 									key={item.id}
 									className="border border-ui-border-base rounded-lg p-4"
 								>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+									<div className="space-y-4 mb-4">
 										{/* Item Type Selection */}
-										<div>
+										<div className="max-w-xs">
 											<Text
 												size="small"
 												weight="plus"
@@ -699,7 +699,7 @@ export default function CreateOfferPage() {
 											</Select>
 										</div>
 
-										{/* Item Selection */}
+										{/* Item Selection - Full Width */}
 										<div>
 											{item.item_type === 'product' ? (
 												<SearchableDropdown

@@ -10,6 +10,7 @@ import {
 } from '@medusajs/framework/utils';
 
 import { getDefaultSalesChannelIdFromQuery } from '../../../../../utils/sales-channel-helper';
+import MeilisearchModuleService from '../../../../../modules/meilisearch/service';
 
 interface SearchProductsQuery {
 	q?: string;
@@ -20,6 +21,28 @@ interface SearchProductsQuery {
 	region_id?: string;
 	currency_code?: string;
 	// sales_channel_id is now hardcoded for this customer's use case
+}
+
+/**
+ * Helper function to build Meilisearch filter strings from base filters
+ * Converts Medusa filter format to Meilisearch filter syntax
+ */
+function buildMeilisearchFilters(baseFilters: any): string | undefined {
+	const filters: string[] = [];
+
+	if (baseFilters.status) {
+		filters.push(`status = "${baseFilters.status}"`);
+	}
+
+	if (baseFilters.category_id) {
+		filters.push(`category_ids = "${baseFilters.category_id}"`);
+	}
+
+	if (baseFilters.collection_id) {
+		filters.push(`collection_id = "${baseFilters.collection_id}"`);
+	}
+
+	return filters.length > 0 ? filters.join(' AND ') : undefined;
 }
 
 export async function GET(
@@ -42,6 +65,9 @@ export async function GET(
 
 		// Get the query module
 		const query = req.scope.resolve('query');
+
+		// Get the Meilisearch module service for text search
+		const meilisearchModuleService = req.scope.resolve('meilisearch') as MeilisearchModuleService;
 
 		// Get the default sales channel ID dynamically
 		const sales_channel_id = await getDefaultSalesChannelIdFromQuery(query);
@@ -72,44 +98,129 @@ export async function GET(
 			fields.push('variants.calculated_price.*');
 		}
 
-		// Smart search: Try handle first, then SKU, then general search
+		// Smart search: Check for ID search first, then use Meilisearch
 		let products: any[] = [];
 		const searchQuery = q?.trim() || '';
 
 		if (searchQuery) {
-			const isSkuOrHandle = /^[a-zA-Z0-9_-]+$/.test(searchQuery);
+			// Check if searching by product ID (full or partial)
+			const isProductIdSearch = searchQuery.startsWith('prod_') || /^[A-Z0-9]{8}$/i.test(searchQuery);
 
-			if (isSkuOrHandle) {
-				// Step 1: Try searching by handle (handle equals SKU per user requirement)
-				logger.info(`[DEBUG] Searching by handle: "${searchQuery}"`);
-				const handleResult = await query.graph({
-					entity: 'product',
-					fields,
-					filters: { ...baseFilters, handle: searchQuery },
-					pagination: { take, skip: 0 },
-					context: useCalculatedPrice
-						? {
-								variants: {
-									calculated_price: {
-										region_id,
-										currency_code,
-									},
-								},
-							}
-						: undefined,
-				});
-				products = handleResult.data || [];
+			if (isProductIdSearch) {
+				// Search by product ID (exact or partial match)
+				logger.info(`[DEBUG] Searching by product ID: "${searchQuery}"`);
 
-				// Step 2: If handle search didn't work, search variants by SKU
-				if (products.length === 0) {
-					logger.info(`[DEBUG] Handle search returned no results, searching variants by SKU: "${searchQuery}"`);
+				try {
+					// For full IDs, use exact match; for partial (8 chars), search all products and filter
+					if (searchQuery.startsWith('prod_')) {
+						// Full ID search
+						const { data } = await query.graph({
+							entity: 'product',
+							fields,
+							filters: { ...baseFilters, id: searchQuery },
+							pagination: { take: 1, skip: 0 },
+							context: useCalculatedPrice
+								? {
+										variants: {
+											calculated_price: {
+												region_id,
+												currency_code,
+											},
+										},
+									}
+								: undefined,
+						});
+						products = data || [];
+					} else {
+						// Partial ID search (last 8 characters)
+						const { data } = await query.graph({
+							entity: 'product',
+							fields,
+							filters: baseFilters,
+							pagination: { take: 100, skip: 0 },
+							context: useCalculatedPrice
+								? {
+										variants: {
+											calculated_price: {
+												region_id,
+												currency_code,
+											},
+										},
+									}
+								: undefined,
+						});
+						// Filter by partial ID match
+						products = (data || []).filter((p: any) =>
+							p.id.toLowerCase().includes(searchQuery.toLowerCase())
+						).slice(0, take);
+					}
 
-					// Get more products to search through variants
-					const allProductsResult = await query.graph({
+					logger.info(`[DEBUG] Found ${products.length} products by ID search`);
+				} catch (error) {
+					logger.error(`[DEBUG] ID search failed: ${error.message}`);
+					products = [];
+				}
+			} else {
+				// Use Meilisearch for all text search (supports fuzzy matching, typos, and substring search)
+				logger.info(`[DEBUG] Using Meilisearch text search: "${searchQuery}"`);
+
+				try {
+					// Build Meilisearch filters from base filters
+					const meilisearchFilter = buildMeilisearchFilters(baseFilters);
+
+					// Search in Meilisearch index
+					const meilisearchResults = await meilisearchModuleService.searchWithFacets(
+						searchQuery,
+						{
+							filters: meilisearchFilter ? [meilisearchFilter] : undefined,
+							limit: take,
+						},
+						'product'
+					);
+
+					logger.info(`[DEBUG] Meilisearch returned ${meilisearchResults.hits.length} results`);
+
+					// Extract product IDs from Meilisearch results
+					const productIds = meilisearchResults.hits.map((hit: any) => hit.id);
+
+					// Fetch full product data from Medusa for these IDs
+					if (productIds.length > 0) {
+						const { data } = await query.graph({
+							entity: 'product',
+							fields,
+							filters: { ...baseFilters, id: productIds },
+							pagination: { take: productIds.length, skip: 0 },
+							context: useCalculatedPrice
+								? {
+										variants: {
+											calculated_price: {
+												region_id,
+												currency_code,
+											},
+										},
+									}
+								: undefined,
+						});
+						products = data || [];
+
+						// Sort products to match Meilisearch result order
+						const idOrder = new Map(productIds.map((id, index) => [id, index]));
+						products.sort((a: any, b: any) => {
+							const aIndex = idOrder.get(a.id) ?? 999;
+							const bIndex = idOrder.get(b.id) ?? 999;
+							return aIndex - bIndex;
+						});
+					} else {
+						products = [];
+					}
+				} catch (meilisearchError) {
+					// Fallback to Medusa query API if Meilisearch fails
+					logger.error(`[DEBUG] Meilisearch search failed, falling back to Query API: ${meilisearchError.message}`);
+					const { data } = await query.graph({
 						entity: 'product',
 						fields,
-						filters: baseFilters,
-						pagination: { take: 100, skip: 0 },
+						filters: { ...baseFilters, q: searchQuery },
+						pagination: { take, skip: 0 },
 						context: useCalculatedPrice
 							? {
 									variants: {
@@ -121,38 +232,8 @@ export async function GET(
 								}
 							: undefined,
 					});
-
-					// Filter products that have variants with matching SKU
-					const allProducts = allProductsResult.data || [];
-					products = allProducts.filter((product: any) =>
-						product.variants?.some((variant: any) =>
-							variant.sku?.toLowerCase() === searchQuery.toLowerCase()
-						)
-					);
-
-					// Limit to requested take amount
-					products = products.slice(0, take);
+					products = data || [];
 				}
-			} else {
-				// Step 3: Use general text search for non-SKU/handle queries
-				logger.info(`[DEBUG] Using general text search: "${searchQuery}"`);
-				const { data } = await query.graph({
-					entity: 'product',
-					fields,
-					filters: { ...baseFilters, q: searchQuery },
-					pagination: { take, skip: 0 },
-					context: useCalculatedPrice
-						? {
-								variants: {
-									calculated_price: {
-										region_id,
-										currency_code,
-									},
-								},
-							}
-						: undefined,
-				});
-				products = data || [];
 			}
 		} else {
 			// No query - return all products (or empty)

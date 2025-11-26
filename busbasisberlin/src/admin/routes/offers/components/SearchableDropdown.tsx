@@ -84,7 +84,7 @@ const SearchableDropdown = ({
 		try {
 			const params = new URLSearchParams();
 			if (query.trim()) params.append('q', query.trim());
-			params.append('limit', '10');
+			params.append('limit', '50');
 
 			const response = await fetch(`${searchEndpoint}?${params.toString()}`, {
 				credentials: 'include',
@@ -151,9 +151,8 @@ const SearchableDropdown = ({
 				const productPrice = item.unit_price
 					? `${(item.unit_price / 100).toFixed(2)} €`
 					: null;
-				// Show handle/SKU prominently, then category, then price
-				const handleOrSku = item.handle || item.sku || '';
-				return [handleOrSku, item.category, productPrice]
+				// Show category and price
+				return [item.category, productPrice]
 					.filter(Boolean)
 					.join(' • ');
 			case 'service':
@@ -167,6 +166,14 @@ const SearchableDropdown = ({
 			default:
 				return '';
 		}
+	};
+
+	// Get product ID for display (last 8 characters)
+	const getProductId = (item: SearchableItem): string | null => {
+		if (itemType === 'product' && item.id) {
+			return item.id.slice(-8);
+		}
+		return null;
 	};
 
 	const getItemTypeBadge = (item: SearchableItem): string => {
@@ -240,7 +247,7 @@ const SearchableDropdown = ({
 
 			{/* Dropdown */}
 			{isOpen && !selectedItem && (
-				<div className="absolute top-full left-0 right-0 mt-1 bg-ui-bg-base border border-ui-border-base rounded-md shadow-elevation-flyout z-50 max-h-60 overflow-y-auto">
+				<div className="absolute top-full left-0 right-0 mt-1 bg-ui-bg-base border border-ui-border-base rounded-md shadow-elevation-flyout z-50 max-h-96 overflow-y-auto">
 					{loading && (
 						<div className="flex items-center gap-3 px-3 py-2 text-ui-fg-subtle">
 							<div className="animate-spin rounded-full h-4 w-4 border-2 border-ui-border-base border-t-ui-fg-base"></div>
@@ -273,31 +280,33 @@ const SearchableDropdown = ({
 								className="px-3 py-2 hover:bg-ui-bg-subtle cursor-pointer transition-colors duration-150 border-b border-ui-border-base last:border-b-0 first:rounded-t-md last:rounded-b-md"
 								onClick={() => handleItemSelect(item)}
 							>
-								<div className="flex items-start justify-between">
+								<div className="flex items-start justify-between gap-3">
 									<div className="flex-1 min-w-0">
-										<div className="flex items-center gap-2 mb-1">
+										<div className="flex items-center gap-2 mb-1 flex-wrap">
 											<Text
 												size="small"
 												weight="plus"
-												className="text-ui-fg-base truncate"
+												className="text-ui-fg-base break-words"
 											>
 												{getDisplayName(item)}
 											</Text>
 											<div
-												className={`px-1.5 py-0.5 text-xs rounded-full bg-ui-tag-${getItemTypeColor(item)}-bg text-ui-tag-${getItemTypeColor(item)}-text`}
+												className={`px-1.5 py-0.5 text-xs rounded-full bg-ui-tag-${getItemTypeColor(item)}-bg text-ui-tag-${getItemTypeColor(item)}-text flex-shrink-0`}
 											>
 												{getItemTypeBadge(item)}
 											</div>
 										</div>
-										<Text size="xsmall" className="text-ui-fg-subtle truncate">
+										<Text size="xsmall" className="text-ui-fg-subtle break-words">
 											{getSubtitle(item)}
 										</Text>
 									</div>
-									<div className="flex-shrink-0 ml-2">
-										<Text size="xsmall" className="text-ui-fg-muted">
-											{item.id.slice(-8)}
-										</Text>
-									</div>
+									{getProductId(item) && (
+										<div className="flex-shrink-0">
+											<Text size="xsmall" className="text-ui-fg-muted font-mono">
+												{getProductId(item)}
+											</Text>
+										</div>
+									)}
 								</div>
 							</div>
 						))}

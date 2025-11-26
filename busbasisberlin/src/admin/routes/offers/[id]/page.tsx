@@ -1128,10 +1128,9 @@ export default function OfferDetailPage() {
 								size="small"
 								onClick={() => setEditing(!editing)}
 								disabled={saving}
-								className={editing ? 'px-6' : ''}
 							>
 								<Edit className="w-full h-4 mr-2" />
-								{editing ? 'Bearbeitung beenden' : 'Bearbeiten'}
+								{editing ? 'Abbrechen' : 'Bearbeiten'}
 							</Button>
 							{editing && (
 								<Button
@@ -1248,9 +1247,9 @@ export default function OfferDetailPage() {
 										{editing ? (
 											<>
 												{/* Editing Mode - Full Form */}
-												<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+												<div className="space-y-4 mb-4">
 													{/* Item Type Selection */}
-													<div>
+													<div className="max-w-xs">
 														<Text
 															size="small"
 															weight="plus"
@@ -1280,7 +1279,7 @@ export default function OfferDetailPage() {
 														</Select>
 													</div>
 
-													{/* Item Selection */}
+													{/* Item Selection - Full Width */}
 													<div>
 														{item.item_type === 'product' ? (
 															<SearchableDropdown
@@ -1705,11 +1704,11 @@ export default function OfferDetailPage() {
 															)}
 														{item.variant_title && (
 															<Text size="small" className="text-ui-fg-subtle">
-																Variante:
+																<span className="inline-block">Variante:</span>{' '}
 																{item.variant_id && item.product_id ? (
 																	<a
 																		href={`/app/products/${item.product_id}/variants/${item.variant_id}`}
-																		className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover ml-1 truncate max-w-[360px] inline-block"
+																		className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
 																		target="_blank"
 																		rel="noopener noreferrer"
 																		title={item.variant_title}
@@ -1717,10 +1716,7 @@ export default function OfferDetailPage() {
 																		{item.variant_title}
 																	</a>
 																) : (
-																	<span
-																		className="ml-1 truncate max-w-[100px] inline-block"
-																		title={item.variant_title}
-																	>
+																	<span title={item.variant_title}>
 																		{item.variant_title}
 																	</span>
 																)}
