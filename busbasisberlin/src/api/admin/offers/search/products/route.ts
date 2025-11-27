@@ -9,8 +9,8 @@ import {
 	getVariantAvailability,
 } from '@medusajs/framework/utils';
 
-import { getDefaultSalesChannelIdFromQuery } from '../../../../../utils/sales-channel-helper';
 import MeilisearchModuleService from '../../../../../modules/meilisearch/service';
+import { getDefaultSalesChannelIdFromQuery } from '../../../../../utils/sales-channel-helper';
 
 interface SearchProductsQuery {
 	q?: string;
@@ -67,7 +67,9 @@ export async function GET(
 		const query = req.scope.resolve('query');
 
 		// Get the Meilisearch module service for text search
-		const meilisearchModuleService = req.scope.resolve('meilisearch') as MeilisearchModuleService;
+		const meilisearchModuleService = req.scope.resolve(
+			'meilisearch',
+		) as MeilisearchModuleService;
 
 		// Get the default sales channel ID dynamically
 		const sales_channel_id = await getDefaultSalesChannelIdFromQuery(query);
@@ -104,7 +106,8 @@ export async function GET(
 
 		if (searchQuery) {
 			// Check if searching by product ID (full or partial)
-			const isProductIdSearch = searchQuery.startsWith('prod_') || /^[A-Z0-9]{8}$/i.test(searchQuery);
+			const isProductIdSearch =
+				searchQuery.startsWith('prod_') || /^[A-Z0-9]{8}$/i.test(searchQuery);
 
 			if (isProductIdSearch) {
 				// Search by product ID (exact or partial match)
@@ -150,9 +153,11 @@ export async function GET(
 								: undefined,
 						});
 						// Filter by partial ID match
-						products = (data || []).filter((p: any) =>
-							p.id.toLowerCase().includes(searchQuery.toLowerCase())
-						).slice(0, take);
+						products = (data || [])
+							.filter((p: any) =>
+								p.id.toLowerCase().includes(searchQuery.toLowerCase()),
+							)
+							.slice(0, take);
 					}
 
 					logger.info(`[DEBUG] Found ${products.length} products by ID search`);
@@ -169,16 +174,19 @@ export async function GET(
 					const meilisearchFilter = buildMeilisearchFilters(baseFilters);
 
 					// Search in Meilisearch index
-					const meilisearchResults = await meilisearchModuleService.searchWithFacets(
-						searchQuery,
-						{
-							filters: meilisearchFilter ? [meilisearchFilter] : undefined,
-							limit: take,
-						},
-						'product'
-					);
+					const meilisearchResults =
+						await meilisearchModuleService.searchWithFacets(
+							searchQuery,
+							{
+								filters: meilisearchFilter ? [meilisearchFilter] : undefined,
+								limit: take,
+							},
+							'product',
+						);
 
-					logger.info(`[DEBUG] Meilisearch returned ${meilisearchResults.hits.length} results`);
+					logger.info(
+						`[DEBUG] Meilisearch returned ${meilisearchResults.hits.length} results`,
+					);
 
 					// Extract product IDs from Meilisearch results
 					const productIds = meilisearchResults.hits.map((hit: any) => hit.id);
@@ -204,18 +212,25 @@ export async function GET(
 						products = data || [];
 
 						// Sort products to match Meilisearch result order
-						const idOrder = new Map(productIds.map((id, index) => [id, index]));
+						const idOrder = new Map<string, number>(
+							productIds.map((id, index) => [id, index]),
+						);
 						products.sort((a: any, b: any) => {
-							const aIndex = idOrder.get(a.id) ?? 999;
-							const bIndex = idOrder.get(b.id) ?? 999;
-							return aIndex - bIndex;
+							const aIndex = idOrder.get(a.id);
+							const bIndex = idOrder.get(b.id);
+							return (
+								(aIndex !== undefined ? aIndex : 999) -
+								(bIndex !== undefined ? bIndex : 999)
+							);
 						});
 					} else {
 						products = [];
 					}
 				} catch (meilisearchError) {
 					// Fallback to Medusa query API if Meilisearch fails
-					logger.error(`[DEBUG] Meilisearch search failed, falling back to Query API: ${meilisearchError.message}`);
+					logger.error(
+						`[DEBUG] Meilisearch search failed, falling back to Query API: ${meilisearchError.message}`,
+					);
 					const { data } = await query.graph({
 						entity: 'product',
 						fields,

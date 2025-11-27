@@ -878,7 +878,12 @@ function getHTMLTemplate(data: any): string {
             {{{company.bankInfo}}}
           </div>
           {{/if}}
-          <div style="margin-top: 2mm; font-size: 8pt;">Erstellt am {{generatedAt}}</div>
+          <div style="margin-top: 3mm; font-size: 9pt; line-height: 1.4;">
+            Für PayPal-Zahlungen bitte nutzen: <strong>info@basiscampberlin.de</strong>
+          </div>
+          <div style="margin-top: 2mm; font-size: 8pt;">
+            USt.-ID: DE285928542 | Erstellt am {{generatedAt}}
+          </div>
         </div>
       </div>
     </body>

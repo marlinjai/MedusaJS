@@ -141,6 +141,9 @@ export default function OfferDetailPage() {
 	const [generatingPDF, setGeneratingPDF] = useState(false);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 	const [pdfFilename, setPdfFilename] = useState<string>('');
+	const [generatingInvoice, setGeneratingInvoice] = useState(false);
+	const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
+	const [invoiceFilename, setInvoiceFilename] = useState<string>('');
 	const [sendingEmail, setSendingEmail] = useState(false);
 	const [reservingInventory, setReservingInventory] = useState(false);
 	const [releasingReservations, setReleasingReservations] = useState(false);
@@ -254,6 +257,44 @@ export default function OfferDetailPage() {
 		}
 	};
 
+	// Generate invoice for offer
+	const generateInvoice = async () => {
+		if (!offer) return;
+
+		setGeneratingInvoice(true);
+		try {
+			const response = await fetch(`/admin/offers/${offer.id}/generate-invoice`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error('Invoice generation failed');
+			}
+
+			// Get the PDF blob from response
+			const blob = await response.blob();
+			const filename = `Rechnung-${offer.offer_number}.pdf`;
+
+			// Create blob URL for preview
+			const blobUrl = URL.createObjectURL(blob);
+			setInvoiceUrl(blobUrl);
+			setInvoiceFilename(filename);
+
+			// Open invoice in new tab
+			window.open(blobUrl, '_blank', 'noopener,noreferrer');
+
+			toast.success('Rechnung wurde erfolgreich erstellt');
+		} catch (error) {
+			console.error('Invoice generation error:', error);
+			toast.error('Fehler beim Erstellen der Rechnung');
+		} finally {
+			setGeneratingInvoice(false);
+		}
+	};
+
 	// Cleanup PDF URL when component unmounts or offer changes
 	// Cleanup PDF URL on unmount (only for blob URLs)
 	useEffect(() => {
@@ -263,6 +304,15 @@ export default function OfferDetailPage() {
 			}
 		};
 	}, [pdfUrl]);
+
+	// Cleanup invoice URL on unmount (only for blob URLs)
+	useEffect(() => {
+		return () => {
+			if (invoiceUrl && invoiceUrl.startsWith('blob:')) {
+				URL.revokeObjectURL(invoiceUrl);
+			}
+		};
+	}, [invoiceUrl]);
 
 	// Cleanup PDF preview blob URL when component unmounts or preview closes
 	// Only revoke blob URLs, not data URLs
@@ -2018,35 +2068,63 @@ export default function OfferDetailPage() {
 								</div>
 							)}
 
-							{/* ✅ PDF generation only for finalized offers (not draft) */}
-							{['active', 'accepted', 'cancelled', 'completed'].includes(
-								offer.status,
-							) && (
-								<div className="flex items-center gap-2">
-									<Button
-										variant="secondary"
-										size="small"
-										onClick={generatePDF}
-										disabled={generatingPDF}
-									>
-										<FileText className="w-4 h-4 mr-2" />
-										{generatingPDF ? 'PDF wird erstellt...' : 'PDF erstellen'}
-									</Button>
-									{pdfUrl && (
-										<div className="flex items-center gap-2">
-											<a
-												href={pdfUrl}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="text-blue-600 hover:text-blue-800 text-sm underline"
-												title="PDF in neuem Tab öffnen"
-											>
-												📄 {pdfFilename}
-											</a>
-										</div>
-									)}
-								</div>
-							)}
+						{/* ✅ PDF generation only for finalized offers (not draft) */}
+						{['active', 'accepted', 'cancelled', 'completed'].includes(
+							offer.status,
+						) && (
+							<div className="flex items-center gap-2">
+								<Button
+									variant="secondary"
+									size="small"
+									onClick={generatePDF}
+									disabled={generatingPDF}
+								>
+									<FileText className="w-4 h-4 mr-2" />
+									{generatingPDF ? 'PDF wird erstellt...' : 'PDF erstellen'}
+								</Button>
+								{pdfUrl && (
+									<div className="flex items-center gap-2">
+										<a
+											href={pdfUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-blue-600 hover:text-blue-800 text-sm underline"
+											title="PDF in neuem Tab öffnen"
+										>
+											📄 {pdfFilename}
+										</a>
+									</div>
+								)}
+							</div>
+						)}
+
+						{/* ✅ Invoice generation for active, accepted, and completed offers */}
+						{['active', 'accepted', 'completed'].includes(offer.status) && (
+							<div className="flex items-center gap-2">
+								<Button
+									variant="secondary"
+									size="small"
+									onClick={generateInvoice}
+									disabled={generatingInvoice}
+								>
+									<FileText className="w-4 h-4 mr-2" />
+									{generatingInvoice ? 'Rechnung wird erstellt...' : 'Rechnung erstellen'}
+								</Button>
+								{invoiceUrl && (
+									<div className="flex items-center gap-2">
+										<a
+											href={invoiceUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-blue-600 hover:text-blue-800 text-sm underline"
+											title="Rechnung in neuem Tab öffnen"
+										>
+											📄 {invoiceFilename}
+										</a>
+									</div>
+								)}
+							</div>
+						)}
 
 							{offer.items.some(item => item.item_type === 'product') &&
 								offer.status !== 'cancelled' && (
