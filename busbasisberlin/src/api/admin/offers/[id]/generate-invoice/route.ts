@@ -76,7 +76,9 @@ export async function POST(
 		const filename = `Rechnung-${offer.offer_number}.pdf`;
 
 		logger.info(`[INVOICE-GENERATION] Starting S3 upload for ${filename}`);
-		logger.info(`[INVOICE-GENERATION] PDF buffer size: ${pdfBuffer.length} bytes`);
+		logger.info(
+			`[INVOICE-GENERATION] PDF buffer size: ${pdfBuffer.length} bytes`,
+		);
 
 		let s3Url: string | null = null;
 		try {
@@ -98,7 +100,9 @@ export async function POST(
 				s3Url = (uploadResult as any)?.url || null;
 			}
 
-			logger.info(`[INVOICE-GENERATION] File Module upload successful: ${s3Url}`);
+			logger.info(
+				`[INVOICE-GENERATION] File Module upload successful: ${s3Url}`,
+			);
 		} catch (error) {
 			logger.error(`[INVOICE-GENERATION] File Module upload failed:`, error);
 
@@ -134,9 +138,14 @@ export async function POST(
 
 				// Construct the URL
 				s3Url = `${process.env.S3_FILE_URL}/${filename}`;
-				logger.info(`[INVOICE-GENERATION] Direct S3 upload successful: ${s3Url}`);
+				logger.info(
+					`[INVOICE-GENERATION] Direct S3 upload successful: ${s3Url}`,
+				);
 			} catch (s3Error) {
-				logger.error(`[INVOICE-GENERATION] Direct S3 upload also failed:`, s3Error);
+				logger.error(
+					`[INVOICE-GENERATION] Direct S3 upload also failed:`,
+					s3Error,
+				);
 				// Continue with direct download even if S3 upload fails
 			}
 		}
@@ -147,12 +156,10 @@ export async function POST(
 				`[INVOICE-GENERATION] Attempting to update offer ${offerId} with invoice URL: ${s3Url}`,
 			);
 			try {
-				const updateResult = await offerService.updateOffers([
-					{
-						id: offerId,
-						invoice_url: s3Url,
-					},
-				]);
+				const updateResult = await offerService.updateOffers({
+					id: offerId,
+					pdf_url: s3Url,
+				});
 				logger.info(
 					`[INVOICE-GENERATION] Updated offer ${offer.offer_number} with invoice URL. Update result: ${JSON.stringify(updateResult)}`,
 				);
@@ -188,5 +195,3 @@ export async function POST(
 		});
 	}
 }
-
-
