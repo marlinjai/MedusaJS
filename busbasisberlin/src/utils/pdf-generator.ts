@@ -42,6 +42,226 @@ function getPrivacyUrl(): string {
 }
 
 /**
+ * Generate invoice PDF buffer from offer data using German business standards
+ * Separate template for invoices with "Rechnung" instead of "Angebot"
+ */
+export async function generateInvoicePdfBuffer(
+	offer: any,
+): Promise<Uint8Array> {
+	console.log('[INVOICE-PDF-GENERATOR] Starting invoice PDF generation...');
+	console.log(`[INVOICE-PDF-GENERATOR] Offer number: ${offer.offer_number}`);
+
+	let browser;
+	let page;
+	try {
+		console.log('[INVOICE-PDF-GENERATOR] Launching Puppeteer browser...');
+
+		// Determine Chromium executable path
+		const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+
+		if (executablePath) {
+			console.log(
+				`[INVOICE-PDF-GENERATOR] Using Chromium executable: ${executablePath}`,
+			);
+		} else {
+			console.log('[INVOICE-PDF-GENERATOR] Using default Puppeteer browser');
+		}
+
+		const launchOptions: any = {
+			headless: true,
+			args: [
+				'--no-sandbox',
+				'--disable-setuid-sandbox',
+				'--disable-dev-shm-usage',
+				'--disable-gpu',
+				'--disable-software-rasterizer',
+				'--disable-background-timer-throttling',
+				'--disable-backgrounding-occluded-windows',
+				'--disable-renderer-backgrounding',
+				'--disable-features=TranslateUI',
+				'--disable-features=VizDisplayCompositor',
+				'--no-first-run',
+				'--disable-web-security',
+				'--disable-extensions',
+				'--disable-default-apps',
+				'--disable-sync',
+			],
+			ignoreDefaultArgs: ['--disable-extensions'],
+			timeout: 30000,
+		};
+
+		if (executablePath) {
+			launchOptions.executablePath = executablePath;
+			launchOptions.args.push('--single-process');
+		}
+
+		browser = await puppeteer.launch(launchOptions);
+		await new Promise(resolve => setTimeout(resolve, 500));
+		console.log('[INVOICE-PDF-GENERATOR] Browser launched successfully');
+	} catch (error) {
+		console.error('[INVOICE-PDF-GENERATOR] Failed to launch browser:', error);
+		throw new Error(`Failed to launch Puppeteer browser: ${error.message}`);
+	}
+
+	try {
+		if (!browser.isConnected()) {
+			throw new Error('Browser disconnected before page creation');
+		}
+
+		browser.on('disconnected', () => {
+			console.error(
+				'[INVOICE-PDF-GENERATOR] Browser unexpectedly disconnected',
+			);
+		});
+
+		page = await browser.newPage();
+		console.log('[INVOICE-PDF-GENERATOR] Page created');
+
+		await page.emulateMediaType('print');
+
+		// Prepare data for invoice template
+		console.log('[INVOICE-PDF-GENERATOR] Preparing invoice template data...');
+		const templateData = {
+			// Company information from environment variables
+			company: {
+				name: process.env.COMPANY_NAME || 'BasisCampBerlin GmbH',
+				address: process.env.COMPANY_ADDRESS || 'Hauptstraße 51',
+				postalCode: process.env.COMPANY_POSTAL_CODE || '16547',
+				city: process.env.COMPANY_CITY || 'Birkenwerder',
+				email: process.env.COMPANY_EMAIL || 'info@basiscampberlin.de',
+				// Use dark logo for white background PDFs
+				logoUrl:
+					process.env.COMPANY_LOGO_URL_DARK ||
+					(process.env.STOREFRONT_URL
+						? `${process.env.STOREFRONT_URL.replace(/\/$/, '')}/bbb-logo-dark.png`
+						: process.env.NEXT_PUBLIC_STOREFRONT_URL
+							? `${process.env.NEXT_PUBLIC_STOREFRONT_URL.replace(/\/$/, '')}/bbb-logo-dark.png`
+							: 'https://www.basiscampberlin.de/bbb-logo-dark.png'),
+				phone: process.env.COMPANY_PHONE || '+49 3303 5365540',
+				website:
+					process.env.STOREFRONT_URL ||
+					process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+					'https://www.basiscampberlin.de',
+				supportEmail:
+					process.env.COMPANY_SUPPORT_EMAIL || 'info@basiscampberlin.de',
+				primaryColor: process.env.BRAND_PRIMARY_COLOR || '#2c5aa0',
+				secondaryColor: process.env.BRAND_SECONDARY_COLOR || '#1e40af',
+				// Bank account information for payment
+				bankInfo:
+					process.env.COMPANY_BANK_INFO ||
+					'Mittelbrandenburgische Sparkasse<br>DE85160500001000968894<br>BCB GmbH',
+			},
+
+			// Invoice information (using offer data)
+			invoice: {
+				number: offer.offer_number,
+				date: new Date(offer.created_at).toLocaleDateString('de-DE'),
+				status: getStatusText(offer.status),
+				description: 'Rechnung',
+			},
+
+			// Customer information
+			customer: {
+				name: offer.customer_name,
+				email: offer.customer_email,
+				phone: offer.customer_phone,
+				address: offer.customer_address,
+			},
+
+			// Items with German formatting
+			items:
+				offer.items?.map((item: any, index: number) => ({
+					position: index + 1,
+					title: item.product_title || item.title || 'Unbenannt',
+					quantity: item.quantity,
+					unit: item.unit || 'STK',
+					unitPrice: formatCurrency(item.unit_price),
+					discount: item.discount || 0,
+					totalPrice: formatCurrency(item.subtotal),
+				})) || [],
+
+			// Totals with German formatting
+			totals: {
+				subtotal: formatCurrency(offer.subtotal),
+				taxRate: '19',
+				taxAmount: formatCurrency(offer.tax_amount),
+				total: formatCurrency(offer.total_amount),
+			},
+
+			// Notes
+			notes: {
+				customer: offer.customer_notes || '',
+			},
+
+			// Generated timestamp
+			generatedAt: new Date().toLocaleDateString('de-DE', {
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+			}),
+		};
+
+		// Generate HTML content for invoice
+		console.log(
+			'[INVOICE-PDF-GENERATOR] Generating invoice HTML from template...',
+		);
+		const htmlContent = getInvoiceHTMLTemplate(templateData);
+
+		// Set HTML content
+		console.log('[INVOICE-PDF-GENERATOR] Setting page content...');
+		await page.setContent(htmlContent, {
+			waitUntil: 'networkidle0',
+		});
+
+		console.log('[INVOICE-PDF-GENERATOR] Page content set, generating PDF...');
+
+		// Generate PDF with German A4 format
+		const pdfBuffer = await page.pdf({
+			format: 'A4',
+			printBackground: true,
+			margin: {
+				top: '15mm',
+				right: '15mm',
+				bottom: '15mm',
+				left: '15mm',
+			},
+		});
+
+		console.log(
+			`[INVOICE-PDF-GENERATOR] Invoice PDF generated successfully, size: ${pdfBuffer.length} bytes`,
+		);
+
+		// Close browser
+		await browser.close();
+		console.log('[INVOICE-PDF-GENERATOR] Browser closed');
+
+		return pdfBuffer;
+	} catch (error) {
+		console.error(
+			'[INVOICE-PDF-GENERATOR] Error generating invoice PDF:',
+			error,
+		);
+
+		// Try to close browser if it's still open
+		if (browser) {
+			try {
+				await browser.close();
+				console.log('[INVOICE-PDF-GENERATOR] Browser closed after error');
+			} catch (browserCloseError) {
+				console.error(
+					'[INVOICE-PDF-GENERATOR] Error closing browser after error:',
+					browserCloseError,
+				);
+			}
+		}
+
+		throw error;
+	}
+}
+
+/**
  * Generate PDF buffer from offer data using German business standards
  */
 export async function generateOfferPdfBuffer(offer: any): Promise<Uint8Array> {
@@ -809,6 +1029,447 @@ function getHTMLTemplate(data: any): string {
         </div>
 
         <h1 class="document-title">{{offer.description}}</h1>
+
+        <!-- Items Table -->
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">Pos.</th>
+              <th style="width: 58%;">Artikel/Leistung</th>
+              <th style="width: 6%;">Menge</th>
+              <th style="width: 6%;">Einheit</th>
+              <th style="width: 10%;">Einzelpreis</th>
+              <th style="width: 5%;">Rabatt</th>
+              <th style="width: 10%;">Gesamtpreis</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              <td class="text-center">{{position}}</td>
+              <td class="item-cell">
+                <span class="item-title">{{title}}</span>
+              </td>
+              <td class="text-right">{{quantity}}</td>
+              <td class="text-center">{{unit}}</td>
+              <td class="text-right currency">{{unitPrice}}</td>
+              <td class="text-right">{{#if discount}}{{discount}}%{{else}}-{{/if}}</td>
+              <td class="text-right currency">{{totalPrice}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+
+        <!-- Totals Section -->
+        <div class="totals-section">
+          <table class="totals-table">
+            <tr>
+              <td class="label">Nettobetrag:</td>
+              <td class="amount currency">{{totals.subtotal}}</td>
+            </tr>
+            <tr>
+              <td class="label">MwSt. ({{totals.taxRate}}%):</td>
+              <td class="amount currency">{{totals.taxAmount}}</td>
+            </tr>
+            <tr class="total-final">
+              <td class="label">Gesamtbetrag:</td>
+              <td class="amount currency">{{totals.total}}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Notes Section -->
+        {{#if notes.customer}}
+        <div class="notes">
+          <div class="note-section">
+            <div class="note-title">Kundenhinweise:</div>
+            <div>{{notes.customer}}</div>
+          </div>
+        </div>
+        {{/if}}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <div>{{company.name}} | {{company.address}} | {{company.postalCode}} {{company.city}} | {{company.email}}</div>
+          {{#if company.bankInfo}}
+          <div style="margin-top: 3mm; font-weight: 500; color: #333; line-height: 1.6;">
+            <strong>Zahlungsinformationen:</strong><br>
+            {{{company.bankInfo}}}
+          </div>
+          {{/if}}
+          <div style="margin-top: 3mm; font-size: 9pt; line-height: 1.4;">
+            Für PayPal-Zahlungen bitte nutzen: <strong>info@basiscampberlin.de</strong>
+          </div>
+          <div style="margin-top: 2mm; font-size: 8pt;">
+            USt.-ID: DE285928542 | Erstellt am {{generatedAt}}
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+	// Compile and render template
+	const compiledTemplate = handlebars.compile(template);
+	return compiledTemplate(data);
+}
+
+/**
+ * German-compliant HTML template for invoices
+ * Follows DIN 5008 standards for business correspondence
+ * Uses "Rechnung" and "Rechnungsnummer" instead of "Angebot"
+ */
+function getInvoiceHTMLTemplate(data: any): string {
+	const template = `
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Rechnung {{invoice.number}}</title>
+      <style>
+        /* German Business Document Styles - DIN 5008 Compliant */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        html {
+          width: 100%;
+          height: 100%;
+        }
+
+        body {
+          font-family: 'Arial', 'Helvetica', sans-serif;
+          font-size: 11pt;
+          line-height: 1.4;
+          color: #333;
+          background: white;
+          width: 100%;
+          min-height: 100%;
+          margin: 0;
+          padding: 0;
+        }
+
+        .document {
+          width: 100%;
+          max-width: 180mm;
+          margin: 0 auto;
+          padding: 0;
+          min-height: 100vh;
+          background: white;
+          color: #333;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .document-content {
+          flex: 1;
+        }
+
+        @page {
+          size: A4;
+          margin: 15mm;
+        }
+
+        @media print {
+          .items-table {
+            page-break-inside: auto;
+          }
+
+          .items-table thead {
+            display: table-header-group;
+          }
+
+          .items-table tbody tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            page-break-after: auto;
+          }
+
+          .items-table tbody tr td {
+            page-break-inside: auto;
+          }
+        }
+
+        /* Header with company information */
+        .header {
+          margin-bottom: 20mm;
+          position: relative;
+        }
+
+        .logo-section {
+          margin-bottom: 15mm;
+        }
+
+        .logo {
+          max-width: 200px;
+          max-height: 80px;
+          height: auto;
+          width: auto;
+          margin-bottom: 10mm;
+          object-fit: contain;
+        }
+
+        .company-info {
+          font-size: 10pt;
+          line-height: 1.3;
+        }
+
+        .company-name {
+          font-weight: bold;
+          font-size: 14pt;
+          margin-bottom: 2mm;
+        }
+
+        /* Customer address block - DIN 5008 position */
+        .address-block {
+          position: absolute;
+          right: 0;
+          top: 0;
+          width: 90mm;
+          min-height: 35mm;
+          border: 1px solid #ddd;
+          padding: 4mm;
+        }
+
+        .address-window {
+          font-size: 9pt;
+          line-height: 1.2;
+        }
+
+        .return-address {
+          font-size: 8pt;
+          color: #666;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 2mm;
+          margin-bottom: 3mm;
+        }
+
+        .customer-address {
+          font-weight: bold;
+        }
+
+        /* Document metadata */
+        .document-info {
+          margin-bottom: 10mm;
+          display: flex;
+          justify-content: space-between;
+        }
+
+        .info-left, .info-right {
+          flex: 1;
+        }
+
+        .info-right {
+          text-align: right;
+        }
+
+        .document-title {
+          font-size: 18pt;
+          font-weight: bold;
+          margin-bottom: 8mm;
+          color: #2c5aa0;
+        }
+
+        /* Payment instruction */
+        .payment-instruction {
+          margin-bottom: 10mm;
+          padding: 4mm;
+          background-color: #f9f9f9;
+          border-left: 3px solid #2c5aa0;
+          font-size: 10pt;
+          line-height: 1.5;
+        }
+
+        /* Items table */
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 10mm;
+          font-size: 10pt;
+          page-break-inside: auto;
+        }
+
+        .items-table thead {
+          display: table-header-group;
+        }
+
+        .items-table tbody {
+          display: table-row-group;
+        }
+
+        .items-table th {
+          background-color: #f5f5f5;
+          border: 1px solid #ddd;
+          padding: 3mm;
+          text-align: left;
+          font-weight: bold;
+        }
+
+        .items-table tr {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+
+        .items-table td {
+          border: 1px solid #ddd;
+          padding: 3mm;
+          vertical-align: top;
+        }
+
+         .items-table .text-right {
+           text-align: right;
+         }
+
+         .items-table .text-center {
+           text-align: center;
+         }
+
+         .item-title {
+           font-weight: bold;
+           display: block;
+         }
+
+         .item-cell {
+           width: 100%;
+           overflow: visible;
+         }
+
+        /* Totals section - German tax display */
+        .totals-section {
+          float: right;
+          width: 70mm;
+          margin-bottom: 10mm;
+        }
+
+        .totals-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10pt;
+        }
+
+        .totals-table td {
+          padding: 2mm 3mm;
+        }
+
+        .totals-table tr:not(.total-final) td {
+          border-bottom: 1px solid #eee;
+        }
+
+        .totals-table .label {
+          text-align: left;
+        }
+
+        .totals-table .amount {
+          text-align: right;
+          font-weight: bold;
+        }
+
+        .total-final {
+          border-top: 2px solid #333;
+          font-weight: bold;
+          font-size: 11pt;
+        }
+
+        /* Notes section */
+        .notes {
+          clear: both;
+          margin-top: 10mm;
+          font-size: 10pt;
+        }
+
+        .note-section {
+          margin-bottom: 10mm;
+        }
+
+        .note-title {
+          font-weight: bold;
+          margin-bottom: 2mm;
+        }
+
+        /* Footer - positioned at bottom of page */
+        .footer {
+          margin-top: auto;
+          padding-top: 4mm;
+          font-size: 9pt;
+          color: #666;
+          text-align: center;
+          border-top: 1px solid #ddd;
+        }
+
+        /* German formatting helpers */
+        .currency {
+          font-family: 'Courier New', monospace;
+        }
+
+        .status-badge {
+          background-color: #e1f5fe;
+          color: #0277bd;
+          padding: 1mm 3mm;
+          border-radius: 2mm;
+          font-size: 9pt;
+          font-weight: bold;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="document">
+        <div class="document-content">
+        <!-- Header Section -->
+        <div class="header">
+          <div class="logo-section">
+            {{#if company.logoUrl}}
+            <img src="{{company.logoUrl}}" alt="{{company.name}}" class="logo" />
+            {{else}}
+            <!-- Placeholder logo - set COMPANY_LOGO_URL environment variable to embed logo -->
+            <div style="width: 200px; height: 80px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; font-size: 10pt; color: #666;">
+              LOGO HIER
+            </div>
+            {{/if}}
+
+            <div class="company-info">
+              <div>{{company.address}}</div>
+              <div>{{company.postalCode}} {{company.city}}</div>
+              <div>{{company.email}}</div>
+            </div>
+          </div>
+
+          <!-- Customer Address Block -->
+          <div class="address-block">
+            <div class="address-window">
+              <div class="return-address">
+                {{company.name}}, {{company.address}}, {{company.postalCode}} {{company.city}}
+              </div>
+              <div class="customer-address">
+                {{customer.name}}<br>
+                {{#if customer.email}}{{customer.email}}<br>{{/if}}
+                {{#if customer.phone}}{{customer.phone}}<br>{{/if}}
+                {{#if customer.address}}{{customer.address}}{{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Information -->
+        <div class="document-info">
+          <div class="info-left">
+            <strong>Rechnungsnummer:</strong> {{invoice.number}}<br>
+            <strong>Datum:</strong> {{invoice.date}}<br>
+          </div>
+          <div class="info-right">
+            <span class="status-badge">{{invoice.status}}</span>
+          </div>
+        </div>
+
+        <h1 class="document-title">Rechnung</h1>
+
+        <!-- Payment Instruction -->
+        <div class="payment-instruction">
+          Bitte überweisen Sie den Rechnungsbetrag innerhalb von 14 Tagen auf unser unten stehendes Bank- oder PayPal-Konto.
+        </div>
 
         <!-- Items Table -->
         <table class="items-table">

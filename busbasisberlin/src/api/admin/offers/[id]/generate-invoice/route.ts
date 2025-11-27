@@ -11,7 +11,7 @@
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import { resolveOfferService } from '../../../../../types/services';
-import { generateOfferPdfBuffer } from '../../../../../utils/pdf-generator';
+import { generateInvoicePdfBuffer } from '../../../../../utils/pdf-generator';
 
 const OFFER_MODULE = 'offer';
 
@@ -67,9 +67,8 @@ export async function POST(
 			`[INVOICE-GENERATION] Generating invoice PDF for offer ${offer.offer_number}`,
 		);
 
-		// Use centralized PDF generation utility (same as offers for now)
-		// TODO: Create separate invoice template with "Rechnung" instead of "Angebot"
-		const pdfBuffer = await generateOfferPdfBuffer(offer);
+		// Use separate invoice PDF generation utility with "Rechnung" template
+		const pdfBuffer = await generateInvoicePdfBuffer(offer);
 
 		// Upload invoice PDF to S3 for persistence and future access
 		const fileModuleService = req.scope.resolve(Modules.FILE);

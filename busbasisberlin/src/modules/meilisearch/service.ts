@@ -203,12 +203,12 @@ export default class MeilisearchModuleService {
 				'primary_sales_channel',
 			]);
 
-		// Configure pagination settings to allow accurate total hit counts
-		await index.updateSettings({
-			pagination: {
-				maxTotalHits: 100000, // Set to a high value to show all products
-			},
-		});
+			// Configure pagination settings to allow accurate total hit counts
+			await index.updateSettings({
+				pagination: {
+					maxTotalHits: 100000, // Set to a high value to show all products
+				},
+			});
 
 			console.log('✅ Meilisearch index configuration completed successfully');
 		} catch (error) {
@@ -285,12 +285,12 @@ export default class MeilisearchModuleService {
 				'updated_at',
 			]);
 
-		// Configure pagination settings to allow accurate total hit counts
-		await index.updateSettings({
-			pagination: {
-				maxTotalHits: 100000, // Set to a high value to show all categories
-			},
-		});
+			// Configure pagination settings to allow accurate total hit counts
+			await index.updateSettings({
+				pagination: {
+					maxTotalHits: 100000, // Set to a high value to show all categories
+				},
+			});
 
 			console.log(
 				'✅ Meilisearch category index configuration completed successfully',
