@@ -38,6 +38,7 @@ type Product = {
 	categories?: Array<{ id: string; name: string }>;
 	collection?: { id: string; title: string };
 	variants?: Array<{ id: string; sku: string }>;
+	shipping_profile?: { id: string; name: string; type: string };
 };
 
 type CategoryNode = {
@@ -143,6 +144,9 @@ export default function ProductsByCategoryPage() {
 	const [selectedSalesChannels, setSelectedSalesChannels] = useState<
 		Set<string>
 	>(new Set());
+	const [selectedShippingProfiles, setSelectedShippingProfiles] = useState<
+		Set<string>
+	>(new Set());
 	const [skuSearch, setSkuSearch] = useState('');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [sortBy, setSortBy] = useState<'title' | 'created_at' | 'updated_at'>(
@@ -203,6 +207,23 @@ export default function ProductsByCategoryPage() {
 		},
 	});
 
+	// Fetch shipping profiles
+	const { data: shippingProfilesData } = useQuery({
+		queryKey: ['admin-shipping-profiles'],
+		queryFn: async () => {
+			const res = await fetch('/admin/shipping-profiles?limit=1000', {
+				credentials: 'include',
+			});
+			if (!res.ok) throw new Error('Failed to fetch shipping profiles');
+			const { shipping_profiles } = await res.json();
+			return shipping_profiles as Array<{
+				id: string;
+				name: string;
+				type: string;
+			}>;
+		},
+	});
+
 	// Build query params from filters
 	const queryParams = useMemo(() => {
 		const params = new URLSearchParams();
@@ -226,6 +247,11 @@ export default function ProductsByCategoryPage() {
 				params.append('sales_channel_id', id);
 			});
 		}
+		if (selectedShippingProfiles.size > 0) {
+			Array.from(selectedShippingProfiles).forEach(id => {
+				params.append('shipping_profile_id', id);
+			});
+		}
 		if (skuSearch.trim()) {
 			params.append('sku', skuSearch.trim());
 		}
@@ -239,6 +265,7 @@ export default function ProductsByCategoryPage() {
 		selectedCategories,
 		selectedCollections,
 		selectedSalesChannels,
+		selectedShippingProfiles,
 		skuSearch,
 		searchQuery,
 		currentPage,
@@ -259,6 +286,10 @@ export default function ProductsByCategoryPage() {
 		() => Array.from(selectedSalesChannels).sort(),
 		[selectedSalesChannels],
 	);
+	const selectedShippingProfilesArray = useMemo(
+		() => Array.from(selectedShippingProfiles).sort(),
+		[selectedShippingProfiles],
+	);
 
 	const {
 		data: productsData,
@@ -270,6 +301,7 @@ export default function ProductsByCategoryPage() {
 			selectedCategoriesArray,
 			selectedCollectionsArray,
 			selectedSalesChannelsArray,
+			selectedShippingProfilesArray,
 			skuSearch,
 			searchQuery,
 			currentPage,
@@ -294,6 +326,11 @@ export default function ProductsByCategoryPage() {
 				total: number;
 			};
 		},
+		// Prevent excessive refetching
+		refetchOnWindowFocus: false,
+		refetchOnMount: false,
+		refetchOnReconnect: false,
+		staleTime: 30000, // Consider data fresh for 30 seconds
 	});
 
 	// Sort and filter products client-side
@@ -425,6 +462,7 @@ export default function ProductsByCategoryPage() {
 		selectedCategories.size > 0 ||
 		selectedCollections.size > 0 ||
 		selectedSalesChannels.size > 0 ||
+		selectedShippingProfiles.size > 0 ||
 		skuSearch.trim().length > 0 ||
 		searchQuery.trim().length > 0;
 
@@ -432,6 +470,7 @@ export default function ProductsByCategoryPage() {
 		setSelectedCategories(new Set());
 		setSelectedCollections(new Set());
 		setSelectedSalesChannels(new Set());
+		setSelectedShippingProfiles(new Set());
 		setSkuSearch('');
 		setSearchQuery('');
 		setRowSelection({});
@@ -599,6 +638,39 @@ export default function ProductsByCategoryPage() {
 								</div>
 							</div>
 
+							{/* Shipping Profiles Filter */}
+							<div className="mb-6">
+								<Text size="small" className="font-semibold mb-2 block">
+									Versandprofile
+								</Text>
+								<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+									{shippingProfilesData && shippingProfilesData.length > 0 ? (
+										shippingProfilesData.map(profile => (
+											<div key={profile.id} className="flex items-center gap-2">
+												<Checkbox
+													checked={selectedShippingProfiles.has(profile.id)}
+													onCheckedChange={checked => {
+														const newSet = new Set(selectedShippingProfiles);
+														if (checked) {
+															newSet.add(profile.id);
+														} else {
+															newSet.delete(profile.id);
+														}
+														setSelectedShippingProfiles(newSet);
+														setRowSelection({});
+													}}
+												/>
+												<Text size="small">{profile.name}</Text>
+											</div>
+										))
+									) : (
+										<Text size="small" className="text-ui-fg-subtle">
+											Keine Versandprofile gefunden
+										</Text>
+									)}
+								</div>
+							</div>
+
 							{/* SKU Search */}
 							<div>
 								<Text size="small" className="font-semibold mb-2 block">
@@ -690,7 +762,10 @@ export default function ProductsByCategoryPage() {
 							</div>
 							<div className="flex gap-2 items-center">
 								{selectedCount > 0 && (
-									<Text size="small" className="font-medium text-ui-fg-base whitespace-nowrap">
+									<Text
+										size="small"
+										className="font-medium text-ui-fg-base whitespace-nowrap"
+									>
 										{selectedCount} ausgewählt
 									</Text>
 								)}
@@ -749,7 +824,8 @@ export default function ProductsByCategoryPage() {
 						{selectedCount > 0 && (
 							<div className="flex items-center justify-between p-3 bg-ui-bg-subtle border-b border-ui-border-base flex-shrink-0">
 								<Text size="small" className="font-medium">
-									{selectedCount} Produkt{selectedCount !== 1 ? 'e' : ''} ausgewählt
+									{selectedCount} Produkt{selectedCount !== 1 ? 'e' : ''}{' '}
+									ausgewählt
 								</Text>
 								<div className="flex items-center gap-2">
 									<Button

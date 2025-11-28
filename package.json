@@ -45,5 +45,11 @@
 		"pg": "^8.16.3",
 		"postal-codes-js": "^2.5.2"
 	},
-	"packageManager": "npm@10.9.0"
+	"packageManager": "npm@10.9.0",
+	"overrides": {
+		"@medusajs/ui": {
+			"react": "19.0.0-rc-66855b96-20241106",
+			"react-dom": "19.0.0-rc-66855b96-20241106"
+		}
+	}
 }

@@ -51,10 +51,11 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.859.0",
 		"@hello-pangea/dnd": "^16.6.0",
-		"@medusajs/admin-sdk": "^2.11.2",
-		"@medusajs/cli": "^2.11.2",
-		"@medusajs/framework": "^2.11.2",
-		"@medusajs/medusa": "^2.11.2",
+		"@medusajs/admin-sdk": "^2.11.3",
+		"@medusajs/cli": "^2.11.3",
+		"@medusajs/framework": "^2.11.3",
+		"@medusajs/index": "^2.11.3",
+		"@medusajs/medusa": "^2.11.3",
 		"@medusajs/ui": "^4.0.13",
 		"@meilisearch/instant-meilisearch": "^0.28.0",
 		"@mikro-orm/core": "6.4.16",
@@ -79,7 +80,7 @@
 		"uuid": "^9.0.1"
 	},
 	"devDependencies": {
-		"@medusajs/test-utils": "^2.11.2",
+		"@medusajs/test-utils": "^2.11.3",
 		"@mikro-orm/cli": "6.4.16",
 		"@react-email/preview-server": "^4.2.5",
 		"@swc/core": "^1.7.28",

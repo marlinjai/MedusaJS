@@ -1,5 +1,5 @@
 // busbasisberlin/src/api/admin/products/by-category/route.ts
-// Admin API route to fetch products filtered by category
+// Admin API route to fetch products filtered by category, collection, sales channel, shipping profile
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
@@ -19,6 +19,7 @@ export const GET = async (
 			category_id,
 			collection_id,
 			sales_channel_id,
+			shipping_profile_id,
 			sku,
 			q,
 			limit = '50',
@@ -32,6 +33,8 @@ export const GET = async (
 		// Build filters
 		const filters: any = {};
 		let hasFilters = false;
+		// Track if we need to use query.index() for linked entity filtering
+		let needsIndexQuery = false;
 
 		// Category filter - expand to include all descendants
 		if (category_id) {
@@ -39,12 +42,7 @@ export const GET = async (
 			// Fetch category tree to get descendants
 			const categoriesResult = await query.graph({
 				entity: 'product_category',
-				fields: [
-					'id',
-					'name',
-					'handle',
-					'parent_category_id',
-				],
+				fields: ['id', 'name', 'handle', 'parent_category_id'],
 				pagination: {
 					take: 10000,
 					skip: 0,
@@ -121,45 +119,24 @@ export const GET = async (
 				: collection_id;
 		}
 
-		// Sales channel filter - query from sales_channel entity side (as per Medusa docs)
-		let salesChannelIds: string[] | null = null;
-		let productIdsFromSalesChannels: string[] | null = null;
+		// Shipping profile filter - use client-side filtering since it's not indexed
+		// We'll filter after fetching the products
+		const shippingProfileIds = shipping_profile_id
+			? Array.isArray(shipping_profile_id)
+				? (shipping_profile_id as string[])
+				: [shipping_profile_id as string]
+			: null;
+
+		// Sales channel filter - requires Index Module (query.index)
 		if (sales_channel_id) {
 			hasFilters = true;
-			salesChannelIds = Array.isArray(sales_channel_id)
+			needsIndexQuery = true;
+			const channelIds = Array.isArray(sales_channel_id)
 				? (sales_channel_id as string[])
 				: [sales_channel_id as string];
-
-			// Query products from sales channel entity side (correct approach per Medusa docs)
-			const salesChannelResults = await Promise.all(
-				salesChannelIds.map(channelId =>
-					query.graph({
-						entity: 'sales_channel',
-						fields: ['id', 'products.id'],
-						filters: { id: channelId },
-					}),
-				),
-			);
-
-			// Collect all product IDs from all selected sales channels
-			const allProductIds = new Set<string>();
-			salesChannelResults.forEach(result => {
-				const channels = result?.data || [];
-				channels.forEach((channel: any) => {
-					if (channel.products) {
-						channel.products.forEach((product: any) => {
-							if (product.id) {
-								allProductIds.add(product.id);
-							}
-						});
-					}
-				});
-			});
-
-			productIdsFromSalesChannels = Array.from(allProductIds);
-			logger.info(
-				`[PRODUCTS-BY-CATEGORY] Found ${productIdsFromSalesChannels.length} products in sales channels: ${JSON.stringify(salesChannelIds)}`,
-			);
+			filters.sales_channels = {
+				id: channelIds,
+			};
 		}
 
 		// Status filter
@@ -174,57 +151,72 @@ export const GET = async (
 			filters.q = q as string;
 		}
 
-		// Query products with categories, collections, sales channels, and variants
-		// If filtering by sales channel, add product IDs to filters
 		const queryFilters = hasFilters ? filters : {};
 
-		// Add product IDs filter if we have products from sales channels
-		if (productIdsFromSalesChannels && productIdsFromSalesChannels.length > 0) {
-			// If we already have category/collection filters, we need to intersect
-			// For now, we'll filter by product IDs from sales channels
-			if (queryFilters.categories || queryFilters.collection_id) {
-				// We have other filters, so we'll need to filter after querying
-				// But first, let's add the product IDs to the filter
-				queryFilters.id = productIdsFromSalesChannels;
-			} else {
-				// No other filters, just filter by product IDs
-				queryFilters.id = productIdsFromSalesChannels;
-			}
-		}
-
 		logger.info(
-			`[PRODUCTS-BY-CATEGORY] Querying products with filters: ${JSON.stringify(queryFilters)}, limit: ${limit}, offset: ${offset}`,
+			`[PRODUCTS-BY-CATEGORY] Querying products with filters: ${JSON.stringify(queryFilters)}, limit: ${limit}, offset: ${offset}, useIndex: ${needsIndexQuery}`,
 		);
 
-		const productsResult = await query.graph({
-			entity: 'product',
-			fields: [
-				'id',
-				'title',
-				'handle',
-				'status',
-				'created_at',
-				'updated_at',
-				'categories.id',
-				'categories.name',
-				'collection.id',
-				'collection.title',
-				'sales_channels.id',
-				'sales_channels.name',
-				'variants.id',
-				'variants.sku',
-			],
-			filters: queryFilters,
-			pagination: {
-				take: parseInt(limit as string),
-				skip: parseInt(offset as string),
-			},
-		});
+		// Define fields to retrieve
+		const productFields = [
+			'id',
+			'title',
+			'handle',
+			'status',
+			'created_at',
+			'updated_at',
+			'categories.id',
+			'categories.name',
+			'collection.id',
+			'collection.title',
+			'shipping_profile.id',
+			'shipping_profile.name',
+			'shipping_profile.type',
+			'sales_channels.id',
+			'sales_channels.name',
+			'variants.id',
+			'variants.sku',
+		];
+
+		let productsResult: any;
+
+		// Use query.index() for linked entity filtering (sales_channels, shipping_profile)
+		// Use query.graph() for simple queries without linked entity filters
+		if (needsIndexQuery) {
+			// Index Module enables filtering by linked entities
+			productsResult = await query.index({
+				entity: 'product',
+				fields: productFields,
+				filters: queryFilters,
+				pagination: {
+					take: parseInt(limit as string),
+					skip: parseInt(offset as string),
+				},
+			});
+		} else {
+			// Standard query for non-linked entity filters
+			productsResult = await query.graph({
+				entity: 'product',
+				fields: productFields,
+				filters: queryFilters,
+				pagination: {
+					take: parseInt(limit as string),
+					skip: parseInt(offset as string),
+				},
+			});
+		}
 
 		let products = productsResult?.data || [];
 
-		// If we have both sales channel filter and category/collection filters,
-		// we need to ensure products match both (already handled by query filters)
+		// Filter by shipping profile if provided (client-side filter since not indexed)
+		if (shippingProfileIds && shippingProfileIds.length > 0) {
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Client-side filtering by shipping profile: ${JSON.stringify(shippingProfileIds)}`,
+			);
+			products = products.filter((product: any) =>
+				shippingProfileIds.includes(product.shipping_profile?.id),
+			);
+		}
 
 		// Filter by SKU if provided (client-side filter since SKU is in variants)
 		if (sku) {
@@ -242,37 +234,67 @@ export const GET = async (
 
 		// Get total count for pagination
 		let total: number;
-		if (sku) {
-			// For SKU filtering, we need to load and filter client-side
-			const countResult = await query.graph({
-				entity: 'product',
-				fields: ['id', 'variants.sku'],
-				filters: productIdsFromSalesChannels
-					? { ...queryFilters, id: productIdsFromSalesChannels }
-					: queryFilters,
-				pagination: {
-					take: 10000, // Large limit to get accurate count
-					skip: 0,
-				},
-			});
+		if (sku || shippingProfileIds) {
+			// For SKU or shipping profile filtering, we need to load and filter client-side
+			const countResult = needsIndexQuery
+				? await query.index({
+						entity: 'product',
+						fields: ['id', 'variants.sku', 'shipping_profile.id'],
+						filters: queryFilters,
+						pagination: {
+							take: 10000,
+							skip: 0,
+						},
+					})
+				: await query.graph({
+						entity: 'product',
+						fields: ['id', 'variants.sku', 'shipping_profile.id'],
+						filters: queryFilters,
+						pagination: {
+							take: 10000,
+							skip: 0,
+						},
+					});
 
-			const skuFilter = (sku as string).toLowerCase();
-			const allProducts = (countResult?.data || []).filter((product: any) =>
-				product.variants?.some((variant: any) =>
-					variant.sku?.toLowerCase().includes(skuFilter),
-				),
-			);
+			let allProducts = countResult?.data || [];
+
+			// Apply shipping profile filter if provided
+			if (shippingProfileIds && shippingProfileIds.length > 0) {
+				allProducts = allProducts.filter((product: any) =>
+					shippingProfileIds.includes(product.shipping_profile?.id),
+				);
+			}
+
+			// Apply SKU filter if provided
+			if (sku) {
+				const skuFilter = (sku as string).toLowerCase();
+				allProducts = allProducts.filter((product: any) =>
+					product.variants?.some((variant: any) =>
+						variant.sku?.toLowerCase().includes(skuFilter),
+					),
+				);
+			}
 
 			total = allProducts.length;
 		} else {
-			// Use query filters (which already include product IDs from sales channels if applicable)
-			const totalCountResult = await query.graph({
-				entity: 'product',
-				fields: ['id'],
-				filters: queryFilters,
-			});
-			const totalCount = totalCountResult?.data || [];
-			total = Array.isArray(totalCount) ? totalCount.length : 0;
+			// Use estimate_count from index query if available, otherwise count manually
+			if (needsIndexQuery && productsResult?.metadata?.estimate_count != null) {
+				total = productsResult.metadata.estimate_count;
+			} else {
+				const totalCountResult = needsIndexQuery
+					? await query.index({
+							entity: 'product',
+							fields: ['id'],
+							filters: queryFilters,
+						})
+					: await query.graph({
+							entity: 'product',
+							fields: ['id'],
+							filters: queryFilters,
+						});
+				const totalCount = totalCountResult?.data || [];
+				total = Array.isArray(totalCount) ? totalCount.length : 0;
+			}
 		}
 
 		logger.info(
@@ -285,7 +307,8 @@ export const GET = async (
 			total: total,
 		});
 	} catch (error) {
-		logger.error('[PRODUCTS-BY-CATEGORY] Error fetching products:', error);
+		logger.error('[PRODUCTS-BY-CATEGORY] Error fetching products:');
+		logger.error(error instanceof Error ? error.message : String(error));
 		res.status(500).json({
 			error: 'Failed to fetch products',
 			message: error instanceof Error ? error.message : 'Unknown error',

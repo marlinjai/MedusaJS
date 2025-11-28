@@ -14,6 +14,7 @@ type Product = {
 	categories?: Array<{ id: string; name: string }>;
 	collection?: { id: string; title: string };
 	variants?: Array<{ id: string; sku: string }>;
+	shipping_profile?: { id: string; name: string; type: string };
 };
 
 interface ProductTableProps {
@@ -51,6 +52,11 @@ const columns = [
 		key: 'collection',
 		label: 'Sammlung',
 		width: 200,
+	},
+	{
+		key: 'shipping_profile',
+		label: 'Versandprofil',
+		width: 180,
 	},
 	{
 		key: 'sales_channels',
@@ -386,6 +392,18 @@ const ProductTable = ({
 					>
 						<Text size="small" className="truncate" title={product.collection?.title}>
 							{product.collection?.title || '-'}
+						</Text>
+					</div>
+				);
+			case 'shipping_profile':
+				// Shipping profile - click to edit in modal
+				return (
+					<div
+						className="cursor-pointer hover:bg-ui-bg-subtle px-1 py-0.5 rounded h-7 flex items-center w-full"
+						onClick={() => onEdit && onEdit(product)}
+					>
+						<Text size="small" className="truncate" title={product.shipping_profile?.name}>
+							{product.shipping_profile?.name || '-'}
 						</Text>
 					</div>
 				);

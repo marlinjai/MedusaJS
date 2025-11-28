@@ -169,6 +169,16 @@ const getModules = () => {
 		},
 	);
 
+	// Add Index module for search indexing
+	if (process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_API_KEY) {
+		modules.push({
+			resolve: '@medusajs/index',
+			options: {
+				applicationName: 'busbasisberlin',
+			},
+		});
+	}
+
 	// Add Meilisearch service if configured
 	// Enable in development (shared mode) and production (server mode)
 	if (process.env.MEILISEARCH_HOST && process.env.MEILISEARCH_API_KEY) {
