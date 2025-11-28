@@ -2,7 +2,6 @@
 
 import { searchClient } from '@lib/config';
 import { createRouting } from '@lib/search-routing';
-import { useHeroAlertPadding } from '@lib/util/use-hero-alert-padding';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
@@ -74,12 +73,12 @@ function ViewToggle() {
 	);
 }
 
-// Custom Filter Sidebar Component
+// Filter Sidebar Component - Wider for better category name display
 function FilterSidebar() {
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 
 	return (
-		<div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6">
+		<div className="w-full lg:w-96 flex-shrink-0 flex flex-col gap-6">
 			{/* Category Tree - Always visible on mobile and desktop */}
 			<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
 				<h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -111,7 +110,6 @@ function FilterSidebar() {
 			</button>
 
 			{/* Other Filters Sidebar - Toggleable on mobile, always visible on desktop */}
-			{/* Always render to preserve filter state - use max-height/overflow instead of display:none */}
 			<aside
 				className={`w-full transition-all duration-300 ${
 					isMobileOpen
@@ -474,22 +472,32 @@ function CustomPagination() {
 	);
 }
 
-export default function StoreSearch() {
-	// Create routing configuration client-side only
-	const routing = useMemo(() => createRouting(), []);
-	// Get dynamic padding based on hero alert visibility
-	const { large: paddingTop } = useHeroAlertPadding();
+// Component to manage skeleton visibility based on InstantSearch status
+function SkeletonManager() {
+	const { status } = useInstantSearch();
 
-	// Hide skeleton and show content after hydration
 	useEffect(() => {
 		const skeletonWrapper = document.getElementById('store-skeleton');
 		const contentWrapper = document.getElementById('store-content');
 
-		if (skeletonWrapper && contentWrapper) {
+		// Only hide skeleton when InstantSearch is ready (not loading/stalled)
+		if (
+			skeletonWrapper &&
+			contentWrapper &&
+			status !== 'loading' &&
+			status !== 'stalled'
+		) {
 			skeletonWrapper.style.display = 'none';
 			contentWrapper.style.display = 'block';
 		}
-	}, []);
+	}, [status]);
+
+	return null;
+}
+
+export default function StoreSearch() {
+	// Create routing configuration client-side only
+	const routing = useMemo(() => createRouting(), []);
 
 	return (
 		<InstantSearch
@@ -498,6 +506,7 @@ export default function StoreSearch() {
 			routing={routing}
 			future={{ preserveSharedStateOnUnmount: true }}
 		>
+			<SkeletonManager />
 			{/* Texture Background - rotated 90 degrees for vertical aspect */}
 			<div className="relative min-h-screen">
 				<div
@@ -511,9 +520,7 @@ export default function StoreSearch() {
 						transformOrigin: 'center center',
 					}}
 				/>
-				<div
-					className={`relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 ${paddingTop}`}
-				>
+				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-8">
 					{/* Header with Search in one row - Full width */}
 					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 						{/* Title */}
@@ -562,7 +569,7 @@ export default function StoreSearch() {
 
 					{/* Main Content Area with Sidebar and Toolbar aligned */}
 					<div className="flex flex-col lg:flex-row gap-8">
-						{/* Filters Sidebar */}
+						{/* Filters Sidebar - Wider for better category display */}
 						<FilterSidebar />
 
 						{/* Main Content Area */}
@@ -570,7 +577,7 @@ export default function StoreSearch() {
 							{/* Toolbar: Results Stats and Sort */}
 							<Toolbar />
 
-							{/* Products Grid/List */}
+							{/* Products Grid/List - 3 columns on desktop for wider sidebar */}
 							<ProductGrid />
 
 							{/* Pagination */}

@@ -77,8 +77,11 @@ function HierarchicalList({
 								</svg>
 							)}
 
-							<span className="truncate">{item.label}</span>
-						</span>
+							{/* Use line-clamp for long names - shows up to 2 lines */}
+							<span className="line-clamp-2 break-words">
+								{item.label}
+							</span>
+		</span>
 
 						{/* Count badge */}
 						<span
@@ -123,7 +126,7 @@ export default function CategoryTree() {
 	});
 
 	return (
-		<div className="max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+		<div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
 			{items.length > 0 ? (
 				<HierarchicalList
 					items={items}

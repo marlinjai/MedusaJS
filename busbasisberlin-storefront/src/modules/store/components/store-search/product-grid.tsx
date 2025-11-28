@@ -355,6 +355,7 @@ export default function ProductGrid() {
 	}
 
 	// Grid view - 2 cols mobile, 3 cols tablet, 4 cols desktop
+	// Wider sidebar (384px) with line-clamp-2 allows 4 columns to work well
 	return (
 		<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 			{hits.map(hit => (

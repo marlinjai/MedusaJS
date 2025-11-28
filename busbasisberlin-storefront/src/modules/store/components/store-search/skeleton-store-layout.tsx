@@ -17,7 +17,7 @@ export default function SkeletonStoreLayout() {
 					transformOrigin: 'center center',
 				}}
 			/>
-			<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-8">
 				{/* Header with Search in one row - Full width */}
 				<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 					{/* Title */}
@@ -40,16 +40,18 @@ export default function SkeletonStoreLayout() {
 
 				{/* Main Content Area with Sidebar and Toolbar aligned */}
 				<div className="flex flex-col lg:flex-row gap-8">
-					{/* Filters Sidebar Skeleton */}
-					<aside className="w-full lg:w-80 flex-shrink-0">
+					{/* Filters Sidebar Skeleton - Wider for better category display */}
+					<aside className="w-full lg:w-96 flex-shrink-0">
 						<div className="space-y-6">
 							{/* Category Tree Skeleton */}
 							<div className="bg-stone-950 border border-stone-800 rounded-xl p-5 animate-pulse">
 								<div className="h-6 bg-stone-800 rounded w-32 mb-4" />
 								<div className="space-y-2">
-									<div className="h-4 bg-stone-800 rounded w-full" />
-									<div className="h-4 bg-stone-800 rounded w-5/6" />
-									<div className="h-4 bg-stone-800 rounded w-4/5" />
+									<div className="h-10 bg-stone-800 rounded w-full" />
+									<div className="h-10 bg-stone-800 rounded w-5/6" />
+									<div className="h-10 bg-stone-800 rounded w-4/5" />
+									<div className="h-10 bg-stone-800 rounded w-11/12" />
+									<div className="h-10 bg-stone-800 rounded w-3/4" />
 								</div>
 							</div>
 
@@ -97,6 +99,7 @@ export default function SkeletonStoreLayout() {
 						</div>
 
 						{/* Products Grid Skeleton - 12 cards matching default hits per page */}
+						{/* 4 columns on desktop - wider sidebar with line-clamp handles this well */}
 						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 							{Array.from({ length: 12 }).map((_, index) => (
 								<div
