@@ -85,8 +85,7 @@ export default async function handleCategoryEvents({
 				}
 			} catch (productError) {
 				logger.warn(
-					`⚠️ [CATEGORY-SYNC] Could not find products for deleted category ${data.id}:`,
-					productError,
+					`⚠️ [CATEGORY-SYNC] Could not find products for deleted category ${data.id}: ${productError}`,
 				);
 			}
 
