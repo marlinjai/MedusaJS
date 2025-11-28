@@ -13,7 +13,7 @@ type Product = {
 	sales_channels?: Array<{ id: string; name: string }>;
 	categories?: Array<{ id: string; name: string }>;
 	collection?: { id: string; title: string };
-	variants?: Array<{ id: string; sku: string }>;
+	variants?: Array<{ id: string; sku?: string; title?: string }>;
 	shipping_profile?: { id: string; name: string; type: string };
 };
 

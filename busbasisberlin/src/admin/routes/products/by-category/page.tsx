@@ -27,7 +27,8 @@ import { useMemo, useState } from 'react';
 import ProductEditorModal from './components/ProductEditorModal';
 import ProductTable from './components/ProductTable';
 
-type Product = {
+// Product type for table display (subset of full product data)
+type ProductListItem = {
 	id: string;
 	title: string;
 	handle: string;
@@ -37,7 +38,7 @@ type Product = {
 	sales_channels?: Array<{ id: string; name: string }>;
 	categories?: Array<{ id: string; name: string }>;
 	collection?: { id: string; title: string };
-	variants?: Array<{ id: string; sku: string }>;
+	variants?: Array<{ id: string; sku?: string; title?: string }>;
 	shipping_profile?: { id: string; name: string; type: string };
 };
 
@@ -163,7 +164,7 @@ export default function ProductsByCategoryPage() {
 	const [selectedSalesChannelId, setSelectedSalesChannelId] =
 		useState<string>('');
 	const [showProductEditor, setShowProductEditor] = useState(false);
-	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+	const [editingProduct, setEditingProduct] = useState<any>(null);
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize, setPageSize] = useState(50);
@@ -321,7 +322,7 @@ export default function ProductsByCategoryPage() {
 			const data = await res.json();
 			console.log('[PRODUCTS-BY-CATEGORY] Received products:', data);
 			return data as {
-				products: Product[];
+				products: ProductListItem[];
 				count: number;
 				total: number;
 			};
