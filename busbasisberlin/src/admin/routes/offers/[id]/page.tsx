@@ -263,12 +263,15 @@ export default function OfferDetailPage() {
 
 		setGeneratingInvoice(true);
 		try {
-			const response = await fetch(`/admin/offers/${offer.id}/generate-invoice`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
+			const response = await fetch(
+				`/admin/offers/${offer.id}/generate-invoice`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
 				},
-			});
+			);
 
 			if (!response.ok) {
 				throw new Error('Invoice generation failed');
@@ -2068,63 +2071,65 @@ export default function OfferDetailPage() {
 								</div>
 							)}
 
-						{/* ✅ PDF generation only for finalized offers (not draft) */}
-						{['active', 'accepted', 'cancelled', 'completed'].includes(
-							offer.status,
-						) && (
-							<div className="flex items-center gap-2">
-								<Button
-									variant="secondary"
-									size="small"
-									onClick={generatePDF}
-									disabled={generatingPDF}
-								>
-									<FileText className="w-4 h-4 mr-2" />
-									{generatingPDF ? 'PDF wird erstellt...' : 'PDF erstellen'}
-								</Button>
-								{pdfUrl && (
-									<div className="flex items-center gap-2">
-										<a
-											href={pdfUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-blue-600 hover:text-blue-800 text-sm underline"
-											title="PDF in neuem Tab öffnen"
-										>
-											📄 {pdfFilename}
-										</a>
-									</div>
-								)}
-							</div>
-						)}
+							{/* ✅ PDF generation only for finalized offers (not draft) */}
+							{['active', 'accepted', 'cancelled', 'completed'].includes(
+								offer.status,
+							) && (
+								<div className="flex items-center gap-2">
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={generatePDF}
+										disabled={generatingPDF}
+									>
+										<FileText className="w-4 h-4 mr-2" />
+										{generatingPDF ? 'PDF wird erstellt...' : 'PDF erstellen'}
+									</Button>
+									{pdfUrl && (
+										<div className="flex items-center gap-2">
+											<a
+												href={pdfUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-blue-600 hover:text-blue-800 text-sm underline"
+												title="PDF in neuem Tab öffnen"
+											>
+												📄 {pdfFilename}
+											</a>
+										</div>
+									)}
+								</div>
+							)}
 
-						{/* ✅ Invoice generation for active, accepted, and completed offers */}
-						{['active', 'accepted', 'completed'].includes(offer.status) && (
-							<div className="flex items-center gap-2">
-								<Button
-									variant="secondary"
-									size="small"
-									onClick={generateInvoice}
-									disabled={generatingInvoice}
-								>
-									<FileText className="w-4 h-4 mr-2" />
-									{generatingInvoice ? 'Rechnung wird erstellt...' : 'Rechnung erstellen'}
-								</Button>
-								{invoiceUrl && (
-									<div className="flex items-center gap-2">
-										<a
-											href={invoiceUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-blue-600 hover:text-blue-800 text-sm underline"
-											title="Rechnung in neuem Tab öffnen"
-										>
-											📄 {invoiceFilename}
-										</a>
-									</div>
-								)}
-							</div>
-						)}
+							{/* ✅ Invoice generation for active, accepted, and completed offers */}
+							{['active', 'accepted', 'completed'].includes(offer.status) && (
+								<div className="flex items-center gap-2">
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={generateInvoice}
+										disabled={generatingInvoice}
+									>
+										<FileText className="w-4 h-4 mr-2" />
+										{generatingInvoice
+											? 'Rechnung wird erstellt...'
+											: 'Rechnung erstellen'}
+									</Button>
+									{invoiceUrl && (
+										<div className="flex items-center gap-2">
+											<a
+												href={invoiceUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-blue-600 hover:text-blue-800 text-sm underline"
+												title="Rechnung in neuem Tab öffnen"
+											>
+												📄 {invoiceFilename}
+											</a>
+										</div>
+									)}
+								</div>
+							)}
 
 							{offer.items.some(item => item.item_type === 'product') &&
 								offer.status !== 'cancelled' && (
@@ -2134,7 +2139,11 @@ export default function OfferDetailPage() {
 										onClick={checkInventoryAvailability}
 										disabled={checkingInventory}
 									>
-										{checkingInventory ? <>⏳ Prüfe...</> : <>🔄 Lager prüfen</>}
+										{checkingInventory ? (
+											<>⏳ Prüfe...</>
+										) : (
+											<>🔄 Lager prüfen</>
+										)}
 									</Button>
 								)}
 						</div>

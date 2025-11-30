@@ -47,8 +47,8 @@ export function useHeroAlertPadding() {
 	const isVisible = useHeroAlertVisible();
 
 	return {
-		standard: isVisible ? 'pt-32' : 'pt-24',
-		large: isVisible ? 'pt-44 lg:pt-48' : 'pt-32 lg:pt-24',
-		xlarge: isVisible ? 'pt-48' : 'pt-40',
+		standard: isVisible ? 'pt-40' : 'pt-32',
+		large: isVisible ? 'pt-56 lg:pt-64' : 'pt-44 lg:pt-48',
+		xlarge: isVisible ? 'pt-64' : 'pt-56',
 	};
 }

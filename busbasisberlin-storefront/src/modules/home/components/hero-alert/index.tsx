@@ -10,9 +10,18 @@ type HeroAlertData = {
 	text: string;
 };
 
+// Simple hash function to create a unique identifier from alert text
+// This ensures banner reappears when text changes
+const getAlertHash = (text: string): string => {
+	if (!text) return '';
+	// Use first 50 chars as identifier for simplicity and readability
+	return text.slice(0, 50).replace(/\s+/g, '-');
+};
+
 const HeroAlert = () => {
 	const [alert, setAlert] = useState<HeroAlertData | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isDismissed, setIsDismissed] = useState(false);
 	const previousVisibilityRef = useRef<boolean | null>(null);
 
 	useEffect(() => {
@@ -45,6 +54,18 @@ const HeroAlert = () => {
 		fetchAlertSettings();
 	}, []);
 
+	// Check localStorage for dismissal state when alert text is loaded
+	useEffect(() => {
+		if (!alert?.text || typeof window === 'undefined') {
+			return;
+		}
+
+		const alertHash = getAlertHash(alert.text);
+		const storageKey = `hero-alert-dismissed-${alertHash}`;
+		const dismissed = localStorage.getItem(storageKey) === 'true';
+		setIsDismissed(dismissed);
+	}, [alert?.text]);
+
 	// Add/remove class on body when banner is visible
 	// Only update when visibility actually changes to prevent infinite loops
 	useEffect(() => {
@@ -52,8 +73,9 @@ const HeroAlert = () => {
 			return;
 		}
 
+		// Banner is visible if enabled, has text, not loading, and not dismissed
 		const isVisible =
-			!isLoading && alert && alert.enabled && !!alert.text?.trim();
+			!isLoading && alert && alert.enabled && !!alert.text?.trim() && !isDismissed;
 
 		// Only update if visibility has changed
 		if (previousVisibilityRef.current === isVisible) {
@@ -75,7 +97,21 @@ const HeroAlert = () => {
 			}
 			previousVisibilityRef.current = null;
 		};
-	}, [isLoading, alert?.enabled, alert?.text]);
+	}, [isLoading, alert?.enabled, alert?.text, isDismissed]);
+
+	// Handle close button click
+	const handleClose = () => {
+		if (!alert?.text) return;
+
+		const alertHash = getAlertHash(alert.text);
+		const storageKey = `hero-alert-dismissed-${alertHash}`;
+
+		// Save dismissal to localStorage
+		localStorage.setItem(storageKey, 'true');
+
+		// Update state to hide banner immediately
+		setIsDismissed(true);
+	};
 
 	// Debug logging
 	if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
@@ -84,21 +120,48 @@ const HeroAlert = () => {
 			alert,
 			enabled: alert?.enabled,
 			text: alert?.text,
-			willRender: !isLoading && alert && alert.enabled && !!alert.text?.trim(),
+			isDismissed,
+			willRender: !isLoading && alert && alert.enabled && !!alert.text?.trim() && !isDismissed,
 		});
 	}
 
-	// Don't render if loading, disabled, or empty text
-	if (isLoading || !alert || !alert.enabled || !alert.text?.trim()) {
+	// Don't render if loading, disabled, empty text, or dismissed
+	if (isLoading || !alert || !alert.enabled || !alert.text?.trim() || isDismissed) {
 		return null;
 	}
 
 	return (
 		<div className="w-full bg-red-600/20 backdrop-blur-md border-b border-red-500/30 relative z-50">
 			<div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3">
-				<p className="text-white text-center text-sm md:text-base font-medium">
-					{alert.text}
-				</p>
+				{/* Container for text and close button */}
+				<div className="relative flex items-center justify-center">
+					{/* Alert text - centered with padding on right for close button */}
+					<p className="text-white text-center text-sm md:text-base font-medium pr-12">
+						{alert.text}
+					</p>
+
+					{/* Close button - absolute positioned on the right */}
+					<button
+						onClick={handleClose}
+						aria-label="Banner schließen"
+						className="absolute right-0 top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-full transition-colors duration-200 group"
+					>
+						{/* X icon - simple SVG cross */}
+						<svg
+							className="w-5 h-5 text-white group-hover:text-white/80"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							strokeWidth="2"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								d="M6 18L18 6M6 6l12 12"
+							/>
+						</svg>
+					</button>
+				</div>
 			</div>
 		</div>
 	);
