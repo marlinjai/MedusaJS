@@ -1,17 +1,9 @@
 // busbasisberlin/src/admin/routes/products/by-category/components/ProductOrganizeTab.tsx
 // Product organize tab matching core Medusa UI
 
-import {
-	Button,
-	Checkbox,
-	Input,
-	Label,
-	Select,
-	Text,
-	Textarea,
-} from '@medusajs/ui';
+import { Button, Checkbox, Input, Label, Select, Text } from '@medusajs/ui';
 import { useQuery } from '@tanstack/react-query';
-import { X, Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
 
 type ProductFormData = {
@@ -44,18 +36,29 @@ const ProductOrganizeTab = ({
 					credentials: 'include',
 				});
 				if (!res.ok) {
-					console.error('[ProductOrganizeTab] Collections fetch failed:', res.status, res.statusText);
+					console.error(
+						'[ProductOrganizeTab] Collections fetch failed:',
+						res.status,
+						res.statusText,
+					);
 					return [];
 				}
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Collections API response:', data);
 				// API returns { collections: [...] }
-				const collections = data?.collections || data?.product_collections || data?.data || (Array.isArray(data) ? data : []);
+				const collections =
+					data?.collections ||
+					data?.product_collections ||
+					data?.data ||
+					(Array.isArray(data) ? data : []);
 				const result = Array.isArray(collections) ? collections : [];
 				console.log('[ProductOrganizeTab] Parsed collections:', result);
 				return result;
 			} catch (error) {
-				console.error('[ProductOrganizeTab] Error fetching collections:', error);
+				console.error(
+					'[ProductOrganizeTab] Error fetching collections:',
+					error,
+				);
 				return [];
 			}
 		},
@@ -74,18 +77,28 @@ const ProductOrganizeTab = ({
 					credentials: 'include',
 				});
 				if (!res.ok) {
-					console.error('[ProductOrganizeTab] Product types fetch failed:', res.status, res.statusText);
+					console.error(
+						'[ProductOrganizeTab] Product types fetch failed:',
+						res.status,
+						res.statusText,
+					);
 					return [];
 				}
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Product types API response:', data);
 				// API returns { product_types: [...] }
-				const types = data?.product_types || data?.data || (Array.isArray(data) ? data : []);
+				const types =
+					data?.product_types ||
+					data?.data ||
+					(Array.isArray(data) ? data : []);
 				const result = Array.isArray(types) ? types : [];
 				console.log('[ProductOrganizeTab] Parsed product types:', result);
 				return result;
 			} catch (error) {
-				console.error('[ProductOrganizeTab] Error fetching product types:', error);
+				console.error(
+					'[ProductOrganizeTab] Error fetching product types:',
+					error,
+				);
 				return [];
 			}
 		},
@@ -104,18 +117,31 @@ const ProductOrganizeTab = ({
 					credentials: 'include',
 				});
 				if (!res.ok) {
-					console.error('[ProductOrganizeTab] Shipping profiles fetch failed:', res.status, res.statusText);
+					console.error(
+						'[ProductOrganizeTab] Shipping profiles fetch failed:',
+						res.status,
+						res.statusText,
+					);
 					return [];
 				}
 				const data = await res.json();
-				console.log('[ProductOrganizeTab] Shipping profiles API response:', data);
+				console.log(
+					'[ProductOrganizeTab] Shipping profiles API response:',
+					data,
+				);
 				// API returns { shipping_profiles: [...] }
-				const profiles = data?.shipping_profiles || data?.data || (Array.isArray(data) ? data : []);
+				const profiles =
+					data?.shipping_profiles ||
+					data?.data ||
+					(Array.isArray(data) ? data : []);
 				const result = Array.isArray(profiles) ? profiles : [];
 				console.log('[ProductOrganizeTab] Parsed shipping profiles:', result);
 				return result;
 			} catch (error) {
-				console.error('[ProductOrganizeTab] Error fetching shipping profiles:', error);
+				console.error(
+					'[ProductOrganizeTab] Error fetching shipping profiles:',
+					error,
+				);
 				return [];
 			}
 		},
@@ -126,7 +152,11 @@ const ProductOrganizeTab = ({
 	});
 
 	// Fetch product tags
-	const { data: productTagsData = [], isLoading: isLoadingTags, error: tagsError } = useQuery({
+	const {
+		data: productTagsData = [],
+		isLoading: isLoadingTags,
+		error: tagsError,
+	} = useQuery({
 		queryKey: ['admin-product-tags'],
 		queryFn: async () => {
 			try {
@@ -134,21 +164,33 @@ const ProductOrganizeTab = ({
 				const res = await fetch('/admin/product-tags?limit=1000', {
 					credentials: 'include',
 				});
-				console.log('[ProductOrganizeTab] Product tags fetch response:', res.status, res.statusText);
+				console.log(
+					'[ProductOrganizeTab] Product tags fetch response:',
+					res.status,
+					res.statusText,
+				);
 				if (!res.ok) {
-					console.error('[ProductOrganizeTab] Product tags fetch failed:', res.status, res.statusText);
+					console.error(
+						'[ProductOrganizeTab] Product tags fetch failed:',
+						res.status,
+						res.statusText,
+					);
 					return [];
 				}
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Product tags API response:', data);
 				// API returns { product_tags: [...] }
-				const tags = data?.product_tags || data?.data || (Array.isArray(data) ? data : []);
+				const tags =
+					data?.product_tags || data?.data || (Array.isArray(data) ? data : []);
 				const result = Array.isArray(tags) ? tags : [];
 				console.log('[ProductOrganizeTab] Parsed product tags:', result);
 				console.log('[ProductOrganizeTab] Sample tag structure:', result[0]);
 				return result;
 			} catch (error) {
-				console.error('[ProductOrganizeTab] Error fetching product tags:', error);
+				console.error(
+					'[ProductOrganizeTab] Error fetching product tags:',
+					error,
+				);
 				return [];
 			}
 		},
@@ -190,19 +232,26 @@ const ProductOrganizeTab = ({
 		queryKey: ['admin-sales-channels'],
 		queryFn: async () => {
 			try {
-			const res = await fetch('/admin/sales-channels', {
-				credentials: 'include',
-			});
+				const res = await fetch('/admin/sales-channels', {
+					credentials: 'include',
+				});
 				if (!res.ok) {
-					console.error('[ProductOrganizeTab] Sales channels fetch failed:', res.status, res.statusText);
+					console.error(
+						'[ProductOrganizeTab] Sales channels fetch failed:',
+						res.status,
+						res.statusText,
+					);
 					return [];
 				}
-			const data = await res.json();
+				const data = await res.json();
 				console.log('[ProductOrganizeTab] Sales channels API response:', data);
 				// API returns { sales_channels: [...] }
-			return data?.sales_channels || data?.channels || [];
+				return data?.sales_channels || data?.channels || [];
 			} catch (error) {
-				console.error('[ProductOrganizeTab] Error fetching sales channels:', error);
+				console.error(
+					'[ProductOrganizeTab] Error fetching sales channels:',
+					error,
+				);
 				return [];
 			}
 		},
@@ -235,7 +284,10 @@ const ProductOrganizeTab = ({
 
 	// Debug: Log current form tags to help troubleshoot
 	console.log('[ProductOrganizeTab] Current formData.tags:', formData.tags);
-	console.log('[ProductOrganizeTab] Available tags count:', availableTags.length);
+	console.log(
+		'[ProductOrganizeTab] Available tags count:',
+		availableTags.length,
+	);
 
 	const handleAddSalesChannel = (channelId: string) => {
 		const newChannels = [...(formData.sales_channel_ids || []), channelId];
@@ -251,14 +303,14 @@ const ProductOrganizeTab = ({
 
 	const selectedSalesChannels = Array.isArray(salesChannelsData)
 		? salesChannelsData.filter((sc: any) =>
-			(formData.sales_channel_ids || []).includes(sc.id),
-		)
+				(formData.sales_channel_ids || []).includes(sc.id),
+			)
 		: [];
 
 	const availableSalesChannels = Array.isArray(salesChannelsData)
 		? salesChannelsData.filter(
-			(sc: any) => !(formData.sales_channel_ids || []).includes(sc.id),
-		)
+				(sc: any) => !(formData.sales_channel_ids || []).includes(sc.id),
+			)
 		: [];
 
 	return (
@@ -283,7 +335,8 @@ const ProductOrganizeTab = ({
 			{/* Type */}
 			<div>
 				<Label htmlFor="type" className="mb-2">
-					Typ (Optional) {productTypesData?.length > 0 && `(${productTypesData.length})`}
+					Typ (Optional){' '}
+					{productTypesData?.length > 0 && `(${productTypesData.length})`}
 				</Label>
 				<Select
 					value={formData.type_id || undefined}
@@ -307,7 +360,9 @@ const ProductOrganizeTab = ({
 							})
 						) : (
 							<div className="px-2 py-1.5 text-sm text-ui-fg-subtle">
-								{productTypesData === undefined ? 'Lade Typen...' : 'Keine Typen verfügbar'}
+								{productTypesData === undefined
+									? 'Lade Typen...'
+									: 'Keine Typen verfügbar'}
 							</div>
 						)}
 					</Select.Content>
@@ -317,7 +372,8 @@ const ProductOrganizeTab = ({
 			{/* Collection */}
 			<div>
 				<Label htmlFor="collection" className="mb-2">
-					Sammlung (Optional) {collectionsData?.length > 0 && `(${collectionsData.length})`}
+					Sammlung (Optional){' '}
+					{collectionsData?.length > 0 && `(${collectionsData.length})`}
 				</Label>
 				<Select
 					value={formData.collection_id || undefined}
@@ -332,7 +388,10 @@ const ProductOrganizeTab = ({
 					<Select.Content>
 						{Array.isArray(collectionsData) && collectionsData.length > 0 ? (
 							collectionsData.map((collection: any) => {
-								console.log('[ProductOrganizeTab] Rendering collection:', collection);
+								console.log(
+									'[ProductOrganizeTab] Rendering collection:',
+									collection,
+								);
 								return (
 									<Select.Item key={collection.id} value={collection.id}>
 										{collection.title || collection.name || collection.id}
@@ -341,7 +400,9 @@ const ProductOrganizeTab = ({
 							})
 						) : (
 							<div className="px-2 py-1.5 text-sm text-ui-fg-subtle">
-								{collectionsData === undefined ? 'Lade Sammlungen...' : 'Keine Sammlungen verfügbar'}
+								{collectionsData === undefined
+									? 'Lade Sammlungen...'
+									: 'Keine Sammlungen verfügbar'}
 							</div>
 						)}
 					</Select.Content>
@@ -352,7 +413,9 @@ const ProductOrganizeTab = ({
 			<div>
 				<Label className="mb-2">Kategorien (Optional)</Label>
 				<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto">
-					{categoryTreeData && Array.isArray(categoryTreeData) && categoryTreeData.length > 0 ? (
+					{categoryTreeData &&
+					Array.isArray(categoryTreeData) &&
+					categoryTreeData.length > 0 ? (
 						<div className="space-y-1">
 							{categoryTreeData.map((category: any) => (
 								<div
@@ -422,7 +485,10 @@ const ProductOrganizeTab = ({
 									const selectedTag = productTagsData?.find(
 										(tag: any) => tag.id === value,
 									);
-									if (selectedTag && !(formData.tags || []).includes(selectedTag.value)) {
+									if (
+										selectedTag &&
+										!(formData.tags || []).includes(selectedTag.value)
+									) {
 										handleAddTag(selectedTag.value);
 									}
 								}
@@ -438,9 +504,11 @@ const ProductOrganizeTab = ({
 										<Select.Item
 											key={tag.id}
 											value={tag.id}
-											className={isSelected ? "bg-ui-bg-subtle text-ui-fg-subtle" : ""}
+											className={
+												isSelected ? 'bg-ui-bg-subtle text-ui-fg-subtle' : ''
+											}
 										>
-											{tag.value} {isSelected && "(bereits ausgewählt)"}
+											{tag.value} {isSelected && '(bereits ausgewählt)'}
 										</Select.Item>
 									);
 								})}
@@ -490,7 +558,9 @@ const ProductOrganizeTab = ({
 			{/* Shipping Profile */}
 			<div>
 				<Label htmlFor="shipping_profile" className="mb-2">
-					Shipping profile (Optional) {shippingProfilesData?.length > 0 && `(${shippingProfilesData.length})`}
+					Shipping profile (Optional){' '}
+					{shippingProfilesData?.length > 0 &&
+						`(${shippingProfilesData.length})`}
 				</Label>
 				<Text size="small" className="text-ui-fg-subtle block mb-2">
 					Connect the product to a shipping profile
@@ -498,7 +568,10 @@ const ProductOrganizeTab = ({
 				<Select
 					value={formData.shipping_profile_id || undefined}
 					onValueChange={value => {
-						console.log('[ProductOrganizeTab] Shipping profile selected:', value);
+						console.log(
+							'[ProductOrganizeTab] Shipping profile selected:',
+							value,
+						);
 						onChange({
 							...formData,
 							shipping_profile_id: value || undefined,
@@ -509,9 +582,13 @@ const ProductOrganizeTab = ({
 						<Select.Value placeholder="Shipping profile auswählen" />
 					</Select.Trigger>
 					<Select.Content>
-						{Array.isArray(shippingProfilesData) && shippingProfilesData.length > 0 ? (
+						{Array.isArray(shippingProfilesData) &&
+						shippingProfilesData.length > 0 ? (
 							shippingProfilesData.map((profile: any) => {
-								console.log('[ProductOrganizeTab] Rendering shipping profile:', profile);
+								console.log(
+									'[ProductOrganizeTab] Rendering shipping profile:',
+									profile,
+								);
 								return (
 									<Select.Item key={profile.id} value={profile.id}>
 										{profile.name || profile.title || profile.id}
@@ -520,7 +597,9 @@ const ProductOrganizeTab = ({
 							})
 						) : (
 							<div className="px-2 py-1.5 text-sm text-ui-fg-subtle">
-								{shippingProfilesData === undefined ? 'Lade Shipping Profiles...' : 'Keine Shipping Profiles verfügbar'}
+								{shippingProfilesData === undefined
+									? 'Lade Shipping Profiles...'
+									: 'Keine Shipping Profiles verfügbar'}
 							</div>
 						)}
 					</Select.Content>
@@ -531,8 +610,8 @@ const ProductOrganizeTab = ({
 			<div>
 				<Label className="mb-2">Vertriebskanäle (Optional)</Label>
 				<Text size="small" className="text-ui-fg-subtle block mb-3">
-					Dieses Produkt ist nur dann im Standard-Vertriebskanal verfügbar,
-					wenn es unberührt bleibt.
+					Dieses Produkt ist nur dann im Standard-Vertriebskanal verfügbar, wenn
+					es unberührt bleibt.
 				</Text>
 				{selectedSalesChannels.length > 0 && (
 					<div className="flex flex-wrap gap-2 mb-3">
@@ -591,4 +670,3 @@ const ProductOrganizeTab = ({
 };
 
 export default ProductOrganizeTab;
-
