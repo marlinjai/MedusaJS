@@ -202,6 +202,7 @@ export default class MeilisearchModuleService {
 				'variant_count',
 				'sales_channels',
 				'primary_sales_channel',
+				'is_internal_only',
 			]);
 
 			// Configure pagination settings to allow accurate total hit counts

@@ -527,6 +527,7 @@ export const syncProductsStep = createStep(
 				max_price: transformedProducts[0].max_price,
 				currencies: transformedProducts[0].currencies,
 				tags: transformedProducts[0].tags,
+				is_internal_only: (transformedProducts[0] as any).is_internal_only,
 			});
 		}
 
