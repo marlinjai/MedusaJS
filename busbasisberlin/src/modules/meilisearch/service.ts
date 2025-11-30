@@ -126,6 +126,7 @@ export default class MeilisearchModuleService {
 				'shipping_profile_name',
 				'has_extended_delivery',
 				'estimated_delivery_days',
+				'is_internal_only',
 			]);
 
 			// Wait a bit for the filterable attributes to be processed
@@ -227,6 +228,7 @@ export default class MeilisearchModuleService {
 				'rank',
 				'created_at',
 				'updated_at',
+				'has_public_products',
 			]);
 
 			// Wait for filterable attributes to be processed
@@ -283,6 +285,7 @@ export default class MeilisearchModuleService {
 				'rank',
 				'created_at',
 				'updated_at',
+				'has_public_products',
 			]);
 
 			// Configure pagination settings to allow accurate total hit counts

@@ -3,6 +3,7 @@ import { ProductCategoryDTO } from '@medusajs/framework/types';
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
 import { MEILISEARCH_MODULE } from '../../modules/meilisearch';
 import MeilisearchModuleService from '../../modules/meilisearch/service';
+import { getDefaultSalesChannelIdFromQuery, getInternalOperationsSalesChannelId } from '../../utils/sales-channel-helper';
 
 export type SyncCategoriesStepInput = {
 	categories: ProductCategoryDTO[];
@@ -15,8 +16,15 @@ export const syncCategoriesStep = createStep(
 			MEILISEARCH_MODULE,
 		) as MeilisearchModuleService;
 
+		// Get query service for checking products in categories
+		const query = container.resolve('query');
+
+		// Get sales channel IDs for filtering
+		const defaultSalesChannelId = await getDefaultSalesChannelIdFromQuery(query);
+		const internalSalesChannelId = await getInternalOperationsSalesChannelId(query);
+
 		// Transform categories for better search functionality
-		const transformedCategories = categories.map(category => {
+		const transformedCategories = await Promise.all(categories.map(async category => {
 			// Build category hierarchy path
 			let hierarchyPath = category.name;
 			if (category.parent_category?.name) {
@@ -27,6 +35,35 @@ export const syncCategoriesStep = createStep(
 			const childCategoryNames =
 				category.category_children?.map(child => child.name) || [];
 
+			// Check if category has any public (non-internal-only) products
+			let hasPublicProducts = false;
+			try {
+				// Get products in this category with sales channel information
+				const { data: productsInCategory } = await query.graph({
+					entity: 'product',
+					fields: ['id', 'sales_channels.id', 'sales_channels.name'],
+					filters: {
+						categories: { id: category.id },
+					},
+					pagination: { take: 100, skip: 0 },
+				});
+
+				// Check if any products are available in the default sales channel
+				hasPublicProducts = productsInCategory.some((product: any) => {
+					const salesChannels = product.sales_channels || [];
+					const hasDefaultChannel = salesChannels.some((sc: any) => sc.id === defaultSalesChannelId);
+					const hasInternalChannel = internalSalesChannelId &&
+						salesChannels.some((sc: any) => sc.id === internalSalesChannelId);
+
+					// Product is public if it has default channel OR if it has no channels (legacy products)
+					return hasDefaultChannel || (salesChannels.length === 0);
+				});
+			} catch (error) {
+				console.warn(`Warning: Could not check products for category ${category.id}:`, error);
+				// Default to true to avoid hiding categories due to errors
+				hasPublicProducts = true;
+			}
+
 			// Debug: Log category data to see what we're getting
 			if (categories.indexOf(category) === 0) {
 				console.log('🔍 Sample category data:', {
@@ -35,6 +72,7 @@ export const syncCategoriesStep = createStep(
 					parent_category: category.parent_category?.name,
 					children_count: category.category_children?.length || 0,
 					is_active: category.is_active,
+					has_public_products: hasPublicProducts,
 				});
 			}
 
@@ -54,6 +92,9 @@ export const syncCategoriesStep = createStep(
 				created_at: category.created_at,
 				updated_at: category.updated_at,
 
+				// Frontend visibility - only show categories with public products
+				has_public_products: hasPublicProducts,
+
 				// Search-optimized fields
 				searchable_text: [
 					category.name,
@@ -65,7 +106,7 @@ export const syncCategoriesStep = createStep(
 					.filter(Boolean)
 					.join(' '),
 			};
-		});
+		}));
 
 		// Debug: Log sample transformed category
 		if (transformedCategories.length > 0) {

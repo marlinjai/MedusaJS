@@ -118,7 +118,7 @@ export default function InfiniteSlider({
 		>
 			<Configure
 				hitsPerPage={12}
-				filters='NOT (tags = "internal" OR tags = "verbrauchsstoffe") AND min_price > 0'
+				filters='NOT is_internal_only = true AND min_price > 0'
 			/>
 			<SliderContent region={region} currentProductId={currentProductId} />
 		</InstantSearch>

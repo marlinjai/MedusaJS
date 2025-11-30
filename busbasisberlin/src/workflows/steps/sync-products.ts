@@ -4,7 +4,7 @@ import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
 import { MEILISEARCH_MODULE } from '../../modules/meilisearch';
 import MeilisearchModuleService from '../../modules/meilisearch/service';
 import { calculateDeliveryDays } from '../../utils/inventory-helper';
-import { getDefaultSalesChannelIdFromQuery } from '../../utils/sales-channel-helper';
+import { getDefaultSalesChannelIdFromQuery, getInternalOperationsSalesChannelId } from '../../utils/sales-channel-helper';
 
 export type SyncProductsStepInput = {
 	products: ProductDTO[];
@@ -22,6 +22,9 @@ export const syncProductsStep = createStep(
 
 		// Get default sales channel for inventory calculations
 		const salesChannelId = await getDefaultSalesChannelIdFromQuery(query);
+
+		// Get internal operations sales channel for filtering
+		const internalSalesChannelId = await getInternalOperationsSalesChannelId(query);
 
 		// Collect all variant IDs for batch inventory lookup
 		const allVariantIds: string[] = [];
@@ -399,6 +402,14 @@ export const syncProductsStep = createStep(
 							}
 						: { id: 'default', name: 'Default Sales Channel' };
 
+				// Check if product is internal-only (belongs only to internal operations sales channel)
+				const hasDefaultChannel = salesChannels.some((sc: any) => sc.id === salesChannelId);
+				const hasInternalChannel = internalSalesChannelId &&
+					salesChannels.some((sc: any) => sc.id === internalSalesChannelId);
+
+				// Product is internal-only if it has internal channel but NO default channel
+				const isInternalOnly = hasInternalChannel && !hasDefaultChannel;
+
 				// Generate word parts for substring matching (e.g., "schmiernippel" -> "schmier nippel")
 				// This enables finding "nippel" when searching for products like "schmiernippel"
 				const titleParts = generateWordParts(product.title || '');
@@ -451,6 +462,9 @@ export const syncProductsStep = createStep(
 					// Sales channel information - consolidated as JSON
 					sales_channels: salesChannelsJSON,
 					primary_sales_channel: primarySalesChannel,
+
+					// Internal operations filtering
+					is_internal_only: isInternalOnly,
 
 					// Shipping profile information
 					shipping_profile_id: (product as any).shipping_profile?.id || null,

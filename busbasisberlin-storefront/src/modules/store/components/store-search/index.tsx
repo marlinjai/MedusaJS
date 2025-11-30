@@ -585,8 +585,8 @@ export default function StoreSearch() {
 								<CustomPagination />
 							</div>
 
-							{/* Configure filters to exclude internal products and products without prices */}
-							<Configure filters='NOT (tags = "internal" OR tags = "verbrauchsstoffe") AND min_price > 0' />
+							{/* Configure filters to exclude internal-only products and products without prices */}
+							<Configure filters="NOT is_internal_only = true AND min_price > 0" />
 						</div>
 					</div>
 				</div>

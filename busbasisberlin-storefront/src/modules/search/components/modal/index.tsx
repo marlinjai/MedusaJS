@@ -504,7 +504,7 @@ export default function SearchModal({
 						}
 						future={{ preserveSharedStateOnUnmount: true }}
 					>
-						{/* Configure to sort by availability and filter out products without prices */}
+						{/* Configure to sort by availability and filter out internal-only products and products without prices */}
 						<Configure
 							ranking={[
 								'desc(is_available)',
@@ -515,7 +515,7 @@ export default function SearchModal({
 								'sort',
 								'exactness',
 							]}
-							filters='NOT (tags = "internal" OR tags = "verbrauchsstoffe") AND min_price > 0'
+							filters='NOT is_internal_only = true AND min_price > 0'
 						/>
 
 						<div className="flex flex-col h-full min-h-0">

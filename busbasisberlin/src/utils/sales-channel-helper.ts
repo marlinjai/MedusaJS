@@ -78,3 +78,32 @@ export async function getDefaultSalesChannelIdFromQuery(
 		return 'sc_01JZJSF2HKJ7N6NBWBXG9YVYE8';
 	}
 }
+
+/**
+ * Get the internal operations sales channel ID using the query module
+ * @param query - Medusa query service
+ * @returns Promise<string | null> - The internal operations sales channel ID, or null if not found
+ */
+export async function getInternalOperationsSalesChannelId(
+	query: any,
+): Promise<string | null> {
+	try {
+		const { data: salesChannels } = await query.graph({
+			entity: 'sales_channel',
+			fields: ['id', 'name'],
+			pagination: { take: 20, skip: 0 },
+		});
+
+		// Look for sales channel with "internal" in the name
+		const internalChannel = salesChannels.find(
+			(sc: any) =>
+				sc.name.toLowerCase().includes('internal') ||
+				sc.name.toLowerCase().includes('operation'),
+		);
+
+		return internalChannel ? internalChannel.id : null;
+	} catch (error) {
+		console.error('Error getting internal operations sales channel:', error);
+		return null;
+	}
+}
