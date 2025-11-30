@@ -412,8 +412,8 @@ const ProductOrganizeTab = ({
 								{availableTags.map((tag: any) => {
 									const isSelected = (formData.tags || []).includes(tag.value);
 									return (
-										<Select.Item 
-											key={tag.id} 
+										<Select.Item
+											key={tag.id}
 											value={tag.id}
 											className={isSelected ? "bg-ui-bg-subtle text-ui-fg-subtle" : ""}
 										>
