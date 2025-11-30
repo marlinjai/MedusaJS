@@ -227,12 +227,8 @@ const ProductOrganizeTab = ({
 		onChange({ ...formData, tags: newTags });
 	};
 
-	// Get available tags (not already selected)
-	const availableTags = Array.isArray(productTagsData)
-		? productTagsData.filter(
-			(tag: any) => !(formData.tags || []).includes(tag.value),
-		)
-		: [];
+	// Show ALL available tags (including already selected ones for better UX)
+	const availableTags = Array.isArray(productTagsData) ? productTagsData : [];
 
 	const handleAddSalesChannel = (channelId: string) => {
 		const newChannels = [...(formData.sales_channel_ids || []), channelId];
@@ -403,7 +399,7 @@ const ProductOrganizeTab = ({
 									const selectedTag = productTagsData?.find(
 										(tag: any) => tag.id === value,
 									);
-									if (selectedTag) {
+									if (selectedTag && !(formData.tags || []).includes(selectedTag.value)) {
 										handleAddTag(selectedTag.value);
 									}
 								}
@@ -413,11 +409,18 @@ const ProductOrganizeTab = ({
 								<Select.Value placeholder="Existierendes Tag auswählen" />
 							</Select.Trigger>
 							<Select.Content>
-								{availableTags.map((tag: any) => (
-									<Select.Item key={tag.id} value={tag.id}>
-										{tag.value}
-									</Select.Item>
-								))}
+								{availableTags.map((tag: any) => {
+									const isSelected = (formData.tags || []).includes(tag.value);
+									return (
+										<Select.Item 
+											key={tag.id} 
+											value={tag.id}
+											className={isSelected ? "bg-ui-bg-subtle text-ui-fg-subtle" : ""}
+										>
+											{tag.value} {isSelected && "(bereits ausgewählt)"}
+										</Select.Item>
+									);
+								})}
 							</Select.Content>
 						</Select>
 					)}
