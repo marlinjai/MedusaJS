@@ -126,13 +126,15 @@ const ProductOrganizeTab = ({
 	});
 
 	// Fetch product tags
-	const { data: productTagsData = [] } = useQuery({
+	const { data: productTagsData = [], isLoading: isLoadingTags, error: tagsError } = useQuery({
 		queryKey: ['admin-product-tags'],
 		queryFn: async () => {
 			try {
+				console.log('[ProductOrganizeTab] Fetching product tags...');
 				const res = await fetch('/admin/product-tags?limit=1000', {
 					credentials: 'include',
 				});
+				console.log('[ProductOrganizeTab] Product tags fetch response:', res.status, res.statusText);
 				if (!res.ok) {
 					console.error('[ProductOrganizeTab] Product tags fetch failed:', res.status, res.statusText);
 					return [];
@@ -143,6 +145,7 @@ const ProductOrganizeTab = ({
 				const tags = data?.product_tags || data?.data || (Array.isArray(data) ? data : []);
 				const result = Array.isArray(tags) ? tags : [];
 				console.log('[ProductOrganizeTab] Parsed product tags:', result);
+				console.log('[ProductOrganizeTab] Sample tag structure:', result[0]);
 				return result;
 			} catch (error) {
 				console.error('[ProductOrganizeTab] Error fetching product tags:', error);
@@ -151,7 +154,7 @@ const ProductOrganizeTab = ({
 		},
 		initialData: [],
 		placeholderData: [],
-		retry: 2,
+		retry: 3,
 		retryDelay: 1000,
 	});
 
@@ -229,7 +232,7 @@ const ProductOrganizeTab = ({
 
 	// Show ALL available tags (including already selected ones for better UX)
 	const availableTags = Array.isArray(productTagsData) ? productTagsData : [];
-	
+
 	// Debug: Log current form tags to help troubleshoot
 	console.log('[ProductOrganizeTab] Current formData.tags:', formData.tags);
 	console.log('[ProductOrganizeTab] Available tags count:', availableTags.length);
@@ -393,6 +396,22 @@ const ProductOrganizeTab = ({
 			{/* Tags/Keywords */}
 			<div>
 				<Label className="mb-2">Schlagworte (Optional)</Label>
+				{/* Debug info for troubleshooting */}
+				{isLoadingTags && (
+					<Text size="small" className="text-ui-fg-subtle mb-2">
+						Lade Tags...
+					</Text>
+				)}
+				{tagsError && (
+					<Text size="small" className="text-red-500 mb-2">
+						Fehler beim Laden der Tags: {tagsError.message}
+					</Text>
+				)}
+				{!isLoadingTags && availableTags.length === 0 && (
+					<Text size="small" className="text-ui-fg-subtle mb-2">
+						Keine Tags verfügbar
+					</Text>
+				)}
 				<div className="space-y-2">
 					{/* Select existing tags */}
 					{availableTags.length > 0 && (
