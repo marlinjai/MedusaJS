@@ -41,14 +41,14 @@ export function useHeroAlertVisible(): boolean {
 }
 
 /**
- * Get padding classes based on hero alert visibility
+ * Get consistent padding classes for professional layout
+ * Uses fixed padding that always clears header + alert banner
+ * This prevents jarring layout shifts when alert is dismissed
  */
 export function useHeroAlertPadding() {
-	const isVisible = useHeroAlertVisible();
-
 	return {
-		standard: isVisible ? 'pt-40' : 'pt-32',
-		large: isVisible ? 'pt-56 lg:pt-64' : 'pt-44 lg:pt-48',
-		xlarge: isVisible ? 'pt-64' : 'pt-56',
+		standard: 'pt-24', // 96px - for smaller content areas
+		large: 'pt-32', // 128px - for main pages (store, products)
+		xlarge: 'pt-40', // 160px - for special sections
 	};
 }

@@ -5,7 +5,6 @@ import React, { Suspense } from 'react';
 import { retrieveCustomer } from '@lib/data/customer';
 import { getInventorySettings } from '@lib/data/inventory-settings';
 import { listProducts } from '@lib/data/products';
-import HeroAlertPaddingWrapper from '@lib/util/hero-alert-padding-wrapper';
 import { HttpTypes } from '@medusajs/types';
 import ProductDetailSection from '@modules/products/components/product-detail-section';
 import ProductOnboardingCta from '@modules/products/components/product-onboarding-cta';
@@ -58,10 +57,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = async ({
 
 			{/* Product Detail Section */}
 			<div className="relative">
-				<HeroAlertPaddingWrapper
-					size="large"
-					className="content-container pb-12 md:pb-20"
-				>
+				<div className="content-container pb-12 pt-44 md:pb-20">
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
 						{/* Product Detail Section - returns grid with image and info/actions */}
 						<ProductDetailSection
@@ -76,7 +72,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = async ({
 							<ProductOnboardingCta />
 						</div>
 					</div>
-				</HeroAlertPaddingWrapper>
+				</div>
 			</div>
 
 			{/* Related Products Section */}
