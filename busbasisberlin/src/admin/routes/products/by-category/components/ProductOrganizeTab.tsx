@@ -229,6 +229,10 @@ const ProductOrganizeTab = ({
 
 	// Show ALL available tags (including already selected ones for better UX)
 	const availableTags = Array.isArray(productTagsData) ? productTagsData : [];
+	
+	// Debug: Log current form tags to help troubleshoot
+	console.log('[ProductOrganizeTab] Current formData.tags:', formData.tags);
+	console.log('[ProductOrganizeTab] Available tags count:', availableTags.length);
 
 	const handleAddSalesChannel = (channelId: string) => {
 		const newChannels = [...(formData.sales_channel_ids || []), channelId];

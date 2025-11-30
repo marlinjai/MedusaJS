@@ -885,17 +885,19 @@ export default function ProductsByCategoryPage() {
 								onEdit={async product => {
 									// Fetch full product details before opening modal
 									try {
-										const res = await fetch(`/admin/products/${product.id}`, {
+										const res = await fetch(`/admin/products/${product.id}?fields=*,tags.*,categories.*,sales_channels.*,type.*,shipping_profile.*,collection.*`, {
 											credentials: 'include',
 										});
 										if (res.ok) {
 											const data = await res.json();
+											console.log('[ProductEdit] Fetched product with tags:', data.product);
 											setEditingProduct(data.product);
 											setShowProductEditor(true);
 										} else {
 											toast.error('Fehler beim Laden der Produktdetails');
 										}
 									} catch (error) {
+										console.error('[ProductEdit] Error fetching product:', error);
 										toast.error('Fehler beim Laden der Produktdetails');
 									}
 								}}
