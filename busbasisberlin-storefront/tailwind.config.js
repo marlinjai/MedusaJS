@@ -11,6 +11,10 @@ module.exports = {
     "./src/modules/**/*.{js,ts,jsx,tsx}",
     "./node_modules/@medusajs/ui/dist/**/*.{js,jsx,ts,tsx}",
   ],
+  safelist: [
+    // Ensure hero alert padding classes are always included
+    'pt-24', 'pt-32', 'pt-40'
+  ],
   theme: {
     extend: {
       transitionProperty: {
