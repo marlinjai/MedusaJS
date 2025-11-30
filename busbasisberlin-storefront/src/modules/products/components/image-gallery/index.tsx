@@ -53,8 +53,9 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 									src={image.url}
 									alt={`Thumbnail ${index + 1}`}
 									fill
+									quality={85}
 									sizes="96px"
-									className="object-cover"
+									className="object-contain p-1"
 								/>
 							)}
 						</button>
@@ -71,8 +72,9 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 							alt={`Product image ${selectedImage + 1}`}
 							fill
 							priority={selectedImage === 0}
+							quality={90}
 							sizes="(max-width: 768px) 100vw, 600px"
-							className="object-cover"
+							className="object-contain p-4"
 						/>
 					)}
 
