@@ -36,7 +36,7 @@ export default async function PageLayout(props: {
 		<>
 			<Nav />
 			<HeroAlertPaddingWrapper size="large" className="relative">
-				<main>
+				<div>
 					{customer && cart && (
 						<CartMismatchBanner customer={customer} cart={cart} />
 					)}
@@ -49,7 +49,7 @@ export default async function PageLayout(props: {
 						/>
 					)}
 					{props.children}
-				</main>
+				</div>
 			</HeroAlertPaddingWrapper>
 			<Footer />
 			<CookieNotice />
