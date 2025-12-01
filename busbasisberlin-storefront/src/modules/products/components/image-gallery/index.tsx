@@ -4,7 +4,7 @@
 
 import { HttpTypes } from '@medusajs/types';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useRef, MouseEvent } from 'react';
 
 type ImageGalleryProps = {
 	images: HttpTypes.StoreProductImage[];
@@ -12,6 +12,20 @@ type ImageGalleryProps = {
 
 const ImageGallery = ({ images }: ImageGalleryProps) => {
 	const [selectedImage, setSelectedImage] = useState(0);
+	const [isZoomed, setIsZoomed] = useState(false);
+	const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+	const imageRef = useRef<HTMLDivElement>(null);
+
+	// Handle mouse move for zoom effect (desktop only)
+	const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+		if (!imageRef.current) return;
+
+		const rect = imageRef.current.getBoundingClientRect();
+		const x = ((e.clientX - rect.left) / rect.width) * 100;
+		const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+		setZoomPosition({ x, y });
+	};
 
 	if (!images || images.length === 0) {
 		return (
@@ -63,29 +77,44 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 				</div>
 			)}
 
-			{/* Main Image */}
-			<div className="flex-1">
-				<div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border">
-					{images[selectedImage]?.url && (
-						<Image
-							src={images[selectedImage].url}
-							alt={`Product image ${selectedImage + 1}`}
-							fill
-							priority={selectedImage === 0}
-							quality={90}
-							sizes="(max-width: 768px) 100vw, 600px"
-							className="object-contain p-4"
-						/>
-					)}
+		{/* Main Image */}
+		<div className="flex-1">
+			<div
+				ref={imageRef}
+				className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border cursor-zoom-in md:hover:cursor-zoom-in"
+				onMouseEnter={() => setIsZoomed(true)}
+				onMouseLeave={() => setIsZoomed(false)}
+				onMouseMove={handleMouseMove}
+			>
+				{images[selectedImage]?.url && (
+					<Image
+						src={images[selectedImage].url}
+						alt={`Product image ${selectedImage + 1}`}
+						fill
+						priority={selectedImage === 0}
+						quality={90}
+						sizes="(max-width: 768px) 100vw, 600px"
+						className={`object-contain p-4 transition-transform duration-200 ease-out ${
+							isZoomed ? 'md:scale-150' : 'scale-100'
+						}`}
+						style={
+							isZoomed
+								? {
+										transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+								  }
+								: undefined
+						}
+					/>
+				)}
 
-					{/* Image counter */}
-					{images.length > 1 && (
-						<div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-sm font-medium">
-							{selectedImage + 1} / {images.length}
-						</div>
-					)}
-				</div>
+				{/* Image counter */}
+				{images.length > 1 && (
+					<div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-sm font-medium pointer-events-none">
+						{selectedImage + 1} / {images.length}
+					</div>
+				)}
 			</div>
+		</div>
 		</div>
 	);
 };
