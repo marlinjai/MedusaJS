@@ -6,7 +6,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
 
+type Variant = {
+	id?: string;
+	title?: string;
+	sku?: string;
+	manage_inventory?: boolean;
+	allow_backorder?: boolean;
+	prices?: Array<{ amount: number; currency_code: string }>;
+};
+
 type ProductFormData = {
+	id?: string;
 	discountable?: boolean;
 	type_id?: string;
 	collection_id?: string;
@@ -14,6 +24,7 @@ type ProductFormData = {
 	tags?: string[];
 	shipping_profile_id?: string;
 	sales_channel_ids?: string[];
+	variants?: Variant[];
 };
 
 interface ProductOrganizeTabProps {
@@ -293,6 +304,75 @@ const ProductOrganizeTab = ({
 		placeholderData: [],
 		retry: 2,
 		retryDelay: 1000,
+	});
+
+	// Fetch inventory data for variants if product ID exists
+	const { data: inventoryData } = useQuery({
+		queryKey: ['product-variant-inventory', formData.id],
+		queryFn: async () => {
+			if (
+				!formData.id ||
+				!formData.variants ||
+				formData.variants.length === 0
+			) {
+				return {};
+			}
+
+			try {
+				// Fetch inventory for each variant
+				const inventoryPromises = formData.variants.map(async variant => {
+					if (!variant.id) return { variantId: variant.id, quantity: 0 };
+
+					const res = await fetch(
+						`/admin/inventory-items?variant_id=${variant.id}`,
+						{
+							credentials: 'include',
+						},
+					);
+
+					if (!res.ok) {
+						console.error(
+							`Failed to fetch inventory for variant ${variant.id}`,
+						);
+						return { variantId: variant.id, quantity: 0 };
+					}
+
+					const data = await res.json();
+					const inventoryItems = data?.inventory_items || [];
+					const totalQuantity = inventoryItems.reduce(
+						(sum: number, item: any) => {
+							const levels = item.location_levels || [];
+							return (
+								sum +
+								levels.reduce((levelSum: number, level: any) => {
+									return levelSum + (level.stocked_quantity || 0);
+								}, 0)
+							);
+						},
+						0,
+					);
+
+					return { variantId: variant.id, quantity: totalQuantity };
+				});
+
+				const results = await Promise.all(inventoryPromises);
+				const inventoryMap: Record<string, number> = {};
+				results.forEach(result => {
+					if (result.variantId) {
+						inventoryMap[result.variantId] = result.quantity;
+					}
+				});
+
+				return inventoryMap;
+			} catch (error) {
+				console.error('Error fetching inventory:', error);
+				return {};
+			}
+		},
+		enabled:
+			!!formData.id && !!formData.variants && formData.variants.length > 0,
+		initialData: {},
+		staleTime: 30000, // 30 seconds
 	});
 
 	const handleAddTag = (tagValue?: string) => {
@@ -699,6 +779,127 @@ const ProductOrganizeTab = ({
 					</Select>
 				)}
 			</div>
+
+			{/* Variant Information Display (Read-only) */}
+			{formData.variants && formData.variants.length > 0 && (
+				<div>
+					<Label className="mb-2">Varianten-Übersicht</Label>
+					<Text size="small" className="text-ui-fg-subtle block mb-3">
+						Anzeige der Variantenpreise und Bestandsinformationen (Bearbeitung
+						im Varianten-Tab)
+					</Text>
+					<div className="border border-ui-border-base rounded-lg overflow-hidden">
+						<table className="w-full">
+							<thead className="bg-ui-bg-subtle border-b border-ui-border-base">
+								<tr>
+									<th className="text-left px-3 py-2 text-sm font-medium text-ui-fg-base">
+										Variante
+									</th>
+									<th className="text-left px-3 py-2 text-sm font-medium text-ui-fg-base">
+										SKU
+									</th>
+									<th className="text-right px-3 py-2 text-sm font-medium text-ui-fg-base">
+										Preis EUR
+									</th>
+									<th className="text-right px-3 py-2 text-sm font-medium text-ui-fg-base">
+										Preis Europe
+									</th>
+									<th className="text-center px-3 py-2 text-sm font-medium text-ui-fg-base">
+										Bestandsverwaltung
+									</th>
+									<th className="text-right px-3 py-2 text-sm font-medium text-ui-fg-base">
+										Bestand
+									</th>
+									<th className="text-center px-3 py-2 text-sm font-medium text-ui-fg-base">
+										Nachbestellung
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{formData.variants.map((variant, index) => {
+									// Find EUR and Europe prices
+									const eurPrice = variant.prices?.find(
+										p => p.currency_code === 'EUR' || p.currency_code === 'eur',
+									);
+									const europePrice = variant.prices?.find(
+										p =>
+											p.currency_code === 'EUROPE' ||
+											p.currency_code === 'europe',
+									);
+									const inventory = variant.id
+										? inventoryData?.[variant.id] || 0
+										: 0;
+
+									return (
+										<tr
+											key={variant.id || index}
+											className="border-b border-ui-border-base last:border-b-0 hover:bg-ui-bg-subtle-hover"
+										>
+											<td className="px-3 py-2">
+												<Text size="small">{variant.title || '-'}</Text>
+											</td>
+											<td className="px-3 py-2">
+												<Text size="small" className="font-mono text-xs">
+													{variant.sku || '-'}
+												</Text>
+											</td>
+											<td className="px-3 py-2 text-right">
+												<Text size="small">
+													{eurPrice
+														? `€${(eurPrice.amount / 100).toFixed(2)}`
+														: '-'}
+												</Text>
+											</td>
+											<td className="px-3 py-2 text-right">
+												<Text size="small">
+													{europePrice
+														? `€${(europePrice.amount / 100).toFixed(2)}`
+														: '-'}
+												</Text>
+											</td>
+											<td className="px-3 py-2 text-center">
+												<div className="flex justify-center">
+													{variant.manage_inventory ? (
+														<div
+															className="w-2 h-2 rounded-full bg-green-500"
+															title="Aktiviert"
+														/>
+													) : (
+														<div
+															className="w-2 h-2 rounded-full bg-gray-400"
+															title="Deaktiviert"
+														/>
+													)}
+												</div>
+											</td>
+											<td className="px-3 py-2 text-right">
+												<Text size="small" className="font-medium">
+													{variant.manage_inventory ? inventory : 'N/A'}
+												</Text>
+											</td>
+											<td className="px-3 py-2 text-center">
+												<div className="flex justify-center">
+													{variant.allow_backorder ? (
+														<div
+															className="w-2 h-2 rounded-full bg-blue-500"
+															title="Erlaubt"
+														/>
+													) : (
+														<div
+															className="w-2 h-2 rounded-full bg-gray-400"
+															title="Nicht erlaubt"
+														/>
+													)}
+												</div>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

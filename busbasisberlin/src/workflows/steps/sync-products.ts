@@ -418,14 +418,18 @@ export const syncProductsStep = createStep(
 					: [];
 				const skuParts = skus.flatMap(sku => generateWordParts(sku));
 
+				// Auto-set thumbnail from first image if not present
+				const imageUrls = product.images?.map((img: any) => img.url) || [];
+				const thumbnailUrl = product.thumbnail || imageUrls[0] || null;
+
 				return {
 					objectID: product.id, // Required by Meilisearch
 					id: product.id,
 					title: product.title,
 					description: product.description,
 					handle: product.handle,
-					thumbnail: product.thumbnail,
-					images: product.images?.map((img: any) => img.url) || [],
+					thumbnail: thumbnailUrl,
+					images: imageUrls,
 					status: product.status,
 					created_at: product.created_at,
 					updated_at: product.updated_at,

@@ -12,6 +12,7 @@ type ProductHit = {
 	description: string;
 	handle: string;
 	thumbnail: string;
+	images?: string[];
 	min_price: number;
 	max_price: number;
 	category_names?: string[];
@@ -28,6 +29,9 @@ function Hit({
 	hit: ProductHit & { objectID: string };
 	viewMode: 'grid' | 'list';
 }) {
+	// Use thumbnail with fallback to first image
+	const imageUrl = hit.thumbnail || hit.images?.[0] || null;
+
 	if (viewMode === 'list') {
 		return (
 			<Link
@@ -37,9 +41,9 @@ function Hit({
 				<div className="bg-stone-950 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 hover:bg-gray-800/70 transition-all duration-200 h-full flex flex-row gap-4 p-4">
 					{/* Image - smaller in list view */}
 					<div className="relative w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 bg-stone-900 rounded-lg overflow-hidden">
-						{hit.thumbnail ? (
+						{imageUrl ? (
 							<Image
-								src={hit.thumbnail}
+								src={imageUrl}
 								alt={hit.title}
 								fill
 								className="object-contain group-hover:scale-105 transition-transform duration-300 p-2"
@@ -162,9 +166,9 @@ function Hit({
 			<div className="bg-stone-950 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 hover:bg-gray-800/70 transition-all duration-200 h-full flex flex-col">
 				{/* Image */}
 				<div className="relative w-full aspect-[4/3] bg-stone-950">
-					{hit.thumbnail ? (
+					{imageUrl ? (
 						<Image
-							src={hit.thumbnail}
+							src={imageUrl}
 							alt={hit.title}
 							fill
 							className="object-contain group-hover:scale-105 transition-transform duration-300 p-2"

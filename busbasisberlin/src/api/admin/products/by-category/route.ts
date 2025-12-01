@@ -176,6 +176,11 @@ export const GET = async (
 			'sales_channels.name',
 			'variants.id',
 			'variants.sku',
+			'variants.title',
+			'variants.manage_inventory',
+			'variants.allow_backorder',
+			'variants.prices.amount',
+			'variants.prices.currency_code',
 		];
 
 		let productsResult: any;
