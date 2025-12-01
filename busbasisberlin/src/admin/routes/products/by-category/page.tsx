@@ -914,6 +914,7 @@ export default function ProductsByCategoryPage() {
 											'variants.sku',
 											'variants.manage_inventory',
 											'variants.allow_backorder',
+											'variants.prices.*',
 											'options.id',
 											'options.title',
 											'options.values',
