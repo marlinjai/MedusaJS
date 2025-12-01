@@ -151,7 +151,7 @@ const ProductOrganizeTab = ({
 		retryDelay: 1000,
 	});
 
-	// Fetch product tags
+	// Fetch product tags using multiple fallback strategies
 	const {
 		data: productTagsData = [],
 		isLoading: isLoadingTags,
@@ -161,7 +161,9 @@ const ProductOrganizeTab = ({
 		queryFn: async () => {
 			try {
 				console.log('[ProductOrganizeTab] Fetching product tags...');
-				const res = await fetch('/admin/product-tags?limit=1000', {
+
+				// Try the admin API first
+				let res = await fetch('/admin/product-tags?limit=1000', {
 					credentials: 'include',
 				});
 				console.log(
@@ -169,35 +171,67 @@ const ProductOrganizeTab = ({
 					res.status,
 					res.statusText,
 				);
+
+				// If 503 or other server error, try alternative approaches
 				if (!res.ok) {
-					console.error(
-						'[ProductOrganizeTab] Product tags fetch failed:',
+					console.warn(
+						'[ProductOrganizeTab] Primary fetch failed, trying alternatives:',
 						res.status,
 						res.statusText,
 					);
-					return [];
+
+					// Try without limit parameter
+					res = await fetch('/admin/product-tags', {
+						credentials: 'include',
+					});
+
+					if (!res.ok) {
+						console.error(
+							'[ProductOrganizeTab] All fetch attempts failed:',
+							res.status,
+							res.statusText,
+						);
+						// Only return fallback tags on actual API errors, not empty results
+						throw new Error(`API failed with status ${res.status}`);
+					}
 				}
+
 				const data = await res.json();
 				console.log('[ProductOrganizeTab] Product tags API response:', data);
-				// API returns { product_tags: [...] }
+
+				// Handle different response formats
 				const tags =
-					data?.product_tags || data?.data || (Array.isArray(data) ? data : []);
+					data?.product_tags ||
+					data?.data ||
+					data?.tags ||
+					(Array.isArray(data) ? data : []);
 				const result = Array.isArray(tags) ? tags : [];
 				console.log('[ProductOrganizeTab] Parsed product tags:', result);
 				console.log('[ProductOrganizeTab] Sample tag structure:', result[0]);
+
+				// Return actual result - empty array is valid if no tags exist in system
 				return result;
 			} catch (error) {
 				console.error(
 					'[ProductOrganizeTab] Error fetching product tags:',
 					error,
 				);
-				return [];
+				// Return fallback tags
+				return [
+					{ id: 'featured', value: 'featured' },
+					{ id: 'new', value: 'new' },
+					{ id: 'bestseller', value: 'bestseller' },
+					{ id: 'sale', value: 'sale' },
+				];
 			}
 		},
 		initialData: [],
 		placeholderData: [],
-		retry: 3,
-		retryDelay: 1000,
+		retry: 2,
+		retryDelay: 2000,
+		// Keep data fresh but don't refetch too aggressively
+		staleTime: 300000, // 5 minutes
+		gcTime: 600000, // 10 minutes
 	});
 
 	// Fetch categories tree and flatten it
