@@ -20,6 +20,7 @@ type ProductHit = {
 	tags?: string[];
 	is_available?: boolean;
 	total_inventory?: number;
+	is_favoriten?: boolean;
 };
 
 function Hit({

@@ -458,12 +458,13 @@ export const syncProductsStep = createStep(
 					// Tags for filtering
 					tags: tagValues,
 
-					// Collection information
-					collection_id: product.collection?.id,
-					collection_title: product.collection?.title,
-					collection_handle: product.collection?.handle,
+				// Collection information
+				collection_id: product.collection?.id,
+				collection_title: product.collection?.title,
+				collection_handle: product.collection?.handle,
+				is_favoriten: product.collection?.handle === 'favoriten', // Flag for featured products
 
-					// Sales channel information - consolidated as JSON
+				// Sales channel information - consolidated as JSON
 					sales_channels: salesChannelsJSON,
 					primary_sales_channel: primarySalesChannel,
 

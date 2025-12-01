@@ -29,7 +29,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 
 	if (!images || images.length === 0) {
 		return (
-			<div className="w-full aspect-square bg-muted rounded-lg flex items-center justify-center">
+			<div className="w-full aspect-square md:max-w-md lg:max-w-lg bg-muted rounded-lg flex items-center justify-center">
 				<svg
 					className="w-20 h-20 text-muted-foreground"
 					fill="none"
@@ -48,15 +48,15 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 	}
 
 	return (
-		<div className="flex flex-col-reverse md:flex-row gap-4">
+		<div className="flex flex-col-reverse md:flex-row gap-3 md:max-w-md lg:max-w-lg">
 			{/* Thumbnails - vertical on desktop, horizontal on mobile */}
 			{images.length > 1 && (
-				<div className="flex md:flex-col gap-2 md:gap-3 overflow-x-auto md:overflow-y-auto no-scrollbar md:max-h-[600px]">
+				<div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto no-scrollbar md:max-h-[400px]">
 					{images.map((image, index) => (
 						<button
 							key={image.id}
 							onClick={() => setSelectedImage(index)}
-							className={`relative flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+							className={`relative flex-shrink-0 w-16 h-16 md:w-16 md:h-16 rounded-md overflow-hidden border-2 transition-all duration-200 ${
 								selectedImage === index
 									? 'border-primary ring-2 ring-primary ring-offset-2'
 									: 'border-border hover:border-primary/50'
@@ -68,7 +68,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 									alt={`Thumbnail ${index + 1}`}
 									fill
 									quality={85}
-									sizes="96px"
+									sizes="64px"
 									className="object-contain p-1"
 								/>
 							)}
@@ -93,8 +93,8 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 						fill
 						priority={selectedImage === 0}
 						quality={90}
-						sizes="(max-width: 768px) 100vw, 600px"
-						className={`object-contain p-4 transition-transform duration-200 ease-out ${
+						sizes="(max-width: 768px) 100vw, 500px"
+						className={`object-contain p-3 transition-transform duration-200 ease-out ${
 							isZoomed ? 'md:scale-150' : 'scale-100'
 						}`}
 						style={
@@ -109,7 +109,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 
 				{/* Image counter */}
 				{images.length > 1 && (
-					<div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-sm font-medium pointer-events-none">
+					<div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs font-medium pointer-events-none">
 						{selectedImage + 1} / {images.length}
 					</div>
 				)}
