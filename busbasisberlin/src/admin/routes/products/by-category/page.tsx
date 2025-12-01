@@ -885,8 +885,42 @@ export default function ProductsByCategoryPage() {
 								onEdit={async product => {
 									// Fetch full product details before opening modal
 									try {
+										// Use specific fields instead of wildcard to avoid query issues
+										const fields = [
+											'id',
+											'title',
+											'subtitle',
+											'handle',
+											'status',
+											'description',
+											'discountable',
+											'thumbnail',
+											'images.id',
+											'images.url',
+											'tags.id',
+											'tags.value',
+											'categories.id',
+											'categories.name',
+											'sales_channels.id',
+											'sales_channels.name',
+											'type.id',
+											'type.value',
+											'shipping_profile.id',
+											'shipping_profile.name',
+											'collection.id',
+											'collection.title',
+											'variants.id',
+											'variants.title',
+											'variants.sku',
+											'variants.manage_inventory',
+											'variants.allow_backorder',
+											'options.id',
+											'options.title',
+											'options.values',
+										].join(',');
+
 										const res = await fetch(
-											`/admin/products/${product.id}?fields=*,tags.*,categories.*,sales_channels.*,type.*,shipping_profile.*,collection.*`,
+											`/admin/products/${product.id}?fields=${fields}`,
 											{
 												credentials: 'include',
 											},
@@ -900,6 +934,8 @@ export default function ProductsByCategoryPage() {
 											setEditingProduct(data.product);
 											setShowProductEditor(true);
 										} else {
+											const errorText = await res.text();
+											console.error('[ProductEdit] Error response:', errorText);
 											toast.error('Fehler beim Laden der Produktdetails');
 										}
 									} catch (error) {

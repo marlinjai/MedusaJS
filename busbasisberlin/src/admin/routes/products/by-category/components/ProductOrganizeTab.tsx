@@ -306,41 +306,42 @@ const ProductOrganizeTab = ({
 		retryDelay: 1000,
 	});
 
-	// Fetch inventory data for variants if product ID exists
-	const { data: inventoryData } = useQuery({
-		queryKey: ['product-variant-inventory', formData.id],
+	// Fetch inventory and pricing data for variants if product ID exists
+	const { data: variantData } = useQuery({
+		queryKey: ['product-variant-details', formData.id],
 		queryFn: async () => {
 			if (
 				!formData.id ||
 				!formData.variants ||
 				formData.variants.length === 0
 			) {
-				return {};
+				return { inventory: {}, prices: {} };
 			}
 
 			try {
-				// Fetch inventory for each variant
-				const inventoryPromises = formData.variants.map(async variant => {
-					if (!variant.id) return { variantId: variant.id, quantity: 0 };
+				// Fetch inventory and prices for each variant
+				const variantPromises = formData.variants.map(async variant => {
+					if (!variant.id) {
+						return {
+							variantId: variant.id,
+							quantity: 0,
+							prices: [],
+						};
+					}
 
-					const res = await fetch(
+					// Fetch inventory
+					const inventoryRes = await fetch(
 						`/admin/inventory-items?variant_id=${variant.id}`,
 						{
 							credentials: 'include',
 						},
 					);
 
-					if (!res.ok) {
-						console.error(
-							`Failed to fetch inventory for variant ${variant.id}`,
-						);
-						return { variantId: variant.id, quantity: 0 };
-					}
-
-					const data = await res.json();
-					const inventoryItems = data?.inventory_items || [];
-					const totalQuantity = inventoryItems.reduce(
-						(sum: number, item: any) => {
+					let quantity = 0;
+					if (inventoryRes.ok) {
+						const inventoryData = await inventoryRes.json();
+						const inventoryItems = inventoryData?.inventory_items || [];
+						quantity = inventoryItems.reduce((sum: number, item: any) => {
 							const levels = item.location_levels || [];
 							return (
 								sum +
@@ -348,32 +349,58 @@ const ProductOrganizeTab = ({
 									return levelSum + (level.stocked_quantity || 0);
 								}, 0)
 							);
+						}, 0);
+					}
+
+					// Fetch variant with prices
+					const variantRes = await fetch(
+						`/admin/products/${formData.id}/variants/${variant.id}`,
+						{
+							credentials: 'include',
 						},
-						0,
 					);
 
-					return { variantId: variant.id, quantity: totalQuantity };
+					let prices: Array<{ amount: number; currency_code: string }> = [];
+					if (variantRes.ok) {
+						const variantData = await variantRes.json();
+						prices = variantData?.variant?.prices || [];
+					}
+
+					return {
+						variantId: variant.id,
+						quantity,
+						prices,
+					};
 				});
 
-				const results = await Promise.all(inventoryPromises);
+				const results = await Promise.all(variantPromises);
 				const inventoryMap: Record<string, number> = {};
+				const pricesMap: Record<
+					string,
+					Array<{ amount: number; currency_code: string }>
+				> = {};
+
 				results.forEach(result => {
 					if (result.variantId) {
 						inventoryMap[result.variantId] = result.quantity;
+						pricesMap[result.variantId] = result.prices;
 					}
 				});
 
-				return inventoryMap;
+				return { inventory: inventoryMap, prices: pricesMap };
 			} catch (error) {
-				console.error('Error fetching inventory:', error);
-				return {};
+				console.error('Error fetching variant details:', error);
+				return { inventory: {}, prices: {} };
 			}
 		},
 		enabled:
 			!!formData.id && !!formData.variants && formData.variants.length > 0,
-		initialData: {},
+		initialData: { inventory: {}, prices: {} },
 		staleTime: 30000, // 30 seconds
 	});
+
+	const inventoryData = variantData?.inventory || {};
+	const pricesData = variantData?.prices || {};
 
 	const handleAddTag = (tagValue?: string) => {
 		const tagToAdd = tagValue || tagInput.trim();
@@ -817,12 +844,18 @@ const ProductOrganizeTab = ({
 							</thead>
 							<tbody>
 								{formData.variants.map((variant, index) => {
+									// Get prices from fetched data or fallback to variant prices
+									const variantPrices = variant.id
+										? pricesData?.[variant.id] || variant.prices || []
+										: variant.prices || [];
+
 									// Find EUR and Europe prices
-									const eurPrice = variant.prices?.find(
-										p => p.currency_code === 'EUR' || p.currency_code === 'eur',
+									const eurPrice = variantPrices.find(
+										(p: any) =>
+											p.currency_code === 'EUR' || p.currency_code === 'eur',
 									);
-									const europePrice = variant.prices?.find(
-										p =>
+									const europePrice = variantPrices.find(
+										(p: any) =>
 											p.currency_code === 'EUROPE' ||
 											p.currency_code === 'europe',
 									);
