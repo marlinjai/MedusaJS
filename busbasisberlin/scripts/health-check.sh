@@ -104,6 +104,19 @@ check_redis() {
 
     if [[ "$redis_check" == "PONG" ]]; then
         log_success "Redis: responding to ping"
+        
+        # SECURITY: Check if Redis is in read-only replica mode
+        local redis_role=$(docker exec medusa_redis redis-cli INFO replication 2>/dev/null | grep "^role:" | cut -d: -f2 | tr -d '\r\n' || echo "unknown")
+        if [[ "$redis_role" == "master" ]]; then
+            log_success "Redis: operating as master (writable)"
+        elif [[ "$redis_role" == "slave" ]]; then
+            log_error "Redis: WARNING - operating as READ-ONLY REPLICA!"
+            log_error "This will cause authentication failures. Run: docker exec medusa_redis redis-cli REPLICAOF NO ONE"
+            return 1
+        else
+            log_warning "Redis: role unknown ($redis_role)"
+        fi
+        
         return 0
     else
         log_error "Redis: not responding to ping"
