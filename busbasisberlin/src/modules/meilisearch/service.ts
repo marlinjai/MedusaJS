@@ -103,6 +103,7 @@ export default class MeilisearchModuleService {
 		try {
 			// Configure filterable attributes first (required for faceted search)
 			await index.updateFilterableAttributes([
+				'category_names', // Category names for faceting and filtering
 				'category_ids',
 				'hierarchical_categories.lvl0',
 				'hierarchical_categories.lvl1',
@@ -138,6 +139,7 @@ export default class MeilisearchModuleService {
 				'title',
 				'searchable_text',
 				'description',
+				'category_names', // Make category names searchable
 				'hierarchical_categories.lvl0',
 				'hierarchical_categories.lvl1',
 				'hierarchical_categories.lvl2',
@@ -192,6 +194,7 @@ export default class MeilisearchModuleService {
 				'status',
 				'created_at',
 				'updated_at',
+				'category_names', // Category names for frontend display
 				'category_ids',
 				'hierarchical_categories',
 				'is_available',

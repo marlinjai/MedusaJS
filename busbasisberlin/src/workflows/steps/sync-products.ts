@@ -312,6 +312,15 @@ export const syncProductsStep = createStep(
 				// Convert Sets to Arrays for category_names and category_ids
 				categoryNames.push(...Array.from(allCategoryNamesInPath));
 				const categoryIds = Array.from(allCategoryIdsInPath);
+				
+				// Debug: Log category data for first product
+				if (products.indexOf(product) === 0) {
+					console.log('🔍 Category data for first product:', {
+						categoryNames: Array.from(allCategoryNamesInPath),
+						categoryIds: Array.from(allCategoryIdsInPath),
+						hierarchicalCategories,
+					});
+				}
 
 				// Calculate availability and pricing using real inventory data
 				let isAvailable = false;
@@ -434,7 +443,8 @@ export const syncProductsStep = createStep(
 					created_at: product.created_at,
 					updated_at: product.updated_at,
 
-					// Category data - only what we need
+					// Category data - includes names for frontend display and filtering
+					category_names: categoryNames, // Array of category names (all levels) for display and faceting
 					category_ids: categoryIds, // All category IDs for filtering
 					hierarchical_categories: hierarchicalCategories, // For HierarchicalMenu widget
 

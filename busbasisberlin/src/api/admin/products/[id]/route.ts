@@ -393,26 +393,29 @@ export const PUT = async (
 				logger.info(
 					`🔄 [PRODUCT-UPDATE] Categories changed for product ${id}, syncing to Meilisearch...`,
 				);
-				// Run sync in background (don't await to avoid blocking the response)
-				syncProductsWorkflow(req.scope)
-					.run({
-						input: {
-							filters: {
-								id,
+				// Run sync in background with a small delay to ensure database transaction is committed
+				// Don't await to avoid blocking the response
+				setTimeout(() => {
+					syncProductsWorkflow(req.scope)
+						.run({
+							input: {
+								filters: {
+									id,
+								},
 							},
-						},
-					})
-					.then(() => {
-						logger.info(
-							`✅ [PRODUCT-UPDATE] Product ${id} synced to Meilisearch after category change`,
-						);
-					})
-					.catch(error => {
-						logger.error(
-							`❌ [PRODUCT-UPDATE] Failed to sync product ${id} to Meilisearch:`,
-							error,
-						);
-					});
+						})
+						.then(() => {
+							logger.info(
+								`✅ [PRODUCT-UPDATE] Product ${id} synced to Meilisearch after category change`,
+							);
+						})
+						.catch(error => {
+							logger.error(
+								`❌ [PRODUCT-UPDATE] Failed to sync product ${id} to Meilisearch:`,
+								error,
+							);
+						});
+				}, 500); // 500ms delay to ensure DB transaction is committed
 			} catch (error) {
 				// Log error but don't fail the request
 				logger.error(
