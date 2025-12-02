@@ -13,6 +13,7 @@ type ImageGalleryProps = {
 const ImageGallery = ({ images }: ImageGalleryProps) => {
 	const [selectedImage, setSelectedImage] = useState(0);
 	const [isZoomed, setIsZoomed] = useState(false);
+	const [isClickZoomed, setIsClickZoomed] = useState(false);
 	const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
 	const imageRef = useRef<HTMLDivElement>(null);
 
@@ -25,6 +26,18 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 		const y = ((e.clientY - rect.top) / rect.height) * 100;
 
 		setZoomPosition({ x, y });
+	};
+
+	// Toggle click zoom
+	const handleClick = () => {
+		setIsClickZoomed(!isClickZoomed);
+	};
+
+	// Calculate zoom level based on hover and click states
+	const getZoomScale = () => {
+		if (isClickZoomed) return 'md:scale-[2.5]'; // 2.5x zoom when clicked
+		if (isZoomed) return 'md:scale-150'; // 1.5x zoom on hover
+		return 'scale-100'; // Normal size
 	};
 
 	if (!images || images.length === 0) {
@@ -81,10 +94,13 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 		<div className="flex-1">
 			<div
 				ref={imageRef}
-				className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border cursor-zoom-in md:hover:cursor-zoom-in"
+				className={`relative w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border ${
+					isClickZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+				} md:hover:${isClickZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
 				onMouseEnter={() => setIsZoomed(true)}
 				onMouseLeave={() => setIsZoomed(false)}
 				onMouseMove={handleMouseMove}
+				onClick={handleClick}
 			>
 				{images[selectedImage]?.url && (
 					<Image
@@ -94,11 +110,9 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 						priority={selectedImage === 0}
 						quality={90}
 						sizes="(max-width: 768px) 100vw, 500px"
-						className={`object-contain p-3 transition-transform duration-200 ease-out ${
-							isZoomed ? 'md:scale-150' : 'scale-100'
-						}`}
+						className={`object-contain p-3 transition-transform duration-200 ease-out ${getZoomScale()}`}
 						style={
-							isZoomed
+							isZoomed || isClickZoomed
 								? {
 										transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
 								  }
@@ -106,6 +120,41 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 						}
 					/>
 				)}
+
+				{/* Zoom icon indicator */}
+				<div className="absolute top-3 right-3 p-2 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
+					{isClickZoomed ? (
+						// Zoom out icon (minus)
+						<svg
+							className="w-4 h-4 text-white"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
+							/>
+						</svg>
+					) : (
+						// Zoom in icon (plus)
+						<svg
+							className="w-4 h-4 text-white"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+							/>
+						</svg>
+					)}
+				</div>
 
 				{/* Image counter */}
 				{images.length > 1 && (

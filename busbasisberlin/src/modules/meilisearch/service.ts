@@ -101,34 +101,34 @@ export default class MeilisearchModuleService {
 
 	private async configureProductIndex(index: any) {
 		try {
-		// Configure filterable attributes first (required for faceted search)
-		await index.updateFilterableAttributes([
-			'category_ids',
-			'hierarchical_categories.lvl0',
-			'hierarchical_categories.lvl1',
-			'hierarchical_categories.lvl2',
-			'hierarchical_categories.lvl3',
-			'is_available',
-			'status',
-			'min_price',
-			'max_price',
-			'price_range',
-			'currencies',
-			'tags',
-			'collection_id',
-			'collection_handle',
-			'collection_title',
-			'is_favoriten',
-			'variant_count',
-			'sales_channels.id',
-			'sales_channels.name',
-			'primary_sales_channel.id',
-			'primary_sales_channel.name',
-			'shipping_profile_name',
-			'has_extended_delivery',
-			'estimated_delivery_days',
-			'is_internal_only',
-		]);
+			// Configure filterable attributes first (required for faceted search)
+			await index.updateFilterableAttributes([
+				'category_ids',
+				'hierarchical_categories.lvl0',
+				'hierarchical_categories.lvl1',
+				'hierarchical_categories.lvl2',
+				'hierarchical_categories.lvl3',
+				'is_available',
+				'status',
+				'min_price',
+				'max_price',
+				'price_range',
+				'currencies',
+				'tags',
+				'collection_id',
+				'collection_handle',
+				'collection_title',
+				'is_favoriten',
+				'variant_count',
+				'sales_channels.id',
+				'sales_channels.name',
+				'primary_sales_channel.id',
+				'primary_sales_channel.name',
+				'shipping_profile_name',
+				'has_extended_delivery',
+				'estimated_delivery_days',
+				'is_internal_only',
+			]);
 
 			// Wait a bit for the filterable attributes to be processed
 			await new Promise(resolve => setTimeout(resolve, 1000));
@@ -170,43 +170,43 @@ export default class MeilisearchModuleService {
 				},
 			});
 
-		// Configure ranking rules for better search relevance
-		await index.updateRankingRules([
-			'desc(is_favoriten)', // Prioritize Favoriten products first
-			'words',
-			'typo',
-			'proximity',
-			'attribute',
-			'sort',
-			'exactness',
-			'min_price:asc', // Prefer lower prices
-		]);
+			// Configure ranking rules for better search relevance
+			await index.updateRankingRules([
+				'desc(is_favoriten)', // Prioritize Favoriten products first
+				'words',
+				'typo',
+				'proximity',
+				'attribute',
+				'sort',
+				'exactness',
+				'min_price:asc', // Prefer lower prices
+			]);
 
-		// Configure displayed attributes (what gets returned in search results)
-		await index.updateDisplayedAttributes([
-			'id',
-			'title',
-			'description',
-			'handle',
-			'thumbnail',
-			'status',
-			'created_at',
-			'updated_at',
-			'category_ids',
-			'hierarchical_categories',
-			'is_available',
-			'min_price',
-			'max_price',
-			'currencies',
-			'tags',
-			'collection_title',
-			'is_favoriten',
-			'skus',
-			'variant_count',
-			'sales_channels',
-			'primary_sales_channel',
-			'is_internal_only',
-		]);
+			// Configure displayed attributes (what gets returned in search results)
+			await index.updateDisplayedAttributes([
+				'id',
+				'title',
+				'description',
+				'handle',
+				'thumbnail',
+				'status',
+				'created_at',
+				'updated_at',
+				'category_ids',
+				'hierarchical_categories',
+				'is_available',
+				'min_price',
+				'max_price',
+				'currencies',
+				'tags',
+				'collection_title',
+				'is_favoriten',
+				'skus',
+				'variant_count',
+				'sales_channels',
+				'primary_sales_channel',
+				'is_internal_only',
+			]);
 
 			// Configure pagination settings to allow accurate total hit counts
 			await index.updateSettings({
