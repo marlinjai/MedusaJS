@@ -8,6 +8,7 @@ import {
 	updateProductsWorkflow,
 	linkProductsToSalesChannelWorkflow,
 } from '@medusajs/medusa/core-flows';
+import { syncProductsWorkflow } from '../../../workflows/sync-products';
 
 type ProductUpdateBody = {
 	title?: string;
@@ -321,6 +322,26 @@ export const PUT = async (
 			});
 		}
 
+		// Get current product categories before update to detect changes
+		const currentProductResult = await query.graph({
+			entity: 'product',
+			fields: ['id', 'categories.id'],
+			filters: { id },
+		});
+		const currentProduct = Array.isArray(currentProductResult?.data)
+			? currentProductResult.data[0]
+			: null;
+		const currentCategoryIds = new Set(
+			currentProduct?.categories?.map((c: any) => c.id) || [],
+		);
+		const newCategoryIds = new Set(category_ids || []);
+		const categoriesChanged =
+			currentCategoryIds.size !== newCategoryIds.size ||
+			Array.from(currentCategoryIds).some(
+				id => !newCategoryIds.has(id),
+			) ||
+			Array.from(newCategoryIds).some(id => !currentCategoryIds.has(id));
+
 		// Update product using workflow with correct format
 		const { result } = await updateProductsWorkflow(req.scope).run({
 			input: {
@@ -364,6 +385,42 @@ export const PUT = async (
 		const finalProduct = Array.isArray(productResult?.data)
 			? productResult.data[0]
 			: updatedProduct;
+
+		// If categories changed, explicitly sync to Meilisearch to ensure frontend sees the update
+		// This is necessary because the product.updated event might fire before category relations are fully updated
+		if (categoriesChanged) {
+			try {
+				logger.info(
+					`🔄 [PRODUCT-UPDATE] Categories changed for product ${id}, syncing to Meilisearch...`,
+				);
+				// Run sync in background (don't await to avoid blocking the response)
+				syncProductsWorkflow(req.scope)
+					.run({
+						input: {
+							filters: {
+								id,
+							},
+						},
+					})
+					.then(() => {
+						logger.info(
+							`✅ [PRODUCT-UPDATE] Product ${id} synced to Meilisearch after category change`,
+						);
+					})
+					.catch(error => {
+						logger.error(
+							`❌ [PRODUCT-UPDATE] Failed to sync product ${id} to Meilisearch:`,
+							error,
+						);
+					});
+			} catch (error) {
+				// Log error but don't fail the request
+				logger.error(
+					`❌ [PRODUCT-UPDATE] Error triggering Meilisearch sync for product ${id}:`,
+					error,
+				);
+			}
+		}
 
 		// Handle sales channel linking separately (requires separate workflow)
 		if (sales_channel_ids !== undefined) {
