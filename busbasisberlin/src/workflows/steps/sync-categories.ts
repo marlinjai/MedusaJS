@@ -23,6 +23,25 @@ export const syncCategoriesStep = createStep(
 		const defaultSalesChannelId = await getDefaultSalesChannelIdFromQuery(query);
 		const internalSalesChannelId = await getInternalOperationsSalesChannelId(query);
 
+		// Helper function to recursively get all descendant category IDs
+		const getAllDescendantCategoryIds = (categoryId: string, allCategories: ProductCategoryDTO[]): string[] => {
+			const descendants = new Set<string>();
+			descendants.add(categoryId);
+
+			const findChildren = (parentId: string) => {
+				const children = allCategories.filter(cat => cat.parent_category_id === parentId);
+				children.forEach(child => {
+					if (!descendants.has(child.id)) {
+						descendants.add(child.id);
+						findChildren(child.id); // Recursively find grandchildren
+					}
+				});
+			};
+
+			findChildren(categoryId);
+			return Array.from(descendants);
+		};
+
 		// Transform categories for better search functionality
 		const transformedCategories = await Promise.all(categories.map(async category => {
 			// Build category hierarchy path
@@ -35,17 +54,20 @@ export const syncCategoriesStep = createStep(
 			const childCategoryNames =
 				category.category_children?.map(child => child.name) || [];
 
-			// Check if category has any public (non-internal-only) products
+			// Check if category OR its subcategories have any public products
 			let hasPublicProducts = false;
 			try {
-				// Get products in this category with sales channel information
+				// Get all descendant category IDs (including current category)
+				const allCategoryIds = getAllDescendantCategoryIds(category.id, categories);
+
+				// Get products in this category AND all its subcategories with sales channel information
 				const { data: productsInCategory } = await query.graph({
 					entity: 'product',
 					fields: ['id', 'sales_channels.id', 'sales_channels.name'],
 					filters: {
-						categories: { id: category.id },
+						categories: { id: allCategoryIds },
 					},
-					pagination: { take: 100, skip: 0 },
+					pagination: { take: 500, skip: 0 }, // Increased limit to catch more products
 				});
 
 				// Check if any products are available in the default sales channel
@@ -58,6 +80,19 @@ export const syncCategoriesStep = createStep(
 					// Product is public if it has default channel OR if it has no channels (legacy products)
 					return hasDefaultChannel || (salesChannels.length === 0);
 				});
+
+				// Debug logging for problematic categories
+				if (category.name === 'Beleuchtung' || category.parent_category?.name === 'Beleuchtung') {
+					console.log(`🔍 [CATEGORY-SYNC] ${category.name} (${category.id}):`, {
+						allCategoryIds: allCategoryIds.length,
+						productsFound: productsInCategory.length,
+						hasPublicProducts,
+						sampleProducts: productsInCategory.slice(0, 3).map((p: any) => ({
+							id: p.id,
+							salesChannels: p.sales_channels?.map((sc: any) => sc.id) || []
+						}))
+					});
+				}
 			} catch (error) {
 				console.warn(`Warning: Could not check products for category ${category.id}:`, error);
 				// Default to true to avoid hiding categories due to errors

@@ -1,14 +1,17 @@
 // src/jobs/smart-inventory-sync.ts
 import { MedusaContainer } from '@medusajs/framework/types';
 import { syncProductsWorkflow } from '../workflows/sync-products';
+import { syncCategoriesWorkflow } from '../workflows/sync-categories';
 
 /**
- * Smart periodic inventory sync job
+ * Smart periodic inventory and category sync job
  *
  * Runs every 5 minutes to catch manual inventory updates
  * Only syncs products that were updated since last run (efficient)
+ * Also syncs categories when products change to ensure category visibility is correct
  *
- * This solves the limitation where direct inventory updates don't emit events.
+ * This solves the limitation where direct inventory updates don't emit events
+ * and ensures parent categories show when subcategories have products.
  *
  * Configure in medusa-config.ts:
  * jobs: [
@@ -81,6 +84,42 @@ export default async function smartInventorySync(container: MedusaContainer) {
 		logger.info(
 			`✅ [SMART-SYNC] Completed: ${syncedCount}/${recentProducts.length} products synced to Meilisearch`,
 		);
+
+		// Sync categories if we synced any products (product changes can affect category visibility)
+		if (syncedCount > 0) {
+			logger.info('📂 [SMART-SYNC] Syncing categories due to product changes...');
+			try {
+				// Get all categories that might be affected
+				const { data: affectedCategories } = await query.graph({
+					entity: 'product_category',
+					fields: ['id', 'updated_at'],
+					filters: {
+						updated_at: {
+							$gte: tenMinutesAgo.toISOString(),
+						},
+					},
+				});
+
+				// Always sync all categories to ensure visibility is correct
+				// (since product changes in subcategories can affect parent category visibility)
+				await syncCategoriesWorkflow(container).run({
+					input: {
+						limit: 1000, // Sync all categories at once for consistency
+						offset: 0,
+					},
+				});
+
+				logger.info(
+					`✅ [SMART-SYNC] Categories synced successfully (${affectedCategories?.length || 0} recently updated)`,
+				);
+			} catch (error) {
+				logger.error(
+					'❌ [SMART-SYNC] Failed to sync categories:',
+					error instanceof Error ? error.message : error,
+				);
+				// Don't throw - category sync failure shouldn't break the job
+			}
+		}
 	} catch (error) {
 		logger.error(
 			'❌ [SMART-SYNC] Failed to run smart inventory sync:',

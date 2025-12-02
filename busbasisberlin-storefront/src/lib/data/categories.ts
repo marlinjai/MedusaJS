@@ -70,6 +70,15 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
 
     // Replace the category_children with ALL active, non-internal subcategories
     if (allSubcategories && allSubcategories.length > 0) {
+      // Debug logging for category fetching
+      if (category.name?.includes('Beleuchtung') || category.handle?.includes('scheinwerfer')) {
+        console.log(`🔍 [FRONTEND-CATEGORIES] ${category.name}:`, {
+          originalChildren: category.category_children?.length || 0,
+          allSubcategories: allSubcategories.length,
+          subcategoryNames: allSubcategories.map(sub => sub.name)
+        });
+      }
+
       category.category_children = allSubcategories
     }
   }
