@@ -33,7 +33,8 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
     ...(await getCacheOptions("categories")),
   }
 
-  return sdk.client
+  // Fetch the main category
+  const category = await sdk.client
     .fetch<HttpTypes.StoreProductCategoryListResponse>(
       `/store/product-categories`,
       {
@@ -46,4 +47,32 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
       }
     )
     .then(({ product_categories }) => product_categories[0])
+
+  // If category has children, fetch ALL active, non-internal subcategories separately
+  // This bypasses Medusa's built-in sales channel filtering on category_children
+  if (category && category.id) {
+    const allSubcategories = await sdk.client
+      .fetch<HttpTypes.StoreProductCategoryListResponse>(
+        `/store/product-categories`,
+        {
+          query: {
+            fields: "id,name,handle,is_active,is_internal,parent_category_id",
+            parent_category_id: category.id,
+            is_active: true,
+            is_internal: false,
+            limit: 100,
+          },
+          next,
+          cache: "force-cache",
+        }
+      )
+      .then(({ product_categories }) => product_categories)
+
+    // Replace the category_children with ALL active, non-internal subcategories
+    if (allSubcategories && allSubcategories.length > 0) {
+      category.category_children = allSubcategories
+    }
+  }
+
+  return category
 }
