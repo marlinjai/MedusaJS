@@ -184,12 +184,15 @@ export const syncProductsStep = createStep(
 		// Transform products for better search functionality
 		const transformedProducts = await Promise.all(
 			products.map(async product => {
-				// Debug: Log product data to see what we're getting
-				if (products.indexOf(product) === 0) {
-					console.log('🔍 Sample product data:', {
+				// Debug: Log product data for Beleuchtung-related products
+				const isRelevantProduct = product.title?.includes('Innenleuchte') ||
+					product.categories?.some(cat => cat.name?.includes('Beleuchtung') || cat.name?.includes('leuchte'));
+
+				if (products.indexOf(product) === 0 || isRelevantProduct) {
+					console.log('🔍 [PRODUCT-SYNC] Product data:', {
 						id: product.id,
 						title: product.title,
-						categories: product.categories,
+						categories: product.categories?.map(cat => ({ id: cat.id, name: cat.name })) || [],
 						variants: product.variants?.length,
 						tags: product.tags?.length,
 						sampleVariant: product.variants?.[0]
@@ -242,12 +245,24 @@ export const syncProductsStep = createStep(
 								});
 
 								if (categoryQuery.length === 0) {
+									console.warn(`[PRODUCT-SYNC] Category ${categoryId} not found in hierarchy fetch`);
 									return { names: currentPath, ids: currentIds };
 								}
 
 								const categoryData = categoryQuery[0];
 								const newPath = [categoryData.name, ...currentPath];
 								const newIds = [categoryData.id, ...currentIds];
+
+								// Debug logging for Beleuchtung hierarchy
+								if (categoryData.name?.includes('Beleuchtung') || categoryData.name?.includes('leuchte')) {
+									console.log(`🔍 [PRODUCT-SYNC] Building hierarchy for ${categoryData.name}:`, {
+										categoryId: categoryData.id,
+										currentPath: newPath,
+										hasParent: !!categoryData.parent_category?.id,
+										parentId: categoryData.parent_category?.id,
+										parentName: categoryData.parent_category?.name,
+									});
+								}
 
 								// If this category has a parent, recursively fetch it
 								if (categoryData.parent_category?.id) {
@@ -262,7 +277,7 @@ export const syncProductsStep = createStep(
 								return { names: newPath, ids: newIds };
 							} catch (error) {
 								console.error(
-									`Error fetching hierarchy for category ${categoryId}:`,
+									`[PRODUCT-SYNC] Error fetching hierarchy for category ${categoryId}:`,
 									error,
 								);
 								return { names: currentPath, ids: currentIds };
@@ -296,14 +311,18 @@ export const syncProductsStep = createStep(
 
 						categoryPaths.push(fullPath);
 
-						// Debug: Log first category to verify depth
+						// Debug: Log category hierarchy for Beleuchtung-related products
 						const productIndex = products.indexOf(product);
-						if (productIndex === 0) {
-							console.log('🔍 Category hierarchy depth:', {
+						if (productIndex === 0 || fullPath.includes('Beleuchtung') || category.name.includes('Beleuchtung')) {
+							console.log('🔍 [PRODUCT-SYNC] Category hierarchy:', {
+								productTitle: product.title,
 								categoryName: category.name,
-								path: fullPath,
+								categoryId: category.id,
+								fullPath: fullPath,
+								completePath: completePath,
+								completeIds: completeIds,
 								segments: completePath.length,
-								depth: completePath.length - 1,
+								hierarchicalCategories: hierarchicalCategories,
 							});
 						}
 					}
@@ -514,12 +533,33 @@ export const syncProductsStep = createStep(
 			product => !existingProducts.some(p => p.id === product.id),
 		);
 
-		// Debug: Log sample transformed product
-		if (transformedProducts.length > 0) {
-			console.log('🔍 Sample transformed product:', {
-				id: transformedProducts[0].id,
-				title: transformedProducts[0].title,
-				category_ids: (transformedProducts[0] as any).category_ids,
+		// Debug: Log sample transformed product and Beleuchtung products
+		const sampleProduct = transformedProducts[0];
+		const beleuchtungProducts = transformedProducts.filter(p =>
+			p.title?.includes('Innenleuchte') ||
+			(p as any).category_names?.some((name: string) => name?.includes('Beleuchtung') || name?.includes('leuchte'))
+		);
+
+		if (sampleProduct) {
+			console.log('🔍 [PRODUCT-SYNC] Sample transformed product:', {
+				id: sampleProduct.id,
+				title: sampleProduct.title,
+				category_ids: (sampleProduct as any).category_ids,
+				category_names: (sampleProduct as any).category_names,
+				hierarchical_categories: (sampleProduct as any).hierarchical_categories,
+			});
+		}
+
+		if (beleuchtungProducts.length > 0) {
+			console.log(`🔍 [PRODUCT-SYNC] Found ${beleuchtungProducts.length} Beleuchtung-related products`);
+			beleuchtungProducts.slice(0, 3).forEach((product, index) => {
+				console.log(`🔍 [PRODUCT-SYNC] Beleuchtung product ${index + 1}:`, {
+					id: product.id,
+					title: product.title,
+					category_names: (product as any).category_names,
+					hierarchical_categories: (product as any).hierarchical_categories,
+				});
+			});
 				hierarchical_categories: (transformedProducts[0] as any)
 					.hierarchical_categories,
 				sales_channels: (transformedProducts[0] as any).sales_channels,
