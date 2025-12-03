@@ -560,20 +560,6 @@ export const syncProductsStep = createStep(
 					hierarchical_categories: (product as any).hierarchical_categories,
 				});
 			});
-				hierarchical_categories: (transformedProducts[0] as any)
-					.hierarchical_categories,
-				sales_channels: (transformedProducts[0] as any).sales_channels,
-				primary_sales_channel: (transformedProducts[0] as any)
-					.primary_sales_channel,
-				is_available: transformedProducts[0].is_available,
-				total_inventory: transformedProducts[0].total_inventory,
-				variant_count: transformedProducts[0].variant_count,
-				min_price: transformedProducts[0].min_price,
-				max_price: transformedProducts[0].max_price,
-				currencies: transformedProducts[0].currencies,
-				tags: transformedProducts[0].tags,
-				is_internal_only: (transformedProducts[0] as any).is_internal_only,
-			});
 		}
 
 		await meilisearchModuleService.indexData(
