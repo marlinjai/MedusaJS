@@ -172,7 +172,7 @@ export default class MeilisearchModuleService {
 
 			// Configure ranking rules for better search relevance
 			await index.updateRankingRules([
-				'desc(is_favoriten)', // Prioritize Favoriten products first
+				'is_favoriten:desc', // Prioritize Favoriten products first
 				'words',
 				'typo',
 				'proximity',
