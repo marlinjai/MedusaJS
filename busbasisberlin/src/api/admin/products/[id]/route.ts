@@ -2,11 +2,10 @@
 // Admin API route to get and update an existing product
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
-import { Modules } from '@medusajs/framework/utils';
+import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import {
-	updateProductsWorkflow,
 	linkProductsToSalesChannelWorkflow,
+	updateProductsWorkflow,
 } from '@medusajs/medusa/core-flows';
 
 type ProductUpdateBody = {
@@ -46,47 +45,47 @@ export const GET = async (
 			return;
 		}
 
-			// Fetch product with all relations
-			const query = req.scope.resolve('query');
-			const productResult = await query.graph({
-				entity: 'product',
-				fields: [
-					'id',
-					'title',
-					'subtitle',
-					'handle',
-					'description',
-					'status',
-					'discountable',
-					'thumbnail',
-					'created_at',
-					'updated_at',
-					'type.id',
-					'type.value',
-					'categories.id',
-					'categories.name',
-					'collection.id',
-					'collection.title',
-					'sales_channels.id',
-					'sales_channels.name',
-					'tags.id',
-					'tags.value',
-					'shipping_profile.id',
-					'shipping_profile.name',
-					'variants.id',
-					'variants.title',
-					'variants.sku',
-					'variants.enabled',
-					'variants.inventory_quantity',
-					'variants.prices.amount',
-					'variants.prices.currency_code',
-					'options.id',
-					'options.title',
-					'options.values.value',
-					'images.url',
-				],
-				filters: { id },
-			});
+		// Fetch product with all relations
+		const query = req.scope.resolve('query');
+		const productResult = await query.graph({
+			entity: 'product',
+			fields: [
+				'id',
+				'title',
+				'subtitle',
+				'handle',
+				'description',
+				'status',
+				'discountable',
+				'thumbnail',
+				'created_at',
+				'updated_at',
+				'type.id',
+				'type.value',
+				'categories.id',
+				'categories.name',
+				'collection.id',
+				'collection.title',
+				'sales_channels.id',
+				'sales_channels.name',
+				'tags.id',
+				'tags.value',
+				'shipping_profile.id',
+				'shipping_profile.name',
+				'variants.id',
+				'variants.title',
+				'variants.sku',
+				'variants.enabled',
+				'variants.inventory_quantity',
+				'variants.prices.amount',
+				'variants.prices.currency_code',
+				'options.id',
+				'options.title',
+				'options.values.value',
+				'images.url',
+			],
+			filters: { id },
+		});
 
 		const product = Array.isArray(productResult?.data)
 			? productResult.data[0]
@@ -272,15 +271,23 @@ export const PUT = async (
 				if (variant.id) variantData.id = variant.id;
 				if (variant.title) variantData.title = variant.title;
 				if (variant.sku) variantData.sku = variant.sku;
-				if (variant.manage_inventory !== undefined) variantData.manage_inventory = variant.manage_inventory;
-				if (variant.allow_backorder !== undefined) variantData.allow_backorder = variant.allow_backorder;
+				if (variant.manage_inventory !== undefined)
+					variantData.manage_inventory = variant.manage_inventory;
+				if (variant.allow_backorder !== undefined)
+					variantData.allow_backorder = variant.allow_backorder;
 
 				// Handle variant options - convert to Record<string, string> format
-				if (has_variants && options && variant.option_values && variant.option_values.length > 0) {
+				if (
+					has_variants &&
+					options &&
+					variant.option_values &&
+					variant.option_values.length > 0
+				) {
 					const variantOptions: Record<string, string> = {};
 					options.forEach((option: any, optionIndex: number) => {
 						const value = variant.option_values[optionIndex];
-						const valueStr = typeof value === 'string' ? value : String(value || '');
+						const valueStr =
+							typeof value === 'string' ? value : String(value || '');
 						if (valueStr && option.values && option.values.includes(valueStr)) {
 							variantOptions[option.title] = valueStr;
 						}
@@ -377,7 +384,9 @@ export const PUT = async (
 			const currentChannelIds =
 				currentProduct?.sales_channels?.map((sc: any) => sc.id) || [];
 
-			const newChannelIds = Array.isArray(sales_channel_ids) ? sales_channel_ids : [];
+			const newChannelIds = Array.isArray(sales_channel_ids)
+				? sales_channel_ids
+				: [];
 
 			// Remove from channels not in new list
 			for (const channelId of currentChannelIds) {
@@ -388,7 +397,9 @@ export const PUT = async (
 							remove: [id],
 						},
 					});
-					logger.info(`[PRODUCT-UPDATE] Removed product ${id} from sales channel ${channelId}`);
+					logger.info(
+						`[PRODUCT-UPDATE] Removed product ${id} from sales channel ${channelId}`,
+					);
 				}
 			}
 
@@ -401,7 +412,9 @@ export const PUT = async (
 							add: [id],
 						},
 					});
-					logger.info(`[PRODUCT-UPDATE] Added product ${id} to sales channel ${channelId}`);
+					logger.info(
+						`[PRODUCT-UPDATE] Added product ${id} to sales channel ${channelId}`,
+					);
 				}
 			}
 		}
@@ -419,4 +432,3 @@ export const PUT = async (
 		});
 	}
 };
-
