@@ -131,14 +131,14 @@ export const PUT = async (
 			discountable,
 			type_id,
 			collection_id,
-			category_ids = [],
-			tags = [],
+			category_ids,
+			tags,
 			shipping_profile_id,
-			sales_channel_ids = [],
-			variants = [],
-			has_variants = false,
-			options = [],
-			images = [],
+			sales_channel_ids,
+			variants,
+			has_variants,
+			options,
+			images,
 		} = req.body;
 
 		if (!id) {
@@ -188,7 +188,8 @@ export const PUT = async (
 		}
 
 		// Convert category_ids to correct format for workflow: categories: [{id: string}]
-		let categoryObjects: Array<{ id: string }> = [];
+		// Only process if explicitly provided (not undefined)
+		let categoryObjects: Array<{ id: string }> | undefined = undefined;
 		if (category_ids !== undefined && Array.isArray(category_ids)) {
 			categoryObjects = category_ids.map(catId => ({ id: catId }));
 		}
@@ -245,19 +246,15 @@ export const PUT = async (
 		}
 
 		// Add tags in correct format: tags: [{id: string}]
-		if (tagObjects.length > 0) {
+		// Only update if tags was explicitly provided in the request
+		if (tags !== undefined) {
 			updateData.tags = tagObjects;
-		} else if (tags !== undefined && (!Array.isArray(tags) || tags.length === 0)) {
-			// Empty array means remove all tags
-			updateData.tags = [];
 		}
 
 		// Add categories in correct format: categories: [{id: string}]
-		if (categoryObjects.length > 0) {
+		// Only update if category_ids was explicitly provided in the request
+		if (categoryObjects !== undefined) {
 			updateData.categories = categoryObjects;
-		} else if (category_ids !== undefined && (!Array.isArray(category_ids) || category_ids.length === 0)) {
-			// Empty array means remove all categories
-			updateData.categories = [];
 		}
 
 		// Handle product options update
