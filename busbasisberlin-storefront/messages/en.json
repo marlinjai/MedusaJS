@@ -320,6 +320,8 @@
 	},
 	"store": {
 		"title": "Shop",
+		"heading": "Online Shop for Spare Parts",
+		"searchSubtitle": "Browse our complete product catalog",
 		"subtitle": "Discover our products",
 		"filters": "Filters",
 		"sortBy": "Sort by",

@@ -2,6 +2,7 @@
 
 import { searchClient } from '@lib/config';
 import { createRouting } from '@lib/search-routing';
+import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
@@ -498,6 +499,7 @@ function SkeletonManager() {
 export default function StoreSearch() {
 	// Create routing configuration client-side only
 	const routing = useMemo(() => createRouting(), []);
+	const t = useTranslations('store');
 
 	return (
 		<InstantSearch
@@ -526,10 +528,10 @@ export default function StoreSearch() {
 						{/* Title */}
 						<div>
 							<h1 className="text-2xl sm:text-3xl font-bold text-gray-300">
-								Teile Shop
+								{t('heading')}
 							</h1>
 							<p className="text-sm text-gray-400 mt-1 hidden sm:block">
-								Durchsuchen Sie unseren vollständigen Produktkatalog
+								{t('searchSubtitle')}
 							</p>
 						</div>
 

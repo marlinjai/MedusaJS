@@ -2,7 +2,10 @@
 // Server-side skeleton layout that renders immediately in HTML
 // This prevents the "nothing" state before React hydrates
 
-export default function SkeletonStoreLayout() {
+import { getTranslations } from 'next-intl/server';
+
+export default async function SkeletonStoreLayout() {
+	const t = await getTranslations('store');
 	return (
 		<div className="relative min-h-screen">
 			{/* Texture Background - matches StoreSearch */}
@@ -23,10 +26,10 @@ export default function SkeletonStoreLayout() {
 					{/* Title */}
 					<div>
 						<h1 className="text-2xl sm:text-3xl font-bold text-gray-300">
-							Teile Shop
+							{t('heading')}
 						</h1>
 						<p className="text-sm text-gray-400 mt-1 hidden sm:block">
-							Durchsuchen Sie unseren vollständigen Produktkatalog
+							{t('searchSubtitle')}
 						</p>
 					</div>
 
@@ -140,5 +143,3 @@ export default function SkeletonStoreLayout() {
 		</div>
 	);
 }
-
-

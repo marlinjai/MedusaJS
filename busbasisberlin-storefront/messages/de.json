@@ -405,6 +405,8 @@
 	},
 	"store": {
 		"title": "Shop",
+		"heading": "Onlineshop für Ersatzteile",
+		"searchSubtitle": "Durchsuchen Sie unseren vollständigen Produktkatalog",
 		"subtitle": "Entdecken Sie unsere Produkte",
 		"filters": "Filter",
 		"sortBy": "Sortieren nach",
