@@ -4,7 +4,7 @@
 
 import { HttpTypes } from '@medusajs/types';
 import Image from 'next/image';
-import { useState, useRef, MouseEvent } from 'react';
+import { MouseEvent, useRef, useState } from 'react';
 
 type ImageGalleryProps = {
 	images: HttpTypes.StoreProductImage[];
@@ -90,80 +90,80 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 				</div>
 			)}
 
-		{/* Main Image */}
-		<div className="flex-1">
-			<div
-				ref={imageRef}
-				className={`relative w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border ${
-					isClickZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
-				} md:hover:${isClickZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
-				onMouseEnter={() => setIsZoomed(true)}
-				onMouseLeave={() => setIsZoomed(false)}
-				onMouseMove={handleMouseMove}
-				onClick={handleClick}
-			>
-				{images[selectedImage]?.url && (
-					<Image
-						src={images[selectedImage].url}
-						alt={`Product image ${selectedImage + 1}`}
-						fill
-						priority={selectedImage === 0}
-						quality={90}
-						sizes="(max-width: 768px) 100vw, 500px"
-						className={`object-contain p-3 transition-transform duration-200 ease-out ${getZoomScale()}`}
-						style={
-							isZoomed || isClickZoomed
-								? {
-										transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-								  }
-								: undefined
-						}
-					/>
-				)}
+			{/* Main Image */}
+			<div className="flex-1">
+				<div
+					ref={imageRef}
+					className={`relative w-full aspect-square bg-muted rounded-lg overflow-hidden border border-border ${
+						isClickZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+					} md:hover:${isClickZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+					onMouseEnter={() => setIsZoomed(true)}
+					onMouseLeave={() => setIsZoomed(false)}
+					onMouseMove={handleMouseMove}
+					onClick={handleClick}
+				>
+					{images[selectedImage]?.url && (
+						<Image
+							src={images[selectedImage].url}
+							alt={`Product image ${selectedImage + 1}`}
+							fill
+							priority={selectedImage === 0}
+							quality={90}
+							sizes="(max-width: 768px) 100vw, 500px"
+							className={`object-contain p-3 transition-transform duration-200 ease-out ${getZoomScale()}`}
+							style={
+								isZoomed || isClickZoomed
+									? {
+											transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+									  }
+									: undefined
+							}
+						/>
+					)}
 
-				{/* Zoom icon indicator */}
-				<div className="absolute top-3 right-3 p-2 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
-					{isClickZoomed ? (
-						// Zoom out icon (minus)
-						<svg
-							className="w-4 h-4 text-white"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
-							/>
-						</svg>
-					) : (
-						// Zoom in icon (plus)
-						<svg
-							className="w-4 h-4 text-white"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-							/>
-						</svg>
+					{/* Zoom icon indicator */}
+					<div className="absolute top-3 right-3 p-2 bg-black/60 backdrop-blur-sm rounded-full pointer-events-none">
+						{isClickZoomed ? (
+							// Zoom out icon (minus)
+							<svg
+								className="w-4 h-4 text-white"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
+								/>
+							</svg>
+						) : (
+							// Zoom in icon (plus)
+							<svg
+								className="w-4 h-4 text-white"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+								/>
+							</svg>
+						)}
+					</div>
+
+					{/* Image counter */}
+					{images.length > 1 && (
+						<div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs font-medium pointer-events-none">
+							{selectedImage + 1} / {images.length}
+						</div>
 					)}
 				</div>
-
-				{/* Image counter */}
-				{images.length > 1 && (
-					<div className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-xs font-medium pointer-events-none">
-						{selectedImage + 1} / {images.length}
-					</div>
-				)}
 			</div>
-		</div>
 		</div>
 	);
 };

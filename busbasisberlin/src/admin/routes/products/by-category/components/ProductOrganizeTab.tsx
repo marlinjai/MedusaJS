@@ -13,6 +13,8 @@ type Variant = {
 	manage_inventory?: boolean;
 	allow_backorder?: boolean;
 	prices?: Array<{ amount: number; currency_code: string }>;
+	price_eur?: number;
+	price_europe?: number;
 };
 
 type ProductFormData = {
@@ -844,16 +846,12 @@ const ProductOrganizeTab = ({
 											</td>
 											<td className="px-3 py-2 text-right">
 												<Text size="small">
-													{eurPrice > 0
-														? `€${eurPrice.toFixed(2)}`
-														: '-'}
+													{eurPrice > 0 ? `€${eurPrice.toFixed(2)}` : '-'}
 												</Text>
 											</td>
 											<td className="px-3 py-2 text-right">
 												<Text size="small">
-													{europePrice > 0
-														? `€${europePrice.toFixed(2)}`
-														: '-'}
+													{europePrice > 0 ? `€${europePrice.toFixed(2)}` : '-'}
 												</Text>
 											</td>
 											<td className="px-3 py-2 text-center">

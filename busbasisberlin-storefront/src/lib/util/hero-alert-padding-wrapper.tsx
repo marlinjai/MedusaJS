@@ -24,4 +24,3 @@ export default function HeroAlertPaddingWrapper({
 
 	return <div className={`${paddingClass} ${className}`}>{children}</div>;
 }
-
