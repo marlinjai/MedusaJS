@@ -820,19 +820,11 @@ const ProductOrganizeTab = ({
 							</thead>
 							<tbody>
 								{formData.variants.map((variant, index) => {
-									// Use prices directly from variant data (already fetched with product)
-									const variantPrices = variant.prices || [];
+									// Use flat price fields (already transformed from Medusa format in ProductEditorModal)
+									// price_eur and price_europe are in euros (not cents)
+									const eurPrice = variant.price_eur ?? 0;
+									const europePrice = variant.price_europe ?? 0;
 
-									// Find EUR and Europe prices
-									const eurPrice = variantPrices.find(
-										(p: any) =>
-											p.currency_code === 'EUR' || p.currency_code === 'eur',
-									);
-									const europePrice = variantPrices.find(
-										(p: any) =>
-											p.currency_code === 'EUROPE' ||
-											p.currency_code === 'europe',
-									);
 									const inventory = variant.id
 										? inventoryData?.[variant.id] || 0
 										: 0;
@@ -852,15 +844,15 @@ const ProductOrganizeTab = ({
 											</td>
 											<td className="px-3 py-2 text-right">
 												<Text size="small">
-													{eurPrice
-														? `€${(eurPrice.amount / 100).toFixed(2)}`
+													{eurPrice > 0
+														? `€${eurPrice.toFixed(2)}`
 														: '-'}
 												</Text>
 											</td>
 											<td className="px-3 py-2 text-right">
 												<Text size="small">
-													{europePrice
-														? `€${(europePrice.amount / 100).toFixed(2)}`
+													{europePrice > 0
+														? `€${europePrice.toFixed(2)}`
 														: '-'}
 												</Text>
 											</td>

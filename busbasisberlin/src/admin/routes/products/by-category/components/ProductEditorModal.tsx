@@ -78,6 +78,24 @@ const ProductEditorModal = ({
 	// Update formData when product prop changes
 	useEffect(() => {
 		if (product) {
+			// Transform variant prices from Medusa format (prices array) to form format (flat fields)
+			const transformedVariants = product.variants?.map((variant: any) => {
+				// Find EUR and EUROPE prices from the prices array
+				const eurPrice = variant.prices?.find(
+					(p: any) => p?.currency_code?.toLowerCase() === 'eur'
+				);
+				const europePrice = variant.prices?.find(
+					(p: any) => p?.currency_code?.toLowerCase() === 'europe'
+				);
+
+				return {
+					...variant,
+					// Convert from cents to euros
+					price_eur: eurPrice ? eurPrice.amount / 100 : 0,
+					price_europe: europePrice ? europePrice.amount / 100 : 0,
+				};
+			}) || [];
+
 			setFormData({
 				...product,
 				// Map categories array to category_ids
@@ -92,6 +110,8 @@ const ProductEditorModal = ({
 				type_id: product.type?.id || product.type_id,
 				// Map shipping_profile object to shipping_profile_id
 				shipping_profile_id: product.shipping_profile?.id || product.shipping_profile_id,
+				// Use transformed variants with flat price fields
+				variants: transformedVariants,
 			});
 			setActiveTab('details'); // Reset to details tab when product changes
 		} else {

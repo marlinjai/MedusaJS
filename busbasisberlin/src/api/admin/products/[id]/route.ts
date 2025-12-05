@@ -313,7 +313,7 @@ export const PUT = async (
 						...(variant.price_europe
 							? [
 									{
-										currency_code: 'eur',
+										currency_code: 'europe',
 										amount: Math.round((variant.price_europe || 0) * 100),
 									},
 								]

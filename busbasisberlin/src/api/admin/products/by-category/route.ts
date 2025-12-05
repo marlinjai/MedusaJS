@@ -179,6 +179,8 @@ export const GET = async (
 			'variants.title',
 			'variants.manage_inventory',
 			'variants.allow_backorder',
+			'variants.prices.amount',
+			'variants.prices.currency_code',
 		];
 
 		let productsResult: any;
