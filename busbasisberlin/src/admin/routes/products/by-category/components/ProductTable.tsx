@@ -1,11 +1,20 @@
 // busbasisberlin/src/admin/routes/products/by-category/components/ProductTable.tsx
 // Product table component with draggable column widths and inline editing
 
-import { Badge, Button, Checkbox, Input, Select, Table, Text, toast } from '@medusajs/ui';
+import {
+	Badge,
+	Button,
+	Checkbox,
+	Input,
+	Select,
+	Table,
+	Text,
+	toast,
+} from '@medusajs/ui';
 import { Edit } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import InlineTagsEditor from './InlineTagsEditor';
 import InlineCollectionSelector from './InlineCollectionSelector';
+import InlineTagsEditor from './InlineTagsEditor';
 
 type Product = {
 	id: string;
@@ -100,13 +109,19 @@ const ProductTable = ({
 
 	// Tags editor modal state
 	const [tagsEditorOpen, setTagsEditorOpen] = useState(false);
-	const [tagsEditorProduct, setTagsEditorProduct] = useState<Product | null>(null);
-	const [tagsEditorAnchor, setTagsEditorAnchor] = useState<HTMLElement | null>(null);
+	const [tagsEditorProduct, setTagsEditorProduct] = useState<Product | null>(
+		null,
+	);
+	const [tagsEditorAnchor, setTagsEditorAnchor] = useState<HTMLElement | null>(
+		null,
+	);
 
 	// Collection selector modal state
 	const [collectionSelectorOpen, setCollectionSelectorOpen] = useState(false);
-	const [collectionSelectorProduct, setCollectionSelectorProduct] = useState<Product | null>(null);
-	const [collectionSelectorAnchor, setCollectionSelectorAnchor] = useState<HTMLElement | null>(null);
+	const [collectionSelectorProduct, setCollectionSelectorProduct] =
+		useState<Product | null>(null);
+	const [collectionSelectorAnchor, setCollectionSelectorAnchor] =
+		useState<HTMLElement | null>(null);
 
 	// Column reordering state
 	const [columnOrder, setColumnOrder] = useState<string[]>(() => {
@@ -126,13 +141,16 @@ const ProductTable = ({
 
 	// Persist column order to localStorage
 	useEffect(() => {
-		localStorage.setItem('products-table-column-order', JSON.stringify(columnOrder));
+		localStorage.setItem(
+			'products-table-column-order',
+			JSON.stringify(columnOrder),
+		);
 	}, [columnOrder]);
 
 	// Get ordered columns based on saved order
 	const orderedColumns = columnOrder
 		.map(key => columns.find(c => c.key === key))
-		.filter((c): c is typeof columns[0] => c !== undefined);
+		.filter((c): c is (typeof columns)[0] => c !== undefined);
 
 	// Column drag and drop handlers
 	const handleColumnDragStart = (columnKey: string) => {
@@ -219,7 +237,11 @@ const ProductTable = ({
 	}, [editingCell]);
 
 	// Start editing a cell
-	const startEditing = (productId: string, field: string, currentValue: any) => {
+	const startEditing = (
+		productId: string,
+		field: string,
+		currentValue: any,
+	) => {
 		setEditingCell({ productId, field });
 		setTempValues({
 			...tempValues,
@@ -235,7 +257,9 @@ const ProductTable = ({
 		const newValue = tempValues[key];
 
 		// Don't save if value hasn't changed
-		const currentValue = products.find(p => p.id === editingCell.productId)?.[editingCell.field as keyof Product];
+		const currentValue = products.find(p => p.id === editingCell.productId)?.[
+			editingCell.field as keyof Product
+		];
 		if (newValue === currentValue) {
 			setEditingCell(null);
 			return;
@@ -333,7 +357,8 @@ const ProductTable = ({
 		}
 	};
 
-	const allSelected = products.length > 0 && products.every(p => rowSelection[p.id]);
+	const allSelected =
+		products.length > 0 && products.every(p => rowSelection[p.id]);
 	const someSelected = products.some(p => rowSelection[p.id]);
 
 	// Render cell content with inline editing support
@@ -408,7 +433,9 @@ const ProductTable = ({
 							onValueChange={async value => {
 								setTempValues({ ...tempValues, [key]: value });
 								try {
-									await onUpdate(product.id, { status: value as 'published' | 'draft' });
+									await onUpdate(product.id, {
+										status: value as 'published' | 'draft',
+									});
 									setEditingCell(null);
 								} catch (error) {
 									console.error('Error updating status:', error);
@@ -420,17 +447,17 @@ const ProductTable = ({
 								}
 							}}
 						>
-						<Select.Trigger className="h-auto border-none bg-transparent shadow-none p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 w-auto">
-							<div
-								className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-									isPublished
-										? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-										: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-								}`}
-							>
-								{isPublished ? 'Veröffentlicht' : 'Entwurf'}
-							</div>
-						</Select.Trigger>
+							<Select.Trigger className="h-auto border-none bg-transparent shadow-none p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 w-auto">
+								<div
+									className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+										isPublished
+											? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+											: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+									}`}
+								>
+									{isPublished ? 'Veröffentlicht' : 'Entwurf'}
+								</div>
+							</Select.Trigger>
 							<Select.Content>
 								<Select.Item value="published">Veröffentlicht</Select.Item>
 								<Select.Item value="draft">Entwurf</Select.Item>
@@ -465,7 +492,7 @@ const ProductTable = ({
 				// Collection selector - click to open inline selector
 				return (
 					<div
-						className="cursor-pointer hover:bg-ui-bg-subtle px-2 py-1 rounded flex items-center gap-2"
+						className="cursor-pointer hover:bg-ui-bg-subtle px-2 py-1 rounded flex items-center transition-colors"
 						onClick={e => {
 							e.stopPropagation();
 							setCollectionSelectorProduct(product);
@@ -474,12 +501,9 @@ const ProductTable = ({
 						}}
 					>
 						{product.collection ? (
-							<>
-								<Badge size="small" rounded="full">
-									{product.collection.title}
-								</Badge>
-								<Edit className="w-3 h-3 text-ui-fg-subtle hover:text-ui-fg-base" />
-							</>
+							<Badge size="small" rounded="full">
+								{product.collection.title}
+							</Badge>
 						) : (
 							<Text size="small" className="text-ui-fg-subtle">
 								+ Sammlung hinzufügen
@@ -494,7 +518,11 @@ const ProductTable = ({
 						className="cursor-pointer hover:bg-ui-bg-subtle px-1 py-0.5 rounded h-7 flex items-center w-full"
 						onClick={() => onEdit && onEdit(product)}
 					>
-						<Text size="small" className="truncate" title={product.shipping_profile?.name}>
+						<Text
+							size="small"
+							className="truncate"
+							title={product.shipping_profile?.name}
+						>
 							{product.shipping_profile?.name || '-'}
 						</Text>
 					</div>
@@ -549,7 +577,7 @@ const ProductTable = ({
 				}
 				return (
 					<div
-						className="flex flex-wrap gap-1 cursor-pointer"
+						className="flex flex-wrap gap-1 cursor-pointer hover:opacity-80 transition-opacity"
 						onClick={e => {
 							e.stopPropagation();
 							setTagsEditorProduct(product);
@@ -567,7 +595,6 @@ const ProductTable = ({
 								+{product.tags.length - 3}
 							</Badge>
 						)}
-						<Edit className="w-3 h-3 text-ui-fg-subtle hover:text-ui-fg-base ml-1" />
 					</div>
 				);
 			case 'actions':
@@ -625,8 +652,8 @@ const ProductTable = ({
 								key={column.key}
 								draggable={column.key !== 'select' && column.key !== 'actions'}
 								onDragStart={() => handleColumnDragStart(column.key)}
-								onDragOver={(e) => handleColumnDragOver(e, column.key)}
-								onDrop={(e) => handleColumnDrop(e, column.key)}
+								onDragOver={e => handleColumnDragOver(e, column.key)}
+								onDrop={e => handleColumnDrop(e, column.key)}
 								onDragEnd={handleColumnDragEnd}
 								style={{
 									width: `${columnWidths[column.key]}px`,
@@ -635,19 +662,26 @@ const ProductTable = ({
 									position: 'relative',
 									overflow: 'visible',
 									opacity: draggedColumn === column.key ? 0.5 : 1,
-									cursor: column.key !== 'select' && column.key !== 'actions' ? 'grab' : 'default',
+									cursor:
+										column.key !== 'select' && column.key !== 'actions'
+											? 'grab'
+											: 'default',
 								}}
 								className={`select-none ${
-									dragOverColumn === column.key ? 'border-l-2 border-ui-border-interactive' : ''
+									dragOverColumn === column.key
+										? 'border-l-2 border-ui-border-interactive'
+										: ''
 								}`}
 							>
 								{column.key === 'select' ? (
 									<div className="flex items-center justify-center">
-									<Checkbox
-										checked={allSelected}
-										onCheckedChange={handleSelectAll}
-										{...(someSelected && !allSelected ? { indeterminate: true } : {})}
-									/>
+										<Checkbox
+											checked={allSelected}
+											onCheckedChange={handleSelectAll}
+											{...(someSelected && !allSelected
+												? { indeterminate: true }
+												: {})}
+										/>
 									</div>
 								) : (
 									<div className="flex items-center min-w-0 text-sm">
@@ -745,4 +779,3 @@ const ProductTable = ({
 };
 
 export default ProductTable;
-
