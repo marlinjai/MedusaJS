@@ -54,7 +54,8 @@ const HeroAlert = () => {
 		fetchAlertSettings();
 	}, []);
 
-	// Check localStorage for dismissal state when alert text is loaded
+	// Check sessionStorage for dismissal state when alert text is loaded
+	// Using sessionStorage means banner reappears when user returns to site in new tab/session
 	useEffect(() => {
 		if (!alert?.text || typeof window === 'undefined') {
 			return;
@@ -62,7 +63,9 @@ const HeroAlert = () => {
 
 		const alertHash = getAlertHash(alert.text);
 		const storageKey = `hero-alert-dismissed-${alertHash}`;
-		const dismissed = localStorage.getItem(storageKey) === 'true';
+		// Check sessionStorage instead of localStorage
+		// This means dismissal only persists for current browser session
+		const dismissed = sessionStorage.getItem(storageKey) === 'true';
 		setIsDismissed(dismissed);
 	}, [alert?.text]);
 
@@ -106,8 +109,9 @@ const HeroAlert = () => {
 		const alertHash = getAlertHash(alert.text);
 		const storageKey = `hero-alert-dismissed-${alertHash}`;
 
-		// Save dismissal to localStorage
-		localStorage.setItem(storageKey, 'true');
+		// Save dismissal to sessionStorage (not localStorage)
+		// This means banner will reappear when user opens site in new tab/session
+		sessionStorage.setItem(storageKey, 'true');
 
 		// Update state to hide banner immediately
 		setIsDismissed(true);
