@@ -5,6 +5,7 @@ import { Badge, Button, Checkbox, Input, Select, Table, Text, toast } from '@med
 import { Edit } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import InlineTagsEditor from './InlineTagsEditor';
+import InlineCollectionSelector from './InlineCollectionSelector';
 
 type Product = {
 	id: string;
@@ -101,6 +102,11 @@ const ProductTable = ({
 	const [tagsEditorOpen, setTagsEditorOpen] = useState(false);
 	const [tagsEditorProduct, setTagsEditorProduct] = useState<Product | null>(null);
 	const [tagsEditorAnchor, setTagsEditorAnchor] = useState<HTMLElement | null>(null);
+
+	// Collection selector modal state
+	const [collectionSelectorOpen, setCollectionSelectorOpen] = useState(false);
+	const [collectionSelectorProduct, setCollectionSelectorProduct] = useState<Product | null>(null);
+	const [collectionSelectorAnchor, setCollectionSelectorAnchor] = useState<HTMLElement | null>(null);
 
 	// Column reordering state
 	const [columnOrder, setColumnOrder] = useState<string[]>(() => {
@@ -456,22 +462,29 @@ const ProductTable = ({
 					</div>
 				);
 			case 'collection':
-				if (isEditing && onUpdate) {
-					// For now, collection editing would need a dropdown - skip inline editing for this
-					return (
-						<Text size="small" className="truncate" title={product.collection?.title}>
-							{product.collection?.title || '-'}
-						</Text>
-					);
-				}
+				// Collection selector - click to open inline selector
 				return (
 					<div
-						className="cursor-pointer hover:bg-ui-bg-subtle px-1 py-0.5 rounded h-7 flex items-center w-full"
-						onClick={() => onEdit && onEdit(product)}
+						className="cursor-pointer hover:bg-ui-bg-subtle px-2 py-1 rounded flex items-center gap-2"
+						onClick={e => {
+							e.stopPropagation();
+							setCollectionSelectorProduct(product);
+							setCollectionSelectorAnchor(e.currentTarget);
+							setCollectionSelectorOpen(true);
+						}}
 					>
-						<Text size="small" className="truncate" title={product.collection?.title}>
-							{product.collection?.title || '-'}
-						</Text>
+						{product.collection ? (
+							<>
+								<Badge size="small" rounded="full">
+									{product.collection.title}
+								</Badge>
+								<Edit className="w-3 h-3 text-ui-fg-subtle hover:text-ui-fg-base" />
+							</>
+						) : (
+							<Text size="small" className="text-ui-fg-subtle">
+								+ Sammlung hinzufügen
+							</Text>
+						)}
 					</div>
 				);
 			case 'shipping_profile':
@@ -711,6 +724,20 @@ const ProductTable = ({
 					}}
 					onUpdate={onUpdate}
 					anchorEl={tagsEditorAnchor || undefined}
+				/>
+			)}
+
+			{/* Inline Collection Selector Modal */}
+			{collectionSelectorOpen && collectionSelectorProduct && onUpdate && (
+				<InlineCollectionSelector
+					product={collectionSelectorProduct}
+					onClose={() => {
+						setCollectionSelectorOpen(false);
+						setCollectionSelectorProduct(null);
+						setCollectionSelectorAnchor(null);
+					}}
+					onUpdate={onUpdate}
+					anchorEl={collectionSelectorAnchor || undefined}
 				/>
 			)}
 		</div>
