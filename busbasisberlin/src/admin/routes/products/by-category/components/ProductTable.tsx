@@ -15,6 +15,7 @@ type Product = {
 	collection?: { id: string; title: string };
 	variants?: Array<{ id: string; sku?: string; title?: string }>;
 	shipping_profile?: { id: string; name: string; type: string };
+	tags?: Array<{ id: string; value: string }>;
 };
 
 interface ProductTableProps {
@@ -67,6 +68,11 @@ const columns = [
 		key: 'variants',
 		label: 'Artikelnummern',
 		width: 250,
+	},
+	{
+		key: 'tags',
+		label: 'Tags',
+		width: 200,
 	},
 	{
 		key: 'actions',
@@ -435,6 +441,48 @@ const ProductTable = ({
 							.filter(Boolean)
 							.join(', ')}
 					</Text>
+				);
+			case 'tags':
+				// Tags displayed as badges with click-to-edit
+				if (!product.tags || product.tags.length === 0) {
+					return (
+						<Button
+							variant="transparent"
+							size="small"
+							onClick={e => {
+								e.stopPropagation();
+								if (onEdit) onEdit(product);
+							}}
+							className="text-ui-fg-subtle hover:text-ui-fg-base"
+						>
+							<Text size="small">+ Tag hinzufügen</Text>
+						</Button>
+					);
+				}
+				return (
+					<div className="flex flex-wrap gap-1">
+						{product.tags.slice(0, 3).map(tag => (
+							<Badge key={tag.id} size="small" rounded="full">
+								{tag.value}
+							</Badge>
+						))}
+						{product.tags.length > 3 && (
+							<Badge size="small" rounded="full">
+								+{product.tags.length - 3}
+							</Badge>
+						)}
+						<Button
+							variant="transparent"
+							size="small"
+							onClick={e => {
+								e.stopPropagation();
+								if (onEdit) onEdit(product);
+							}}
+							className="text-ui-fg-subtle hover:text-ui-fg-base ml-1"
+						>
+							<Edit className="w-3 h-3" />
+						</Button>
+					</div>
 				);
 			case 'actions':
 				return (

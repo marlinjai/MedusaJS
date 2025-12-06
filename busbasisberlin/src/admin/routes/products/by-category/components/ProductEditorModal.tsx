@@ -88,11 +88,33 @@ const ProductEditorModal = ({
 					(p: any) => p?.currency_code?.toLowerCase() === 'europe'
 				);
 
+				// Debug logging to understand the price format
+				if (eurPrice) {
+					console.log('[ProductEditorModal] Price debug:', {
+						sku: variant.sku,
+						eurPrice,
+						amount: eurPrice.amount,
+						amountType: typeof eurPrice.amount,
+						isLikelyCents: eurPrice.amount >= 100,
+						calculatedPrice: eurPrice.amount / 100,
+					});
+				}
+
+				// Smart price conversion: if amount is >= 100, it's likely in cents (Medusa standard)
+				// If amount is < 100, it might already be in euros (incorrectly stored)
+				const convertPrice = (price: any) => {
+					if (!price) return 0;
+					const amount = price.amount;
+					// If amount >= 100, assume it's in cents and divide by 100
+					// If amount < 100, assume it's already in euros (edge case for products under €1)
+					// But we need to handle the case where 2.99 was stored directly
+					return amount >= 100 ? amount / 100 : amount;
+				};
+
 				return {
 					...variant,
-					// Convert from cents to euros
-					price_eur: eurPrice ? eurPrice.amount / 100 : 0,
-					price_europe: europePrice ? europePrice.amount / 100 : 0,
+					price_eur: convertPrice(eurPrice),
+					price_europe: convertPrice(europePrice),
 				};
 			}) || [];
 

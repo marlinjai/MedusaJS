@@ -5,6 +5,7 @@ import { Button, Checkbox, Input, Label, Select, Text } from '@medusajs/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
+import CategoryTree, { type CategoryNode } from './CategoryTree';
 
 type Variant = {
 	id?: string;
@@ -39,6 +40,9 @@ const ProductOrganizeTab = ({
 	onChange,
 }: ProductOrganizeTabProps) => {
 	const [tagInput, setTagInput] = useState('');
+	const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+		new Set(),
+	);
 
 	// Fetch collections
 	const { data: collectionsData = [] } = useQuery({
@@ -247,7 +251,7 @@ const ProductOrganizeTab = ({
 		gcTime: 600000, // 10 minutes
 	});
 
-	// Fetch categories tree and flatten it
+	// Fetch categories tree with hierarchical structure
 	const { data: categoryTreeData } = useQuery({
 		queryKey: ['admin-category-tree'],
 		queryFn: async () => {
@@ -256,21 +260,7 @@ const ProductOrganizeTab = ({
 			});
 			if (!res.ok) throw new Error('Failed to fetch category tree');
 			const { categories } = await res.json();
-
-			// Flatten the tree structure to a flat array for display
-			const flattenCategories = (nodes: any[]): any[] => {
-				const result: any[] = [];
-				const traverse = (node: any, level = 0) => {
-					result.push({ ...node, level });
-					if (node.children && node.children.length > 0) {
-						node.children.forEach((child: any) => traverse(child, level + 1));
-					}
-				};
-				(nodes || []).forEach(node => traverse(node));
-				return result;
-			};
-
-			return flattenCategories(categories || []);
+			return (categories || []) as CategoryNode[];
 		},
 	});
 
@@ -531,42 +521,36 @@ const ProductOrganizeTab = ({
 			{/* Categories */}
 			<div>
 				<Label className="mb-2">Kategorien (Optional)</Label>
-				<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto">
-					{categoryTreeData &&
-					Array.isArray(categoryTreeData) &&
-					categoryTreeData.length > 0 ? (
-						<div className="space-y-1">
-							{categoryTreeData.map((category: any) => (
-								<div
-									key={category.id}
-									className="flex items-center gap-2"
-									style={{ paddingLeft: `${(category.level || 0) * 16}px` }}
-								>
-									<Checkbox
-										checked={(formData.category_ids || []).includes(
-											category.id,
-										)}
-										onCheckedChange={checked => {
-											const currentIds = formData.category_ids || [];
-											if (checked) {
-												onChange({
-													...formData,
-													category_ids: [...currentIds, category.id],
-												});
-											} else {
-												onChange({
-													...formData,
-													category_ids: currentIds.filter(
-														id => id !== category.id,
-													),
-												});
-											}
-										}}
-									/>
-									<Text size="small">{category.name}</Text>
-								</div>
-							))}
-						</div>
+				<div className="border border-ui-border-base rounded-lg p-3 max-h-[400px] overflow-y-auto">
+					{categoryTreeData && categoryTreeData.length > 0 ? (
+						<CategoryTree
+							categories={categoryTreeData}
+							selectedCategories={new Set(formData.category_ids || [])}
+							onToggleCategory={id => {
+								const currentIds = formData.category_ids || [];
+								if (currentIds.includes(id)) {
+									onChange({
+										...formData,
+										category_ids: currentIds.filter(cid => cid !== id),
+									});
+								} else {
+									onChange({
+										...formData,
+										category_ids: [...currentIds, id],
+									});
+								}
+							}}
+							expandedCategories={expandedCategories}
+							onToggleExpand={id => {
+								const newSet = new Set(expandedCategories);
+								if (newSet.has(id)) {
+									newSet.delete(id);
+								} else {
+									newSet.add(id);
+								}
+								setExpandedCategories(newSet);
+							}}
+						/>
 					) : (
 						<Text size="small" className="text-ui-fg-subtle">
 							Keine Kategorien verfügbar

@@ -181,6 +181,8 @@ export const GET = async (
 			'variants.allow_backorder',
 			'variants.prices.amount',
 			'variants.prices.currency_code',
+			'tags.id',
+			'tags.value',
 		];
 
 		let productsResult: any;
