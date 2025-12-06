@@ -4,6 +4,7 @@
 import { Badge, Button, Checkbox, Input, Select, Table, Text, toast } from '@medusajs/ui';
 import { Edit } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import InlineTagsEditor from './InlineTagsEditor';
 
 type Product = {
 	id: string;
@@ -95,6 +96,78 @@ const ProductTable = ({
 	const [editingCell, setEditingCell] = useState<EditableCell | null>(null);
 	const [tempValues, setTempValues] = useState<Record<string, any>>({});
 	const editInputRef = useRef<HTMLInputElement>(null);
+
+	// Tags editor modal state
+	const [tagsEditorOpen, setTagsEditorOpen] = useState(false);
+	const [tagsEditorProduct, setTagsEditorProduct] = useState<Product | null>(null);
+	const [tagsEditorAnchor, setTagsEditorAnchor] = useState<HTMLElement | null>(null);
+
+	// Column reordering state
+	const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+		const saved = localStorage.getItem('products-table-column-order');
+		if (saved) {
+			try {
+				return JSON.parse(saved);
+			} catch {
+				return columns.map(c => c.key);
+			}
+		}
+		return columns.map(c => c.key);
+	});
+
+	const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+	const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+	// Persist column order to localStorage
+	useEffect(() => {
+		localStorage.setItem('products-table-column-order', JSON.stringify(columnOrder));
+	}, [columnOrder]);
+
+	// Get ordered columns based on saved order
+	const orderedColumns = columnOrder
+		.map(key => columns.find(c => c.key === key))
+		.filter((c): c is typeof columns[0] => c !== undefined);
+
+	// Column drag and drop handlers
+	const handleColumnDragStart = (columnKey: string) => {
+		// Don't allow reordering of select and actions columns
+		if (columnKey === 'select' || columnKey === 'actions') return;
+		setDraggedColumn(columnKey);
+	};
+
+	const handleColumnDragOver = (e: React.DragEvent, columnKey: string) => {
+		e.preventDefault();
+		if (columnKey === 'select' || columnKey === 'actions') return;
+		setDragOverColumn(columnKey);
+	};
+
+	const handleColumnDrop = (e: React.DragEvent, targetColumnKey: string) => {
+		e.preventDefault();
+		if (!draggedColumn || draggedColumn === targetColumnKey) {
+			setDraggedColumn(null);
+			setDragOverColumn(null);
+			return;
+		}
+
+		// Reorder columns
+		const newOrder = [...columnOrder];
+		const draggedIndex = newOrder.indexOf(draggedColumn);
+		const targetIndex = newOrder.indexOf(targetColumnKey);
+
+		if (draggedIndex !== -1 && targetIndex !== -1) {
+			newOrder.splice(draggedIndex, 1);
+			newOrder.splice(targetIndex, 0, draggedColumn);
+			setColumnOrder(newOrder);
+		}
+
+		setDraggedColumn(null);
+		setDragOverColumn(null);
+	};
+
+	const handleColumnDragEnd = () => {
+		setDraggedColumn(null);
+		setDragOverColumn(null);
+	};
 
 	// Load column widths from localStorage or use defaults
 	const loadColumnWidths = () => {
@@ -443,7 +516,7 @@ const ProductTable = ({
 					</Text>
 				);
 			case 'tags':
-				// Tags displayed as badges with click-to-edit
+				// Tags displayed as badges with click-to-edit via inline editor
 				if (!product.tags || product.tags.length === 0) {
 					return (
 						<Button
@@ -451,7 +524,9 @@ const ProductTable = ({
 							size="small"
 							onClick={e => {
 								e.stopPropagation();
-								if (onEdit) onEdit(product);
+								setTagsEditorProduct(product);
+								setTagsEditorAnchor(e.currentTarget);
+								setTagsEditorOpen(true);
 							}}
 							className="text-ui-fg-subtle hover:text-ui-fg-base"
 						>
@@ -460,7 +535,15 @@ const ProductTable = ({
 					);
 				}
 				return (
-					<div className="flex flex-wrap gap-1">
+					<div
+						className="flex flex-wrap gap-1 cursor-pointer"
+						onClick={e => {
+							e.stopPropagation();
+							setTagsEditorProduct(product);
+							setTagsEditorAnchor(e.currentTarget);
+							setTagsEditorOpen(true);
+						}}
+					>
 						{product.tags.slice(0, 3).map(tag => (
 							<Badge key={tag.id} size="small" rounded="full">
 								{tag.value}
@@ -471,17 +554,7 @@ const ProductTable = ({
 								+{product.tags.length - 3}
 							</Badge>
 						)}
-						<Button
-							variant="transparent"
-							size="small"
-							onClick={e => {
-								e.stopPropagation();
-								if (onEdit) onEdit(product);
-							}}
-							className="text-ui-fg-subtle hover:text-ui-fg-base ml-1"
-						>
-							<Edit className="w-3 h-3" />
-						</Button>
+						<Edit className="w-3 h-3 text-ui-fg-subtle hover:text-ui-fg-base ml-1" />
 					</div>
 				);
 			case 'actions':
@@ -534,17 +607,26 @@ const ProductTable = ({
 			>
 				<Table.Header>
 					<Table.Row>
-						{columns.map((column, index) => (
+						{orderedColumns.map((column, index) => (
 							<Table.HeaderCell
 								key={column.key}
+								draggable={column.key !== 'select' && column.key !== 'actions'}
+								onDragStart={() => handleColumnDragStart(column.key)}
+								onDragOver={(e) => handleColumnDragOver(e, column.key)}
+								onDrop={(e) => handleColumnDrop(e, column.key)}
+								onDragEnd={handleColumnDragEnd}
 								style={{
 									width: `${columnWidths[column.key]}px`,
 									maxWidth: `${columnWidths[column.key]}px`,
 									minWidth: `${columnWidths[column.key]}px`,
 									position: 'relative',
 									overflow: 'visible',
+									opacity: draggedColumn === column.key ? 0.5 : 1,
+									cursor: column.key !== 'select' && column.key !== 'actions' ? 'grab' : 'default',
 								}}
-								className="select-none"
+								className={`select-none ${
+									dragOverColumn === column.key ? 'border-l-2 border-ui-border-interactive' : ''
+								}`}
 							>
 								{column.key === 'select' ? (
 									<div className="flex items-center justify-center">
@@ -593,7 +675,7 @@ const ProductTable = ({
 				<Table.Body>
 					{products.map(product => (
 						<Table.Row key={product.id}>
-							{columns.map(column => (
+							{orderedColumns.map(column => (
 								<Table.Cell
 									key={column.key}
 									style={{
@@ -617,6 +699,20 @@ const ProductTable = ({
 					))}
 				</Table.Body>
 			</Table>
+
+			{/* Inline Tags Editor Modal */}
+			{tagsEditorOpen && tagsEditorProduct && onUpdate && (
+				<InlineTagsEditor
+					product={tagsEditorProduct}
+					onClose={() => {
+						setTagsEditorOpen(false);
+						setTagsEditorProduct(null);
+						setTagsEditorAnchor(null);
+					}}
+					onUpdate={onUpdate}
+					anchorEl={tagsEditorAnchor || undefined}
+				/>
+			)}
 		</div>
 	);
 };
