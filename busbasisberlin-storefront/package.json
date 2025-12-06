@@ -33,13 +33,13 @@
 		"lodash": "^4.17.21",
 		"lucide-react": "^0.554.0",
 		"negotiator": "^1.0.0",
-		"next": "15.5.7",
-		"next-intl": "^4.4.0",
+		"next": "16.0.7",
+		"next-intl": "^4.5.8",
 		"pg": "^8.11.3",
 		"qs": "^6.12.1",
-		"react": "19.0.0-rc-66855b96-20241106",
+		"react": "^19.0.0",
 		"react-country-flag": "^3.1.0",
-		"react-dom": "19.0.0-rc-66855b96-20241106",
+		"react-dom": "^19.0.0",
 		"react-icons": "^5.5.0",
 		"react-instantsearch": "^7.17.0",
 		"server-only": "^0.0.1",
@@ -54,33 +54,22 @@
 		"@types/negotiator": "^0.6.4",
 		"@types/node": "17.0.21",
 		"@types/pg": "^8.11.0",
-		"@types/react": "^18.3.12",
-		"@types/react-dom": "^18.3.1",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
 		"@types/react-instantsearch-dom": "^6.12.3",
 		"autoprefixer": "^10.4.2",
 		"babel-loader": "^8.2.3",
-		"eslint": "8.10.0",
-		"eslint-config-next": "15.5.7",
+		"eslint": "^9.17.0",
+		"eslint-config-next": "16.0.7",
 		"postcss": "^8.4.8",
 		"prettier": "^2.8.8",
 		"tailwindcss": "^3.0.23",
 		"typescript": "^5.3.2"
 	},
 	"packageManager": "npm@10.9.0",
-	"resolutions": {
-		"@types/react": "npm:types-react@19.0.0-rc.1",
-		"@types/react-dom": "npm:types-react-dom@19.0.0-rc.1",
-		"react-instantsearch/react": "19.0.0-rc-66855b96-20241106",
-		"react-instantsearch/react-dom": "19.0.0-rc-66855b96-20241106",
-		"react-instantsearch-core/react": "19.0.0-rc-66855b96-20241106",
-		"react-instantsearch-core/react-dom": "19.0.0-rc-66855b96-20241106"
-	},
 	"overrides": {
-		"react": "19.0.0-rc-66855b96-20241106",
-		"react-dom": "19.0.0-rc-66855b96-20241106",
-		"lucide-react": {
-			"react": "19.0.0-rc-66855b96-20241106",
-			"react-dom": "19.0.0-rc-66855b96-20241106"
-		}
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"next-intl>next": "16.0.7"
 	}
 }

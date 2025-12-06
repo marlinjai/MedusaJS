@@ -91,9 +91,9 @@ async function getCountryCode(request: NextRequest, regionMap: Map<string, HttpT
 }
 
 /**
- * Middleware to handle region selection and onboarding status.
+ * Proxy to handle region selection and onboarding status.
  */
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const cacheIdCookie = request.cookies.get('_medusa_cache_id');
   const cacheId = cacheIdCookie?.value || crypto.randomUUID();
 
