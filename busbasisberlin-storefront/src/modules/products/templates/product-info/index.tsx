@@ -1,9 +1,9 @@
 // product-info/index.tsx
 
+import { useStoreSettings } from '@lib/context/store-settings-context';
 import { HttpTypes } from '@medusajs/types';
 import { Heading, Text } from '@medusajs/ui';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
-import { useStoreSettings } from '@lib/context/store-settings-context';
 import { Fragment } from 'react';
 
 type ProductInfoProps = {
@@ -33,7 +33,9 @@ const getCategoryBreadcrumb = (
 };
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
-	const categoryBreadcrumb = getCategoryBreadcrumb(product.categories);
+	const categoryBreadcrumb = getCategoryBreadcrumb(
+		product.categories || undefined,
+	);
 	const { settings } = useStoreSettings();
 
 	return (
@@ -67,11 +69,12 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 				</Heading>
 
 				{/* Subtitle */}
-				{settings.product_display.show_subtitle_in_product_page && (product as any).subtitle && (
-					<Text className="text-base text-muted-foreground italic mt-2">
-						{(product as any).subtitle}
-					</Text>
-				)}
+				{settings.product_display.show_subtitle_in_product_page &&
+					(product as any).subtitle && (
+						<Text className="text-base text-muted-foreground italic mt-2">
+							{(product as any).subtitle}
+						</Text>
+					)}
 			</div>
 
 			{/* Product Description */}
@@ -90,7 +93,9 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 			{product.material && (
 				<div className="border-t border-border pt-6 text-sm">
 					<div>
-						<span className="font-semibold text-foreground block mb-1">Material</span>
+						<span className="font-semibold text-foreground block mb-1">
+							Material
+						</span>
 						<span className="text-muted-foreground">{product.material}</span>
 					</div>
 				</div>
