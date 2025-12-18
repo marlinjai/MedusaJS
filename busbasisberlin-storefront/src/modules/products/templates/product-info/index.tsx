@@ -3,6 +3,7 @@
 import { HttpTypes } from '@medusajs/types';
 import { Heading, Text } from '@medusajs/ui';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
+import { useStoreSettings } from '@lib/context/store-settings-context';
 import { Fragment } from 'react';
 
 type ProductInfoProps = {
@@ -33,6 +34,7 @@ const getCategoryBreadcrumb = (
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
 	const categoryBreadcrumb = getCategoryBreadcrumb(product.categories);
+	const { settings } = useStoreSettings();
 
 	return (
 		<div id="product-info" className="flex flex-col gap-y-6">
@@ -63,6 +65,13 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 				>
 					{product.title}
 				</Heading>
+
+				{/* Subtitle */}
+				{settings.product_display.show_subtitle_in_product_page && (product as any).subtitle && (
+					<Text className="text-base text-muted-foreground italic mt-2">
+						{(product as any).subtitle}
+					</Text>
+				)}
 			</div>
 
 			{/* Product Description */}
