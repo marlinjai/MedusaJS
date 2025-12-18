@@ -1,12 +1,13 @@
 // busbasisberlin/src/admin/routes/lieferanten/page.tsx
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { HandTruck, MagnifyingGlass, Plus, XMark } from '@medusajs/icons';
-import { Button, Container, Input, toast } from '@medusajs/ui';
+import { Button, Container, Input, Select, toast } from '@medusajs/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { Supplier } from '../../../modules/supplier/models/supplier';
+import ColumnVisibilityControl from './components/ColumnVisibilityControl';
 import SupplierTable from './components/SupplierTable';
 
 // Type for supplier with details
@@ -48,17 +49,53 @@ const SuppliersPage = () => {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const [searchTerm, setSearchTerm] = useState('');
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pageSize, setPageSize] = useState(50);
 
-	// Fetch suppliers with details in a single optimized request
-	const { data, isLoading } = useQuery({
-		queryKey: ['admin-suppliers-with-details'],
+	// Column sorting state
+	const [sortConfig, setSortConfig] = useState<{
+		key: string;
+		direction: 'asc' | 'desc';
+	} | null>(null);
+
+	// Column visibility state
+	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+		const saved = localStorage.getItem('suppliers-visible-columns');
+		if (saved) {
+			try {
+				return new Set(JSON.parse(saved));
+			} catch {}
+		}
+		return new Set(['company', 'contacts', 'addresses', 'numbers', 'bank_info', 'actions']);
+	});
+
+	// Persist visible columns
+	useEffect(() => {
+		localStorage.setItem('suppliers-visible-columns', JSON.stringify([...visibleColumns]));
+	}, [visibleColumns]);
+
+	// Fetch suppliers with details with pagination
+	const { data, isLoading, isFetching } = useQuery({
+		queryKey: ['admin-suppliers-with-details', searchTerm, currentPage, pageSize, sortConfig],
 		queryFn: async () => {
-			const res = await fetch('/admin/suppliers?withDetails=true', {
+			const params = new URLSearchParams();
+			params.append('withDetails', 'true');
+			if (searchTerm) params.append('search', searchTerm);
+			params.append('limit', pageSize.toString());
+			params.append('offset', ((currentPage - 1) * pageSize).toString());
+			if (sortConfig) {
+				params.append('sort_by', sortConfig.key);
+				params.append('sort_direction', sortConfig.direction);
+			}
+
+			const res = await fetch(`/admin/suppliers?${params.toString()}`, {
 				credentials: 'include',
 			});
 			if (!res.ok) throw new Error('Failed to fetch suppliers');
 			return res.json() as Promise<SuppliersResponse>;
 		},
+		staleTime: 30000,
+		placeholderData: previousData => previousData,
 	});
 
 	const suppliers = data?.suppliers || [];
@@ -72,60 +109,29 @@ const SuppliersPage = () => {
 		withBankInfo: 0,
 	};
 
-	// Filter suppliers based on search term
-	const filteredSuppliers = useMemo(() => {
-		if (!searchTerm.trim()) return suppliers;
+	const totalPages = Math.ceil((data?.stats?.total || 0) / pageSize);
 
-		const searchLower = searchTerm.toLowerCase().trim();
+	// Handlers
+	const handleSort = (key: string, direction: 'asc' | 'desc') => {
+		if (key === '') {
+			setSortConfig(null);
+		} else {
+			setSortConfig({ key, direction });
+		}
+		setCurrentPage(1);
+	};
 
-		return suppliers.filter(supplier => {
-			// Search in basic supplier fields
-			const basicMatch =
-				supplier.company?.toLowerCase().includes(searchLower) ||
-				supplier.company_addition?.toLowerCase().includes(searchLower) ||
-				supplier.supplier_number?.toLowerCase().includes(searchLower) ||
-				supplier.customer_number?.toLowerCase().includes(searchLower) ||
-				supplier.internal_key?.toLowerCase().includes(searchLower) ||
-				supplier.vat_id?.toLowerCase().includes(searchLower) ||
-				supplier.website?.toLowerCase().includes(searchLower) ||
-				supplier.bank_name?.toLowerCase().includes(searchLower) ||
-				supplier.iban?.toLowerCase().includes(searchLower) ||
-				supplier.note?.toLowerCase().includes(searchLower);
+	const handlePageChange = (page: number) => {
+		setCurrentPage(page);
+	};
 
-			if (basicMatch) return true;
+	const handlePreviousPage = () => {
+		if (currentPage > 1) setCurrentPage(currentPage - 1);
+	};
 
-			// Search in contacts
-			if (supplier.contacts) {
-				const contactMatch = supplier.contacts.some(
-					(contact: SupplierWithDetails['contacts'][0]) =>
-						contact.first_name?.toLowerCase().includes(searchLower) ||
-						contact.last_name?.toLowerCase().includes(searchLower) ||
-						contact.department?.toLowerCase().includes(searchLower) ||
-						contact.emails?.some((email: { email: string; label?: string }) =>
-							email.email?.toLowerCase().includes(searchLower),
-						) ||
-						contact.phones?.some((phone: { number: string; label?: string }) =>
-							phone.number?.includes(searchTerm),
-						),
-				);
-				if (contactMatch) return true;
-			}
-
-			// Search in addresses
-			if (supplier.addresses) {
-				const addressMatch = supplier.addresses.some(
-					(address: SupplierWithDetails['addresses'][0]) =>
-						address.street?.toLowerCase().includes(searchLower) ||
-						address.city?.toLowerCase().includes(searchLower) ||
-						address.postal_code?.includes(searchTerm) ||
-						address.country_name?.toLowerCase().includes(searchLower),
-				);
-				if (addressMatch) return true;
-			}
-
-			return false;
-		});
-	}, [suppliers, searchTerm]);
+	const handleNextPage = () => {
+		if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+	};
 
 	// Delete supplier
 	const deleteSupplier = useMutation({
@@ -272,38 +278,104 @@ const SuppliersPage = () => {
 					</div>
 				</div>
 
-				{/* Search Results Info */}
-				{searchTerm && (
-					<div className="mt-2 text-sm text-ui-fg-subtle">
-						{filteredSuppliers.length === 0 ? (
-							<span>Keine Ergebnisse für "{searchTerm}"</span>
-						) : filteredSuppliers.length === 1 ? (
-							<span>1 Ergebnis für "{searchTerm}"</span>
-						) : (
-							<span>
-								{filteredSuppliers.length} Ergebnisse für "{searchTerm}"
-							</span>
-						)}
-						{filteredSuppliers.length !== suppliers.length && (
-							<span className="ml-2 text-ui-fg-muted">
-								(von {suppliers.length} gesamt)
-							</span>
-						)}
+			{/* Results Info and Controls */}
+			<div className="mt-2 flex justify-between items-center">
+				<div className="flex items-center gap-3">
+					{/* Column Visibility Control */}
+					<ColumnVisibilityControl
+						columns={[
+							{ key: 'company', label: 'Firma', width: 250 },
+							{ key: 'contacts', label: 'Kontaktinformation', width: 220 },
+							{ key: 'addresses', label: 'Adresse', width: 200 },
+							{ key: 'numbers', label: 'Nummern', width: 150 },
+							{ key: 'bank_info', label: 'Bankdaten', width: 180 },
+							{ key: 'actions', label: 'Aktionen', width: 80 },
+						]}
+						visibleColumns={visibleColumns}
+						onToggle={(key) => {
+							const newVisible = new Set(visibleColumns);
+							if (newVisible.has(key)) {
+								newVisible.delete(key);
+							} else {
+								newVisible.add(key);
+							}
+							setVisibleColumns(newVisible);
+						}}
+						onShowAll={() => {
+							setVisibleColumns(new Set(['company', 'contacts', 'addresses', 'numbers', 'bank_info', 'actions']));
+						}}
+						onHideAll={() => {
+							setVisibleColumns(new Set(['company', 'actions']));
+						}}
+					/>
+
+					{/* Result Amount Selector */}
+					<Select value={pageSize.toString()} onValueChange={(value) => {
+						setPageSize(parseInt(value));
+						setCurrentPage(1);
+					}}>
+						<Select.Trigger className="w-32">
+							<Select.Value />
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="25">25 pro Seite</Select.Item>
+							<Select.Item value="50">50 pro Seite</Select.Item>
+							<Select.Item value="100">100 pro Seite</Select.Item>
+							<Select.Item value="200">200 pro Seite</Select.Item>
+						</Select.Content>
+					</Select>
+
+					<span className="text-sm text-ui-fg-muted">
+						{isFetching
+							? 'Wird geladen...'
+							: `${suppliers.length} Lieferanten auf Seite ${currentPage} von ${totalPages}`}
+						{searchTerm && ` • Suche: "${searchTerm}"`}
+						{data?.stats?.total && ` • Gesamt: ${data.stats.total} Lieferanten`}
+					</span>
+				</div>
+
+				{/* Pagination Controls */}
+				{totalPages > 1 && (
+					<div className="flex items-center gap-2">
+						<Button
+							variant="secondary"
+							size="small"
+							onClick={handlePreviousPage}
+							disabled={currentPage === 1 || isFetching}
+						>
+							Zurück
+						</Button>
+						<span className="text-sm text-ui-fg-muted">
+							Seite {currentPage} von {totalPages}
+						</span>
+						<Button
+							variant="secondary"
+							size="small"
+							onClick={handleNextPage}
+							disabled={currentPage >= totalPages || isFetching}
+						>
+							Weiter
+						</Button>
 					</div>
 				)}
 			</div>
+		</div>
 
-			{/* Table */}
-			<div className="flex-1 overflow-hidden">
-				<div className="h-full overflow-auto px-6 py-4">
-					<SupplierTable
-						suppliers={filteredSuppliers}
-						onEdit={handleEdit}
-						onDelete={handleDelete}
-						isLoading={isLoading}
-					/>
-				</div>
+		{/* Table */}
+		<div className="flex-1 overflow-hidden">
+			<div className="h-full overflow-auto px-6 py-4">
+				<SupplierTable
+					suppliers={suppliers}
+					onEdit={handleEdit}
+					onDelete={handleDelete}
+					isLoading={isLoading}
+					isFetching={isFetching}
+					onSort={handleSort}
+					sortConfig={sortConfig}
+					visibleColumns={visibleColumns}
+				/>
 			</div>
+		</div>
 		</Container>
 	);
 };

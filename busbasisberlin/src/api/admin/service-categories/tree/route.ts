@@ -46,16 +46,21 @@ export const GET = async (
 		const rootCategories: ServiceCategoryNode[] = [];
 
 		for (const service of services) {
-			// Skip services without category hierarchy
-			if (!service.category_level_1) continue;
+			// Skip services without any category
+			if (!service.category_level_1 && !service.category) continue;
 
 			// Build path through hierarchy
-			const levels = [
-				service.category_level_1,
-				service.category_level_2,
-				service.category_level_3,
-				service.category_level_4,
-			].filter(Boolean) as string[];
+			// Fallback to simple category field if level fields aren't set
+			const levels = service.category_level_1
+				? [
+						service.category_level_1,
+						service.category_level_2,
+						service.category_level_3,
+						service.category_level_4,
+				  ].filter(Boolean) as string[]
+				: service.category
+				  ? [service.category]
+				  : [];
 
 			// Create nodes for each level if they don't exist
 			for (let i = 0; i < levels.length; i++) {

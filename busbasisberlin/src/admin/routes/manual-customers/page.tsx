@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import ColumnVisibilityControl from './components/ColumnVisibilityControl';
 import ManualCustomerTable from './components/ManualCustomerTable';
 
 // TypeScript types for our manual customer data
@@ -42,7 +43,7 @@ const ManualCustomersPage = () => {
 	const [typeFilter, setTypeFilter] = useState('all');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [currentPage, setCurrentPage] = useState(1);
-	const [pageSize] = useState(50); // Show 50 customers per page
+	const [pageSize, setPageSize] = useState(50); // Show 50 customers per page
 
 	// Column sorting and filtering state
 	const [sortConfig, setSortConfig] = useState<{
@@ -52,6 +53,24 @@ const ManualCustomersPage = () => {
 	const [columnFilters, setColumnFilters] = useState<{ [key: string]: string }>(
 		{},
 	);
+
+	// Column visibility state
+	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+		const saved = localStorage.getItem('manual-customers-visible-columns');
+		if (saved) {
+			try {
+				return new Set(JSON.parse(saved));
+			} catch {
+				// Default: all columns visible
+			}
+		}
+		return new Set(['customer_number', 'name', 'contact', 'address', 'customer_type', 'status', 'total_purchases', 'total_spent', 'created_at', 'actions']);
+	});
+
+	// Persist visible columns
+	useEffect(() => {
+		localStorage.setItem('manual-customers-visible-columns', JSON.stringify([...visibleColumns]));
+	}, [visibleColumns]);
 
 	// Fetch manual customers with pagination
 	const { data, isLoading, error, isFetching } = useQuery({
@@ -510,19 +529,67 @@ const ManualCustomersPage = () => {
 					</Select>
 				</div>
 
-				{/* Filter Results Info */}
-				<div className="mt-2 flex justify-between items-center">
-					<div className="flex items-center gap-3">
-						<Text className="text-sm text-ui-fg-muted">
-							{isFetching
-								? 'Wird geladen...'
-								: `${customers.length} Kunden auf Seite ${currentPage} von ${totalPages}`}
-							{searchTerm && ` • Suche: "${searchTerm}"`}
-							{typeFilter !== 'all' && ` • Typ: ${typeFilter}`}
-							{statusFilter !== 'all' && ` • Status: ${statusFilter}`}
-							{data?.total && ` • Gesamt: ${data.total} Kunden`}
-						</Text>
-					</div>
+			{/* Filter Results Info and Controls */}
+			<div className="mt-2 flex justify-between items-center">
+				<div className="flex items-center gap-3">
+					{/* Column Visibility Control */}
+					<ColumnVisibilityControl
+						columns={[
+							{ key: 'customer_number', label: 'Kundennummer', width: 90 },
+							{ key: 'name', label: 'Name / Firma', width: 200 },
+							{ key: 'contact', label: 'Kontakt', width: 180 },
+							{ key: 'address', label: 'Adresse', width: 200 },
+							{ key: 'customer_type', label: 'Typ', width: 100 },
+							{ key: 'status', label: 'Status', width: 100 },
+							{ key: 'total_purchases', label: 'Käufe', width: 80 },
+							{ key: 'total_spent', label: 'Umsatz', width: 100 },
+							{ key: 'created_at', label: 'Erstellt', width: 120 },
+							{ key: 'actions', label: 'Aktionen', width: 100 },
+						]}
+						visibleColumns={visibleColumns}
+						onToggle={(key) => {
+							const newVisible = new Set(visibleColumns);
+							if (newVisible.has(key)) {
+								newVisible.delete(key);
+							} else {
+								newVisible.add(key);
+							}
+							setVisibleColumns(newVisible);
+						}}
+						onShowAll={() => {
+							setVisibleColumns(new Set(['customer_number', 'name', 'contact', 'address', 'customer_type', 'status', 'total_purchases', 'total_spent', 'created_at', 'actions']));
+						}}
+						onHideAll={() => {
+							setVisibleColumns(new Set(['customer_number', 'name', 'actions']));
+						}}
+					/>
+
+					{/* Result Amount Selector */}
+					<Select value={pageSize.toString()} onValueChange={(value) => {
+						setPageSize(parseInt(value));
+						setCurrentPage(1);
+					}}>
+						<Select.Trigger className="w-32">
+							<Select.Value />
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="25">25 pro Seite</Select.Item>
+							<Select.Item value="50">50 pro Seite</Select.Item>
+							<Select.Item value="100">100 pro Seite</Select.Item>
+							<Select.Item value="200">200 pro Seite</Select.Item>
+						</Select.Content>
+					</Select>
+
+					<Text className="text-sm text-ui-fg-muted">
+						{isFetching
+							? 'Wird geladen...'
+							: `${customers.length} Kunden auf Seite ${currentPage} von ${totalPages}`}
+						{searchTerm && ` • Suche: "${searchTerm}"`}
+						{typeFilter !== 'all' && ` • Typ: ${typeFilter}`}
+						{statusFilter !== 'all' && ` • Status: ${statusFilter}`}
+						{data?.total && ` • Gesamt: ${data.total} Kunden`}
+					</Text>
+				</div>
 
 					{/* Pagination Controls */}
 					{totalPages > 1 && (
@@ -610,17 +677,18 @@ const ManualCustomersPage = () => {
 			{/* Table */}
 			<div className="flex-1 overflow-hidden">
 				<div className="h-full overflow-auto px-6 py-4">
-					<ManualCustomerTable
-						customers={customers}
-						onEdit={handleEdit}
-						onDelete={handleDelete}
-						isLoading={isLoading && currentPage === 1} // Only show loading on initial load
-						isFetching={isFetching}
-						onSort={handleSort}
-						onFilter={handleColumnFilter}
-						sortConfig={sortConfig}
-						filters={columnFilters}
-					/>
+				<ManualCustomerTable
+					customers={customers}
+					onEdit={handleEdit}
+					onDelete={handleDelete}
+					isLoading={isLoading && currentPage === 1} // Only show loading on initial load
+					isFetching={isFetching}
+					onSort={handleSort}
+					onFilter={handleColumnFilter}
+					sortConfig={sortConfig}
+					filters={columnFilters}
+					visibleColumns={visibleColumns}
+				/>
 				</div>
 			</div>
 		</Container>

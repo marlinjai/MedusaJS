@@ -11,7 +11,7 @@ import {
 	Text,
 	toast,
 } from '@medusajs/ui';
-import { Edit } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import InlineCollectionSelector from './InlineCollectionSelector';
 import InlineTagsEditor from './InlineTagsEditor';
@@ -32,6 +32,7 @@ type Product = {
 interface ProductTableProps {
 	products: Product[];
 	onEdit?: (product: Product) => void;
+	onDelete?: (productId: string) => void;
 	onUpdate?: (productId: string, updates: Partial<Product>) => Promise<any>;
 	isLoading: boolean;
 	rowSelection?: Record<string, boolean>;
@@ -98,6 +99,7 @@ const STORAGE_KEY = 'products-by-category-column-widths';
 const ProductTable = ({
 	products,
 	onEdit,
+	onDelete,
 	onUpdate,
 	isLoading,
 	rowSelection = {},
@@ -450,17 +452,17 @@ const ProductTable = ({
 								}
 							}}
 						>
-							<Select.Trigger className="h-auto border-none bg-transparent shadow-none p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 w-auto">
-								<div
-									className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-										isPublished
-											? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-											: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-									}`}
-								>
-									{isPublished ? 'Veröffentlicht' : 'Entwurf'}
-								</div>
-							</Select.Trigger>
+						<Select.Trigger className="h-auto border-none bg-transparent shadow-none p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 w-auto">
+							<div
+								className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+									isPublished
+										? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+										: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+								}`}
+							>
+								{isPublished ? 'Veröffentlicht' : 'Entwurf'}
+							</div>
+						</Select.Trigger>
 							<Select.Content>
 								<Select.Item value="published">Veröffentlicht</Select.Item>
 								<Select.Item value="draft">Entwurf</Select.Item>
@@ -510,7 +512,7 @@ const ProductTable = ({
 						) : (
 							<Text size="small" className="text-ui-fg-subtle">
 								+ Sammlung hinzufügen
-							</Text>
+						</Text>
 						)}
 					</div>
 				);
@@ -612,7 +614,19 @@ const ProductTable = ({
 									onEdit(product);
 								}}
 							>
-								<Edit className="h-4 w-4" />
+								<Edit className="w-5 h-5" />
+							</Button>
+						)}
+						{onDelete && (
+							<Button
+								variant="transparent"
+								size="small"
+								onClick={e => {
+									e.stopPropagation();
+									onDelete(product.id);
+								}}
+							>
+								<Trash2 className="w-5 h-5" />
 							</Button>
 						)}
 					</div>
@@ -678,13 +692,13 @@ const ProductTable = ({
 							>
 								{column.key === 'select' ? (
 									<div className="flex items-center justify-center">
-										<Checkbox
-											checked={allSelected}
-											onCheckedChange={handleSelectAll}
+									<Checkbox
+										checked={allSelected}
+										onCheckedChange={handleSelectAll}
 											{...(someSelected && !allSelected
 												? { indeterminate: true }
 												: {})}
-										/>
+									/>
 									</div>
 								) : (
 									<div className="flex items-center min-w-0 text-sm">

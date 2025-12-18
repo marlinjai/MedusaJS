@@ -484,6 +484,31 @@ export default function ProductsByCategoryPage() {
 		}
 	};
 
+	// Product delete handler
+	const handleProductDelete = async (productId: string) => {
+		if (!window.confirm('Sind Sie sicher, dass Sie dieses Produkt löschen möchten?')) {
+			return;
+		}
+
+		try {
+			const res = await fetch(`/admin/products/${productId}`, {
+				method: 'DELETE',
+				credentials: 'include',
+			});
+			if (!res.ok) throw new Error('Failed to delete product');
+			toast.success('Produkt erfolgreich gelöscht');
+			queryClient.invalidateQueries({
+				queryKey: ['admin-products-filtered'],
+			});
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Fehler beim Löschen des Produkts',
+			);
+		}
+	};
+
 	const hasActiveFilters =
 		selectedCategories.size > 0 ||
 		selectedCollections.size > 0 ||
@@ -999,6 +1024,7 @@ export default function ProductsByCategoryPage() {
 										toast.error('Fehler beim Laden der Produktdetails');
 									}
 								}}
+								onDelete={handleProductDelete}
 								onUpdate={async (productId, updates) => {
 									const res = await fetch(`/admin/products/${productId}`, {
 										method: 'PUT',

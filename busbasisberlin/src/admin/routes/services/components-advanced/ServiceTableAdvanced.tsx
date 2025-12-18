@@ -13,7 +13,7 @@ import {
 	Text,
 	toast,
 } from '@medusajs/ui';
-import { Edit } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import ColumnVisibilityControl from './ColumnVisibilityControl';
@@ -38,6 +38,7 @@ type Service = {
 type ServiceTableProps = {
 	services: Service[];
 	onEdit?: (service: Service) => void;
+	onDelete?: (serviceId: string) => void;
 	onUpdate?: (serviceId: string, updates: Partial<Service>) => Promise<void>;
 	isLoading: boolean;
 	rowSelection?: Record<string, boolean>;
@@ -62,6 +63,7 @@ const STORAGE_KEY_ORDER = 'services-table-column-order';
 export default function ServiceTableAdvanced({
 	services,
 	onEdit,
+	onDelete,
 	onUpdate,
 	isLoading,
 	rowSelection = {},
@@ -548,15 +550,26 @@ export default function ServiceTableAdvanced({
 									if (col.key === 'actions') {
 										return (
 											<Table.Cell key={col.key}>
-												{onEdit && (
-													<Button
-														variant="transparent"
-														size="small"
-														onClick={() => onEdit(service)}
-													>
-														<Edit className="w-4 h-4" />
-													</Button>
-												)}
+												<div className="flex items-center gap-2">
+													{onEdit && (
+														<Button
+															variant="transparent"
+															size="small"
+															onClick={() => onEdit(service)}
+														>
+															<Edit className="w-5 h-5" />
+														</Button>
+													)}
+													{onDelete && (
+														<Button
+															variant="transparent"
+															size="small"
+															onClick={() => onDelete(service.id)}
+														>
+															<Trash2 className="w-5 h-5" />
+														</Button>
+													)}
+												</div>
 											</Table.Cell>
 										);
 									}

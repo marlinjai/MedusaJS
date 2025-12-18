@@ -45,47 +45,47 @@ export const GET = async (
 			return;
 		}
 
-		// Fetch product with all relations
-		const query = req.scope.resolve('query');
-		const productResult = await query.graph({
-			entity: 'product',
-			fields: [
-				'id',
-				'title',
-				'subtitle',
-				'handle',
-				'description',
-				'status',
-				'discountable',
-				'thumbnail',
-				'created_at',
-				'updated_at',
-				'type.id',
-				'type.value',
-				'categories.id',
-				'categories.name',
-				'collection.id',
-				'collection.title',
-				'sales_channels.id',
-				'sales_channels.name',
-				'tags.id',
-				'tags.value',
-				'shipping_profile.id',
-				'shipping_profile.name',
-				'variants.id',
-				'variants.title',
-				'variants.sku',
-				'variants.enabled',
-				'variants.inventory_quantity',
-				'variants.prices.amount',
-				'variants.prices.currency_code',
-				'options.id',
-				'options.title',
-				'options.values.value',
-				'images.url',
-			],
-			filters: { id },
-		});
+			// Fetch product with all relations
+			const query = req.scope.resolve('query');
+			const productResult = await query.graph({
+				entity: 'product',
+				fields: [
+					'id',
+					'title',
+					'subtitle',
+					'handle',
+					'description',
+					'status',
+					'discountable',
+					'thumbnail',
+					'created_at',
+					'updated_at',
+					'type.id',
+					'type.value',
+					'categories.id',
+					'categories.name',
+					'collection.id',
+					'collection.title',
+					'sales_channels.id',
+					'sales_channels.name',
+					'tags.id',
+					'tags.value',
+					'shipping_profile.id',
+					'shipping_profile.name',
+					'variants.id',
+					'variants.title',
+					'variants.sku',
+					'variants.enabled',
+					'variants.inventory_quantity',
+					'variants.prices.amount',
+					'variants.prices.currency_code',
+					'options.id',
+					'options.title',
+					'options.values.value',
+					'images.url',
+				],
+				filters: { id },
+			});
 
 		const product = Array.isArray(productResult?.data)
 			? productResult.data[0]

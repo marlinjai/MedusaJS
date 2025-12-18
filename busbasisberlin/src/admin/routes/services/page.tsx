@@ -239,13 +239,77 @@ export default function ServicesByCategoryPage() {
 				),
 			);
 
+			// #region agent log
+			fetch(
+				'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						location: 'page.tsx:227',
+						message: 'Fetching services',
+						data: {
+							selectedCategoriesSize: selectedCategories.size,
+							allPaths,
+							categoryFilters,
+						},
+						timestamp: Date.now(),
+						sessionId: 'debug-session',
+						hypothesisId: 'C',
+					}),
+				},
+			).catch(() => {});
+			// #endregion
+
 			// Fetch services for all categories
 			const allServices: Service[] = [];
 			for (const category of categoryFilters) {
 				const response = await fetch(
 					`/admin/services?category=${encodeURIComponent(category)}&limit=10000`,
 				);
+
+				// #region agent log
+				fetch(
+					'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
+					{
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							location: 'page.tsx:246',
+							message: 'Service API response',
+							data: { category, status: response.status, ok: response.ok },
+							timestamp: Date.now(),
+							sessionId: 'debug-session',
+							hypothesisId: 'A,E',
+						}),
+					},
+				).catch(() => {});
+				// #endregion
+
 				const data = await response.json();
+
+				// #region agent log
+				fetch(
+					'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
+					{
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							location: 'page.tsx:249',
+							message: 'Service data received',
+							data: {
+								category,
+								servicesCount: data.services?.length || 0,
+								hasError: !!data.error,
+							},
+							timestamp: Date.now(),
+							sessionId: 'debug-session',
+							hypothesisId: 'C,D',
+						}),
+					},
+				).catch(() => {});
+				// #endregion
+
 				if (data.services) {
 					allServices.push(...data.services);
 				}
@@ -297,12 +361,48 @@ export default function ServicesByCategoryPage() {
 		navigate(`/services/${service.id}`);
 	};
 
+	const handleDeleteService = async (serviceId: string) => {
+		if (
+			!window.confirm(
+				'Sind Sie sicher, dass Sie diesen Service löschen möchten?',
+			)
+		) {
+			return;
+		}
+
+		try {
+			const response = await fetch(`/admin/services/${serviceId}`, {
+				method: 'DELETE',
+			});
+
+			if (!response.ok) {
+				throw new Error('Fehler beim Löschen des Service');
+			}
+
+			// Refresh services
+			await fetchServices();
+		} catch (error: any) {
+			console.error('Error deleting service:', error);
+		}
+	};
+
 	const handleUpdateService = async (
 		serviceId: string,
 		updates: Partial<Service>,
 	) => {
 		// #region agent log
-		fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:299',message:'handleUpdateService called',data:{serviceId,updates,updatesKeys:Object.keys(updates)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C'})}).catch(()=>{});
+		fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				location: 'page.tsx:299',
+				message: 'handleUpdateService called',
+				data: { serviceId, updates, updatesKeys: Object.keys(updates) },
+				timestamp: Date.now(),
+				sessionId: 'debug-session',
+				hypothesisId: 'A,B,C',
+			}),
+		}).catch(() => {});
 		// #endregion
 
 		try {
@@ -315,13 +415,41 @@ export default function ServicesByCategoryPage() {
 			});
 
 			// #region agent log
-			fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:312',message:'Backend response',data:{ok:response.ok,status:response.status,serviceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
+			fetch(
+				'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						location: 'page.tsx:312',
+						message: 'Backend response',
+						data: { ok: response.ok, status: response.status, serviceId },
+						timestamp: Date.now(),
+						sessionId: 'debug-session',
+						hypothesisId: 'A,B,C,D',
+					}),
+				},
+			).catch(() => {});
 			// #endregion
 
 			if (!response.ok) {
 				const errorData = await response.json();
 				// #region agent log
-				fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:316',message:'Backend error response',data:{status:response.status,errorData,serviceId,updates},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,D'})}).catch(()=>{});
+				fetch(
+					'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
+					{
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							location: 'page.tsx:316',
+							message: 'Backend error response',
+							data: { status: response.status, errorData, serviceId, updates },
+							timestamp: Date.now(),
+							sessionId: 'debug-session',
+							hypothesisId: 'A,D',
+						}),
+					},
+				).catch(() => {});
 				// #endregion
 
 				throw new Error('Failed to update service');
@@ -329,9 +457,23 @@ export default function ServicesByCategoryPage() {
 
 			// Refresh services
 			await fetchServices();
-		} catch (error) {
+		} catch (error: any) {
 			// #region agent log
-			fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:327',message:'handleUpdateService error',data:{error:error.message,serviceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
+			fetch(
+				'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						location: 'page.tsx:327',
+						message: 'handleUpdateService error',
+						data: { error: error.message, serviceId },
+						timestamp: Date.now(),
+						sessionId: 'debug-session',
+						hypothesisId: 'A,B,C,D',
+					}),
+				},
+			).catch(() => {});
 			// #endregion
 
 			throw error;
@@ -412,48 +554,48 @@ export default function ServicesByCategoryPage() {
 				</Button>
 			</div>
 
-		<div className="flex gap-6 flex-1 min-h-0">
-		{/* Left Sidebar - Category Tree (Collapsible) */}
-		<div
-			className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 overflow-hidden flex-shrink-0 flex flex-col`}
-		>
-			<div className="bg-ui-bg-subtle rounded-lg p-4 flex flex-col h-full">
-				<Text size="large" weight="plus" className="mb-4 flex-shrink-0">
-					Kategorien
-				</Text>
-				{loadingCategories ? (
-					<div className="flex items-center justify-center py-8">
-						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ui-fg-base"></div>
+			<div className="flex gap-6 flex-1 min-h-0">
+				{/* Left Sidebar - Category Tree (Collapsible) */}
+				<div
+					className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 overflow-hidden flex-shrink-0 flex flex-col`}
+				>
+					<div className="bg-ui-bg-subtle rounded-lg p-4 flex flex-col h-full">
+						<Text size="large" weight="plus" className="mb-4 flex-shrink-0">
+							Kategorien
+						</Text>
+						{loadingCategories ? (
+							<div className="flex items-center justify-center py-8">
+								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ui-fg-base"></div>
+							</div>
+						) : (
+							<div className="flex-1 overflow-y-auto min-h-0">
+								<CategoryTree
+									categories={categories}
+									selectedCategories={selectedCategories}
+									onToggleCategory={toggleCategory}
+									expandedCategories={expandedCategories}
+									onToggleExpand={toggleExpand}
+								/>
+							</div>
+						)}
 					</div>
-				) : (
-					<div className="flex-1 overflow-y-auto min-h-0">
-						<CategoryTree
-							categories={categories}
-							selectedCategories={selectedCategories}
-							onToggleCategory={toggleCategory}
-							expandedCategories={expandedCategories}
-							onToggleExpand={toggleExpand}
-						/>
-					</div>
-				)}
-			</div>
-		</div>
+				</div>
 
-			{/* Toggle Button */}
-			<button
-				onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-				className="flex-shrink-0 w-6 h-12 self-center rounded-md border border-ui-border-base bg-ui-bg-base hover:bg-ui-bg-subtle transition-colors flex items-center justify-center"
-				title={sidebarCollapsed ? 'Sidebar einblenden' : 'Sidebar ausblenden'}
-			>
-				{sidebarCollapsed ? (
-					<ChevronRight className="w-4 h-4" />
-				) : (
-					<ChevronLeft className="w-4 h-4" />
-				)}
-			</button>
+				{/* Toggle Button */}
+				<button
+					onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+					className="flex-shrink-0 w-6 h-12 self-center rounded-md border border-ui-border-base bg-ui-bg-base hover:bg-ui-bg-subtle transition-colors flex items-center justify-center"
+					title={sidebarCollapsed ? 'Sidebar einblenden' : 'Sidebar ausblenden'}
+				>
+					{sidebarCollapsed ? (
+						<ChevronRight className="w-4 h-4" />
+					) : (
+						<ChevronLeft className="w-4 h-4" />
+					)}
+				</button>
 
-			{/* Main Content - Services Table */}
-			<div className="flex-1 flex flex-col min-h-0">
+				{/* Main Content - Services Table */}
+				<div className="flex-1 flex flex-col min-h-0">
 					<div className="flex-1 flex flex-col bg-ui-bg-subtle rounded-lg p-6 min-h-0">
 						{/* Header with pagination controls */}
 						<div className="flex items-center justify-between mb-4 flex-shrink-0">
@@ -517,29 +659,30 @@ export default function ServicesByCategoryPage() {
 							</div>
 						</div>
 
-					{/* Bulk Actions Toolbar */}
-					<div className="flex-shrink-0">
-						<BulkActions
-							selectedCount={Object.keys(rowSelection).length}
-							onClearSelection={() => setRowSelection({})}
-							onBulkStatusUpdate={handleBulkStatusUpdate}
-							onOpenPriceAdjustment={() => setShowPriceModal(true)}
-						/>
-					</div>
+						{/* Bulk Actions Toolbar */}
+						<div className="flex-shrink-0">
+							<BulkActions
+								selectedCount={Object.keys(rowSelection).length}
+								onClearSelection={() => setRowSelection({})}
+								onBulkStatusUpdate={handleBulkStatusUpdate}
+								onOpenPriceAdjustment={() => setShowPriceModal(true)}
+							/>
+						</div>
 
-					{/* Scrollable Table Container */}
-					<div className="flex-1 overflow-auto min-h-0">
-						<ServiceTableAdvanced
-							services={services}
-							onEdit={handleEditService}
-							onUpdate={handleUpdateService}
-							isLoading={loading}
-							rowSelection={rowSelection}
-							onRowSelectionChange={setRowSelection}
-						/>
+						{/* Scrollable Table Container */}
+						<div className="flex-1 overflow-auto min-h-0">
+							<ServiceTableAdvanced
+								services={services}
+								onEdit={handleEditService}
+								onDelete={handleDeleteService}
+								onUpdate={handleUpdateService}
+								isLoading={loading}
+								rowSelection={rowSelection}
+								onRowSelectionChange={setRowSelection}
+							/>
+						</div>
 					</div>
 				</div>
-			</div>
 			</div>
 
 			{/* Price Adjustment Modal */}

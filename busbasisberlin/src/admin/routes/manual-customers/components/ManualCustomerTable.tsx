@@ -47,6 +47,7 @@ interface ManualCustomerTableProps {
 	onFilter?: (filters: ColumnFilter) => void;
 	sortConfig?: SortConfig;
 	filters?: ColumnFilter;
+	visibleColumns?: Set<string>;
 }
 
 // Column configuration
@@ -136,9 +137,19 @@ const ManualCustomerTable = ({
 	onFilter,
 	sortConfig,
 	filters = {},
+	visibleColumns,
 }: ManualCustomerTableProps) => {
+	// Load column widths from localStorage or use defaults
 	const [columnWidths, setColumnWidths] = useState<{ [key: string]: number }>(
 		() => {
+			const saved = localStorage.getItem('manual-customers-column-widths');
+			if (saved) {
+				try {
+					return JSON.parse(saved);
+				} catch {
+					// Fall back to defaults
+				}
+			}
 			const widths: { [key: string]: number } = {};
 			columns.forEach(col => {
 				widths[col.key] = col.width;
@@ -146,6 +157,74 @@ const ManualCustomerTable = ({
 			return widths;
 		},
 	);
+
+	// Load column order from localStorage or use default order
+	const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+		const saved = localStorage.getItem('manual-customers-column-order');
+		if (saved) {
+			try {
+				return JSON.parse(saved);
+			} catch {
+				return columns.map(c => c.key);
+			}
+		}
+		return columns.map(c => c.key);
+	});
+
+	// Column drag state
+	const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+	const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+	// Persist column widths to localStorage
+	useEffect(() => {
+		localStorage.setItem('manual-customers-column-widths', JSON.stringify(columnWidths));
+	}, [columnWidths]);
+
+	// Persist column order to localStorage
+	useEffect(() => {
+		localStorage.setItem('manual-customers-column-order', JSON.stringify(columnOrder));
+	}, [columnOrder]);
+
+	// Get ordered and filtered columns
+	const orderedColumns = columnOrder
+		.map(key => columns.find(c => c.key === key))
+		.filter((c): c is typeof columns[0] => c !== undefined)
+		.filter(c => !visibleColumns || visibleColumns.has(c.key));
+
+	// Column drag handlers
+	const handleColumnDragStart = (columnKey: string) => {
+		setDraggedColumn(columnKey);
+	};
+
+	const handleColumnDragOver = (e: React.DragEvent, columnKey: string) => {
+		e.preventDefault();
+		setDragOverColumn(columnKey);
+	};
+
+	const handleColumnDrop = (e: React.DragEvent, targetColumnKey: string) => {
+		e.preventDefault();
+		if (!draggedColumn || draggedColumn === targetColumnKey) {
+			setDraggedColumn(null);
+			setDragOverColumn(null);
+			return;
+		}
+
+		const newOrder = [...columnOrder];
+		const draggedIndex = newOrder.indexOf(draggedColumn);
+		const targetIndex = newOrder.indexOf(targetColumnKey);
+
+		newOrder.splice(draggedIndex, 1);
+		newOrder.splice(targetIndex, 0, draggedColumn);
+
+		setColumnOrder(newOrder);
+		setDraggedColumn(null);
+		setDragOverColumn(null);
+	};
+
+	const handleColumnDragEnd = () => {
+		setDraggedColumn(null);
+		setDragOverColumn(null);
+	};
 
 	const [activeFilters, setActiveFilters] = useState<ColumnFilter>(filters);
 	const [openColumnMenu, setOpenColumnMenu] = useState<string | null>(null); // Track which column menu is open
@@ -483,15 +562,14 @@ const ManualCustomerTable = ({
 							size="small"
 							onClick={() => onEdit(customer)}
 						>
-							<Edit className="h-4 w-4" />
+							<Edit className="w-5 h-5" />
 						</Button>
 						<Button
 							variant="transparent"
 							size="small"
 							onClick={() => onDelete(customer.id)}
-							className="text-red-500 hover:text-red-700"
 						>
-							<Trash2 className="h-4 w-4" />
+							<Trash2 className="w-5 h-5" />
 						</Button>
 					</div>
 				);
@@ -526,20 +604,27 @@ const ManualCustomerTable = ({
 					tableLayout: 'fixed',
 				}}
 			>
-				<Table.Header>
-					<Table.Row>
-						{columns.map((column, index) => (
-							<Table.HeaderCell
-								key={column.key}
-								style={{
-									width: `${columnWidths[column.key]}px`,
-									maxWidth: `${columnWidths[column.key]}px`,
-									minWidth: `${columnWidths[column.key]}px`,
-									position: 'relative',
-									overflow: 'visible',
-								}}
-								className="select-none"
-							>
+			<Table.Header>
+				<Table.Row>
+					{orderedColumns.map((column, index) => (
+						<Table.HeaderCell
+							key={column.key}
+							draggable={true}
+							onDragStart={() => handleColumnDragStart(column.key)}
+							onDragOver={(e) => handleColumnDragOver(e, column.key)}
+							onDrop={(e) => handleColumnDrop(e, column.key)}
+							onDragEnd={handleColumnDragEnd}
+							style={{
+								width: `${columnWidths[column.key]}px`,
+								maxWidth: `${columnWidths[column.key]}px`,
+								minWidth: `${columnWidths[column.key]}px`,
+								position: 'relative',
+								overflow: 'visible',
+								opacity: draggedColumn === column.key ? 0.5 : 1,
+								backgroundColor: dragOverColumn === column.key ? 'rgba(59, 130, 246, 0.1)' : undefined,
+							}}
+							className="select-none cursor-move"
+						>
 								{/* Clickable header for column menu */}
 								<div
 									className={`column-header flex items-center rounded px-2 py-1 -mx-2 -my-1 ${
@@ -751,10 +836,10 @@ const ManualCustomerTable = ({
 						))}
 					</Table.Row>
 				</Table.Header>
-				<Table.Body>
-					{customers.map(customer => (
-						<Table.Row key={customer.id}>
-							{columns.map(column => (
+			<Table.Body>
+				{customers.map(customer => (
+					<Table.Row key={customer.id}>
+						{orderedColumns.map(column => (
 								<Table.Cell
 									key={column.key}
 									style={{

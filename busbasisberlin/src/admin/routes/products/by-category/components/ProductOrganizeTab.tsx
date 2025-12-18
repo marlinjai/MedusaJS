@@ -527,19 +527,19 @@ const ProductOrganizeTab = ({
 							categories={categoryTreeData}
 							selectedCategories={new Set(formData.category_ids || [])}
 							onToggleCategory={id => {
-								const currentIds = formData.category_ids || [];
+											const currentIds = formData.category_ids || [];
 								if (currentIds.includes(id)) {
-									onChange({
-										...formData,
+												onChange({
+													...formData,
 										category_ids: currentIds.filter(cid => cid !== id),
-									});
-								} else {
-									onChange({
-										...formData,
+												});
+											} else {
+												onChange({
+													...formData,
 										category_ids: [...currentIds, id],
-									});
-								}
-							}}
+												});
+											}
+										}}
 							expandedCategories={expandedCategories}
 							onToggleExpand={id => {
 								const newSet = new Set(expandedCategories);
