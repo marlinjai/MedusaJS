@@ -279,17 +279,17 @@ function Toolbar() {
 				</div>
 
 				{/* Bottom Row: View Toggle and Display Options */}
-				<div className="flex flex-wrap items-center gap-3 pt-3 border-t border-stone-800">
+				<div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-3 border-t border-stone-800">
 					{/* View Toggle: Grid/List */}
 					<ViewToggle />
 
-					{/* Divider */}
-					<div className="h-6 w-px bg-stone-700" />
+					{/* Divider - hidden on very small screens */}
+					<div className="hidden sm:block h-6 w-px bg-stone-700" />
 
 					{/* Results per page */}
-					<div className="flex items-center gap-2">
-						<BsGrid3X3 className="w-4 h-4 text-gray-400" />
-						<span className="text-sm font-medium text-gray-400">Anzeigen:</span>
+					<div className="flex items-center gap-1.5 sm:gap-2">
+						<BsGrid3X3 className="w-4 h-4 text-gray-400 hidden sm:block" />
+						<span className="text-xs sm:text-sm font-medium text-gray-400">Anzeigen:</span>
 						<div className="relative">
 							<HitsPerPage
 								items={[
@@ -301,12 +301,12 @@ function Toolbar() {
 								classNames={{
 									root: 'relative',
 									select:
-										'bg-stone-800 border border-stone-700 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
+										'bg-stone-800 border border-stone-700 rounded-lg px-2 sm:px-4 py-2 sm:py-2.5 pr-8 sm:pr-10 text-xs sm:text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
 								}}
 							/>
-							<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+							<div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
 								<svg
-									className="w-4 h-4 text-gray-400"
+									className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
@@ -522,7 +522,7 @@ export default function StoreSearch() {
 						transformOrigin: 'center center',
 					}}
 				/>
-				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8">
+				<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-24 md:pt-20 pb-8">
 					{/* Header with Search in one row - Full width */}
 					<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 						{/* Title */}

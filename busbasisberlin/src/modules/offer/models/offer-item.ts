@@ -54,7 +54,8 @@ const offerItem = model.define('offer_item', {
 
 	// ✅ ORDERING AND GROUPING: UI/UX data
 	item_group: model.text().nullable(), // For grouping related items
-	sort_order: model.number().default(0), // For custom ordering
+	sort_order: model.number().default(0), // For custom ordering (legacy)
+	display_order: model.number().default(0), // For drag-and-drop reordering in UI
 
 	// ❌ REMOVED: Inventory data should be queried live
 	// available_quantity: model.number().nullable(), // Query from inventory module

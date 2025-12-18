@@ -24,6 +24,7 @@ import {
 	X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import ColumnVisibilityControl from './components/ColumnVisibilityControl';
 import ProductEditorModal from './components/ProductEditorModal';
 import ProductTable from './components/ProductTable';
 
@@ -134,6 +135,19 @@ function CategoryTree({
 	);
 }
 
+// Define available table columns for visibility control
+const tableColumns = [
+	{ key: 'select', label: '', width: 50 },
+	{ key: 'title', label: 'Titel', width: 300 },
+	{ key: 'status', label: 'Status', width: 120 },
+	{ key: 'collection', label: 'Sammlung', width: 200 },
+	{ key: 'shipping_profile', label: 'Versandprofil', width: 180 },
+	{ key: 'sales_channels', label: 'Vertriebskanäle', width: 200 },
+	{ key: 'variants', label: 'Artikelnummern', width: 250 },
+	{ key: 'tags', label: 'Tags', width: 200 },
+	{ key: 'actions', label: 'Aktionen', width: 100 },
+];
+
 export default function ProductsByCategoryPage() {
 	const queryClient = useQueryClient();
 	const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
@@ -148,6 +162,17 @@ export default function ProductsByCategoryPage() {
 	const [selectedShippingProfiles, setSelectedShippingProfiles] = useState<
 		Set<string>
 	>(new Set());
+	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+		const saved = localStorage.getItem('products-table-visible-columns');
+		if (saved) {
+			try {
+				return new Set(JSON.parse(saved));
+			} catch {
+				return new Set(tableColumns.map(c => c.key));
+			}
+		}
+		return new Set(tableColumns.map(c => c.key));
+	});
 	const [skuSearch, setSkuSearch] = useState('');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [sortBy, setSortBy] = useState<'title' | 'created_at' | 'updated_at'>(
@@ -761,18 +786,45 @@ export default function ProductsByCategoryPage() {
 									className="w-full"
 								/>
 							</div>
-							<div className="flex gap-2 items-center">
-								{selectedCount > 0 && (
-									<Text
-										size="small"
-										className="font-medium text-ui-fg-base whitespace-nowrap"
-									>
-										{selectedCount} ausgewählt
-									</Text>
-								)}
-								<Text size="small" className="whitespace-nowrap">
-									Sortieren nach:
+						<div className="flex gap-2 items-center">
+							{/* Column Visibility Control */}
+							<ColumnVisibilityControl
+								columns={tableColumns}
+								visibleColumns={visibleColumns}
+								onToggle={(key) => {
+									const newVisible = new Set(visibleColumns);
+									if (newVisible.has(key)) {
+										newVisible.delete(key);
+									} else {
+										newVisible.add(key);
+									}
+									setVisibleColumns(newVisible);
+									localStorage.setItem('products-table-visible-columns', JSON.stringify([...newVisible]));
+								}}
+								onShowAll={() => {
+									const allColumns = new Set(tableColumns.map(c => c.key));
+									setVisibleColumns(allColumns);
+									localStorage.setItem('products-table-visible-columns', JSON.stringify([...allColumns]));
+								}}
+								onHideAll={() => {
+									// Keep only essential columns
+									const essentialColumns = new Set(['select', 'title', 'actions']);
+									setVisibleColumns(essentialColumns);
+									localStorage.setItem('products-table-visible-columns', JSON.stringify([...essentialColumns]));
+								}}
+							/>
+
+							{selectedCount > 0 && (
+								<Text
+									size="small"
+									className="font-medium text-ui-fg-base whitespace-nowrap"
+								>
+									{selectedCount} ausgewählt
 								</Text>
+							)}
+							<Text size="small" className="whitespace-nowrap">
+								Sortieren nach:
+							</Text>
 								<Select value={sortBy} onValueChange={v => setSortBy(v as any)}>
 									<Select.Trigger className="w-[180px]">
 										<Select.Value />
@@ -960,8 +1012,9 @@ export default function ProductsByCategoryPage() {
 									});
 									return res.json();
 								}}
-								isLoading={isLoading}
-							/>
+							isLoading={isLoading}
+							visibleColumns={visibleColumns}
+						/>
 						</div>
 
 						{/* Pagination Controls */}

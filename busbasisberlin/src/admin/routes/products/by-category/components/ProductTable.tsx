@@ -36,6 +36,7 @@ interface ProductTableProps {
 	isLoading: boolean;
 	rowSelection?: Record<string, boolean>;
 	onRowSelectionChange?: (selection: Record<string, boolean>) => void;
+	visibleColumns?: Set<string>;
 }
 
 interface EditableCell {
@@ -101,6 +102,7 @@ const ProductTable = ({
 	isLoading,
 	rowSelection = {},
 	onRowSelectionChange,
+	visibleColumns,
 }: ProductTableProps) => {
 	// Inline editing state
 	const [editingCell, setEditingCell] = useState<EditableCell | null>(null);
@@ -147,10 +149,11 @@ const ProductTable = ({
 		);
 	}, [columnOrder]);
 
-	// Get ordered columns based on saved order
+	// Get ordered columns based on saved order, filtered by visibility
 	const orderedColumns = columnOrder
 		.map(key => columns.find(c => c.key === key))
-		.filter((c): c is (typeof columns)[0] => c !== undefined);
+		.filter((c): c is (typeof columns)[0] => c !== undefined)
+		.filter(c => !visibleColumns || visibleColumns.has(c.key));
 
 	// Column drag and drop handlers
 	const handleColumnDragStart = (columnKey: string) => {

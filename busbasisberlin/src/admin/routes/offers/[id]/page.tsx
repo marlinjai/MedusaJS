@@ -1,7 +1,7 @@
 /**
  * [id]/page.tsx
  * Offer detail page for viewing and editing offers
- * Includes status management, item editing, and comprehensive information display
+ * Includes status management, full-screen modal item editing, and comprehensive information display
  */
 import {
 	ArrowLeft,
@@ -11,7 +11,6 @@ import {
 	Mail,
 	Package,
 	Plus,
-	Trash2,
 	X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -27,8 +26,9 @@ import {
 	Textarea,
 	toast,
 } from '@medusajs/ui';
+import ItemSelectorModal from '../components/ItemSelectorModal';
+import OfferItemsTable from '../components/OfferItemsTable';
 import SearchableDropdown from '../components/SearchableDropdown';
-import VariantSelector from '../components/VariantSelector';
 
 interface SearchableItem {
 	id: string;
@@ -158,6 +158,7 @@ export default function OfferDetailPage() {
 	const [loadingPreview, setLoadingPreview] = useState(false);
 	const [previewTab, setPreviewTab] = useState<'pdf' | 'email'>('pdf');
 	const [showInfoModal, setShowInfoModal] = useState(false);
+	const [showItemSelector, setShowItemSelector] = useState(false);
 
 	// Load offer data
 	useEffect(() => {
@@ -1276,7 +1277,7 @@ export default function OfferDetailPage() {
 									type="button"
 									variant="secondary"
 									size="small"
-									onClick={addItem}
+									onClick={() => setShowItemSelector(true)}
 								>
 									<Plus className="w-4 h-4 mr-2" />
 									Artikel hinzufügen
@@ -1290,6 +1291,16 @@ export default function OfferDetailPage() {
 									Keine Artikel vorhanden.
 								</Text>
 							</div>
+						) : editing ? (
+							<OfferItemsTable
+								items={offer.items}
+								onItemsChange={items =>
+									setOffer(prev => (prev ? { ...prev, items } : prev))
+								}
+								onItemUpdate={updateItem}
+								onItemRemove={removeItem}
+								currency={offer.currency_code}
+							/>
 						) : (
 							<div className="space-y-4">
 								{offer.items.map(item => (
@@ -1297,301 +1308,8 @@ export default function OfferDetailPage() {
 										key={item.id}
 										className="border border-ui-border-base rounded-lg p-4"
 									>
-										{editing ? (
-											<>
-												{/* Editing Mode - Full Form */}
-												<div className="space-y-4 mb-4">
-													{/* Item Type Selection */}
-													<div className="max-w-xs">
-														<Text
-															size="small"
-															weight="plus"
-															className="text-ui-fg-base mb-2"
-														>
-															Artikeltyp
-														</Text>
-														<Select
-															value={item.item_type}
-															onValueChange={value =>
-																updateItem(item.id, {
-																	item_type: value as 'product' | 'service',
-																})
-															}
-														>
-															<Select.Trigger>
-																<Select.Value />
-															</Select.Trigger>
-															<Select.Content>
-																<Select.Item value="product">
-																	Produkt
-																</Select.Item>
-																<Select.Item value="service">
-																	Service
-																</Select.Item>
-															</Select.Content>
-														</Select>
-													</div>
-
-													{/* Item Selection - Full Width */}
-													<div>
-														{item.item_type === 'product' ? (
-															<SearchableDropdown
-																key={`product-${item.id}`}
-																label="Produkt auswählen"
-																placeholder="Produkt, SKU oder Handle suchen..."
-																value={item.product_id || ''}
-																onValueChange={() => {}}
-																onItemSelect={product =>
-																	handleProductSelect(item.id, product)
-																}
-																searchEndpoint="/admin/offers/search/products"
-																itemType="product"
-															/>
-														) : (
-															<SearchableDropdown
-																key={`service-${item.id}`}
-																label="Service auswählen"
-																placeholder="Service suchen..."
-																value={item.service_id || ''}
-																onValueChange={() => {}}
-																onItemSelect={service =>
-																	handleServiceSelect(item.id, service)
-																}
-																searchEndpoint="/admin/offers/search/services"
-																itemType="service"
-															/>
-														)}
-													</div>
-												</div>
-
-												{/* Variant Selection for Products */}
-												{item.item_type === 'product' &&
-													item.selectedProduct && (
-														<div className="mb-4">
-															<VariantSelector
-																product={item.selectedProduct}
-																selectedVariantId={item.variant_id || null}
-																onVariantSelect={variant =>
-																	handleVariantSelect(item.id, variant)
-																}
-																disabled={!item.selectedProduct}
-															/>
-															{item.selectedProduct && !item.variant_id && (
-																<div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-md">
-																	<Text
-																		size="small"
-																		className="text-orange-700"
-																	>
-																		⚠️ Bitte wählen Sie eine Variante für dieses
-																		Produkt aus
-																	</Text>
-																</div>
-															)}
-														</div>
-													)}
-
-												{/* Item Details */}
-												<div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-4">
-													<div>
-														<Text
-															size="small"
-															weight="plus"
-															className="text-ui-fg-base mb-2"
-														>
-															Titel
-														</Text>
-														<Input
-															type="text"
-															value={item.title}
-															onChange={e =>
-																updateItem(item.id, { title: e.target.value })
-															}
-															placeholder="Artikelname"
-														/>
-													</div>
-
-													<div>
-														<Text
-															size="small"
-															weight="plus"
-															className="text-ui-fg-base mb-2"
-														>
-															Menge
-														</Text>
-														<Input
-															type="number"
-															value={item.quantity}
-															onChange={e =>
-																updateItem(item.id, {
-																	quantity: Number(e.target.value),
-																})
-															}
-															min="1"
-														/>
-													</div>
-
-													<div>
-														<Text
-															size="small"
-															weight="plus"
-															className="text-ui-fg-base mb-2"
-														>
-															Einheit
-														</Text>
-														<Input
-															type="text"
-															value={item.unit}
-															onChange={e =>
-																updateItem(item.id, { unit: e.target.value })
-															}
-															placeholder="STK"
-														/>
-													</div>
-
-													<div>
-														<Text
-															size="small"
-															weight="plus"
-															className="text-ui-fg-base mb-2"
-														>
-															Preis (€)
-														</Text>
-														<Input
-															type="number"
-															value={
-																priceInputStates[item.id] ||
-																(item.unit_price
-																	? (item.unit_price / 100).toFixed(2)
-																	: '')
-															}
-															onChange={e => {
-																const val = e.target.value;
-																setPriceInputStates(prev => ({
-																	...prev,
-																	[item.id]: val,
-																}));
-															}}
-															onBlur={() =>
-																handlePriceBlur(
-																	item.id,
-																	priceInputStates[item.id] || '',
-																)
-															}
-															min="0"
-															step="0.01"
-															inputMode="decimal"
-															disabled={Boolean(
-																item.item_type === 'product' && item.variant_id,
-															)}
-															className={
-																item.item_type === 'product' && item.variant_id
-																	? 'bg-gray-100'
-																	: ''
-															}
-														/>
-														<Text
-															size="xsmall"
-															className="text-ui-fg-subtle mt-1"
-														>
-															Netto:{' '}
-															{(item.unit_price
-																? item.unit_price / 1.19 / 100
-																: 0
-															).toFixed(2)}{' '}
-															€
-														</Text>
-														{item.item_type === 'product' &&
-															item.variant_id && (
-																<Text
-																	size="xsmall"
-																	className="text-ui-fg-subtle mt-1"
-																>
-																	Preis von Variante übernommen
-																</Text>
-															)}
-													</div>
-
-													<div>
-														<Text
-															size="small"
-															weight="plus"
-															className="text-ui-fg-base mb-2"
-														>
-															Rabatt %
-														</Text>
-														<Input
-															type="number"
-															value={item.discount_percentage}
-															onChange={e =>
-																updateItem(item.id, {
-																	discount_percentage: Number(e.target.value),
-																})
-															}
-															min="0"
-															max="100"
-														/>
-													</div>
-
-													<div>
-														<Text
-															size="small"
-															weight="plus"
-															className="text-ui-fg-base mb-2"
-														>
-															USt. %
-														</Text>
-														<Input
-															type="number"
-															value={item.tax_rate}
-															onChange={e =>
-																updateItem(item.id, {
-																	tax_rate: Number(e.target.value),
-																})
-															}
-															min="0"
-															max="100"
-														/>
-													</div>
-												</div>
-
-												{/* Description */}
-												<div className="mb-4">
-													<Text
-														size="small"
-														weight="plus"
-														className="text-ui-fg-base mb-2"
-													>
-														Beschreibung
-													</Text>
-													<Textarea
-														value={item.description}
-														onChange={e =>
-															updateItem(item.id, {
-																description: e.target.value,
-															})
-														}
-														placeholder="Artikelbeschreibung"
-														rows={2}
-													/>
-												</div>
-
-												{/* Delete Button - Editing Mode */}
-												<div className="flex justify-end pt-2 border-t border-ui-border-base">
-													<Button
-														type="button"
-														variant="transparent"
-														size="small"
-														onClick={() => removeItem(item.id)}
-													>
-														<Trash2 className="w-4 h-4 mr-2" />
-														Artikel entfernen
-													</Button>
-												</div>
-											</>
-										) : (
-											<>
-												{/* Display Mode - Compact 3-Row Layout */}
-												{/* Row 1: Title with Item Type Badge */}
+										{/* Display Mode - Compact 3-Row Layout */}
+										{/* Row 1: Title with Item Type Badge */}
 												<div className="flex items-center gap-3 mb-2">
 													<Badge
 														color={
@@ -1786,11 +1504,9 @@ export default function OfferDetailPage() {
 														</Text>
 													</div>
 												</div>
-											</>
-										)}
-									</div>
-								))}
-							</div>
+										</div>
+									))}
+								</div>
 						)}
 					</div>
 
@@ -2530,6 +2246,21 @@ export default function OfferDetailPage() {
 						</div>
 					</div>
 				</div>
+			)}
+
+			{/* Item Selector Modal */}
+			{editing && (
+				<ItemSelectorModal
+					isOpen={showItemSelector}
+					onClose={() => setShowItemSelector(false)}
+					items={offer?.items || []}
+					onItemsChange={items =>
+						setOffer(prev => (prev ? { ...prev, items } : prev))
+					}
+					onItemUpdate={updateItem}
+					onItemRemove={removeItem}
+					currency={offer?.currency_code || 'EUR'}
+				/>
 			)}
 		</Container>
 	);

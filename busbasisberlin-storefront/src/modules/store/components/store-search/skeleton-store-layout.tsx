@@ -20,7 +20,7 @@ export default async function SkeletonStoreLayout() {
 					transformOrigin: 'center center',
 				}}
 			/>
-			<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+			<div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-24 md:pt-20 pb-8">
 				{/* Header with Search in one row - Full width */}
 				<div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 					{/* Title */}

@@ -285,7 +285,7 @@
           "constraint": false,
           "primary": false,
           "unique": false,
-          "expression": "CREATE UNIQUE INDEX IF NOT EXISTS \"IDX_offer_offer_number_seq_unique\" ON \"offer\" (offer_number_seq) WHERE deleted_at IS NULL"
+          "expression": "CREATE UNIQUE INDEX IF NOT EXISTS \"IDX_offer_offer_number_seq_unique\" ON \"offer\" (\"offer_number_seq\") WHERE deleted_at IS NULL"
         },
         {
           "keyName": "IDX_offer_deleted_at",
@@ -294,7 +294,7 @@
           "constraint": false,
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_offer_deleted_at\" ON \"offer\" (deleted_at) WHERE deleted_at IS NULL"
+          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_offer_deleted_at\" ON \"offer\" (\"deleted_at\") WHERE deleted_at IS NULL"
         },
         {
           "keyName": "offer_pkey",
@@ -545,6 +545,16 @@
           "default": "0",
           "mappedType": "integer"
         },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "0",
+          "mappedType": "integer"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamptz",
@@ -588,7 +598,7 @@
           "constraint": false,
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_offer_item_deleted_at\" ON \"offer_item\" (deleted_at) WHERE deleted_at IS NULL"
+          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_offer_item_deleted_at\" ON \"offer_item\" (\"deleted_at\") WHERE deleted_at IS NULL"
         },
         {
           "keyName": "offer_item_pkey",
@@ -787,7 +797,7 @@
           "constraint": false,
           "primary": false,
           "unique": false,
-          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_offer_status_history_deleted_at\" ON \"offer_status_history\" (deleted_at) WHERE deleted_at IS NULL"
+          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_offer_status_history_deleted_at\" ON \"offer_status_history\" (\"deleted_at\") WHERE deleted_at IS NULL"
         },
         {
           "keyName": "offer_status_history_pkey",

@@ -12,9 +12,14 @@ const service = model.define('service', {
 	title: model.text(),
 	description: model.text().nullable(),
 	short_description: model.text().nullable(),
+	service_code: model.text().nullable(), // SKU/Article number from CSV (Artikelnummer)
 
-	// Service categorization
-	category: model.text().nullable(), // e.g., "Wartung", "Reparatur", "Beratung"
+	// Service categorization - hierarchical structure from CSV
+	category: model.text().nullable(), // Kept for backward compatibility
+	category_level_1: model.text().nullable(), // Top level (e.g., "Arbeitspositionen")
+	category_level_2: model.text().nullable(), // Second level (e.g., "Motor", "Bremsanlage")
+	category_level_3: model.text().nullable(), // Third level (e.g., "Sonstiges", "Motorkühlung")
+	category_level_4: model.text().nullable(), // Fourth level (rarely used)
 	service_type: model.text().nullable(), // e.g., "Stunden", "Pauschal", "Material"
 
 	// Pricing

@@ -56,8 +56,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: medusa_redis
-    restart: unless-stopped
-    command: redis-server --save 60 1 --loglevel warning
+    restart: always  # Changed from unless-stopped to always for more aggressive restart
+    command: redis-server --save 60 1 --loglevel warning --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
@@ -65,14 +65,14 @@ services:
     networks:
       - medusa_network
     healthcheck:
-      test: 
+      test:
         [
           "CMD-SHELL",
-          "redis-cli ping | grep PONG && redis-cli info replication | grep 'role:master'"
+          "redis-cli ping | grep PONG"
         ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 10s  # Check every 10 seconds
+      timeout: 3s    # Fail after 3 seconds
+      retries: 3     # Mark unhealthy after 3 failed attempts (30 seconds total)
       start_period: 30s
 
   # Portainer - Container Management UI

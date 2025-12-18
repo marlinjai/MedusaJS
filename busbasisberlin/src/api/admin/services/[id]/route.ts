@@ -38,11 +38,51 @@ export const PUT = async (req: MedusaRequest, res: MedusaResponse) => {
 		const { id } = req.params;
 		const serviceData = req.body as Partial<Service>;
 
-		// Validate required fields
-		if (!serviceData.title) {
+		// #region agent log
+		const fs = require('fs');
+		fs.appendFileSync(
+			'/Users/marlin.pohl/software development/MedusaJS/.cursor/debug.log',
+			JSON.stringify({
+				location: 'route.ts:39',
+				message: 'PUT request received',
+				data: {
+					id,
+					serviceData,
+					hasTitle: 'title' in serviceData,
+					bodyKeys: Object.keys(serviceData),
+				},
+				timestamp: Date.now(),
+				sessionId: 'debug-session',
+				runId: 'post-fix',
+				hypothesisId: 'A,D',
+			}) + '\n',
+		);
+		// #endregion
+
+		// Validate title only if it's being explicitly set to empty/null
+		// Allow partial updates without requiring title field
+		if (
+			'title' in serviceData &&
+			(!serviceData.title || serviceData.title.trim() === '')
+		) {
+			// #region agent log
+			fs.appendFileSync(
+				'/Users/marlin.pohl/software development/MedusaJS/.cursor/debug.log',
+				JSON.stringify({
+					location: 'route.ts:47',
+					message: 'Validation failed - empty title provided',
+					data: { id, serviceData },
+					timestamp: Date.now(),
+					sessionId: 'debug-session',
+					runId: 'post-fix',
+					hypothesisId: 'A',
+				}) + '\n',
+			);
+			// #endregion
+
 			return res.status(400).json({
 				error: 'Validation error',
-				message: 'Service title is required',
+				message: 'Service title cannot be empty',
 			});
 		}
 
@@ -58,10 +98,39 @@ export const PUT = async (req: MedusaRequest, res: MedusaResponse) => {
 			});
 		}
 
+		// #region agent log
+		fs.appendFileSync(
+			'/Users/marlin.pohl/software development/MedusaJS/.cursor/debug.log',
+			JSON.stringify({
+				location: 'route.ts:67',
+				message: 'Update successful',
+				data: { id, updatedService: updatedServices[0] },
+				timestamp: Date.now(),
+				sessionId: 'debug-session',
+				hypothesisId: 'A,D',
+			}) + '\n',
+		);
+		// #endregion
+
 		res.json({
 			service: updatedServices[0],
 		});
 	} catch (error) {
+		// #region agent log
+		const fs = require('fs');
+		fs.appendFileSync(
+			'/Users/marlin.pohl/software development/MedusaJS/.cursor/debug.log',
+			JSON.stringify({
+				location: 'route.ts:75',
+				message: 'PUT request error',
+				data: { id: req.params.id, error: error.message, stack: error.stack },
+				timestamp: Date.now(),
+				sessionId: 'debug-session',
+				hypothesisId: 'D',
+			}) + '\n',
+		);
+		// #endregion
+
 		console.error('Error updating service:', error);
 		res.status(500).json({
 			error: 'Failed to update service',
