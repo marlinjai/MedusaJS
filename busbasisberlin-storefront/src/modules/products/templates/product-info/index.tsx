@@ -3,23 +3,55 @@
 import { HttpTypes } from '@medusajs/types';
 import { Heading, Text } from '@medusajs/ui';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
+import { Fragment } from 'react';
 
 type ProductInfoProps = {
 	product: HttpTypes.StoreProduct;
 };
 
+// Helper function to build category hierarchy breadcrumb
+const getCategoryBreadcrumb = (
+	categories?: HttpTypes.StoreProductCategory[],
+): HttpTypes.StoreProductCategory[] => {
+	if (!categories || categories.length === 0) return [];
+
+	// Use first category (products typically have one main category)
+	const category = categories[0];
+	const breadcrumb: HttpTypes.StoreProductCategory[] = [];
+
+	// Build hierarchy by recursively following parent_category
+	const buildPath = (cat: HttpTypes.StoreProductCategory) => {
+		breadcrumb.unshift(cat);
+		if (cat.parent_category) {
+			buildPath(cat.parent_category);
+		}
+	};
+
+	buildPath(category);
+	return breadcrumb;
+};
+
 const ProductInfo = ({ product }: ProductInfoProps) => {
+	const categoryBreadcrumb = getCategoryBreadcrumb(product.categories);
+
 	return (
 		<div id="product-info" className="flex flex-col gap-y-6">
-			{/* Breadcrumb / Collection */}
-			{product.collection && (
-				<LocalizedClientLink
-					href={`/collections/${product.collection.handle}`}
-					className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
-				>
+			{/* Category Breadcrumb */}
+			{categoryBreadcrumb.length > 0 && (
+				<div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
 					<span>←</span>
-					{product.collection.title}
-				</LocalizedClientLink>
+					{categoryBreadcrumb.map((category, index) => (
+						<Fragment key={category.id}>
+							{index > 0 && <span className="text-muted-foreground">/</span>}
+							<LocalizedClientLink
+								href={`/categories/${category.handle}`}
+								className="hover:text-foreground transition-colors"
+							>
+								{category.name}
+							</LocalizedClientLink>
+						</Fragment>
+					))}
+				</div>
 			)}
 
 			{/* Product Title */}

@@ -4,11 +4,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useHits, useInstantSearch } from 'react-instantsearch';
+import { useStoreSettings } from '@lib/context/store-settings-context';
 import SkeletonProductCard from './skeleton-product-card';
 
 type ProductHit = {
 	id: string;
 	title: string;
+	subtitle?: string;
 	description: string;
 	handle: string;
 	thumbnail: string;
@@ -26,9 +28,11 @@ type ProductHit = {
 function Hit({
 	hit,
 	viewMode,
+	showSubtitle = false,
 }: {
 	hit: ProductHit & { objectID: string };
 	viewMode: 'grid' | 'list';
+	showSubtitle?: boolean;
 }) {
 	// Use thumbnail with fallback to first image
 	const imageUrl = hit.thumbnail || hit.images?.[0] || null;
@@ -66,19 +70,26 @@ function Hit({
 						)}
 					</div>
 
-					{/* Content - horizontal layout */}
-					<div className="flex-1 flex flex-col gap-2 min-w-0">
-						{/* Title */}
-						<h3 className="font-semibold text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
-							{hit.title}
-						</h3>
+				{/* Content - horizontal layout */}
+				<div className="flex-1 flex flex-col gap-2 min-w-0">
+					{/* Title */}
+					<h3 className="font-semibold text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
+						{hit.title}
+					</h3>
 
-						{/* Description */}
-						{hit.description && (
-							<p className="text-sm text-gray-400 line-clamp-2 flex-1">
-								{hit.description}
-							</p>
-						)}
+					{/* Subtitle */}
+					{showSubtitle && hit.subtitle && (
+						<p className="text-xs text-gray-400 line-clamp-1 italic">
+							{hit.subtitle}
+						</p>
+					)}
+
+					{/* Description */}
+					{hit.description && (
+						<p className="text-sm text-gray-400 line-clamp-2 flex-1">
+							{hit.description}
+						</p>
+					)}
 
 						{/* Bottom row: Categories, Price, Availability */}
 						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-auto">
@@ -194,27 +205,34 @@ function Hit({
 					</div>
 				</div>
 
-				{/* Content - smaller padding on mobile */}
-				<div className="p-2 sm:p-4 flex-1 flex flex-col gap-1.5 sm:gap-2">
-					{/* Title */}
-					<h3 className="font-semibold text-sm sm:text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
-						{hit.title}
-					</h3>
+			{/* Content - smaller padding on mobile */}
+			<div className="p-2 sm:p-4 flex-1 flex flex-col gap-1.5 sm:gap-2">
+				{/* Title */}
+				<h3 className="font-semibold text-sm sm:text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
+					{hit.title}
+				</h3>
 
-					{/* Description - hide on very small screens, clamp to 3 lines on desktop */}
-					{hit.description && (
-						<p
-							className="hidden sm:block text-sm text-gray-400 overflow-hidden"
-							style={{
-								display: '-webkit-box',
-								WebkitLineClamp: 3,
-								WebkitBoxOrient: 'vertical',
-								overflow: 'hidden',
-							}}
-						>
-							{hit.description}
-						</p>
-					)}
+				{/* Subtitle */}
+				{showSubtitle && hit.subtitle && (
+					<p className="text-[10px] sm:text-xs text-gray-400 line-clamp-1 italic">
+						{hit.subtitle}
+					</p>
+				)}
+
+				{/* Description - hide on very small screens, clamp to 3 lines on desktop */}
+				{hit.description && (
+					<p
+						className="hidden sm:block text-sm text-gray-400 overflow-hidden"
+						style={{
+							display: '-webkit-box',
+							WebkitLineClamp: 3,
+							WebkitBoxOrient: 'vertical',
+							overflow: 'hidden',
+						}}
+					>
+						{hit.description}
+					</p>
+				)}
 
 					{/* Categories - hide on very small screens */}
 					{hit.category_names && hit.category_names.length > 0 && (
@@ -306,6 +324,7 @@ export default function ProductGrid() {
 	const { hits } = useHits<ProductHit & { objectID: string }>();
 	const { status } = useInstantSearch();
 	const isLoading = status === 'loading' || status === 'stalled';
+	const { settings } = useStoreSettings();
 
 	// Initialize viewMode from sessionStorage immediately to avoid hydration issues
 	const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -366,7 +385,12 @@ export default function ProductGrid() {
 		return (
 			<div className="flex flex-col gap-4">
 				{hits.map(hit => (
-					<Hit key={hit.objectID || hit.id} hit={hit} viewMode={viewMode} />
+					<Hit
+						key={hit.objectID || hit.id}
+						hit={hit}
+						viewMode={viewMode}
+						showSubtitle={settings.product_display.show_subtitle_in_cards}
+					/>
 				))}
 			</div>
 		);
@@ -377,7 +401,12 @@ export default function ProductGrid() {
 	return (
 		<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 			{hits.map(hit => (
-				<Hit key={hit.objectID || hit.id} hit={hit} viewMode={viewMode} />
+				<Hit
+					key={hit.objectID || hit.id}
+					hit={hit}
+					viewMode={viewMode}
+					showSubtitle={settings.product_display.show_subtitle_in_cards}
+				/>
 			))}
 		</div>
 	);

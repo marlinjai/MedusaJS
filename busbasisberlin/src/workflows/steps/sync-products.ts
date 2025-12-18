@@ -441,41 +441,42 @@ export const syncProductsStep = createStep(
 				const imageUrls = product.images?.map((img: any) => img.url) || [];
 				const thumbnailUrl = product.thumbnail || imageUrls[0] || null;
 
-				return {
-					objectID: product.id, // Required by Meilisearch
-					id: product.id,
-					title: product.title,
-					description: product.description,
-					handle: product.handle,
-					thumbnail: thumbnailUrl,
-					images: imageUrls,
-					status: product.status,
-					created_at: product.created_at,
-					updated_at: product.updated_at,
+			return {
+				objectID: product.id, // Required by Meilisearch
+				id: product.id,
+				title: product.title,
+				subtitle: product.subtitle || null,
+				description: product.description,
+				handle: product.handle,
+				thumbnail: thumbnailUrl,
+				images: imageUrls,
+				status: product.status,
+				created_at: product.created_at,
+				updated_at: product.updated_at,
 
-					// Category data - only what we need
-					category_ids: categoryIds, // All category IDs for filtering
-					hierarchical_categories: hierarchicalCategories, // For HierarchicalMenu widget
+				// Category data - only what we need
+				category_ids: categoryIds, // All category IDs for filtering
+				hierarchical_categories: hierarchicalCategories, // For HierarchicalMenu widget
 
-					// Availability and inventory
-					is_available: isAvailable,
-					total_inventory: totalInventory,
-					variant_count: product.variants?.length || 0,
+				// Availability and inventory
+				is_available: isAvailable,
+				total_inventory: totalInventory,
+				variant_count: product.variants?.length || 0,
 
-					// Pricing for filtering and sorting
-					min_price: minPrice,
-					max_price: maxPrice,
-					price_range:
-						minPrice !== maxPrice
-							? `${minPrice}-${maxPrice}`
-							: minPrice.toString(),
-					currencies: currencies,
+				// Pricing for filtering and sorting
+				min_price: minPrice,
+				max_price: maxPrice,
+				price_range:
+					minPrice !== maxPrice
+						? `${minPrice}-${maxPrice}`
+						: minPrice.toString(),
+				currencies: currencies,
 
-					// SKUs for search
-					skus: skus,
+				// SKUs for search
+				skus: skus,
 
-					// Tags for filtering
-					tags: tagValues,
+				// Tags for filtering
+				tags: tagValues,
 
 				// Collection information
 				collection_id: product.collection?.id,
@@ -504,19 +505,20 @@ export const syncProductsStep = createStep(
 						(product as any).shipping_profile,
 					),
 
-					// Search-optimized fields
-					// Include word parts for substring matching (e.g., "schmiernippel" -> "schmier nippel")
-					// This enables finding "nippel" when searching for products like "schmiernippel"
-					searchable_text: [
-						product.title,
-						...titleParts,
-						product.description,
-						...descriptionParts,
-						// Extract category names from hierarchical_categories for search
-						...Object.values(hierarchicalCategories),
-						...tagValues,
-						...skus,
-						...skuParts,
+				// Search-optimized fields
+				// Include word parts for substring matching (e.g., "schmiernippel" -> "schmier nippel")
+				// This enables finding "nippel" when searching for products like "schmiernippel"
+				searchable_text: [
+					product.title,
+					...titleParts,
+					product.subtitle,
+					product.description,
+					...descriptionParts,
+					// Extract category names from hierarchical_categories for search
+					...Object.values(hierarchicalCategories),
+					...tagValues,
+					...skus,
+					...skuParts,
 						product.collection?.title,
 					]
 						.filter(Boolean)

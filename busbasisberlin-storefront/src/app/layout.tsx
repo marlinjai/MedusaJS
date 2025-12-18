@@ -1,6 +1,7 @@
 import { getBaseURL } from '@lib/util/env';
 import { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
+import { StoreSettingsProvider } from '@lib/context/store-settings-context';
 import '../styles/globals.css';
 
 // Import German translations directly
@@ -15,7 +16,9 @@ export default function RootLayout(props: { children: React.ReactNode }) {
 		<html lang="de" data-mode="dark" className="dark overflow-x-hidden">
 			<body className="overflow-x-hidden">
 				<NextIntlClientProvider locale="de" messages={messages}>
-					<main className="relative overflow-x-hidden">{props.children}</main>
+					<StoreSettingsProvider>
+						<main className="relative overflow-x-hidden">{props.children}</main>
+					</StoreSettingsProvider>
 				</NextIntlClientProvider>
 			</body>
 		</html>

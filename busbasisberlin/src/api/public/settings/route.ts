@@ -28,11 +28,17 @@ type SearchSettings = {
 	sort_order: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'relevance';
 };
 
+type ProductDisplaySettings = {
+	show_subtitle_in_cards: boolean; // Product cards, search modal, related products
+	show_subtitle_in_product_page: boolean; // Product detail page
+};
+
 type StoreSettingsResponse = {
 	announcement_banner: AnnouncementBanner;
 	hero_alert: HeroAlert;
 	faq: FAQ;
 	search: SearchSettings;
+	product_display: ProductDisplaySettings;
 };
 
 export const GET = async (
@@ -77,34 +83,38 @@ export const GET = async (
 			}
 		}
 
-		// Prepare response with default values if metadata is not set
-		const settings: StoreSettingsResponse = {
-			announcement_banner: {
-				enabled: metadata.announcement_banner_enabled === true,
-				text: (metadata.announcement_banner_text as string) || '',
-				color:
-					(metadata.announcement_banner_color as string) || '#dc2626',
-				font_size:
-					(metadata.announcement_banner_font_size as
-						| 'small'
-						| 'medium'
-						| 'large') || 'medium',
-			},
-			hero_alert: {
-				enabled: metadata.hero_alert_enabled === true,
-				text: (metadata.hero_alert_text as string) || '',
-			},
-			faq: {
-				enabled: metadata.faq_enabled === true,
-				items: faqs || [],
-			},
-			search: {
-				enabled: metadata.search_enabled !== false, // Default to true
-				sort_order:
-					(metadata.search_sort_order as SearchSettings['sort_order']) ||
-					'price_asc',
-			},
-		};
+	// Prepare response with default values if metadata is not set
+	const settings: StoreSettingsResponse = {
+		announcement_banner: {
+			enabled: metadata.announcement_banner_enabled === true,
+			text: (metadata.announcement_banner_text as string) || '',
+			color:
+				(metadata.announcement_banner_color as string) || '#dc2626',
+			font_size:
+				(metadata.announcement_banner_font_size as
+					| 'small'
+					| 'medium'
+					| 'large') || 'medium',
+		},
+		hero_alert: {
+			enabled: metadata.hero_alert_enabled === true,
+			text: (metadata.hero_alert_text as string) || '',
+		},
+		faq: {
+			enabled: metadata.faq_enabled === true,
+			items: faqs || [],
+		},
+		search: {
+			enabled: metadata.search_enabled !== false, // Default to true
+			sort_order:
+				(metadata.search_sort_order as SearchSettings['sort_order']) ||
+				'price_asc',
+		},
+		product_display: {
+			show_subtitle_in_cards: metadata.show_subtitle_in_cards === true,
+			show_subtitle_in_product_page: metadata.show_subtitle_in_product_page !== false, // Default to true
+		},
+	};
 
 		console.log(
 			'[STORE-SETTINGS] Returning settings:',

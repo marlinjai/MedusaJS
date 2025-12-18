@@ -14,6 +14,7 @@ import { getProductPrice } from '@lib/util/get-product-price';
 type MeiliSearchProduct = {
 	handle: string;
 	title: string;
+	subtitle?: string | null;
 	thumbnail?: string | null;
 	description?: string | null;
 	category_names?: string[];
@@ -28,6 +29,7 @@ type UnifiedProductCardProps = {
 	showDescription?: boolean;
 	showCategories?: boolean;
 	showStock?: boolean;
+	showSubtitle?: boolean; // New prop to control subtitle visibility
 };
 
 // Helper to normalize product data from different sources
@@ -46,6 +48,7 @@ function normalizeProduct(
 	return {
 		handle: medusaProduct.handle || '',
 		title: medusaProduct.title || '',
+		subtitle: (medusaProduct as any).subtitle || null,
 		thumbnail: medusaProduct.thumbnail,
 		description: medusaProduct.description || null,
 		category_names: medusaProduct.categories?.map(c => c.name) || [],
@@ -63,11 +66,13 @@ export default function UnifiedProductCard({
 	showDescription = true,
 	showCategories = true,
 	showStock = true,
+	showSubtitle = false,
 }: UnifiedProductCardProps) {
 	const normalized = normalizeProduct(product);
 	const {
 		handle,
 		title,
+		subtitle,
 		thumbnail,
 		description,
 		category_names,
@@ -109,17 +114,24 @@ export default function UnifiedProductCard({
 					)}
 				</div>
 
-				{/* Content */}
-				<div className="p-4 flex-1 flex flex-col gap-2">
-					{/* Title */}
-					<h3 className="font-semibold text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
-						{title}
-					</h3>
+			{/* Content */}
+			<div className="p-4 flex-1 flex flex-col gap-2">
+				{/* Title */}
+				<h3 className="font-semibold text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
+					{title}
+				</h3>
 
-					{/* Description */}
-					{showDescription && description && (
-						<p className="text-sm text-gray-400 line-clamp-3">{description}</p>
-					)}
+				{/* Subtitle */}
+				{showSubtitle && subtitle && (
+					<p className="text-xs text-gray-400 line-clamp-1 italic">
+						{subtitle}
+					</p>
+				)}
+
+				{/* Description */}
+				{showDescription && description && (
+					<p className="text-sm text-gray-400 line-clamp-3">{description}</p>
+				)}
 
 					{/* Categories */}
 					{showCategories && category_names && category_names.length > 0 && (

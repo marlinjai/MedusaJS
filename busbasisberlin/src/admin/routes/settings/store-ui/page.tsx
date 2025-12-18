@@ -42,6 +42,9 @@ interface StoreUISettings {
 	// FAQ settings
 	faq_enabled: boolean;
 	faqs: FAQItem[];
+	// Product display settings
+	show_subtitle_in_cards: boolean;
+	show_subtitle_in_product_page: boolean;
 }
 
 export default function StoreUISettingsPage() {
@@ -59,6 +62,8 @@ export default function StoreUISettingsPage() {
 		hero_alert_text: '',
 		faq_enabled: false,
 		faqs: [],
+		show_subtitle_in_cards: false,
+		show_subtitle_in_product_page: true,
 	});
 
 	useEffect(() => {
@@ -91,28 +96,30 @@ export default function StoreUISettingsPage() {
 						}
 					}
 
-					setSettings({
-						search_enabled:
-							store.metadata.search_enabled !== false, // Default to true
-						search_sort_order:
-							(store.metadata.search_sort_order as StoreUISettings['search_sort_order']) ||
-							'price_asc',
-						announcement_banner_enabled:
-							store.metadata.announcement_banner_enabled === true,
-						announcement_banner_text:
-							(store.metadata.announcement_banner_text as string) || '',
-						announcement_banner_color:
-							(store.metadata.announcement_banner_color as string) || '#dc2626',
-						announcement_banner_font_size:
-							(store.metadata.announcement_banner_font_size as
-								| 'small'
-								| 'medium'
-								| 'large') || 'medium',
-						hero_alert_enabled: store.metadata.hero_alert_enabled === true,
-						hero_alert_text: (store.metadata.hero_alert_text as string) || '',
-						faq_enabled: store.metadata.faq_enabled === true,
-						faqs: faqs || [],
-					});
+				setSettings({
+					search_enabled:
+						store.metadata.search_enabled !== false, // Default to true
+					search_sort_order:
+						(store.metadata.search_sort_order as StoreUISettings['search_sort_order']) ||
+						'price_asc',
+					announcement_banner_enabled:
+						store.metadata.announcement_banner_enabled === true,
+					announcement_banner_text:
+						(store.metadata.announcement_banner_text as string) || '',
+					announcement_banner_color:
+						(store.metadata.announcement_banner_color as string) || '#dc2626',
+					announcement_banner_font_size:
+						(store.metadata.announcement_banner_font_size as
+							| 'small'
+							| 'medium'
+							| 'large') || 'medium',
+					hero_alert_enabled: store.metadata.hero_alert_enabled === true,
+					hero_alert_text: (store.metadata.hero_alert_text as string) || '',
+					faq_enabled: store.metadata.faq_enabled === true,
+					faqs: faqs || [],
+					show_subtitle_in_cards: store.metadata.show_subtitle_in_cards === true,
+					show_subtitle_in_product_page: store.metadata.show_subtitle_in_product_page !== false, // Default to true
+				});
 				}
 			}
 		} catch (error) {
@@ -150,25 +157,28 @@ export default function StoreUISettingsPage() {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({
-					metadata: {
-						...store.metadata,
-						// Search settings
-						search_enabled: settings.search_enabled,
-						search_sort_order: settings.search_sort_order,
-						// Announcement banner settings
-						announcement_banner_enabled: settings.announcement_banner_enabled,
-						announcement_banner_text: settings.announcement_banner_text,
-						announcement_banner_color: settings.announcement_banner_color,
-						announcement_banner_font_size: settings.announcement_banner_font_size,
-						// Hero alert settings
-						hero_alert_enabled: settings.hero_alert_enabled,
-						hero_alert_text: settings.hero_alert_text,
-						// FAQ settings
-						faq_enabled: settings.faq_enabled,
-						faqs: JSON.stringify(settings.faqs),
-					},
-				}),
+			body: JSON.stringify({
+				metadata: {
+					...store.metadata,
+					// Search settings
+					search_enabled: settings.search_enabled,
+					search_sort_order: settings.search_sort_order,
+					// Announcement banner settings
+					announcement_banner_enabled: settings.announcement_banner_enabled,
+					announcement_banner_text: settings.announcement_banner_text,
+					announcement_banner_color: settings.announcement_banner_color,
+					announcement_banner_font_size: settings.announcement_banner_font_size,
+					// Hero alert settings
+					hero_alert_enabled: settings.hero_alert_enabled,
+					hero_alert_text: settings.hero_alert_text,
+					// FAQ settings
+					faq_enabled: settings.faq_enabled,
+					faqs: JSON.stringify(settings.faqs),
+					// Product display settings
+					show_subtitle_in_cards: settings.show_subtitle_in_cards,
+					show_subtitle_in_product_page: settings.show_subtitle_in_product_page,
+				},
+			}),
 			});
 
 			if (!response.ok) {
@@ -593,12 +603,68 @@ export default function StoreUISettingsPage() {
 									</div>
 								)}
 							</div>
-						)}
-					</div>
-				</Container>
+			)}
+		</div>
+	</Container>
 
-				{/* Save Button */}
-				<div className="flex justify-end">
+	{/* Product Display Section */}
+	<Container className="p-6">
+		<div className="space-y-6">
+			<div>
+				<Heading level="h2" className="text-xl font-semibold mb-2">
+					Produkt-Anzeige
+				</Heading>
+				<Text size="small" className="text-ui-fg-subtle">
+					Steuern Sie, wo Produkt-Untertitel angezeigt werden
+				</Text>
+			</div>
+
+			<div className="space-y-4 pt-4 border-t border-ui-border-base">
+				<div className="flex items-center justify-between p-4 bg-ui-bg-subtle rounded-lg">
+					<div>
+						<Text size="small" className="font-medium mb-1">
+							Untertitel in Produktkarten
+						</Text>
+						<Text size="xsmall" className="text-ui-fg-subtle">
+							Zeigt Untertitel in Store-Seite, Suchergebnissen und verwandten Produkten
+						</Text>
+					</div>
+					<Switch
+						checked={settings.show_subtitle_in_cards}
+						onCheckedChange={checked =>
+							setSettings(prev => ({
+								...prev,
+								show_subtitle_in_cards: checked,
+							}))
+						}
+					/>
+				</div>
+
+				<div className="flex items-center justify-between p-4 bg-ui-bg-subtle rounded-lg">
+					<div>
+						<Text size="small" className="font-medium mb-1">
+							Untertitel auf Produktseite
+						</Text>
+						<Text size="xsmall" className="text-ui-fg-subtle">
+							Zeigt Untertitel auf der Produktdetailseite unter dem Titel
+						</Text>
+					</div>
+					<Switch
+						checked={settings.show_subtitle_in_product_page}
+						onCheckedChange={checked =>
+							setSettings(prev => ({
+								...prev,
+								show_subtitle_in_product_page: checked,
+							}))
+						}
+					/>
+				</div>
+			</div>
+		</div>
+	</Container>
+
+	{/* Save Button */}
+	<div className="flex justify-end">
 					<Button onClick={saveSettings} disabled={saving}>
 						{saving ? 'Wird gespeichert...' : 'Einstellungen speichern'}
 					</Button>

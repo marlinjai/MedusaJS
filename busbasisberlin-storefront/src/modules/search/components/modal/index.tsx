@@ -18,11 +18,13 @@ import {
 	useInstantSearch,
 } from 'react-instantsearch';
 import { searchClient } from '../../../../lib/config';
+import { useStoreSettings } from '@lib/context/store-settings-context';
 import Modal from '../../../common/components/modal';
 
 type Hit = {
 	id: string;
 	title: string;
+	subtitle?: string;
 	description: string;
 	handle: string;
 	thumbnail: string;
@@ -332,6 +334,7 @@ function CustomHits() {
 	const { hits } = useHits<Hit>();
 	const { results } = useInstantSearch();
 	const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+	const { settings } = useStoreSettings();
 
 	// Listen for view mode changes from toolbar
 	useEffect(() => {
@@ -377,6 +380,7 @@ function CustomHits() {
 						key={hit.id || (hit as any).objectID}
 						hit={hit}
 						viewMode="list"
+						showSubtitle={settings.product_display.show_subtitle_in_cards}
 					/>
 				))}
 			</div>
@@ -387,7 +391,12 @@ function CustomHits() {
 	return (
 		<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
 			{hits.map(hit => (
-				<Hit key={hit.id || (hit as any).objectID} hit={hit} viewMode="grid" />
+				<Hit
+					key={hit.id || (hit as any).objectID}
+					hit={hit}
+					viewMode="grid"
+					showSubtitle={settings.product_display.show_subtitle_in_cards}
+				/>
 			))}
 		</div>
 	);
@@ -571,7 +580,7 @@ export default function SearchModal({
 	);
 }
 
-const Hit = ({ hit, viewMode }: { hit: Hit; viewMode?: 'grid' | 'list' }) => {
+const Hit = ({ hit, viewMode, showSubtitle = false }: { hit: Hit; viewMode?: 'grid' | 'list'; showSubtitle?: boolean }) => {
 	if (viewMode === 'list') {
 		return (
 			<Link href={`/products/${hit.handle}`} className="group block h-full">
@@ -611,6 +620,13 @@ const Hit = ({ hit, viewMode }: { hit: Hit; viewMode?: 'grid' | 'list' }) => {
 						<h3 className="font-semibold text-sm sm:text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
 							{hit.title}
 						</h3>
+
+						{/* Subtitle */}
+						{showSubtitle && hit.subtitle && (
+							<p className="text-[10px] sm:text-xs text-gray-400 line-clamp-1 italic">
+								{hit.subtitle}
+							</p>
+						)}
 
 						{/* Description */}
 						{hit.description && (
@@ -709,19 +725,26 @@ const Hit = ({ hit, viewMode }: { hit: Hit; viewMode?: 'grid' | 'list' }) => {
 					)}
 				</div>
 
-				{/* Content - Responsive with 120% zoom effect */}
-				<div className="p-2 sm:p-2.5 lg:p-3 flex-1 flex flex-col gap-1.5 sm:gap-2">
-					{/* Title */}
-					<h3 className="font-semibold text-sm sm:text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
-						{hit.title}
-					</h3>
+			{/* Content - Responsive with 120% zoom effect */}
+			<div className="p-2 sm:p-2.5 lg:p-3 flex-1 flex flex-col gap-1.5 sm:gap-2">
+				{/* Title */}
+				<h3 className="font-semibold text-sm sm:text-base text-gray-200 line-clamp-2 group-hover:text-blue-400 transition-colors">
+					{hit.title}
+				</h3>
 
-					{/* Description */}
-					{hit.description && (
-						<p className="text-xs sm:text-sm text-gray-400 line-clamp-1">
-							{hit.description}
-						</p>
-					)}
+				{/* Subtitle */}
+				{showSubtitle && hit.subtitle && (
+					<p className="text-[10px] sm:text-xs text-gray-400 line-clamp-1 italic">
+						{hit.subtitle}
+					</p>
+				)}
+
+				{/* Description */}
+				{hit.description && (
+					<p className="text-xs sm:text-sm text-gray-400 line-clamp-1">
+						{hit.description}
+					</p>
+				)}
 
 					{/* Categories */}
 					{hit.category_names && hit.category_names.length > 0 && (
