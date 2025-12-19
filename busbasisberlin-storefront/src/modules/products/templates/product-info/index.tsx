@@ -1,3 +1,5 @@
+'use client';
+
 // product-info/index.tsx
 
 import { useStoreSettings } from '@lib/context/store-settings-context';
@@ -33,9 +35,21 @@ const getCategoryBreadcrumb = (
 };
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
+	// DEBUG: Log product categories
+	console.log('[ProductInfo] Product data:', {
+		title: product.title,
+		categories: product.categories,
+		categoryCount: product.categories?.length,
+		firstCategory: product.categories?.[0],
+		hasParent: product.categories?.[0]?.parent_category,
+	});
+
 	const categoryBreadcrumb = getCategoryBreadcrumb(
 		product.categories || undefined,
 	);
+
+	console.log('[ProductInfo] Breadcrumb result:', categoryBreadcrumb);
+
 	const { settings } = useStoreSettings();
 
 	return (
