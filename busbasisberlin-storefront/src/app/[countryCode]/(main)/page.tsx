@@ -8,7 +8,6 @@ import Hero from '@modules/home/components/hero';
 import ImageSection from '@modules/home/components/image-section';
 import Services from '@modules/home/components/services';
 import StorePrefetch from '@modules/home/components/store-prefetch';
-import Team from '@modules/home/components/team';
 import Verein from '@modules/home/components/verein';
 
 export const metadata: Metadata = {
@@ -37,7 +36,7 @@ export default async function Home(props: {
 			<AnnouncementBanner />
 			<Services />
 			<ImageSection />
-			<Team />
+			{/* <Team /> */}
 			<Verein />
 			<ContactSection />
 			<FAQSection />

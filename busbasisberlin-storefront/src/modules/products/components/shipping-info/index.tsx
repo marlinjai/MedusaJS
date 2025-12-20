@@ -42,7 +42,7 @@ export default function ShippingInfo({
 
 	const deliveryDays = hasExtendedShipping ? '3-9' : '2-6';
 	const deliveryMessage = hasExtendedShipping
-		? 'Lieferzeit: 3-9 Werktag3e'
+		? 'Lieferzeit: 3-9 Werktage'
 		: 'Lieferzeit: 2-6 Werktage';
 
 	return (
