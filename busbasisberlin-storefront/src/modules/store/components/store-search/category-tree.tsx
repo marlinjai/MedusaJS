@@ -3,6 +3,7 @@
 // src/modules/store/components/store-search/category-tree.tsx
 // Custom hierarchical menu for category navigation
 
+import { useEffect, useState } from 'react';
 import { useHierarchicalMenu } from 'react-instantsearch';
 
 type HierarchicalListProps = {
@@ -124,6 +125,27 @@ export default function CategoryTree() {
 		separator: ' > ',
 		limit: 50,
 	});
+
+	// Auto-select first category on initial load
+	const [hasAutoSelected, setHasAutoSelected] = useState(false);
+	
+	useEffect(() => {
+		// Only auto-select if:
+		// 1. We haven't auto-selected yet
+		// 2. There are categories available
+		// 3. No category is currently selected
+		// 4. We're on the client side
+		if (
+			!hasAutoSelected &&
+			items.length > 0 &&
+			!items.some(item => item.isRefined) &&
+			typeof window !== 'undefined'
+		) {
+			// Select the first category
+			refine(items[0].value);
+			setHasAutoSelected(true);
+		}
+	}, [items, hasAutoSelected, refine]);
 
 	return (
 		<div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
