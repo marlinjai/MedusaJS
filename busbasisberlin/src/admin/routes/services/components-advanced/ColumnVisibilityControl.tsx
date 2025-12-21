@@ -75,7 +75,9 @@ export default function ColumnVisibilityControl({
 										<div
 											key={col.key}
 											className={`flex items-center gap-3 px-4 py-2 hover:bg-ui-bg-subtle ${
-												isNonHideable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+												isNonHideable
+													? 'opacity-50 cursor-not-allowed'
+													: 'cursor-pointer'
 											}`}
 											onClick={() => {
 												if (!isNonHideable) {
@@ -129,8 +131,3 @@ export default function ColumnVisibilityControl({
 		</div>
 	);
 }
-
-
-
-
-
