@@ -18,41 +18,55 @@ type Props = {
 export const PRODUCT_LIMIT = 12;
 
 export async function generateStaticParams() {
-	// Skip static generation during Docker build when backend isn't available
-	if (process.env.DOCKER_BUILD === 'true') {
+	// Skip static generation during build when backend isn't available
+	// This includes Docker builds and Vercel/CI builds
+	if (
+		process.env.DOCKER_BUILD === 'true' ||
+		process.env.CI === 'true' ||
+		process.env.VERCEL === '1'
+	) {
 		return [];
 	}
 
-	const { collections } = await listCollections({
-		fields: '*products',
-	});
+	try {
+		const { collections } = await listCollections({
+			fields: '*products',
+		});
 
-	if (!collections) {
+		if (!collections) {
+			return [];
+		}
+
+		const countryCodes = await listRegions().then(
+			(regions: StoreRegion[]) =>
+				regions
+					?.map(r => r.countries?.map(c => c.iso_2))
+					.flat()
+					.filter(Boolean) as string[],
+		);
+
+		const collectionHandles = collections.map(
+			(collection: StoreCollection) => collection.handle,
+		);
+
+		const staticParams = countryCodes
+			?.map((countryCode: string) =>
+				collectionHandles.map((handle: string | undefined) => ({
+					countryCode,
+					handle,
+				})),
+			)
+			.flat();
+
+		return staticParams;
+	} catch (error) {
+		// If backend is not available, skip static generation
+		console.warn(
+			'[generateStaticParams] Backend not available, skipping static generation:',
+			error,
+		);
 		return [];
 	}
-
-	const countryCodes = await listRegions().then(
-		(regions: StoreRegion[]) =>
-			regions
-				?.map(r => r.countries?.map(c => c.iso_2))
-				.flat()
-				.filter(Boolean) as string[],
-	);
-
-	const collectionHandles = collections.map(
-		(collection: StoreCollection) => collection.handle,
-	);
-
-	const staticParams = countryCodes
-		?.map((countryCode: string) =>
-			collectionHandles.map((handle: string | undefined) => ({
-				countryCode,
-				handle,
-			})),
-		)
-		.flat();
-
-	return staticParams;
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
