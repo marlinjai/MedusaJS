@@ -128,7 +128,7 @@ export default function CategoryTree() {
 
 	// Auto-select first category on initial load
 	const [hasAutoSelected, setHasAutoSelected] = useState(false);
-	
+
 	useEffect(() => {
 		// Only auto-select if:
 		// 1. We haven't auto-selected yet
