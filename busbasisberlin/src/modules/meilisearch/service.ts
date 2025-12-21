@@ -342,6 +342,14 @@ export default class MeilisearchModuleService {
 		await index.deleteDocuments(documentIds);
 	}
 
+	async clearAllDocuments(type: MeilisearchIndexType = 'product') {
+		const indexName = await this.getIndexName(type);
+		const index = this.client.index(indexName);
+
+		// Delete all documents from the index
+		await index.deleteAllDocuments();
+	}
+
 	async search(query: string, type: MeilisearchIndexType = 'product') {
 		const indexName = await this.getIndexName(type);
 		const index = this.client.index(indexName);

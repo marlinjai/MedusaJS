@@ -20,6 +20,22 @@ const MeilisearchPage = () => {
 		},
 	});
 
+	const { mutate: mutateClearRebuild, isPending: isClearRebuildPending } = useMutation({
+		mutationFn: () =>
+			sdk.client.fetch('/admin/meilisearch/clear-and-rebuild', {
+				method: 'POST',
+			}),
+		onSuccess: () => {
+			toast.success('Successfully triggered clear and rebuild. This may take a few minutes.');
+			refetchFacets();
+			refetchIndexes();
+		},
+		onError: err => {
+			console.error(err);
+			toast.error('Failed to clear and rebuild Meilisearch indexes');
+		},
+	});
+
 	const { data: facetsData, refetch: refetchFacets } = useQuery({
 		queryKey: ['meilisearch-facets'],
 		queryFn: async () => {
@@ -46,6 +62,12 @@ const MeilisearchPage = () => {
 		mutate();
 	};
 
+	const handleClearRebuild = () => {
+		if (confirm('This will delete all documents and rebuild the indexes from scratch. Are you sure?')) {
+			mutateClearRebuild();
+		}
+	};
+
 	return (
 		<Container className="divide-y p-0">
 			<div className="flex items-center justify-between px-6 py-4">
@@ -63,9 +85,21 @@ const MeilisearchPage = () => {
 						pricing data to Meilisearch for advanced search capabilities.
 					</Text>
 				</div>
-				<Button variant="primary" onClick={handleSync} isLoading={isPending}>
-					Sync Data to Meilisearch
-				</Button>
+				<div className="flex gap-3">
+					<Button variant="primary" onClick={handleSync} isLoading={isPending}>
+						Sync Data to Meilisearch
+					</Button>
+					<Button
+						variant="secondary"
+						onClick={handleClearRebuild}
+						isLoading={isClearRebuildPending}
+					>
+						🧹 Clear & Rebuild Indexes
+					</Button>
+				</div>
+				<Text className="text-ui-fg-subtle text-sm mt-3">
+					💡 Use "Clear & Rebuild" if you see duplicate categories or other index issues. This will delete all documents and rebuild from scratch.
+				</Text>
 			</div>
 
 			{/* Indexes List */}

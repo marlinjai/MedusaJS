@@ -13,6 +13,7 @@ This project includes comprehensive event-driven Meilisearch synchronization tha
 ### Product & Variant Synchronization
 
 #### `product-sync.ts`
+
 **Triggers:** `product.created`, `product.updated`
 
 Syncs products to Meilisearch with all related data (categories, variants, pricing, inventory).
@@ -20,22 +21,26 @@ Syncs products to Meilisearch with all related data (categories, variants, prici
 **Use Case:** When a product is created or its base information is updated (title, description, handle, status, etc.).
 
 #### `product-delete.ts`
+
 **Triggers:** `product.deleted`
 
 Removes products from Meilisearch index when permanently deleted.
 
 #### `variant-sync.ts`
+
 **Triggers:** `product_variant.created`, `product_variant.updated`, `product_variant.deleted`
 
 Syncs the parent product to Meilisearch to update variant-related data.
 
 **Why Important:** Variants affect:
+
 - Product availability (`is_available`)
 - Price ranges (`min_price`, `max_price`)
 - SKU searchability
 - Variant count
 
 **Use Cases:**
+
 - New variant added to a product
 - Variant pricing changes
 - Variant SKU or options change
@@ -44,6 +49,7 @@ Syncs the parent product to Meilisearch to update variant-related data.
 ### Inventory Synchronization
 
 #### `inventory-meilisearch.ts`
+
 **Triggers:** Business events that affect inventory
 
 **Important:** Medusa doesn't emit `inventory_level.*` events directly. This subscriber listens to business events that indirectly affect inventory:
@@ -55,6 +61,7 @@ Syncs the parent product to Meilisearch to update variant-related data.
 - `product_variant.created/updated/deleted` - Variant changes affect inventory
 
 **Action Flow:**
+
 1. Detects which event type occurred
 2. Extracts affected product IDs from:
    - Order items (for order events)
@@ -63,6 +70,7 @@ Syncs the parent product to Meilisearch to update variant-related data.
 3. Syncs all affected products in batches
 
 **Why Important:** These events indirectly affect:
+
 - `is_available` flag (via reservations and actual inventory)
 - `total_inventory` count
 - Search result filtering by availability
@@ -72,26 +80,43 @@ Syncs the parent product to Meilisearch to update variant-related data.
 ### Category & Collection Synchronization
 
 #### `category-sync.ts`
+
 **Triggers:** `product_category.created`, `product_category.updated`, `product_category.deleted`
 
 **Action Flow:**
+
 1. Syncs the category to the `categories` index
-2. Finds all products in that category
-3. Syncs affected products in batches (10 at a time)
+2. Recursively finds ALL subcategories under the updated category
+3. Finds all products in the category AND all its subcategories
+4. Syncs affected products in batches (10 at a time)
 
 **Why Important:** Category changes affect:
+
 - `category_names` in product index
 - `category_paths` (hierarchical navigation)
+- `hierarchical_categories.lvl0`, `lvl1`, `lvl2`, `lvl3` (InstantSearch hierarchical menu)
 - Category faceting and filtering
 - The `categories` index itself
 
+**Critical Feature - Hierarchical Updates:**
+When a parent category is renamed or updated, ALL products in the entire category tree are re-synced. This is essential because:
+
+- Products in subcategories inherit the parent category name in their `hierarchical_categories.lvl0` field
+- Example: Renaming "Mercedes Benz" to "Mercedes-Benz" updates:
+  - Products directly in "Mercedes Benz"
+  - Products in "Mercedes Benz > Motor"
+  - Products in "Mercedes Benz > Motor > Dichtungen"
+  - All other descendant categories
+
 **Use Cases:**
-- Category renamed or description changed
+
+- Category renamed or description changed (syncs entire tree)
 - Category hierarchy changes
 - Category activated/deactivated
 - Category deleted
 
 #### `collection-sync.ts`
+
 **Triggers:** `product_collection.created`, `product_collection.updated`, `product_collection.deleted`
 
 Syncs products when collections are updated to maintain collection relationships in search.
@@ -99,13 +124,16 @@ Syncs products when collections are updated to maintain collection relationships
 ### Manual Sync
 
 #### `meilisearch-sync.ts`
+
 **Triggers:** `meilisearch.sync-all` (custom event)
 
 Performs full re-index of all products. Triggered via:
+
 - Admin UI: Settings → Meilisearch → "Sync All Products"
 - Custom event emission: `eventBus.emit('meilisearch.sync-all')`
 
 **Use Cases:**
+
 - Initial index setup
 - Recovery from sync failures
 - Major schema changes
@@ -170,12 +198,15 @@ Product search results show new category name
 ## Offer Module Subscribers
 
 ### `offer-events.ts`
+
 Handles custom offer module events for business logic integration.
 
 ### `offer-status-changed.ts`
+
 Tracks offer status transitions for analytics and audit trails.
 
 **Status Flow:**
+
 ```
 draft → active → accepted → completed
   ↓       ↓         ↓          ↓
@@ -186,7 +217,9 @@ Sent   Sent     Sent       Sent
 ## Order Subscribers
 
 ### `order-placed.ts`
+
 Handles order placement events:
+
 - Sends order confirmation email
 - Triggers inventory updates
 - Initiates fulfillment workflows
@@ -194,10 +227,13 @@ Handles order placement events:
 ## Authentication Subscribers
 
 ### `user-invited.ts`
+
 Sends user invitation emails when admin invites new team members.
 
 ### `handle-reset.ts`
+
 Handles password reset functionality:
+
 - Generates secure reset tokens
 - Sends password reset emails
 - Validates reset token expiry
@@ -213,16 +249,17 @@ import { type SubscriberConfig } from '@medusajs/framework';
 
 // Subscriber function
 export default async function productCreateHandler() {
-  console.log('A product was created');
+	console.log('A product was created');
 }
 
 // Subscriber config
 export const config: SubscriberConfig = {
-  event: 'product.created',
+	event: 'product.created',
 };
 ```
 
 A subscriber file must export:
+
 - The subscriber function (async function executed when event triggers)
 - A configuration object defining the event to listen to
 
@@ -232,27 +269,28 @@ A subscriber file must export:
 import type { SubscriberArgs, SubscriberConfig } from '@medusajs/framework';
 
 export default async function productCreateHandler({
-  event: { data },
-  container,
+	event: { data },
+	container,
 }: SubscriberArgs<{ id: string }>) {
-  const productId = data.id;
+	const productId = data.id;
 
-  // Resolve Medusa services from container
-  const productModuleService = container.resolve('product');
+	// Resolve Medusa services from container
+	const productModuleService = container.resolve('product');
 
-  const product = await productModuleService.retrieveProduct(productId);
+	const product = await productModuleService.retrieveProduct(productId);
 
-  console.log(`The product ${product.title} was created`);
+	console.log(`The product ${product.title} was created`);
 }
 
 export const config: SubscriberConfig = {
-  event: 'product.created',
+	event: 'product.created',
 };
 ```
 
 ### Subscriber Parameters
 
 A subscriber receives an object with:
+
 - `event`: Object with event details
   - `data`: Event's data payload
 - `container`: Medusa container for resolving services
@@ -262,13 +300,16 @@ A subscriber receives an object with:
 ### 1. Handle Errors Gracefully
 
 ```typescript
-export default async function mySubscriber({ event, container }: SubscriberArgs) {
-  try {
-    // Your logic here
-  } catch (error) {
-    console.error('[MY-SUBSCRIBER] Error:', error);
-    // Don't throw - prevents other subscribers from running
-  }
+export default async function mySubscriber({
+	event,
+	container,
+}: SubscriberArgs) {
+	try {
+		// Your logic here
+	} catch (error) {
+		console.error('[MY-SUBSCRIBER] Error:', error);
+		// Don't throw - prevents other subscribers from running
+	}
 }
 ```
 
@@ -279,8 +320,8 @@ export default async function mySubscriber({ event, container }: SubscriberArgs)
 const BATCH_SIZE = 10;
 
 for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
-  const batch = productIds.slice(i, i + BATCH_SIZE);
-  await Promise.all(batch.map(id => syncProduct(id)));
+	const batch = productIds.slice(i, i + BATCH_SIZE);
+	await Promise.all(batch.map(id => syncProduct(id)));
 }
 ```
 
@@ -288,12 +329,12 @@ for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
 
 ```typescript
 export default async function mySubscriber({ event }: SubscriberArgs) {
-  console.log(`[MY-SUBSCRIBER] Received event:`, event.name);
-  console.log(`[MY-SUBSCRIBER] Event data:`, event.data);
+	console.log(`[MY-SUBSCRIBER] Received event:`, event.name);
+	console.log(`[MY-SUBSCRIBER] Event data:`, event.data);
 
-  // Your logic here
+	// Your logic here
 
-  console.log(`[MY-SUBSCRIBER] Processing complete`);
+	console.log(`[MY-SUBSCRIBER] Processing complete`);
 }
 ```
 
@@ -301,11 +342,11 @@ export default async function mySubscriber({ event }: SubscriberArgs) {
 
 ```typescript
 export default async function mySubscriber({ container }: SubscriberArgs) {
-  // Resolve all needed services at the start
-  const productService = container.resolve('product');
-  const meilisearchService = container.resolve('meilisearch');
+	// Resolve all needed services at the start
+	const productService = container.resolve('product');
+	const meilisearchService = container.resolve('meilisearch');
 
-  // Use services
+	// Use services
 }
 ```
 
@@ -313,14 +354,14 @@ export default async function mySubscriber({ container }: SubscriberArgs) {
 
 ```typescript
 export default async function mySubscriber({ event }: SubscriberArgs) {
-  const { id } = event.data;
+	const { id } = event.data;
 
-  if (!id) {
-    console.warn('[MY-SUBSCRIBER] No ID in event data, skipping');
-    return;
-  }
+	if (!id) {
+		console.warn('[MY-SUBSCRIBER] No ID in event data, skipping');
+		return;
+	}
 
-  // Process with ID
+	// Process with ID
 }
 ```
 
@@ -329,49 +370,58 @@ export default async function mySubscriber({ event }: SubscriberArgs) {
 ### Core Medusa Events
 
 **Products:**
+
 - `product.created`
 - `product.updated`
 - `product.deleted`
 
 **Variants:**
+
 - `product_variant.created`
 - `product_variant.updated`
 - `product_variant.deleted`
 
 **Orders:**
+
 - `order.placed`
 - `order.updated`
 - `order.canceled`
 - `order.completed`
 
 **Categories:**
+
 - `product_category.created`
 - `product_category.updated`
 - `product_category.deleted`
 
 **Collections:**
+
 - `product_collection.created`
 - `product_collection.updated`
 - `product_collection.deleted`
 
 **Customers:**
+
 - `customer.created`
 - `customer.updated`
 - `customer.deleted`
 
 **Authentication:**
+
 - `invite.created`
 - `user.password_reset`
 
 ### Custom Events
 
 **Offers:**
+
 - `offer.created`
 - `offer.status_changed`
 - `offer.updated`
 - `offer.deleted`
 
 **Meilisearch:**
+
 - `meilisearch.sync-all`
 
 ## Troubleshooting
@@ -379,6 +429,7 @@ export default async function mySubscriber({ event }: SubscriberArgs) {
 ### Subscriber Not Firing
 
 **Check:**
+
 1. File is in `src/subscribers/` directory
 2. File exports both handler function and config
 3. Event name matches exactly (case-sensitive)
@@ -387,11 +438,13 @@ export default async function mySubscriber({ event }: SubscriberArgs) {
 ### Performance Issues
 
 **Symptoms:**
+
 - Events processing slowly
 - Application feels sluggish
 - Event queue backing up
 
 **Solutions:**
+
 1. Add batch processing (see Best Practices #2)
 2. Use `setImmediate()` or `setTimeout()` for expensive operations
 3. Consider moving to background jobs for heavy processing
@@ -402,21 +455,22 @@ export default async function mySubscriber({ event }: SubscriberArgs) {
 **Cause:** Subscriber registered multiple times or event emitted multiple times.
 
 **Solution:**
+
 ```typescript
 // Add idempotency check
 const processedIds = new Set<string>();
 
 export default async function mySubscriber({ event }: SubscriberArgs) {
-  const { id } = event.data;
+	const { id } = event.data;
 
-  if (processedIds.has(id)) {
-    console.log(`[MY-SUBSCRIBER] Already processed ${id}, skipping`);
-    return;
-  }
+	if (processedIds.has(id)) {
+		console.log(`[MY-SUBSCRIBER] Already processed ${id}, skipping`);
+		return;
+	}
 
-  processedIds.add(id);
+	processedIds.add(id);
 
-  // Process
+	// Process
 }
 ```
 
@@ -433,14 +487,14 @@ LOG_LEVEL=debug
 
 ```typescript
 export default async function mySubscriber({ event }: SubscriberArgs) {
-  const startTime = Date.now();
+	const startTime = Date.now();
 
-  try {
-    // Your logic
-  } finally {
-    const duration = Date.now() - startTime;
-    console.log(`[MY-SUBSCRIBER] Processed in ${duration}ms`);
-  }
+	try {
+		// Your logic
+	} finally {
+		const duration = Date.now() - startTime;
+		console.log(`[MY-SUBSCRIBER] Processed in ${duration}ms`);
+	}
 }
 ```
 

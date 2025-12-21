@@ -8,6 +8,17 @@ import { syncProductsWorkflow } from '../workflows/sync-products';
 /**
  * Syncs categories and related products when categories change
  * This ensures category hierarchy and product categorization is accurate
+ *
+ * IMPORTANT: When a parent category is updated (e.g., renamed), this subscriber
+ * will sync ALL products in that category AND all its subcategories.
+ * This is crucial because hierarchical_categories (lvl0, lvl1, etc.) in the
+ * product index need to reflect the updated parent category name.
+ *
+ * Example: If "Mercedes Benz" is renamed to "Mercedes-Benz", all products in:
+ * - Mercedes Benz (direct)
+ * - Mercedes Benz > Motor
+ * - Mercedes Benz > Motor > Dichtungen
+ * will be re-synced to update their hierarchical_categories.lvl0 field.
  */
 export default async function handleCategoryEvents({
 	event: { data, name },
@@ -133,20 +144,60 @@ export default async function handleCategoryEvents({
 
 		logger.info(`✅ [CATEGORY-SYNC] Category ${data.id} synced to Meilisearch`);
 
-		// Also sync all products in this category
+		// Get ALL descendant category IDs (including this category and all subcategories)
+		// This is crucial for hierarchical categories - when a parent is renamed,
+		// all products in child categories need their hierarchical_categories updated
+		const getAllDescendantCategoryIds = async (categoryId: string): Promise<string[]> => {
+			const descendants = new Set<string>();
+			descendants.add(categoryId);
+
+			const findChildren = async (parentId: string) => {
+				const { data: children } = await query.graph({
+					entity: 'product_category',
+					fields: ['id'],
+					filters: {
+						parent_category_id: parentId,
+					} as any,
+				});
+
+				if (children && children.length > 0) {
+					for (const child of children) {
+						if (!descendants.has(child.id)) {
+							descendants.add(child.id);
+							await findChildren(child.id); // Recursively find grandchildren
+						}
+					}
+				}
+			};
+
+			await findChildren(categoryId);
+			return Array.from(descendants);
+		};
+
+		// Get all category IDs including subcategories
+		const allCategoryIds = await getAllDescendantCategoryIds(data.id);
+
+		if (allCategoryIds.length > 1) {
+			logger.info(
+				`🌳 [CATEGORY-SYNC] Found ${allCategoryIds.length - 1} subcategories under ${categoryData[0].name}`,
+			);
+		}
+
+		// Sync all products in this category AND all its subcategories
+		// This ensures hierarchical_categories.lvl0/lvl1/etc are updated correctly
 		const { data: products } = await query.graph({
 			entity: 'product',
 			fields: ['id'],
 			filters: {
 				categories: {
-					id: [data.id],
+					id: allCategoryIds,
 				},
 			} as any,
 		});
 
 		if (products && products.length > 0) {
 			logger.info(
-				`🔄 [CATEGORY-SYNC] Syncing ${products.length} products in category ${categoryData[0].name}`,
+				`🔄 [CATEGORY-SYNC] Syncing ${products.length} products in category tree of ${categoryData[0].name}`,
 			);
 
 			// Sync products in batches
@@ -165,11 +216,11 @@ export default async function handleCategoryEvents({
 			}
 
 			logger.info(
-				`✅ [CATEGORY-SYNC] Synced ${products.length} products to Meilisearch`,
+				`✅ [CATEGORY-SYNC] Synced ${products.length} products to Meilisearch (including subcategories)`,
 			);
 		} else {
 			logger.info(
-				`ℹ️ [CATEGORY-SYNC] No products found in category ${categoryData[0].name}`,
+				`ℹ️ [CATEGORY-SYNC] No products found in category tree of ${categoryData[0].name}`,
 			);
 		}
 	} catch (error) {
