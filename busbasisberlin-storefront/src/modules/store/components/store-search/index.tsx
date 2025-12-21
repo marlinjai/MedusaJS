@@ -9,7 +9,6 @@ import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
 import {
 	Configure,
 	HitsPerPage,
-	InstantSearch,
 	RefinementList,
 	SearchBox,
 	SortBy,
@@ -19,6 +18,7 @@ import {
 	usePagination,
 	useStats,
 } from 'react-instantsearch';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
 import CategoryTree from './category-tree';
 import ProductGrid from './product-grid';
 import SkeletonToolbar from './skeleton-toolbar';
@@ -502,7 +502,7 @@ export default function StoreSearch() {
 	const t = useTranslations('store');
 
 	return (
-		<InstantSearch
+		<InstantSearchNext
 			searchClient={searchClient}
 			indexName={process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME || 'products'}
 			routing={routing}
@@ -593,6 +593,6 @@ export default function StoreSearch() {
 					</div>
 				</div>
 			</div>
-		</InstantSearch>
+		</InstantSearchNext>
 	);
 }

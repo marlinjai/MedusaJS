@@ -8,7 +8,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BsFilter, BsGrid3X3, BsList, BsSortDown, BsX } from 'react-icons/bs';
 import {
 	Configure,
-	InstantSearch,
 	RefinementList,
 	SearchBox,
 	SortBy,
@@ -17,6 +16,7 @@ import {
 	useHits,
 	useInstantSearch,
 } from 'react-instantsearch';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
 import { searchClient } from '../../../../lib/config';
 import { useStoreSettings } from '@lib/context/store-settings-context';
 import Modal from '../../../common/components/modal';
@@ -506,7 +506,7 @@ export default function SearchModal({
 			)}
 			<Modal isOpen={isOpen} close={() => setIsOpen(false)} search={true}>
 				<div className="w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-[80vw] xl:max-w-[1080px] mx-auto h-full flex flex-col bg-stone-950 rounded-xl p-3 sm:p-4 lg:p-5 overflow-hidden">
-					<InstantSearch
+					<InstantSearchNext
 						searchClient={searchClient}
 						indexName={
 							process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME || 'products'
@@ -573,7 +573,7 @@ export default function SearchModal({
 								<CustomHits />
 							</div>
 						</div>
-					</InstantSearch>
+					</InstantSearchNext>
 				</div>
 			</Modal>
 		</>
