@@ -167,7 +167,7 @@ const assignProductsToCategoryStep = createStep(
 		// Use Medusa's official batchLinkProductsToCategoryWorkflow
 		// This ensures: events are emitted, cache is invalidated, Meilisearch syncs
 		// https://docs.medusajs.com/resources/commerce-modules/product/workflows
-		
+
 		for (let i = 0; i < input.productIds.length; i += BATCH_SIZE) {
 			const batch = input.productIds.slice(i, i + BATCH_SIZE);
 			logger.info(
@@ -185,7 +185,7 @@ const assignProductsToCategoryStep = createStep(
 				});
 
 				updatedCount += batch.length;
-				
+
 				logger.info(
 					`[ASSIGN-UNCATEGORIZED] ✓ Batch ${Math.floor(i / BATCH_SIZE) + 1} complete: ${batch.length} products linked to category`,
 				);
@@ -194,12 +194,12 @@ const assignProductsToCategoryStep = createStep(
 					`[ASSIGN-UNCATEGORIZED] ✗ Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
 					error.message,
 				);
-				
+
 				// Try individual products if batch fails (helps identify problematic products)
 				logger.info(
 					`[ASSIGN-UNCATEGORIZED] Retrying products individually for batch ${Math.floor(i / BATCH_SIZE) + 1}...`,
 				);
-				
+
 				for (const productId of batch) {
 					try {
 						await batchLinkProductsToCategoryWorkflow(container).run({

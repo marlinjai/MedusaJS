@@ -116,65 +116,21 @@ const UncategorizedProductsTool = () => {
 			const assignResult = await assignProducts.mutateAsync(false);
 			addLog(`✅ ${assignResult.message}`);
 
-			// Step 4: Wait for background process (sync happens automatically)
-			addLog('⏳ Background process started - syncing to Meilisearch...');
-			addLog(
-				'⏱️  This will take 3-5 minutes. You can close this and check back.',
-			);
-
-			// Step 5: Trigger manual Meilisearch full sync to ensure products appear
-			addLog('🔄 Triggering full Meilisearch sync...');
-			try {
-				const syncResponse = await fetch('/admin/meilisearch/sync', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					credentials: 'include',
-				});
-
-				if (syncResponse.ok) {
-					addLog('✅ Meilisearch sync started successfully');
-
-					// Wait a moment and then sync the category to ensure has_public_products is updated
-					await new Promise(resolve => setTimeout(resolve, 2000));
-					if (categoryResult?.category?.id) {
-						addLog('🔄 Syncing category to update visibility...');
-						const categoryResponse = await fetch(
-							'/admin/meilisearch/sync-category',
-							{
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
-								credentials: 'include',
-								body: JSON.stringify({
-									categoryId: categoryResult.category.id,
-								}),
-							},
-						);
-
-						if (categoryResponse.ok) {
-							addLog(
-								'✅ Category visibility updated - should appear in frontend',
-							);
-						}
-					}
-				} else {
-					addLog('⚠️  Meilisearch sync may be running in background');
-				}
-			} catch (error: any) {
-				addLog(`⚠️  Sync trigger: ${error.message}`);
-			}
-
-			// Step 6: Refresh data after a delay
+			// Step 4: Success! Workflow handles everything automatically
+			addLog('✨ Products assigned successfully!');
+			addLog('🎉 Meilisearch will auto-sync via Medusa event system');
+			addLog('⚡ Products will appear in frontend within 1-2 minutes');
+			
+			// Refresh status to show updated count
 			setTimeout(async () => {
 				await refetch();
-				addLog(
-					'🎉 Process completed! Wait 3-5 minutes for products to appear in frontend.',
-				);
+				addLog('✅ Process completed! Check frontend now.');
 				toast.success('Success!', {
-					description: `Assigned ${data?.uncategorizedCount || 0} products. Check frontend in 3-5 minutes.`,
-					duration: 8000,
+					description: `Assigned ${data?.uncategorizedCount || 0} products. Auto-syncing to Meilisearch!`,
+					duration: 5000,
 				});
 				setIsProcessing(false);
-			}, 5000);
+			}, 2000);
 		} catch (error: any) {
 			addLog(`❌ Error: ${error.message}`);
 			toast.error('Error', {
@@ -233,8 +189,8 @@ const UncategorizedProductsTool = () => {
 		setLogs([]);
 
 		try {
-			addLog('🔄 Forcing full Meilisearch re-sync...');
-			addLog('⏱️  This will re-index all products and categories');
+			addLog('🔧 Manual Meilisearch re-sync (debug mode)...');
+			addLog('ℹ️  Note: Sync normally happens automatically via events');
 
 			const response = await fetch('/admin/meilisearch/sync', {
 				method: 'POST',
@@ -246,7 +202,7 @@ const UncategorizedProductsTool = () => {
 				throw new Error('Failed to trigger Meilisearch sync');
 			}
 
-			addLog('✅ Meilisearch sync started successfully');
+			addLog('✅ Manual sync started successfully');
 
 			// Also sync the "Ohne Kategorie" category specifically after a short delay
 			// This ensures has_public_products is updated correctly
@@ -269,15 +225,13 @@ const UncategorizedProductsTool = () => {
 				}
 			}
 
-			addLog('⏱️  This will take 3-5 minutes to complete');
-			addLog(
-				'🔄 After completion, refresh the frontend to see updated products',
-			);
+			addLog('⏱️  Sync will complete in 1-2 minutes');
+			addLog('🔄 Refresh frontend to see updated products');
 
-			toast.success('Sync Started', {
+			toast.success('Manual Sync Started', {
 				description:
-					'Meilisearch is re-indexing. Check frontend in 3-5 minutes.',
-				duration: 8000,
+					'Meilisearch is re-indexing. Check frontend in 1-2 minutes.',
+				duration: 5000,
 			});
 		} catch (error: any) {
 			addLog(`❌ Error: ${error.message}`);
@@ -406,7 +360,7 @@ const UncategorizedProductsTool = () => {
 							variant="secondary"
 							className="flex-1"
 						>
-							🔄 Force Meilisearch Sync
+							🔧 Manual Sync (Debug)
 						</Button>
 						<Button
 							onClick={() => refetch()}

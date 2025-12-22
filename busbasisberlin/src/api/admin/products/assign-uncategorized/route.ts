@@ -4,11 +4,9 @@
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { assignUncategorizedProductsWorkflow } from '../../../../workflows/assign-uncategorized-products';
-import { syncProductsWorkflow } from '../../../../workflows/sync-products';
 
 type AssignUncategorizedBody = {
 	dryRun?: boolean;
-	syncToMeilisearch?: boolean;
 };
 
 export const POST = async (
@@ -18,11 +16,10 @@ export const POST = async (
 	const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
 
 	try {
-		const { dryRun = false, syncToMeilisearch = true } = req.body || {};
+		const { dryRun = false } = req.body || {};
 
 		logger.info('[ASSIGN-UNCATEGORIZED-API] Starting workflow...');
 		logger.info(`[ASSIGN-UNCATEGORIZED-API] Dry run: ${dryRun}`);
-		logger.info(`[ASSIGN-UNCATEGORIZED-API] Sync to Meilisearch: ${syncToMeilisearch}`);
 
 		// Send immediate response that process has started
 		res.status(202).json({
@@ -36,6 +33,11 @@ export const POST = async (
 		(async () => {
 			try {
 				// Run the assignment workflow
+				// Using batchLinkProductsToCategoryWorkflow automatically:
+				// - Emits product.updated events
+				// - Triggers Meilisearch sync via subscribers
+				// - Invalidates cache
+				// - No manual sync needed!
 				const { result } = await assignUncategorizedProductsWorkflow(req.scope).run({
 					input: {
 						dryRun,
@@ -48,54 +50,8 @@ export const POST = async (
 					`Total: ${result.totalProducts}, Updated: ${result.updatedProducts}, ` +
 					`DryRun: ${dryRun}`
 				);
-
-				if (!dryRun && syncToMeilisearch && result.updatedProducts > 0) {
-					logger.info('[ASSIGN-UNCATEGORIZED-API] Syncing products to Meilisearch...');
-
-					// Sync updated products to Meilisearch
-					let offset = 0;
-					const limit = 100;
-					let hasMore = true;
-					let totalSynced = 0;
-
-					while (hasMore) {
-						const {
-							result: { products, metadata },
-						} = await syncProductsWorkflow(req.scope).run({
-							input: {
-								limit,
-								offset,
-							},
-						});
-
-						totalSynced += products.length;
-						hasMore = offset + limit < (metadata?.count ?? 0);
-						offset += limit;
-
-						logger.info(
-							`[ASSIGN-UNCATEGORIZED-API] Synced ${totalSynced}/${metadata?.count ?? 0} products to Meilisearch`,
-						);
-					}
-
-					logger.info(
-						`[ASSIGN-UNCATEGORIZED-API] ✅ Successfully synced ${totalSynced} products to Meilisearch`,
-					);
-
-					// CRITICAL: Sync the "Ohne Kategorie" category AFTER products are synced
-					// This ensures has_public_products is calculated correctly
-					logger.info('[ASSIGN-UNCATEGORIZED-API] Syncing category to update has_public_products flag...');
-					const { syncCategoriesWorkflow } = await import('../../../../workflows/sync-categories');
-					await syncCategoriesWorkflow(req.scope).run({
-						input: {
-							filters: {
-								id: result.categoryId,
-							},
-							limit: 1,
-						},
-					});
-					logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Category synced with updated product count');
-				}
-
+				
+				logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Products will auto-sync to Meilisearch via event system');
 				logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Process completed successfully');
 			} catch (error: any) {
 				logger.error(`[ASSIGN-UNCATEGORIZED-API] ❌ Error during background processing: ${error.message}`);
@@ -148,7 +104,7 @@ export const GET = async (
 		const uncategorizedProducts = allProducts.filter((product: any) => {
 			return !product.categories || product.categories.length === 0;
 		});
-		
+
 		logger.info(
 			`[ASSIGN-UNCATEGORIZED-API-GET] Found ${uncategorizedProducts.length} uncategorized out of ${allProducts.length} total products`,
 		);
