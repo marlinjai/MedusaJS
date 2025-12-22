@@ -36,8 +36,8 @@ export const POST = async (
 		// Run sync in background
 		(async () => {
 			try {
-				const { syncCategoriesWorkflow } = await import('../../../../workflows/sync-categories');
-
+				const { syncCategoriesWorkflow } = await import('../../../../workflows/sync-categories.js');
+				
 				await syncCategoriesWorkflow(req.scope).run({
 					input: {
 						filters: {
