@@ -50,7 +50,7 @@ export const POST = async (
 					`Total: ${result.totalProducts}, Updated: ${result.updatedProducts}, ` +
 					`DryRun: ${dryRun}`
 				);
-				
+
 				logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Products will auto-sync to Meilisearch via event system');
 				logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Process completed successfully');
 			} catch (error: any) {

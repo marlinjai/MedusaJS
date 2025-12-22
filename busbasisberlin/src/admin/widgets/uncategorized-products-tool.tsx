@@ -120,7 +120,7 @@ const UncategorizedProductsTool = () => {
 			addLog('✨ Products assigned successfully!');
 			addLog('🎉 Meilisearch will auto-sync via Medusa event system');
 			addLog('⚡ Products will appear in frontend within 1-2 minutes');
-			
+
 			// Refresh status to show updated count
 			setTimeout(async () => {
 				await refetch();
