@@ -1,5 +1,6 @@
 // busbasisberlin/src/workflows/assign-uncategorized-products.ts
 // Workflow to assign all uncategorized products to the default "Ohne Kategorie" category
+// Following Medusa best practices: uses workflows instead of direct SQL
 
 import {
 	createWorkflow,
@@ -8,6 +9,7 @@ import {
 	StepResponse,
 } from '@medusajs/framework/workflows-sdk';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { batchLinkProductsToCategoryWorkflow } from '@medusajs/medusa/core-flows';
 
 type AssignUncategorizedInput = {
 	defaultCategoryId?: string;
@@ -60,37 +62,33 @@ const findUncategorizedProductsStep = createStep(
 			logger.info(`[ASSIGN-UNCATEGORIZED] Found category: ${categoryName} (${categoryId})`);
 		}
 
-		// Use raw SQL to get truly uncategorized products (bypasses any caching)
-		// This is more reliable than query.graph which may return stale data
-		const knex = container.resolve('db');
-
-		const uncategorizedProductsQuery = await knex.raw(`
-			SELECT p.id, p.title
-			FROM product p
-			LEFT JOIN product_category_product pcp ON p.id = pcp.product_id
-			WHERE pcp.product_id IS NULL
-			LIMIT 10000
-		`);
-
-		const uncategorizedProducts = uncategorizedProductsQuery.rows || [];
-
-		logger.info(`[ASSIGN-UNCATEGORIZED] Found ${uncategorizedProducts.length} products without categories (using raw SQL)`);
-
-		// Also log the query.graph result for comparison to detect caching issues
-		const allProductsResult = await query.graph({
-			entity: 'product',
-			fields: ['id', 'title', 'categories.id'],
-			pagination: {
-				take: 10000,
-				skip: 0,
+		// Use query.graph with caching DISABLED for accurate real-time data
+		// Per Medusa docs: cache.enable: false ensures fresh data from database
+		const allProductsResult = await query.graph(
+			{
+				entity: 'product',
+				fields: ['id', 'title', 'categories.id'],
+				pagination: {
+					take: 10000,
+					skip: 0,
+				},
 			},
-		});
+			{
+				// Disable caching to get accurate uncategorized count
+				// https://docs.medusajs.com/resources/medusa-container-resources/query#cache-query
+				cache: {
+					enable: false,
+				},
+			},
+		);
+
 		const allProducts = allProductsResult?.data || [];
-		const graphUncategorized = allProducts.filter((product: any) => {
+		logger.info(`[ASSIGN-UNCATEGORIZED] Found ${allProducts.length} total products (cache disabled)`);
+
+		// Filter products that have no categories
+		const uncategorizedProducts = allProducts.filter((product: any) => {
 			return !product.categories || product.categories.length === 0;
 		});
-		logger.info(`[ASSIGN-UNCATEGORIZED] query.graph reports ${graphUncategorized.length} uncategorized (may be stale)`);
-		logger.info(`[ASSIGN-UNCATEGORIZED] Difference: ${Math.abs(uncategorizedProducts.length - graphUncategorized.length)} products`);
 
 		logger.info(
 			`[ASSIGN-UNCATEGORIZED] Found ${uncategorizedProducts.length} products without categories`,
@@ -158,17 +156,18 @@ const assignProductsToCategoryStep = createStep(
 			`[ASSIGN-UNCATEGORIZED] Assigning ${input.productIds.length} products to category ${input.categoryName}...`,
 		);
 
-		let updatedCount = 0;
-		const BATCH_SIZE = 50;
-		
-		// Get database connection for direct SQL operations (more reliable than workflows)
-		const knex = container.resolve('db');
-		
-		// Get event bus to emit product.updated events (triggers Meilisearch auto-sync)
-		const eventBusService = container.resolve('eventBusService');
-		const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+		if (input.productIds.length === 0) {
+			logger.info('[ASSIGN-UNCATEGORIZED] No products to update');
+			return new StepResponse({ updatedCount: 0 });
+		}
 
-		// Process in batches to avoid overwhelming the system
+		const BATCH_SIZE = 100; // Medusa workflows can handle larger batches
+		let updatedCount = 0;
+
+		// Use Medusa's official batchLinkProductsToCategoryWorkflow
+		// This ensures: events are emitted, cache is invalidated, Meilisearch syncs
+		// https://docs.medusajs.com/resources/commerce-modules/product/workflows
+		
 		for (let i = 0; i < input.productIds.length; i += BATCH_SIZE) {
 			const batch = input.productIds.slice(i, i + BATCH_SIZE);
 			logger.info(
@@ -176,58 +175,47 @@ const assignProductsToCategoryStep = createStep(
 			);
 
 			try {
-				// Use raw SQL INSERT to assign products - more reliable than updateProductsWorkflow
-				// ON CONFLICT DO NOTHING prevents errors if product is already in category
-				const values = batch.map(productId => `('${productId}', '${input.categoryId}')`).join(', ');
-				
-				await knex.raw(`
-					INSERT INTO product_category_product (product_id, product_category_id)
-					VALUES ${values}
-					ON CONFLICT DO NOTHING
-				`);
-				
+				// Use official Medusa workflow for category linking
+				// This automatically handles: events, cache, Meilisearch sync, compensation
+				await batchLinkProductsToCategoryWorkflow(container).run({
+					input: {
+						id: input.categoryId,
+						product_ids: batch,
+					},
+				});
+
 				updatedCount += batch.length;
 				
 				logger.info(
-					`[ASSIGN-UNCATEGORIZED] ✓ Batch ${Math.floor(i / BATCH_SIZE) + 1} complete: ${batch.length} products assigned`,
-				);
-				
-				// Emit product.updated events for Meilisearch auto-sync and other subscribers
-				// This ensures category changes are reflected in search index automatically
-				logger.info(
-					`[ASSIGN-UNCATEGORIZED] Emitting product.updated events for ${batch.length} products...`,
-				);
-				
-				for (const productId of batch) {
-					try {
-						await eventBusService.emit('product.updated', {
-							id: productId,
-							// Include metadata about what changed
-							metadata: {
-								source: 'assign-uncategorized-workflow',
-								categoryId: input.categoryId,
-								categoryName: input.categoryName,
-							},
-						});
-					} catch (eventError: any) {
-						// Log but don't fail the whole batch if event emission fails
-						logger.warn(
-							`[ASSIGN-UNCATEGORIZED] Failed to emit event for product ${productId}:`,
-							eventError.message,
-						);
-					}
-				}
-				
-				logger.info(
-					`[ASSIGN-UNCATEGORIZED] ✓ Events emitted for batch ${Math.floor(i / BATCH_SIZE) + 1}`,
+					`[ASSIGN-UNCATEGORIZED] ✓ Batch ${Math.floor(i / BATCH_SIZE) + 1} complete: ${batch.length} products linked to category`,
 				);
 			} catch (error: any) {
 				logger.error(
 					`[ASSIGN-UNCATEGORIZED] ✗ Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
 					error.message,
 				);
-				logger.error(`[ASSIGN-UNCATEGORIZED] Failed product IDs:`, batch.join(', '));
-				// Continue with next batch even if this one fails
+				
+				// Try individual products if batch fails (helps identify problematic products)
+				logger.info(
+					`[ASSIGN-UNCATEGORIZED] Retrying products individually for batch ${Math.floor(i / BATCH_SIZE) + 1}...`,
+				);
+				
+				for (const productId of batch) {
+					try {
+						await batchLinkProductsToCategoryWorkflow(container).run({
+							input: {
+								id: input.categoryId,
+								product_ids: [productId],
+							},
+						});
+						updatedCount++;
+					} catch (individualError: any) {
+						logger.error(
+							`[ASSIGN-UNCATEGORIZED] Failed to link product ${productId}:`,
+							individualError.message,
+						);
+					}
+				}
 			}
 		}
 

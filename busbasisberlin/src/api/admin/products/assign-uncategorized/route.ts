@@ -122,25 +122,36 @@ export const GET = async (
 
 	try {
 		const query = req.scope.resolve('query');
-		const knex = req.scope.resolve('db');
 
-		// Use raw SQL to get accurate count (bypasses Medusa caching)
-		const uncategorizedQuery = await knex.raw(`
-			SELECT COUNT(*) as count
-			FROM product p
-			LEFT JOIN product_category_product pcp ON p.id = pcp.product_id
-			WHERE pcp.product_id IS NULL
-		`);
+		// Use query.graph with caching DISABLED for accurate real-time count
+		// Per Medusa docs: cache.enable: false prevents stale data
+		// https://docs.medusajs.com/resources/medusa-container-resources/query#cache-query
+		const allProductsResult = await query.graph(
+			{
+				entity: 'product',
+				fields: ['id', 'title', 'categories.id'],
+				pagination: {
+					take: 10000,
+					skip: 0,
+				},
+			},
+			{
+				cache: {
+					enable: false, // Disable cache for accurate count
+				},
+			},
+		);
 
-		const uncategorizedCount = parseInt(uncategorizedQuery.rows[0]?.count || '0');
+		const allProducts = allProductsResult?.data || [];
 
-		const totalProductsQuery = await knex.raw(`
-			SELECT COUNT(*) as count FROM product
-		`);
-
-		const totalProducts = parseInt(totalProductsQuery.rows[0]?.count || '0');
-
-		logger.info(`[ASSIGN-UNCATEGORIZED-API-GET] Database reports ${uncategorizedCount} uncategorized products out of ${totalProducts} total`);
+		// Filter products that have no categories
+		const uncategorizedProducts = allProducts.filter((product: any) => {
+			return !product.categories || product.categories.length === 0;
+		});
+		
+		logger.info(
+			`[ASSIGN-UNCATEGORIZED-API-GET] Found ${uncategorizedProducts.length} uncategorized out of ${allProducts.length} total products`,
+		);
 
 		// Check if default category exists
 		const categoryResult = await query.graph({
@@ -156,22 +167,9 @@ export const GET = async (
 
 		const defaultCategory = categoryResult?.data?.[0] || null;
 
-		// Get sample uncategorized products if any exist
-		let examples = [];
-		if (uncategorizedCount > 0) {
-			const examplesQuery = await knex.raw(`
-				SELECT p.id, p.title
-				FROM product p
-				LEFT JOIN product_category_product pcp ON p.id = pcp.product_id
-				WHERE pcp.product_id IS NULL
-				LIMIT 10
-			`);
-			examples = examplesQuery.rows || [];
-		}
-
 		res.json({
-			totalProducts,
-			uncategorizedCount,
+			totalProducts: allProducts.length,
+			uncategorizedCount: uncategorizedProducts.length,
 			defaultCategory: defaultCategory
 				? {
 						id: defaultCategory.id,
@@ -179,7 +177,7 @@ export const GET = async (
 						handle: defaultCategory.handle,
 					}
 				: null,
-			examples: examples.map((p: any) => ({
+			examples: uncategorizedProducts.slice(0, 10).map((p: any) => ({
 				id: p.id,
 				title: p.title,
 			})),
