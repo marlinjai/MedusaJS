@@ -8,56 +8,50 @@ This workflow assigns all 226 uncategorized products to the default "Ohne Katego
 
 ### 1. Create the Default Category
 
-Once the deployment completes (~5 minutes), create the "Ohne Kategorie" category:
+**Option A: Using Admin API Endpoint (Authenticated)**
+
+If you have admin authentication, you can use the API endpoint:
 
 ```bash
-curl -X POST "https://basiscampmedia.de/admin/categories/create-default" \
-  -H "Content-Type: application/json"
+curl -X POST "https://basiscamp-berlin.de/admin/categories/create-default" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
-**Expected Response:**
+**Option B: Use Medusa Admin Panel (Recommended - Easier)**
 
-```json
-{
-	"success": true,
-	"category": {
-		"id": "pcat_xxx...",
-		"name": "Ohne Kategorie",
-		"handle": "ohne-kategorie"
-	},
-	"message": "Category created successfully"
-}
-```
+1. Log into Medusa admin at `https://basiscamp-berlin.de/app`
+2. Navigate to **Products** → **Categories**
+3. Click **"+ Create Category"**
+4. Fill in:
+   - **Name**: `Ohne Kategorie`
+   - **Handle**: `ohne-kategorie`
+   - **Description**: `Produkte ohne zugewiesene Kategorie`
+   - **Status**: Active
+5. Click **Save**
+
+**Expected Result:**
+- Category created with handle `ohne-kategorie`
+- Category will be used by the workflow to assign uncategorized products
 
 ### 2. Check Current Status (Optional)
 
 Before running the workflow, check how many uncategorized products exist:
 
 ```bash
-curl "https://basiscampmedia.de/admin/products/assign-uncategorized"
+curl "https://basiscamp-berlin.de/admin/products/assign-uncategorized"
 ```
 
-**Expected Response:**
+**Note:** This endpoint also requires authentication. You can skip this step and proceed directly to executing the workflow.
 
-```json
-{
-  "totalProducts": 1896,
-  "uncategorizedCount": 226,
-  "defaultCategory": {
-    "id": "pcat_xxx...",
-    "name": "Ohne Kategorie"
-  },
-  "examples": [...]
-}
-```
-
-### 3. Run Dry Run (Recommended)
+### 3. Run Dry Run (Optional - Recommended)
 
 Test the workflow without making changes:
 
 ```bash
-curl -X POST "https://basiscampmedia.de/admin/products/assign-uncategorized" \
+curl -X POST "https://basiscamp-berlin.de/admin/products/assign-uncategorized" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{"dryRun": true, "syncToMeilisearch": false}'
 ```
 
@@ -68,8 +62,9 @@ Check the backend logs to see what would be updated.
 Assign all uncategorized products to the default category:
 
 ```bash
-curl -X POST "https://basiscampmedia.de/admin/products/assign-uncategorized" \
+curl -X POST "https://basiscamp-berlin.de/admin/products/assign-uncategorized" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{"dryRun": false, "syncToMeilisearch": true}'
 ```
 
