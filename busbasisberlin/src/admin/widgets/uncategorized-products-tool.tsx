@@ -204,24 +204,32 @@ const UncategorizedProductsTool = () => {
 				{/* Status Display */}
 				<div className="grid grid-cols-2 gap-4">
 					<div className="rounded-lg border border-ui-border-base bg-ui-bg-subtle p-4">
-						<Text className="text-ui-fg-subtle text-xs uppercase">
+						<Text className="text-ui-fg-subtle text-xs uppercase font-medium">
 							Total Products
 						</Text>
-						<Text className="text-2xl font-semibold mt-1">
+						<Text className="text-3xl font-bold mt-2">
 							{data?.totalProducts || 0}
 						</Text>
 					</div>
 					<div
 						className={`rounded-lg border p-4 ${
 							hasUncategorized
-								? 'border-orange-500 bg-orange-50'
-								: 'border-green-500 bg-green-50'
+								? 'border-orange-600 bg-orange-100 dark:bg-orange-950'
+								: 'border-green-600 bg-green-100 dark:bg-green-950'
 						}`}
 					>
-						<Text className="text-ui-fg-subtle text-xs uppercase">
+						<Text className={`text-xs uppercase font-medium ${
+							hasUncategorized
+								? 'text-orange-900 dark:text-orange-200'
+								: 'text-green-900 dark:text-green-200'
+						}`}>
 							Uncategorized
 						</Text>
-						<Text className="text-2xl font-semibold mt-1">
+						<Text className={`text-3xl font-bold mt-2 ${
+							hasUncategorized
+								? 'text-orange-900 dark:text-orange-100'
+								: 'text-green-900 dark:text-green-100'
+						}`}>
 							{data?.uncategorizedCount || 0}
 						</Text>
 					</div>
