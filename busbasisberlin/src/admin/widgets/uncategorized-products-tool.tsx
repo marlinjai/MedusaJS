@@ -116,17 +116,35 @@ const UncategorizedProductsTool = () => {
 			// Step 4: Wait for background process (sync happens automatically)
 			addLog('⏳ Background process started - syncing to Meilisearch...');
 			addLog('⏱️  This will take 3-5 minutes. You can close this and check back.');
+			
+			// Step 5: Trigger manual Meilisearch full sync to ensure products appear
+			addLog('🔄 Triggering full Meilisearch sync...');
+			try {
+				const syncResponse = await fetch('/admin/meilisearch/sync', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					credentials: 'include',
+				});
+				
+				if (syncResponse.ok) {
+					addLog('✅ Meilisearch sync started successfully');
+				} else {
+					addLog('⚠️  Meilisearch sync may be running in background');
+				}
+			} catch (error: any) {
+				addLog(`⚠️  Sync trigger: ${error.message}`);
+			}
 
-			// Step 5: Refresh data after a delay
+			// Step 6: Refresh data after a delay
 			setTimeout(async () => {
 				await refetch();
-				addLog('🎉 Process completed! Products are now visible in frontend.');
+				addLog('🎉 Process completed! Wait 3-5 minutes for products to appear in frontend.');
 				toast.success('Success!', {
-					description: `Successfully assigned ${data?.uncategorizedCount || 0} products to "Ohne Kategorie"`,
-					duration: 5000,
+					description: `Assigned ${data?.uncategorizedCount || 0} products. Check frontend in 3-5 minutes.`,
+					duration: 8000,
 				});
 				setIsProcessing(false);
-			}, 3000);
+			}, 5000);
 		} catch (error: any) {
 			addLog(`❌ Error: ${error.message}`);
 			toast.error('Error', {
@@ -167,6 +185,42 @@ const UncategorizedProductsTool = () => {
 			addLog('✅ Dry run complete - no changes made');
 			toast.info('Dry Run Complete', {
 				description: `Found ${data?.uncategorizedCount || 0} products to assign`,
+			});
+		} catch (error: any) {
+			addLog(`❌ Error: ${error.message}`);
+			toast.error('Error', { description: error.message });
+		} finally {
+			setIsProcessing(false);
+		}
+	};
+
+	const handleForceMeilisearchSync = async () => {
+		if (isProcessing) return;
+
+		setIsProcessing(true);
+		setLogs([]);
+
+		try {
+			addLog('🔄 Forcing full Meilisearch re-sync...');
+			addLog('⏱️  This will re-index all products and categories');
+
+			const response = await fetch('/admin/meilisearch/sync', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to trigger Meilisearch sync');
+			}
+
+			addLog('✅ Meilisearch sync started successfully');
+			addLog('⏱️  This will take 3-5 minutes to complete');
+			addLog('🔄 After completion, refresh the frontend to see updated products');
+
+			toast.success('Sync Started', {
+				description: 'Meilisearch is re-indexing. Check frontend in 3-5 minutes.',
+				duration: 8000,
 			});
 		} catch (error: any) {
 			addLog(`❌ Error: ${error.message}`);
@@ -255,36 +309,48 @@ const UncategorizedProductsTool = () => {
 				</div>
 
 				{/* Action Buttons */}
-				<div className="flex gap-3">
-					<Button
-						onClick={handleOneClickFix}
-						disabled={isProcessing || !hasUncategorized}
-						variant="primary"
-						className="flex-1"
-					>
-						{isProcessing ? (
-							<>
-								<Spinner className="animate-spin" />
-								Processing...
-							</>
-						) : (
-							<>
-								{hasUncategorized
-									? `🚀 Fix ${data?.uncategorizedCount} Products`
-									: '✅ All Products Categorized'}
-							</>
-						)}
-					</Button>
-					<Button
-						onClick={handleDryRun}
-						disabled={isProcessing}
-						variant="secondary"
-					>
-						🔍 Dry Run
-					</Button>
-					<Button onClick={() => refetch()} disabled={isProcessing} variant="secondary">
-						🔄 Refresh
-					</Button>
+				<div className="flex flex-col gap-2">
+					<div className="flex gap-3">
+						<Button
+							onClick={handleOneClickFix}
+							disabled={isProcessing || !hasUncategorized}
+							variant="primary"
+							className="flex-1"
+						>
+							{isProcessing ? (
+								<>
+									<Spinner className="animate-spin" />
+									Processing...
+								</>
+							) : (
+								<>
+									{hasUncategorized
+										? `🚀 Fix ${data?.uncategorizedCount} Products`
+										: '✅ All Products Categorized'}
+								</>
+							)}
+						</Button>
+						<Button
+							onClick={handleDryRun}
+							disabled={isProcessing}
+							variant="secondary"
+						>
+							🔍 Dry Run
+						</Button>
+					</div>
+					<div className="flex gap-3">
+						<Button
+							onClick={handleForceMeilisearchSync}
+							disabled={isProcessing}
+							variant="secondary"
+							className="flex-1"
+						>
+							🔄 Force Meilisearch Sync
+						</Button>
+						<Button onClick={() => refetch()} disabled={isProcessing} variant="secondary">
+							🔄 Refresh Status
+						</Button>
+					</div>
 				</div>
 
 				{/* Log Display */}
