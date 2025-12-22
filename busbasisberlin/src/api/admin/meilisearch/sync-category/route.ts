@@ -25,7 +25,9 @@ export const POST = async (
 			return;
 		}
 
-		logger.info(`[SYNC-CATEGORY-API] Syncing category ${categoryId} to Meilisearch...`);
+		logger.info(
+			`[SYNC-CATEGORY-API] Syncing category ${categoryId} to Meilisearch...`,
+		);
 
 		// Send immediate response
 		res.status(202).json({
@@ -36,8 +38,9 @@ export const POST = async (
 		// Run sync in background
 		(async () => {
 			try {
-				const { syncCategoriesWorkflow } = await import('../../../../workflows/sync-categories.js');
-				
+				const { syncCategoriesWorkflow } =
+					await import('../../../../workflows/sync-categories.js');
+
 				await syncCategoriesWorkflow(req.scope).run({
 					input: {
 						filters: {
@@ -47,9 +50,13 @@ export const POST = async (
 					},
 				});
 
-				logger.info(`[SYNC-CATEGORY-API] ✅ Category ${categoryId} synced successfully`);
+				logger.info(
+					`[SYNC-CATEGORY-API] ✅ Category ${categoryId} synced successfully`,
+				);
 			} catch (error: any) {
-				logger.error(`[SYNC-CATEGORY-API] ❌ Error syncing category ${categoryId}: ${error.message}`);
+				logger.error(
+					`[SYNC-CATEGORY-API] ❌ Error syncing category ${categoryId}: ${error.message}`,
+				);
 				if (error.stack) {
 					logger.error(`[SYNC-CATEGORY-API] Stack trace: ${error.stack}`);
 				}
@@ -63,4 +70,3 @@ export const POST = async (
 		});
 	}
 };
-
