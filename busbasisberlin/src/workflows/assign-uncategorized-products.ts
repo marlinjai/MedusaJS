@@ -162,7 +162,7 @@ const assignProductsToCategoryStep = createStep(
 						input: {
 							selector: { id: productId },
 							update: {
-								categories: [{ id: input.categoryId }],
+								category_ids: [input.categoryId],
 							},
 						},
 					});

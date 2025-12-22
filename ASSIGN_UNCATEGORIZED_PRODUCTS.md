@@ -1,6 +1,7 @@
 # Assign Uncategorized Products - Execution Guide
 
 ## Overview
+
 This workflow assigns all 226 uncategorized products to the default "Ohne Kategorie" category, making them visible in the frontend category tree and backend management.
 
 ## Steps to Execute
@@ -15,15 +16,16 @@ curl -X POST "https://basiscampmedia.de/admin/categories/create-default" \
 ```
 
 **Expected Response:**
+
 ```json
 {
-  "success": true,
-  "category": {
-    "id": "pcat_xxx...",
-    "name": "Ohne Kategorie",
-    "handle": "ohne-kategorie"
-  },
-  "message": "Category created successfully"
+	"success": true,
+	"category": {
+		"id": "pcat_xxx...",
+		"name": "Ohne Kategorie",
+		"handle": "ohne-kategorie"
+	},
+	"message": "Category created successfully"
 }
 ```
 
@@ -36,6 +38,7 @@ curl "https://basiscampmedia.de/admin/products/assign-uncategorized"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "totalProducts": 1896,
@@ -71,14 +74,16 @@ curl -X POST "https://basiscampmedia.de/admin/products/assign-uncategorized" \
 ```
 
 **Response:**
+
 ```json
 {
-  "message": "Product assignment started in background",
-  "status": "processing"
+	"message": "Product assignment started in background",
+	"status": "processing"
 }
 ```
 
 The workflow will:
+
 1. Find all 226 uncategorized products
 2. Assign them to "Ohne Kategorie" in batches of 50
 3. Sync all products to Meilisearch (~2-3 minutes)
@@ -86,6 +91,7 @@ The workflow will:
 ### 5. Monitor Progress
 
 Check the backend logs to monitor progress:
+
 - Look for `[ASSIGN-UNCATEGORIZED]` log messages
 - Wait for "✅ Process completed successfully"
 - Full process takes approximately 3-5 minutes
@@ -93,12 +99,14 @@ Check the backend logs to monitor progress:
 ### 6. Verify Results
 
 #### Frontend:
+
 - Visit: https://basiscampberlin.de/de/store
 - Check category tree on left side
 - "Ohne Kategorie" should appear with 226 products
 - Click it to see all uncategorized products
 
 #### Backend:
+
 - Navigate to Products by Category
 - "Ohne Kategorie" category should now exist with 226 products
 
@@ -116,7 +124,7 @@ If needed, you can manually remove products from the category using the admin pa
 ## Next Steps
 
 After verification:
+
 1. Products in "Ohne Kategorie" can be manually reassigned to proper categories
 2. New products without categories will still need manual categorization
 3. Consider running this workflow periodically to catch new uncategorized products
-
