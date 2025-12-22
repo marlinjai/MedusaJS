@@ -63,7 +63,7 @@ const findUncategorizedProductsStep = createStep(
 		// Use raw SQL to get truly uncategorized products (bypasses any caching)
 		// This is more reliable than query.graph which may return stale data
 		const knex = container.resolve('db');
-		
+
 		const uncategorizedProductsQuery = await knex.raw(`
 			SELECT p.id, p.title
 			FROM product p
@@ -71,11 +71,11 @@ const findUncategorizedProductsStep = createStep(
 			WHERE pcp.product_id IS NULL
 			LIMIT 10000
 		`);
-		
+
 		const uncategorizedProducts = uncategorizedProductsQuery.rows || [];
-		
+
 		logger.info(`[ASSIGN-UNCATEGORIZED] Found ${uncategorizedProducts.length} products without categories (using raw SQL)`);
-		
+
 		// Also log the query.graph result for comparison to detect caching issues
 		const allProductsResult = await query.graph({
 			entity: 'product',
@@ -163,6 +163,10 @@ const assignProductsToCategoryStep = createStep(
 		
 		// Get database connection for direct SQL operations (more reliable than workflows)
 		const knex = container.resolve('db');
+		
+		// Get event bus to emit product.updated events (triggers Meilisearch auto-sync)
+		const eventBusService = container.resolve('eventBusService');
+		const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
 
 		// Process in batches to avoid overwhelming the system
 		for (let i = 0; i < input.productIds.length; i += BATCH_SIZE) {
@@ -186,6 +190,36 @@ const assignProductsToCategoryStep = createStep(
 				
 				logger.info(
 					`[ASSIGN-UNCATEGORIZED] ✓ Batch ${Math.floor(i / BATCH_SIZE) + 1} complete: ${batch.length} products assigned`,
+				);
+				
+				// Emit product.updated events for Meilisearch auto-sync and other subscribers
+				// This ensures category changes are reflected in search index automatically
+				logger.info(
+					`[ASSIGN-UNCATEGORIZED] Emitting product.updated events for ${batch.length} products...`,
+				);
+				
+				for (const productId of batch) {
+					try {
+						await eventBusService.emit('product.updated', {
+							id: productId,
+							// Include metadata about what changed
+							metadata: {
+								source: 'assign-uncategorized-workflow',
+								categoryId: input.categoryId,
+								categoryName: input.categoryName,
+							},
+						});
+					} catch (eventError: any) {
+						// Log but don't fail the whole batch if event emission fails
+						logger.warn(
+							`[ASSIGN-UNCATEGORIZED] Failed to emit event for product ${productId}:`,
+							eventError.message,
+						);
+					}
+				}
+				
+				logger.info(
+					`[ASSIGN-UNCATEGORIZED] ✓ Events emitted for batch ${Math.floor(i / BATCH_SIZE) + 1}`,
 				);
 			} catch (error: any) {
 				logger.error(

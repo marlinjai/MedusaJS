@@ -131,15 +131,15 @@ export const GET = async (
 			LEFT JOIN product_category_product pcp ON p.id = pcp.product_id
 			WHERE pcp.product_id IS NULL
 		`);
-		
+
 		const uncategorizedCount = parseInt(uncategorizedQuery.rows[0]?.count || '0');
-		
+
 		const totalProductsQuery = await knex.raw(`
 			SELECT COUNT(*) as count FROM product
 		`);
-		
+
 		const totalProducts = parseInt(totalProductsQuery.rows[0]?.count || '0');
-		
+
 		logger.info(`[ASSIGN-UNCATEGORIZED-API-GET] Database reports ${uncategorizedCount} uncategorized products out of ${totalProducts} total`);
 
 		// Check if default category exists
@@ -155,7 +155,7 @@ export const GET = async (
 		});
 
 		const defaultCategory = categoryResult?.data?.[0] || null;
-		
+
 		// Get sample uncategorized products if any exist
 		let examples = [];
 		if (uncategorizedCount > 0) {
