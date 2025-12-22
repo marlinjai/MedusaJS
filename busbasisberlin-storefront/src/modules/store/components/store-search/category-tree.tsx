@@ -127,33 +127,37 @@ export default function CategoryTree() {
 
 	const hasActiveCategory = items.some(item => item.isRefined);
 
+	// Function to clear all category refinements
+	const clearAllCategories = () => {
+		items.forEach(item => {
+			if (item.isRefined) {
+				refine(item.value);
+			}
+		});
+	};
+
 	return (
 		<div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
 			{/* "All Products" option to clear category filter */}
-			<button
-				onClick={() => {
-					if (hasActiveCategory) {
-						// Clear the refinement to show all products
-						items.forEach(item => {
-							if (item.isRefined) {
-								refine(item.value);
-							}
-						});
-					}
+			<a
+				href="#"
+				onClick={event => {
+					event.preventDefault();
+					clearAllCategories();
 				}}
 				className={`
-					w-full flex items-center justify-between gap-2 py-2 px-3 rounded-lg mb-2
-					text-sm transition-all duration-200 group
+					flex items-center justify-between gap-2 py-2 px-3 rounded-lg
+					text-sm transition-all duration-200 group block mb-1
 					${
 						!hasActiveCategory
-							? 'bg-blue-600 text-white font-semibold'
+							? 'bg-gray-700/60 text-white font-semibold'
 							: 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
 					}
 				`}
 			>
-				<span className="flex items-center gap-2">
+				<span className="flex items-center gap-2 flex-1 min-w-0">
 					<svg
-						className="w-4 h-4"
+						className="w-4 h-4 flex-shrink-0"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
@@ -165,9 +169,9 @@ export default function CategoryTree() {
 							d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
 						/>
 					</svg>
-					<span>Alle Produkte</span>
+					<span className="line-clamp-2 break-words">Alle Produkte</span>
 				</span>
-			</button>
+			</a>
 
 			{/* Divider */}
 			{items.length > 0 && (
