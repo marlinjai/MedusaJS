@@ -152,6 +152,10 @@ const assignProductsToCategoryStep = createStep(
 			return new StepResponse({ updatedCount: 0 });
 		}
 
+		// #region agent log
+		fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assign-uncategorized-products.ts:ENTRY',message:'Step entry',data:{categoryId:input.categoryId,categoryName:input.categoryName,productCount:input.productIds.length,firstFiveProducts:input.productIds.slice(0,5)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+		// #endregion
+		
 		logger.info(
 			`[ASSIGN-UNCATEGORIZED] Assigning ${input.productIds.length} products to category ${input.categoryName}...`,
 		);
@@ -163,53 +167,77 @@ const assignProductsToCategoryStep = createStep(
 
 		const BATCH_SIZE = 100; // Medusa workflows can handle larger batches
 		let updatedCount = 0;
+		let actuallyLinkedCount = 0; // Track real success vs assumed success
 
 		// Use Medusa's official batchLinkProductsToCategoryWorkflow
 		// This ensures: events are emitted, cache is invalidated, Meilisearch syncs
 		// https://docs.medusajs.com/resources/commerce-modules/product/workflows
-
+		
 		for (let i = 0; i < input.productIds.length; i += BATCH_SIZE) {
 			const batch = input.productIds.slice(i, i + BATCH_SIZE);
 			logger.info(
 				`[ASSIGN-UNCATEGORIZED] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(input.productIds.length / BATCH_SIZE)} (${batch.length} products)...`,
 			);
 
+			// #region agent log
+			fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assign-uncategorized-products.ts:BEFORE_BATCH',message:'Before batch workflow call',data:{batchNumber:Math.floor(i/BATCH_SIZE)+1,batchSize:batch.length,categoryId:input.categoryId,sampleProductIds:batch.slice(0,3),workflowInput:{id:input.categoryId,product_ids:batch}},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+			// #endregion
+
 			try {
 				// Use official Medusa workflow for category linking
 				// This automatically handles: events, cache, Meilisearch sync, compensation
-				await batchLinkProductsToCategoryWorkflow(container).run({
+				const result = await batchLinkProductsToCategoryWorkflow(container).run({
 					input: {
 						id: input.categoryId,
 						product_ids: batch,
 					},
 				});
 
-				updatedCount += batch.length;
+				// #region agent log
+				fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assign-uncategorized-products.ts:AFTER_BATCH_SUCCESS',message:'Batch workflow completed',data:{batchNumber:Math.floor(i/BATCH_SIZE)+1,workflowResult:result,resultType:typeof result,hasResult:!!result,resultKeys:result?Object.keys(result):null},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+				// #endregion
 
+				updatedCount += batch.length;
+				actuallyLinkedCount += batch.length; // Assume success if no error
+				
 				logger.info(
 					`[ASSIGN-UNCATEGORIZED] ✓ Batch ${Math.floor(i / BATCH_SIZE) + 1} complete: ${batch.length} products linked to category`,
 				);
 			} catch (error: any) {
+				// #region agent log
+				fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assign-uncategorized-products.ts:BATCH_ERROR',message:'Batch workflow failed',data:{batchNumber:Math.floor(i/BATCH_SIZE)+1,errorMessage:error.message,errorStack:error.stack,errorName:error.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+				// #endregion
+				
 				logger.error(
 					`[ASSIGN-UNCATEGORIZED] ✗ Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
 					error.message,
 				);
-
+				
 				// Try individual products if batch fails (helps identify problematic products)
 				logger.info(
 					`[ASSIGN-UNCATEGORIZED] Retrying products individually for batch ${Math.floor(i / BATCH_SIZE) + 1}...`,
 				);
-
+				
 				for (const productId of batch) {
 					try {
-						await batchLinkProductsToCategoryWorkflow(container).run({
+						const individualResult = await batchLinkProductsToCategoryWorkflow(container).run({
 							input: {
 								id: input.categoryId,
 								product_ids: [productId],
 							},
 						});
+						
+						// #region agent log
+						fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assign-uncategorized-products.ts:INDIVIDUAL_SUCCESS',message:'Individual product linked',data:{productId:productId,result:individualResult},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+						// #endregion
+						
 						updatedCount++;
+						actuallyLinkedCount++;
 					} catch (individualError: any) {
+						// #region agent log
+						fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assign-uncategorized-products.ts:INDIVIDUAL_ERROR',message:'Individual product link failed',data:{productId:productId,errorMessage:individualError.message,errorType:individualError.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+						// #endregion
+						
 						logger.error(
 							`[ASSIGN-UNCATEGORIZED] Failed to link product ${productId}:`,
 							individualError.message,
@@ -218,6 +246,10 @@ const assignProductsToCategoryStep = createStep(
 				}
 			}
 		}
+		
+		// #region agent log
+		fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assign-uncategorized-products.ts:STEP_EXIT',message:'Step complete',data:{totalProductsToAssign:input.productIds.length,updatedCount:updatedCount,actuallyLinkedCount:actuallyLinkedCount,discrepancy:input.productIds.length-actuallyLinkedCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+		// #endregion
 
 		logger.info(`[ASSIGN-UNCATEGORIZED] Successfully updated ${updatedCount} products`);
 
