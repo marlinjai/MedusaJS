@@ -42,7 +42,8 @@ export const POST = async (
 					},
 				});
 
-				logger.info('[ASSIGN-UNCATEGORIZED-API] Workflow completed', 
+				logger.info(
+					`[ASSIGN-UNCATEGORIZED-API] Workflow completed - ` +
 					`Category: ${result.categoryName} (${result.categoryId}), ` +
 					`Total: ${result.totalProducts}, Updated: ${result.updatedProducts}, ` +
 					`DryRun: ${dryRun}`
@@ -83,8 +84,10 @@ export const POST = async (
 
 				logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Process completed successfully');
 			} catch (error: any) {
-				logger.error('[ASSIGN-UNCATEGORIZED-API] ❌ Error during background processing:', error.message);
-				logger.error('[ASSIGN-UNCATEGORIZED-API] Stack trace:', error.stack);
+				logger.error(`[ASSIGN-UNCATEGORIZED-API] ❌ Error during background processing: ${error.message}`);
+				if (error.stack) {
+					logger.error(`[ASSIGN-UNCATEGORIZED-API] Stack trace: ${error.stack}`);
+				}
 			}
 		})();
 	} catch (error: any) {
