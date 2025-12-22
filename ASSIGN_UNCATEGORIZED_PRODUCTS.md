@@ -31,6 +31,7 @@ curl -X POST "https://basiscamp-berlin.de/admin/categories/create-default" \
 5. Click **Save**
 
 **Expected Result:**
+
 - Category created with handle `ohne-kategorie`
 - Category will be used by the workflow to assign uncategorized products
 
