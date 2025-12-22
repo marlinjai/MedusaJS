@@ -80,6 +80,20 @@ export const POST = async (
 					logger.info(
 						`[ASSIGN-UNCATEGORIZED-API] ✅ Successfully synced ${totalSynced} products to Meilisearch`,
 					);
+
+					// CRITICAL: Sync the "Ohne Kategorie" category AFTER products are synced
+					// This ensures has_public_products is calculated correctly
+					logger.info('[ASSIGN-UNCATEGORIZED-API] Syncing category to update has_public_products flag...');
+					const { syncCategoriesWorkflow } = await import('../../../../workflows/sync-categories');
+					await syncCategoriesWorkflow(req.scope).run({
+						input: {
+							filters: {
+								id: result.categoryId,
+							},
+							limit: 1,
+						},
+					});
+					logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Category synced with updated product count');
 				}
 
 				logger.info('[ASSIGN-UNCATEGORIZED-API] ✅ Process completed successfully');

@@ -76,7 +76,10 @@ const UncategorizedProductsTool = () => {
 	});
 
 	const addLog = (message: string) => {
-		setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+		setLogs(prev => [
+			...prev,
+			`${new Date().toLocaleTimeString()}: ${message}`,
+		]);
 	};
 
 	const handleOneClickFix = async () => {
@@ -92,7 +95,7 @@ const UncategorizedProductsTool = () => {
 			addLog('📂 Creating/verifying "Ohne Kategorie" category...');
 			const categoryResult = await createCategory.mutateAsync();
 			addLog(
-				`✅ Category ready: ${categoryResult.category.name} (${categoryResult.category.id})`
+				`✅ Category ready: ${categoryResult.category.name} (${categoryResult.category.id})`,
 			);
 
 			// Step 2: Check if there are products to assign
@@ -108,14 +111,16 @@ const UncategorizedProductsTool = () => {
 
 			// Step 3: Assign products
 			addLog(
-				`📦 Assigning ${data?.uncategorizedCount || 0} products to category...`
+				`📦 Assigning ${data?.uncategorizedCount || 0} products to category...`,
 			);
 			const assignResult = await assignProducts.mutateAsync(false);
 			addLog(`✅ ${assignResult.message}`);
 
 			// Step 4: Wait for background process (sync happens automatically)
 			addLog('⏳ Background process started - syncing to Meilisearch...');
-			addLog('⏱️  This will take 3-5 minutes. You can close this and check back.');
+			addLog(
+				'⏱️  This will take 3-5 minutes. You can close this and check back.',
+			);
 
 			// Step 5: Trigger manual Meilisearch full sync to ensure products appear
 			addLog('🔄 Triggering full Meilisearch sync...');
@@ -128,6 +133,22 @@ const UncategorizedProductsTool = () => {
 
 				if (syncResponse.ok) {
 					addLog('✅ Meilisearch sync started successfully');
+					
+					// Wait a moment and then sync the category to ensure has_public_products is updated
+					await new Promise(resolve => setTimeout(resolve, 2000));
+					if (categoryResult?.category?.id) {
+						addLog('🔄 Syncing category to update visibility...');
+						const categoryResponse = await fetch('/admin/meilisearch/sync-category', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							credentials: 'include',
+							body: JSON.stringify({ categoryId: categoryResult.category.id }),
+						});
+						
+						if (categoryResponse.ok) {
+							addLog('✅ Category visibility updated - should appear in frontend');
+						}
+					}
 				} else {
 					addLog('⚠️  Meilisearch sync may be running in background');
 				}
@@ -138,7 +159,9 @@ const UncategorizedProductsTool = () => {
 			// Step 6: Refresh data after a delay
 			setTimeout(async () => {
 				await refetch();
-				addLog('🎉 Process completed! Wait 3-5 minutes for products to appear in frontend.');
+				addLog(
+					'🎉 Process completed! Wait 3-5 minutes for products to appear in frontend.',
+				);
 				toast.success('Success!', {
 					description: `Assigned ${data?.uncategorizedCount || 0} products. Check frontend in 3-5 minutes.`,
 					duration: 8000,
@@ -173,7 +196,9 @@ const UncategorizedProductsTool = () => {
 				addLog(`✅ Category exists: ${data.defaultCategory.name}`);
 			}
 
-			addLog(`📊 Found ${data?.uncategorizedCount || 0} uncategorized products`);
+			addLog(
+				`📊 Found ${data?.uncategorizedCount || 0} uncategorized products`,
+			);
 
 			if (data?.examples && data.examples.length > 0) {
 				addLog('📝 Example products:');
@@ -215,11 +240,33 @@ const UncategorizedProductsTool = () => {
 			}
 
 			addLog('✅ Meilisearch sync started successfully');
+			
+			// Also sync the "Ohne Kategorie" category specifically after a short delay
+			// This ensures has_public_products is updated correctly
+			if (data?.defaultCategory?.id) {
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				addLog('🔄 Syncing "Ohne Kategorie" category specifically...');
+				
+				const categoryResponse = await fetch('/admin/meilisearch/sync-category', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					credentials: 'include',
+					body: JSON.stringify({ categoryId: data.defaultCategory.id }),
+				});
+				
+				if (categoryResponse.ok) {
+					addLog('✅ Category synced - should now appear in frontend');
+				}
+			}
+			
 			addLog('⏱️  This will take 3-5 minutes to complete');
-			addLog('🔄 After completion, refresh the frontend to see updated products');
+			addLog(
+				'🔄 After completion, refresh the frontend to see updated products',
+			);
 
 			toast.success('Sync Started', {
-				description: 'Meilisearch is re-indexing. Check frontend in 3-5 minutes.',
+				description:
+					'Meilisearch is re-indexing. Check frontend in 3-5 minutes.',
 				duration: 8000,
 			});
 		} catch (error: any) {
@@ -272,18 +319,22 @@ const UncategorizedProductsTool = () => {
 								: 'border-green-600 bg-green-100 dark:bg-green-950'
 						}`}
 					>
-						<Text className={`text-xs uppercase font-medium ${
-							hasUncategorized
-								? 'text-orange-900 dark:text-orange-200'
-								: 'text-green-900 dark:text-green-200'
-						}`}>
+						<Text
+							className={`text-xs uppercase font-medium ${
+								hasUncategorized
+									? 'text-orange-900 dark:text-orange-200'
+									: 'text-green-900 dark:text-green-200'
+							}`}
+						>
 							Uncategorized
 						</Text>
-						<Text className={`text-3xl font-bold mt-2 ${
-							hasUncategorized
-								? 'text-orange-900 dark:text-orange-100'
-								: 'text-green-900 dark:text-green-100'
-						}`}>
+						<Text
+							className={`text-3xl font-bold mt-2 ${
+								hasUncategorized
+									? 'text-orange-900 dark:text-orange-100'
+									: 'text-green-900 dark:text-green-100'
+							}`}
+						>
 							{data?.uncategorizedCount || 0}
 						</Text>
 					</div>
@@ -347,7 +398,11 @@ const UncategorizedProductsTool = () => {
 						>
 							🔄 Force Meilisearch Sync
 						</Button>
-						<Button onClick={() => refetch()} disabled={isProcessing} variant="secondary">
+						<Button
+							onClick={() => refetch()}
+							disabled={isProcessing}
+							variant="secondary"
+						>
 							🔄 Refresh Status
 						</Button>
 					</div>
@@ -382,8 +437,8 @@ const UncategorizedProductsTool = () => {
 						<br />
 						<br />
 						⏱️ <strong>Time:</strong> 3-5 minutes (runs in background)
-						<br />
-						✅ <strong>Safe:</strong> Idempotent - can be run multiple times
+						<br />✅ <strong>Safe:</strong> Idempotent - can be run multiple
+						times
 					</Text>
 				</div>
 			</div>
@@ -397,4 +452,3 @@ export const config = defineWidgetConfig({
 });
 
 export default UncategorizedProductsTool;
-
