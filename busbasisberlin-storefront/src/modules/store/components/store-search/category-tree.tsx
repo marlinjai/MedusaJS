@@ -125,8 +125,55 @@ export default function CategoryTree() {
 		limit: 50,
 	});
 
+	const hasActiveCategory = items.some(item => item.isRefined);
+
 	return (
 		<div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+			{/* "All Products" option to clear category filter */}
+			<button
+				onClick={() => {
+					if (hasActiveCategory) {
+						// Clear the refinement to show all products
+						items.forEach(item => {
+							if (item.isRefined) {
+								refine(item.value);
+							}
+						});
+					}
+				}}
+				className={`
+					w-full flex items-center justify-between gap-2 py-2 px-3 rounded-lg mb-2
+					text-sm transition-all duration-200 group
+					${
+						!hasActiveCategory
+							? 'bg-blue-600 text-white font-semibold'
+							: 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
+					}
+				`}
+			>
+				<span className="flex items-center gap-2">
+					<svg
+						className="w-4 h-4"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+						/>
+					</svg>
+					<span>Alle Produkte</span>
+				</span>
+			</button>
+
+			{/* Divider */}
+			{items.length > 0 && (
+				<div className="border-t border-gray-700 my-2"></div>
+			)}
+
 			{items.length > 0 ? (
 				<HierarchicalList
 					items={items}
