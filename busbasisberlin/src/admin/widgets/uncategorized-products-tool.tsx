@@ -116,7 +116,7 @@ const UncategorizedProductsTool = () => {
 			// Step 4: Wait for background process (sync happens automatically)
 			addLog('⏳ Background process started - syncing to Meilisearch...');
 			addLog('⏱️  This will take 3-5 minutes. You can close this and check back.');
-			
+
 			// Step 5: Trigger manual Meilisearch full sync to ensure products appear
 			addLog('🔄 Triggering full Meilisearch sync...');
 			try {
@@ -125,7 +125,7 @@ const UncategorizedProductsTool = () => {
 					headers: { 'Content-Type': 'application/json' },
 					credentials: 'include',
 				});
-				
+
 				if (syncResponse.ok) {
 					addLog('✅ Meilisearch sync started successfully');
 				} else {
