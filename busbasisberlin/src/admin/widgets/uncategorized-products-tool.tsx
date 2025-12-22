@@ -133,20 +133,27 @@ const UncategorizedProductsTool = () => {
 
 				if (syncResponse.ok) {
 					addLog('✅ Meilisearch sync started successfully');
-					
+
 					// Wait a moment and then sync the category to ensure has_public_products is updated
 					await new Promise(resolve => setTimeout(resolve, 2000));
 					if (categoryResult?.category?.id) {
 						addLog('🔄 Syncing category to update visibility...');
-						const categoryResponse = await fetch('/admin/meilisearch/sync-category', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							credentials: 'include',
-							body: JSON.stringify({ categoryId: categoryResult.category.id }),
-						});
-						
+						const categoryResponse = await fetch(
+							'/admin/meilisearch/sync-category',
+							{
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								credentials: 'include',
+								body: JSON.stringify({
+									categoryId: categoryResult.category.id,
+								}),
+							},
+						);
+
 						if (categoryResponse.ok) {
-							addLog('✅ Category visibility updated - should appear in frontend');
+							addLog(
+								'✅ Category visibility updated - should appear in frontend',
+							);
 						}
 					}
 				} else {
@@ -240,25 +247,28 @@ const UncategorizedProductsTool = () => {
 			}
 
 			addLog('✅ Meilisearch sync started successfully');
-			
+
 			// Also sync the "Ohne Kategorie" category specifically after a short delay
 			// This ensures has_public_products is updated correctly
 			if (data?.defaultCategory?.id) {
 				await new Promise(resolve => setTimeout(resolve, 2000));
 				addLog('🔄 Syncing "Ohne Kategorie" category specifically...');
-				
-				const categoryResponse = await fetch('/admin/meilisearch/sync-category', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					credentials: 'include',
-					body: JSON.stringify({ categoryId: data.defaultCategory.id }),
-				});
-				
+
+				const categoryResponse = await fetch(
+					'/admin/meilisearch/sync-category',
+					{
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						credentials: 'include',
+						body: JSON.stringify({ categoryId: data.defaultCategory.id }),
+					},
+				);
+
 				if (categoryResponse.ok) {
 					addLog('✅ Category synced - should now appear in frontend');
 				}
 			}
-			
+
 			addLog('⏱️  This will take 3-5 minutes to complete');
 			addLog(
 				'🔄 After completion, refresh the frontend to see updated products',

@@ -8,7 +8,6 @@ import {
 	StepResponse,
 } from '@medusajs/framework/workflows-sdk';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
-import { updateProductsWorkflow } from '@medusajs/medusa/core-flows';
 
 type AssignUncategorizedInput = {
 	defaultCategoryId?: string;
@@ -61,23 +60,37 @@ const findUncategorizedProductsStep = createStep(
 			logger.info(`[ASSIGN-UNCATEGORIZED] Found category: ${categoryName} (${categoryId})`);
 		}
 
-		// Find all products
+		// Use raw SQL to get truly uncategorized products (bypasses any caching)
+		// This is more reliable than query.graph which may return stale data
+		const knex = container.resolve('db');
+		
+		const uncategorizedProductsQuery = await knex.raw(`
+			SELECT p.id, p.title
+			FROM product p
+			LEFT JOIN product_category_product pcp ON p.id = pcp.product_id
+			WHERE pcp.product_id IS NULL
+			LIMIT 10000
+		`);
+		
+		const uncategorizedProducts = uncategorizedProductsQuery.rows || [];
+		
+		logger.info(`[ASSIGN-UNCATEGORIZED] Found ${uncategorizedProducts.length} products without categories (using raw SQL)`);
+		
+		// Also log the query.graph result for comparison to detect caching issues
 		const allProductsResult = await query.graph({
 			entity: 'product',
 			fields: ['id', 'title', 'categories.id'],
 			pagination: {
-				take: 10000, // Get all products
+				take: 10000,
 				skip: 0,
 			},
 		});
-
 		const allProducts = allProductsResult?.data || [];
-		logger.info(`[ASSIGN-UNCATEGORIZED] Found ${allProducts.length} total products`);
-
-		// Filter products that have no categories
-		const uncategorizedProducts = allProducts.filter((product: any) => {
+		const graphUncategorized = allProducts.filter((product: any) => {
 			return !product.categories || product.categories.length === 0;
 		});
+		logger.info(`[ASSIGN-UNCATEGORIZED] query.graph reports ${graphUncategorized.length} uncategorized (may be stale)`);
+		logger.info(`[ASSIGN-UNCATEGORIZED] Difference: ${Math.abs(uncategorizedProducts.length - graphUncategorized.length)} products`);
 
 		logger.info(
 			`[ASSIGN-UNCATEGORIZED] Found ${uncategorizedProducts.length} products without categories`,
@@ -147,42 +160,41 @@ const assignProductsToCategoryStep = createStep(
 
 		let updatedCount = 0;
 		const BATCH_SIZE = 50;
+		
+		// Get database connection for direct SQL operations (more reliable than workflows)
+		const knex = container.resolve('db');
 
 		// Process in batches to avoid overwhelming the system
 		for (let i = 0; i < input.productIds.length; i += BATCH_SIZE) {
 			const batch = input.productIds.slice(i, i + BATCH_SIZE);
 			logger.info(
-				`[ASSIGN-UNCATEGORIZED] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(input.productIds.length / BATCH_SIZE)}...`,
+				`[ASSIGN-UNCATEGORIZED] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(input.productIds.length / BATCH_SIZE)} (${batch.length} products)...`,
 			);
 
-			// Update each product in the batch
-			const updatePromises = batch.map(async (productId: string) => {
-				try {
-					await updateProductsWorkflow(container).run({
-						input: {
-							selector: { id: productId },
-							update: {
-								category_ids: [input.categoryId],
-							},
-						},
-					});
-					return true;
-				} catch (error: any) {
-					logger.error(
-						`[ASSIGN-UNCATEGORIZED] Failed to update product ${productId}:`,
-						error.message,
-					);
-					return false;
-				}
-			});
-
-			const results = await Promise.all(updatePromises);
-			const successCount = results.filter(r => r).length;
-			updatedCount += successCount;
-
-			logger.info(
-				`[ASSIGN-UNCATEGORIZED] Batch complete: ${successCount}/${batch.length} products updated`,
-			);
+			try {
+				// Use raw SQL INSERT to assign products - more reliable than updateProductsWorkflow
+				// ON CONFLICT DO NOTHING prevents errors if product is already in category
+				const values = batch.map(productId => `('${productId}', '${input.categoryId}')`).join(', ');
+				
+				await knex.raw(`
+					INSERT INTO product_category_product (product_id, product_category_id)
+					VALUES ${values}
+					ON CONFLICT DO NOTHING
+				`);
+				
+				updatedCount += batch.length;
+				
+				logger.info(
+					`[ASSIGN-UNCATEGORIZED] ✓ Batch ${Math.floor(i / BATCH_SIZE) + 1} complete: ${batch.length} products assigned`,
+				);
+			} catch (error: any) {
+				logger.error(
+					`[ASSIGN-UNCATEGORIZED] ✗ Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
+					error.message,
+				);
+				logger.error(`[ASSIGN-UNCATEGORIZED] Failed product IDs:`, batch.join(', '));
+				// Continue with next batch even if this one fails
+			}
 		}
 
 		logger.info(`[ASSIGN-UNCATEGORIZED] Successfully updated ${updatedCount} products`);
