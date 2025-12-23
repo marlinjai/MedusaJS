@@ -6,7 +6,7 @@
 import { defineWidgetConfig } from '@medusajs/admin-sdk';
 import { InformationCircleSolid, Spinner } from '@medusajs/icons';
 import { Button, Container, Heading, Text, toast } from '@medusajs/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 type UncategorizedInfo = {
@@ -23,7 +23,6 @@ type UncategorizedInfo = {
 const UncategorizedProductsTool = () => {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [logs, setLogs] = useState<string[]>([]);
-	const queryClient = useQueryClient();
 
 	// Fetch current status
 	const { data, isLoading, refetch } = useQuery<UncategorizedInfo>({
