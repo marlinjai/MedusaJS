@@ -943,6 +943,39 @@ export default function ProductsByCategoryPage() {
 										Vertriebskanal ändern
 									</Button>
 									<Button
+										variant="danger"
+										size="small"
+										onClick={async () => {
+											const productIds = Object.keys(rowSelection);
+											if (!window.confirm(`Sind Sie sicher, dass Sie ${productIds.length} Produkt${productIds.length !== 1 ? 'e' : ''} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+												return;
+											}
+
+											try {
+												// Delete products one by one
+												let deletedCount = 0;
+												for (const productId of productIds) {
+													const res = await fetch(`/admin/products/${productId}`, {
+														method: 'DELETE',
+														credentials: 'include',
+													});
+													if (res.ok) deletedCount++;
+												}
+
+												toast.success(`${deletedCount} Produkt${deletedCount !== 1 ? 'e' : ''} erfolgreich gelöscht`);
+												setRowSelection({});
+												queryClient.invalidateQueries({
+													queryKey: ['admin-products-filtered'],
+												});
+											} catch (error) {
+												toast.error('Fehler beim Löschen der Produkte');
+											}
+										}}
+										disabled={bulkUpdateMutation.isPending}
+									>
+										Löschen
+									</Button>
+									<Button
 										variant="transparent"
 										size="small"
 										onClick={() => setRowSelection({})}
