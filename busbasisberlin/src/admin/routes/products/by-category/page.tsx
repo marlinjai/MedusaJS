@@ -162,6 +162,9 @@ export default function ProductsByCategoryPage() {
 	const [selectedShippingProfiles, setSelectedShippingProfiles] = useState<
 		Set<string>
 	>(new Set());
+	const [selectedStatus, setSelectedStatus] = useState<
+		'all' | 'published' | 'draft'
+	>('all');
 	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
 		const saved = localStorage.getItem('products-table-visible-columns');
 		if (saved) {
@@ -284,6 +287,9 @@ export default function ProductsByCategoryPage() {
 		if (searchQuery.trim()) {
 			params.append('q', searchQuery.trim());
 		}
+		if (selectedStatus !== 'all') {
+			params.append('status', selectedStatus);
+		}
 		const queryString = params.toString();
 		console.log('[PRODUCTS-BY-CATEGORY] Query params:', queryString);
 		return queryString;
@@ -294,6 +300,7 @@ export default function ProductsByCategoryPage() {
 		selectedShippingProfiles,
 		skuSearch,
 		searchQuery,
+		selectedStatus,
 		currentPage,
 		pageSize,
 	]);
@@ -330,6 +337,7 @@ export default function ProductsByCategoryPage() {
 			selectedShippingProfilesArray,
 			skuSearch,
 			searchQuery,
+			selectedStatus,
 			currentPage,
 			pageSize,
 		],
@@ -515,7 +523,8 @@ export default function ProductsByCategoryPage() {
 		selectedSalesChannels.size > 0 ||
 		selectedShippingProfiles.size > 0 ||
 		skuSearch.trim().length > 0 ||
-		searchQuery.trim().length > 0;
+		searchQuery.trim().length > 0 ||
+		selectedStatus !== 'all';
 
 	const clearAllFilters = () => {
 		setSelectedCategories(new Set());
@@ -524,6 +533,7 @@ export default function ProductsByCategoryPage() {
 		setSelectedShippingProfiles(new Set());
 		setSkuSearch('');
 		setSearchQuery('');
+		setSelectedStatus('all');
 		setRowSelection({});
 		setCurrentPage(1);
 	};
@@ -720,6 +730,30 @@ export default function ProductsByCategoryPage() {
 										</Text>
 									)}
 								</div>
+							</div>
+
+							{/* Status Filter */}
+							<div>
+								<Text size="small" className="font-semibold mb-2 block">
+									Status
+								</Text>
+								<Select
+									value={selectedStatus}
+									onValueChange={(value: 'all' | 'published' | 'draft') => {
+										setSelectedStatus(value);
+										setRowSelection({});
+										setCurrentPage(1);
+									}}
+								>
+									<Select.Trigger>
+										<Select.Value />
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Item value="all">Alle</Select.Item>
+										<Select.Item value="published">Veröffentlicht</Select.Item>
+										<Select.Item value="draft">Entwurf</Select.Item>
+									</Select.Content>
+								</Select>
 							</div>
 
 							{/* SKU Search */}
