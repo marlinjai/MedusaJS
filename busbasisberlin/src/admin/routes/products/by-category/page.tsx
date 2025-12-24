@@ -733,7 +733,7 @@ export default function ProductsByCategoryPage() {
 							</div>
 
 							{/* Status Filter */}
-							<div>
+							<div className="mb-4">
 								<Text size="small" className="font-semibold mb-2 block">
 									Status
 								</Text>
