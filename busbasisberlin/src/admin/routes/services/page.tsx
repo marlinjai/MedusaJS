@@ -177,8 +177,12 @@ export default function ServicesByCategoryPage() {
 					(cat: ServiceCategoryNode) => cat.name === 'Arbeitspositionen',
 				);
 				if (arbeitspositionenCategory) {
-					setSelectedCategories(new Set([arbeitspositionenCategory.path]));
+					const newSelection = new Set([arbeitspositionenCategory.path]);
+					setSelectedCategories(newSelection);
 					setExpandedCategories(new Set([arbeitspositionenCategory.path]));
+
+					// Manually trigger initial fetch since state update is async
+					fetchServicesWithCategories(newSelection);
 				}
 			}
 		} catch (error) {
@@ -198,10 +202,11 @@ export default function ServicesByCategoryPage() {
 	};
 
 	// Get all category paths including children when parent is selected
-	const getAllCategoryPaths = (): string[] => {
+	const getAllCategoryPaths = (categoriesToUse?: Set<string>): string[] => {
 		const allPaths: string[] = [];
+		const categoriesSet = categoriesToUse || selectedCategories;
 
-		for (const selectedPath of selectedCategories) {
+		for (const selectedPath of categoriesSet) {
 			// Find the node in the tree
 			const findNode = (
 				nodes: ServiceCategoryNode[],
@@ -224,10 +229,10 @@ export default function ServicesByCategoryPage() {
 		return Array.from(new Set(allPaths)); // Remove duplicates
 	};
 
-	const fetchServices = async () => {
+	const fetchServicesWithCategories = async (categoriesToUse?: Set<string>) => {
 		setLoading(true);
 		try {
-			const allPaths = getAllCategoryPaths();
+			const allPaths = getAllCategoryPaths(categoriesToUse);
 
 			// Extract category_level_2 from each path
 			const categoryFilters = Array.from(
@@ -331,6 +336,10 @@ export default function ServicesByCategoryPage() {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const fetchServices = async () => {
+		return fetchServicesWithCategories();
 	};
 
 	const toggleCategory = (path: string) => {
