@@ -103,11 +103,12 @@ const Hero = () => {
 				externalSetIsOpen={setIsSearchOpen}
 			/>
 
-			{/* Scroll Indicator with Rotating Text */}
-			<button
-				onClick={scrollToServices}
-				className="absolute bottom-8 sm:bottom-12 left-1/2 transform -translate-x-1/2 z-10 group cursor-pointer"
-			>
+		{/* Scroll Indicator with Rotating Text */}
+		<button
+			onClick={scrollToServices}
+			className="absolute bottom-8 sm:bottom-12 left-1/2 transform -translate-x-1/2 z-10 group cursor-pointer"
+			aria-label="Zu den Leistungen scrollen"
+		>
 				{/* Blur Background for Scroll Indicator */}
 				<div className="absolute -inset-4">
 					<div
