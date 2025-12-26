@@ -110,15 +110,14 @@ function FilterSidebar() {
 				Weitere Filter {isMobileOpen ? 'ausblenden' : 'anzeigen'}
 			</button>
 
-			{/* Other Filters Sidebar - Toggleable on mobile, always visible on desktop */}
-			<aside
-				className={`w-full transition-all duration-300 ${
-					isMobileOpen
-						? 'max-h-[9999px] opacity-100'
-						: 'max-h-0 lg:max-h-[9999px] opacity-0 lg:opacity-100 overflow-hidden lg:overflow-visible'
-				}`}
-				aria-hidden={!isMobileOpen}
-			>
+		{/* Other Filters Sidebar - Toggleable on mobile, always visible on desktop */}
+		<aside
+			className={`w-full transition-all duration-300 ${
+				isMobileOpen
+					? 'max-h-[9999px] opacity-100'
+					: 'max-h-0 lg:max-h-[9999px] opacity-0 lg:opacity-100 overflow-hidden lg:overflow-visible'
+			}`}
+		>
 				<div className="space-y-6">
 					{/* Other Filters */}
 					<div className="bg-stone-950 border border-stone-800 rounded-xl p-5">
@@ -130,7 +129,7 @@ function FilterSidebar() {
 						<div className="space-y-6">
 							{/* Availability */}
 							<div>
-								<h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+								<h4 className="text-sm font-semibold text-gray-100 mb-3 flex items-center gap-2">
 									<svg
 										className="w-4 h-4 text-green-400"
 										fill="none"
@@ -157,17 +156,17 @@ function FilterSidebar() {
 													: 'Zurzeit nicht lieferbar',
 										}))
 									}
-									classNames={{
-										root: 'space-y-2',
-										item: 'py-2 px-3 rounded-lg hover:bg-stone-800 transition-colors border border-transparent hover:border-stone-700',
-										label: 'flex items-center gap-3 cursor-pointer group',
-										checkbox:
-											'h-4 w-4 rounded border-stone-600 bg-stone-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-stone-950 cursor-pointer transition-colors',
-										labelText:
-											'text-sm text-gray-300 group-hover:text-white flex-1 font-medium',
-										count:
-											'text-xs text-gray-400 bg-stone-800 px-2.5 py-1 rounded-full min-w-[32px] text-center font-medium',
-									}}
+								classNames={{
+									root: 'space-y-2',
+									item: 'py-2 px-3 rounded-lg hover:bg-stone-800 transition-colors border border-transparent hover:border-stone-700',
+									label: 'flex items-center gap-3 cursor-pointer group',
+									checkbox:
+										'h-4 w-4 rounded border-stone-600 bg-stone-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-stone-950 cursor-pointer transition-colors',
+									labelText:
+										'text-sm text-gray-100 group-hover:text-white flex-1 font-medium',
+									count:
+										'text-xs text-gray-200 bg-stone-800 px-2.5 py-1 rounded-full min-w-[32px] text-center font-medium',
+								}}
 								/>
 							</div>
 						</div>
@@ -245,20 +244,20 @@ function Toolbar() {
 			<div className="flex flex-col gap-4">
 				{/* Top Row: Stats and Clear Filters */}
 				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-					{/* Results Count */}
-					<div className="text-sm font-medium text-gray-300">
-						<Stats
-							translations={{
-								rootElementText({ nbHits, nbSortedHits }) {
-									const count = nbSortedHits ?? nbHits;
-									return `${count.toLocaleString('de-DE')} Produkte gefunden`;
-								},
-							}}
-							classNames={{
-								root: 'inline',
-							}}
-						/>
-					</div>
+				{/* Results Count */}
+				<div className="text-sm font-medium text-gray-100">
+					<Stats
+						translations={{
+							rootElementText({ nbHits, nbSortedHits }) {
+								const count = nbSortedHits ?? nbHits;
+								return `${count.toLocaleString('de-DE')} Produkte gefunden`;
+							},
+						}}
+						classNames={{
+							root: 'inline',
+						}}
+					/>
+				</div>
 
 					{/* Clear Filters Button */}
 					{hasActiveFilters && (
@@ -287,9 +286,9 @@ function Toolbar() {
 					<div className="hidden sm:block h-6 w-px bg-stone-700" />
 
 					{/* Results per page */}
-					<div className="flex items-center gap-1.5 sm:gap-2">
-						<BsGrid3X3 className="w-4 h-4 text-gray-400 hidden sm:block" />
-						<span className="text-xs sm:text-sm font-medium text-gray-400">Anzeigen:</span>
+				<div className="flex items-center gap-1.5 sm:gap-2">
+					<BsGrid3X3 className="w-4 h-4 text-gray-300 hidden sm:block" />
+					<span className="text-xs sm:text-sm font-medium text-gray-200">Anzeigen:</span>
 						<div className="relative">
 							<HitsPerPage
 								items={[
@@ -302,6 +301,9 @@ function Toolbar() {
 									root: 'relative',
 									select:
 										'bg-stone-800 border border-stone-700 rounded-lg px-2 sm:px-4 py-2 sm:py-2.5 pr-8 sm:pr-10 text-xs sm:text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
+								}}
+								translations={{
+									selectLabel: () => 'Produkte pro Seite',
 								}}
 							/>
 							<div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">

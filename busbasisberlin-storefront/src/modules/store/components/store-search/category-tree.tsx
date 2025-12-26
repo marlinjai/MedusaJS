@@ -47,15 +47,15 @@ function HierarchicalList({
 							event.preventDefault();
 							onNavigate(item.value);
 						}}
-						className={`
-							flex items-center justify-between gap-2 py-2 px-3 rounded-lg
-							text-sm transition-all duration-200 group
-							${
-								item.isRefined
-									? 'bg-gray-700/60 text-white font-semibold'
-									: 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
-							}
-						`}
+					className={`
+						flex items-center justify-between gap-2 py-2 px-3 rounded-lg
+						text-sm transition-all duration-200 group
+						${
+							item.isRefined
+								? 'bg-gray-700/60 text-white font-semibold'
+								: 'text-gray-100 hover:bg-gray-800/50 hover:text-white'
+						}
+					`}
 					>
 						<span className="flex items-center gap-2 flex-1 min-w-0">
 							{/* Chevron icon for items with children */}
@@ -84,16 +84,16 @@ function HierarchicalList({
 		</span>
 
 						{/* Count badge */}
-						<span
-							className={`
-								text-xs px-2 py-0.5 rounded-full min-w-[32px] text-center flex-shrink-0
-								${
-									item.isRefined
-										? 'bg-gray-600 text-gray-200'
-										: 'bg-gray-700/50 text-gray-400 group-hover:bg-gray-700'
-								}
-							`}
-						>
+					<span
+						className={`
+							text-xs px-2 py-0.5 rounded-full min-w-[32px] text-center flex-shrink-0
+							${
+								item.isRefined
+									? 'bg-gray-600 text-gray-100'
+									: 'bg-gray-700/50 text-gray-200 group-hover:bg-gray-700'
+							}
+						`}
+					>
 							{item.count}
 						</span>
 					</a>
@@ -145,15 +145,15 @@ export default function CategoryTree() {
 					event.preventDefault();
 					clearAllCategories();
 				}}
-				className={`
-					flex items-center justify-between gap-2 py-2 px-3 rounded-lg
-					text-sm transition-all duration-200 group block mb-1
-					${
-						!hasActiveCategory
-							? 'bg-gray-700/60 text-white font-semibold'
-							: 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
-					}
-				`}
+			className={`
+				flex items-center justify-between gap-2 py-2 px-3 rounded-lg
+				text-sm transition-all duration-200 group block mb-1
+				${
+					!hasActiveCategory
+						? 'bg-gray-700/60 text-white font-semibold'
+						: 'text-gray-100 hover:bg-gray-800/50 hover:text-white'
+				}
+			`}
 			>
 				<span className="flex items-center gap-2 flex-1 min-w-0">
 					<svg
