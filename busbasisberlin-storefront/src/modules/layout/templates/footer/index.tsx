@@ -287,11 +287,11 @@ export default function Footer() {
 						</div> */}
 					</div>
 
-					{/* Opening Hours */}
-					<div className="md:text-right">
-						<h4 className="text-lg font-semibold text-foreground mb-4">
-							{t('openingHours')}
-						</h4>
+				{/* Opening Hours */}
+				<div className="md:text-right">
+					<h3 className="text-lg font-semibold text-foreground mb-4">
+						{t('openingHours')}
+					</h3>
 						<div className="space-y-2 text-sm text-muted-foreground">
 							<div className="flex md:justify-end gap-3">
 								<span>{t('mondayFriday')}</span>
