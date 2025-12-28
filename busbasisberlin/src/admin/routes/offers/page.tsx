@@ -11,6 +11,10 @@ import { useNavigate } from 'react-router-dom';
 
 import { Button, Container, Input, Text, toast } from '@medusajs/ui';
 import OfferTable from './components/OfferTable';
+import { useIsMobile } from '../../utils/use-mobile';
+import { MobileControlBar } from '../../components/MobileControlBar';
+import { BottomSheet } from '../../components/BottomSheet';
+import { ArrowsUpDown, Columns, Funnel } from '@medusajs/icons';
 
 // TypeScript types for our offer data
 type OfferStatus = 'draft' | 'active' | 'accepted' | 'completed' | 'cancelled';
@@ -85,6 +89,11 @@ const OffersPage = () => {
 	);
 
 	const navigate = useNavigate();
+
+	const isMobile = useIsMobile();
+	const [showFilterSheet, setShowFilterSheet] = useState(false);
+	const [showSortSheet, setShowSortSheet] = useState(false);
+	const [showColumnSheet, setShowColumnSheet] = useState(false);
 
 	// Fetch offers from API
 	const fetchOffers = async () => {
@@ -240,25 +249,25 @@ const OffersPage = () => {
 	}
 
 	return (
-		<Container className="divide-y p-0 h-full flex flex-col">
+		<Container className="p-0 md:p-6 h-full flex flex-col">
 			{/* Header */}
-			<div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
+			<div className="flex items-center justify-between px-2 py-1.5 md:px-6 md:py-4 flex-shrink-0">
 				<div className="flex items-center gap-x-2">
-					<FileText className="text-ui-fg-subtle" />
-					<h1 className="text-lg font-semibold">Angebote</h1>
+					<FileText className="text-ui-fg-subtle w-4 h-4 md:w-5 md:h-5" />
+					<h1 className="text-sm md:text-lg font-semibold">Angebote</h1>
 				</div>
 				<Button size="small" variant="secondary" onClick={handleCreateOffer}>
-					<Plus />
-					Angebot erstellen
+					<Plus className="w-4 h-4" />
+					<span className="hidden sm:inline">Angebot erstellen</span>
 				</Button>
 			</div>
 
 			{/* Statistics Cards - Compact and Interactive */}
-			<div className="px-6 py-3 border-b bg-ui-bg-subtle">
-				<div className="flex items-center gap-2 flex-wrap">
+			<div className="px-2 py-1.5 md:px-6 md:py-3 border-b bg-ui-bg-subtle">
+				<div className="flex items-center gap-1 md:gap-2 overflow-x-auto pb-1">
 					{/* Total - Not clickable */}
 					<button
-						className={`px-3 py-2 rounded-md text-left transition-colors ${
+						className={`px-1.5 py-1 md:px-3 md:py-2 rounded-md text-left transition-colors flex-shrink-0 ${
 							statusFilter === 'all'
 								? 'bg-ui-bg-base border border-ui-border-interactive'
 								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
@@ -271,7 +280,7 @@ const OffersPage = () => {
 
 					{/* Draft */}
 					<button
-						className={`px-3 py-2 rounded-md text-left transition-colors ${
+						className={`px-1.5 py-1 md:px-3 md:py-2 rounded-md text-left transition-colors flex-shrink-0 ${
 							statusFilter === 'draft'
 								? 'bg-ui-bg-base border border-ui-border-interactive'
 								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
@@ -282,7 +291,7 @@ const OffersPage = () => {
 						<div className="flex items-baseline gap-1">
 							<Text className="text-sm font-semibold">{stats.draft}</Text>
 							{stats.draftValue !== undefined && stats.draftValue > 0 && (
-								<Text className="text-xs text-ui-fg-muted">
+								<Text className="text-xs text-ui-fg-muted hidden md:inline">
 									({new Intl.NumberFormat('de-DE', {
 										style: 'currency',
 										currency: 'EUR',
@@ -296,7 +305,7 @@ const OffersPage = () => {
 
 					{/* Active */}
 					<button
-						className={`px-3 py-2 rounded-md text-left transition-colors ${
+						className={`px-1.5 py-1 md:px-3 md:py-2 rounded-md text-left transition-colors flex-shrink-0 ${
 							statusFilter === 'active'
 								? 'bg-ui-bg-base border border-ui-border-interactive'
 								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
@@ -307,7 +316,7 @@ const OffersPage = () => {
 						<div className="flex items-baseline gap-1">
 							<Text className="text-sm font-semibold">{stats.active}</Text>
 							{stats.activeValue !== undefined && stats.activeValue > 0 && (
-								<Text className="text-xs text-ui-fg-muted">
+								<Text className="text-xs text-ui-fg-muted hidden md:inline">
 									({new Intl.NumberFormat('de-DE', {
 										style: 'currency',
 										currency: 'EUR',
@@ -321,7 +330,7 @@ const OffersPage = () => {
 
 					{/* Accepted */}
 					<button
-						className={`px-3 py-2 rounded-md text-left transition-colors ${
+						className={`px-1.5 py-1 md:px-3 md:py-2 rounded-md text-left transition-colors flex-shrink-0 ${
 							statusFilter === 'accepted'
 								? 'bg-ui-bg-base border border-ui-border-interactive'
 								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
@@ -332,7 +341,7 @@ const OffersPage = () => {
 						<div className="flex items-baseline gap-1">
 							<Text className="text-sm font-semibold">{stats.accepted}</Text>
 							{stats.acceptedValue !== undefined && stats.acceptedValue > 0 && (
-								<Text className="text-xs text-ui-fg-muted">
+								<Text className="text-xs text-ui-fg-muted hidden md:inline">
 									({new Intl.NumberFormat('de-DE', {
 										style: 'currency',
 										currency: 'EUR',
@@ -346,7 +355,7 @@ const OffersPage = () => {
 
 					{/* Completed */}
 					<button
-						className={`px-3 py-2 rounded-md text-left transition-colors ${
+						className={`px-1.5 py-1 md:px-3 md:py-2 rounded-md text-left transition-colors flex-shrink-0 ${
 							statusFilter === 'completed'
 								? 'bg-ui-bg-base border border-ui-border-interactive'
 								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
@@ -357,7 +366,7 @@ const OffersPage = () => {
 						<div className="flex items-baseline gap-1">
 							<Text className="text-sm font-semibold">{stats.completed}</Text>
 							{stats.completedValue !== undefined && stats.completedValue > 0 && (
-								<Text className="text-xs text-ui-fg-muted">
+								<Text className="text-xs text-ui-fg-muted hidden md:inline">
 									({new Intl.NumberFormat('de-DE', {
 										style: 'currency',
 										currency: 'EUR',
@@ -371,7 +380,7 @@ const OffersPage = () => {
 
 					{/* Cancelled */}
 					<button
-						className={`px-3 py-2 rounded-md text-left transition-colors ${
+						className={`px-1.5 py-1 md:px-3 md:py-2 rounded-md text-left transition-colors flex-shrink-0 ${
 							statusFilter === 'cancelled'
 								? 'bg-ui-bg-base border border-ui-border-interactive'
 								: 'bg-ui-bg-base hover:bg-ui-bg-base-hover'
@@ -382,7 +391,7 @@ const OffersPage = () => {
 						<div className="flex items-baseline gap-1">
 							<Text className="text-sm font-semibold">{stats.cancelled}</Text>
 							{stats.cancelledValue !== undefined && stats.cancelledValue > 0 && (
-								<Text className="text-xs text-ui-fg-muted">
+								<Text className="text-xs text-ui-fg-muted hidden md:inline">
 									({new Intl.NumberFormat('de-DE', {
 										style: 'currency',
 										currency: 'EUR',
@@ -395,80 +404,95 @@ const OffersPage = () => {
 					</button>
 
 					{/* Total Value - Not clickable, always visible */}
-					<div className="ml-auto px-3 py-2 rounded-md bg-ui-bg-base">
+					<div className="ml-auto px-1.5 py-1 md:px-3 md:py-2 rounded-md bg-ui-bg-base flex-shrink-0">
 						<Text className="text-xs text-ui-fg-subtle">Gesamtwert</Text>
 						<Text className="text-sm font-semibold">
 							{new Intl.NumberFormat('de-DE', {
 								style: 'currency',
 								currency: 'EUR',
+								minimumFractionDigits: 0,
+								maximumFractionDigits: 0,
 							}).format(stats.totalValue / 100)}
 						</Text>
 					</div>
 				</div>
 			</div>
 
-			{/* Search and Filters */}
-			<div className="px-6 py-4 border-b bg-ui-bg-subtle">
-				<div className="flex items-center justify-between mb-6">
-					<div className="flex items-center gap-4">
-						<div className="flex items-center gap-2">
-							<Input
-								type="text"
-								placeholder="Suche..."
-								value={searchTerm}
-								onChange={e => setSearchTerm(e.target.value)}
-								className="w-64"
-							/>
-							<Button variant="secondary" size="small">
-								<MagnifyingGlass className="w-4 h-4" />
-							</Button>
+			{/* Search and Filters - Modified for Mobile */}
+			{!isMobile ? (
+				<div className="px-2 py-2 md:px-6 md:py-4 border-b bg-ui-bg-subtle">
+					<div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 md:gap-4 md:mb-6">
+						<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-4 flex-1">
+							<div className="flex items-center gap-2 flex-1">
+								<Input
+									type="text"
+									placeholder="Suche..."
+									value={searchTerm}
+									onChange={e => setSearchTerm(e.target.value)}
+									className="flex-1 text-sm"
+								/>
+								<Button variant="secondary" size="small" className="flex-shrink-0">
+									<MagnifyingGlass className="w-4 h-4" />
+								</Button>
+							</div>
+							<select
+								value={statusFilter}
+								onChange={e => setStatusFilter(e.target.value)}
+								className="px-2 py-1.5 md:px-3 md:py-2 border border-ui-border-base rounded-md bg-ui-bg-field text-ui-fg-base text-sm focus:outline-none focus:ring-2 focus:ring-ui-border-interactive"
+							>
+								<option value="all">Alle Status</option>
+								<option value="draft">Entwurf</option>
+								<option value="active">Aktiv</option>
+								<option value="accepted">Angenommen</option>
+								<option value="completed">Abgeschlossen</option>
+								<option value="cancelled">Storniert</option>
+							</select>
 						</div>
-						<select
-							value={statusFilter}
-							onChange={e => setStatusFilter(e.target.value)}
-							className="px-3 py-2 border border-ui-border-base rounded-md bg-ui-bg-field text-ui-fg-base focus:outline-none focus:ring-2 focus:ring-ui-border-interactive"
-						>
-							<option value="all">Alle Status</option>
-							<option value="draft">Entwurf</option>
-							<option value="active">Aktiv</option>
-							<option value="accepted">Angenommen</option>
-							<option value="completed">Abgeschlossen</option>
-							<option value="cancelled">Storniert</option>
-						</select>
+						<div className="flex items-center justify-end gap-2">
+							<Text size="small" className="text-ui-fg-muted text-xs md:text-sm">
+								{filteredOffers.length} Angebote
+							</Text>
+						</div>
 					</div>
-					<div className="flex items-center gap-2">
-						<Text size="small" className="text-ui-fg-muted">
-							{filteredOffers.length} Angebote
-						</Text>
-					</div>
-				</div>
 
-				{/* Search Results Info */}
-				{searchTerm && (
-					<div className="mt-2">
-						<Text className="text-xs text-ui-fg-subtle">
-							{filteredOffers.length === 0 ? (
-								<span>Keine Ergebnisse für "{searchTerm}"</span>
-							) : filteredOffers.length === 1 ? (
-								<span>1 Ergebnis für "{searchTerm}"</span>
-							) : (
-								<span>
-									{filteredOffers.length} Ergebnisse für "{searchTerm}"
-								</span>
-							)}
-							{filteredOffers.length !== offers.length && (
-								<span className="ml-2 text-ui-fg-muted">
-									(von {offers.length} gesamt)
-								</span>
-							)}
-						</Text>
-					</div>
-				)}
-			</div>
+					{/* Search Results Info */}
+					{searchTerm && (
+						<div className="mt-2">
+							<Text className="text-xs text-ui-fg-subtle">
+								{filteredOffers.length === 0 ? (
+									<span>Keine Ergebnisse für "{searchTerm}"</span>
+								) : filteredOffers.length === 1 ? (
+									<span>1 Ergebnis für "{searchTerm}"</span>
+								) : (
+									<span>
+										{filteredOffers.length} Ergebnisse für "{searchTerm}"
+									</span>
+								)}
+								{filteredOffers.length !== offers.length && (
+									<span className="ml-2 text-ui-fg-muted">
+										(von {offers.length} gesamt)
+									</span>
+								)}
+							</Text>
+						</div>
+					)}
+				</div>
+			) : (
+				<div className="px-3 pt-3">
+					<MobileControlBar
+						onFilterClick={() => setShowFilterSheet(true)}
+						onSortClick={() => setShowSortSheet(true)}
+						onColumnsClick={() => setShowColumnSheet(true)}
+						activeFiltersCount={
+							(statusFilter !== "all" ? 1 : 0) + (searchTerm ? 1 : 0)
+						}
+					/>
+				</div>
+			)}
 
 			{/* Table */}
 			<div className="flex-1 overflow-hidden">
-				<div className="h-full overflow-auto px-6 py-4">
+				<div className="h-full overflow-auto px-2 py-2 md:px-6 md:py-4">
 					{filteredOffers.length === 0 ? (
 						<div className="flex flex-col items-center justify-center py-16 text-center">
 							<FileText className="h-12 w-12 text-ui-fg-muted mb-4" />
@@ -497,6 +521,128 @@ const OffersPage = () => {
 					)}
 				</div>
 			</div>
+			{/* Mobile Bottom Sheets */}
+			{isMobile && (
+				<>
+					{/* Filter Sheet */}
+					<BottomSheet
+						isOpen={showFilterSheet}
+						onClose={() => setShowFilterSheet(false)}
+						title="Filter"
+					>
+						<div className="space-y-6 pb-6">
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Suche
+								</Text>
+								<Input
+									value={searchTerm}
+									onChange={(e) => setSearchTerm(e.target.value)}
+									placeholder="Suche nach Kunde, E-Mail..."
+								/>
+							</div>
+
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Status
+								</Text>
+								<Select
+									value={statusFilter}
+									onValueChange={(v: any) => setStatusFilter(v)}
+								>
+									<Select.Trigger>
+										<Select.Value />
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Item value="all">Alle</Select.Item>
+										<Select.Item value="draft">Entwurf</Select.Item>
+										<Select.Item value="active">Aktiv</Select.Item>
+										<Select.Item value="accepted">Angenommen</Select.Item>
+										<Select.Item value="completed">Abgeschlossen</Select.Item>
+										<Select.Item value="cancelled">Storniert</Select.Item>
+									</Select.Content>
+								</Select>
+							</div>
+
+							<Button
+								variant="secondary"
+								className="w-full"
+								onClick={() => {
+									setSearchTerm("");
+									setStatusFilter("all");
+									setShowFilterSheet(false);
+								}}
+							>
+								Alle Filter zurücksetzen
+							</Button>
+						</div>
+					</BottomSheet>
+
+					{/* Sort Sheet */}
+					<BottomSheet
+						isOpen={showSortSheet}
+						onClose={() => setShowSortSheet(false)}
+						title="Sortieren"
+					>
+						<div className="space-y-4 pb-6">
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Sortieren nach
+								</Text>
+								<div className="grid grid-cols-1 gap-2">
+									{[
+										{ label: "Angebot", value: "offer_number" },
+										{ label: "Kunde", value: "customer_name" },
+										{ label: "Wert", value: "total_amount" },
+										{ label: "Erstellt am", value: "created_at" },
+									].map((opt) => (
+										<Button
+											key={opt.value}
+											variant={sortConfig?.key === opt.value ? "primary" : "secondary"}
+											className="justify-start"
+											onClick={() => handleSort(opt.value, sortConfig?.direction || "asc")}
+										>
+											{opt.label}
+										</Button>
+									))}
+								</div>
+							</div>
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Reihenfolge
+								</Text>
+								<div className="grid grid-cols-2 gap-2">
+									<Button
+										variant={sortConfig?.direction === "asc" ? "primary" : "secondary"}
+										onClick={() => handleSort(sortConfig?.key || "created_at", "asc")}
+									>
+										Aufsteigend
+									</Button>
+									<Button
+										variant={sortConfig?.direction === "desc" ? "primary" : "secondary"}
+										onClick={() => handleSort(sortConfig?.key || "created_at", "desc")}
+									>
+										Absteigend
+									</Button>
+								</div>
+							</div>
+						</div>
+					</BottomSheet>
+
+					{/* Column Sheet placeholder - Offers table currently has fixed columns in UI */}
+					<BottomSheet
+						isOpen={showColumnSheet}
+						onClose={() => setShowColumnSheet(false)}
+						title="Spalten anpassen"
+					>
+						<div className="p-4 text-center">
+							<Text size="small" className="text-ui-fg-subtle">
+								Spaltenkonfiguration für Angebote ist in Arbeit.
+							</Text>
+						</div>
+					</BottomSheet>
+				</>
+			)}
 		</Container>
 	);
 };

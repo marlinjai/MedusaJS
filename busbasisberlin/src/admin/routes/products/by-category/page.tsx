@@ -24,6 +24,9 @@ import {
 	X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { BottomSheet } from '../../../components/BottomSheet';
+import { MobileControlBar } from '../../../components/MobileControlBar';
+import { useIsMobile } from '../../../utils/use-mobile';
 import ColumnVisibilityControl from './components/ColumnVisibilityControl';
 import ProductEditorModal from './components/ProductEditorModal';
 import ProductTable from './components/ProductTable';
@@ -197,6 +200,12 @@ export default function ProductsByCategoryPage() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize, setPageSize] = useState(50);
 
+	const isMobile = useIsMobile();
+	const [showFilterSheet, setShowFilterSheet] = useState(false);
+	const [showSortSheet, setShowSortSheet] = useState(false);
+	const [showColumnSheet, setShowColumnSheet] = useState(false);
+	const [showCategorySheet, setShowCategorySheet] = useState(false);
+
 	// Fetch category tree
 	const { data: categoryTreeData } = useQuery({
 		queryKey: ['admin-category-tree'],
@@ -218,8 +227,8 @@ export default function ProductsByCategoryPage() {
 				credentials: 'include',
 			});
 			if (!res.ok) throw new Error('Failed to fetch collections');
-			const { product_collections } = await res.json();
-			return product_collections as Collection[];
+			const data = await res.json();
+			return (data.product_collections || []) as Collection[];
 		},
 	});
 
@@ -494,7 +503,11 @@ export default function ProductsByCategoryPage() {
 
 	// Product delete handler
 	const handleProductDelete = async (productId: string) => {
-		if (!window.confirm('Sind Sie sicher, dass Sie dieses Produkt löschen möchten?')) {
+		if (
+			!window.confirm(
+				'Sind Sie sicher, dass Sie dieses Produkt löschen möchten?',
+			)
+		) {
 			return;
 		}
 
@@ -553,254 +566,312 @@ export default function ProductsByCategoryPage() {
 	};
 
 	return (
-		<Container className="h-[calc(100vh-120px)] flex flex-col">
+		<Container className="h-[calc(100vh-120px)] flex flex-col p-0 md:p-6">
 			<div className="flex gap-4 flex-1 min-h-0">
-				{/* Filter Sidebar - Collapsible */}
-				<div
-					className={`${
-						sidebarCollapsed ? 'w-0' : 'w-80'
-					} flex-shrink-0 transition-all duration-300 overflow-hidden`}
-				>
-					<div className="space-y-6 h-full overflow-y-auto pr-2">
-						<div>
-							<Heading level="h2" className="text-lg font-semibold mb-4">
-								Filter
-							</Heading>
-
-							{hasActiveFilters && (
-								<Button
-									variant="secondary"
-									size="small"
-									onClick={clearAllFilters}
-									className="mb-4 w-full"
-								>
-									<X className="w-4 h-4 mr-2" />
-									Alle Filter zurücksetzen
-								</Button>
-							)}
-
-							{/* Category Tree */}
-							<div className="mb-6">
-								<Text size="small" className="font-semibold mb-2 block">
-									Kategorien
-								</Text>
-								<div className="border border-ui-border-base rounded-lg p-3 max-h-[400px] overflow-y-auto">
-									{categoryTreeData && categoryTreeData.length > 0 ? (
-										<CategoryTree
-											categories={categoryTreeData}
-											selectedCategories={selectedCategories}
-											onToggleCategory={id => {
-												const newSet = new Set(selectedCategories);
-												if (newSet.has(id)) {
-													newSet.delete(id);
-													console.log(
-														'[PRODUCTS-BY-CATEGORY] Deselected category:',
-														id,
-													);
-												} else {
-													newSet.add(id);
-													console.log(
-														'[PRODUCTS-BY-CATEGORY] Selected category:',
-														id,
-													);
-												}
-												console.log(
-													'[PRODUCTS-BY-CATEGORY] Selected categories:',
-													Array.from(newSet),
-												);
-												setSelectedCategories(newSet);
-												setRowSelection({});
-											}}
-											expandedCategories={expandedCategories}
-											onToggleExpand={id => {
-												const newSet = new Set(expandedCategories);
-												if (newSet.has(id)) {
-													newSet.delete(id);
-												} else {
-													newSet.add(id);
-												}
-												setExpandedCategories(newSet);
-											}}
-										/>
-									) : (
-										<Text size="small" className="text-ui-fg-subtle">
-											Keine Kategorien gefunden
-										</Text>
-									)}
-								</div>
-							</div>
-
-							{/* Collections Filter */}
-							<div className="mb-6">
-								<Text size="small" className="font-semibold mb-2 block">
-									Sammlungen
-								</Text>
-								<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
-									{collectionsData && collectionsData.length > 0 ? (
-										collectionsData.map(collection => (
-											<div
-												key={collection.id}
-												className="flex items-center gap-2"
-											>
-												<Checkbox
-													checked={selectedCollections.has(collection.id)}
-													onCheckedChange={checked => {
-														const newSet = new Set(selectedCollections);
-														if (checked) {
-															newSet.add(collection.id);
-														} else {
-															newSet.delete(collection.id);
-														}
-														setSelectedCollections(newSet);
-														setRowSelection({});
-													}}
-												/>
-												<Text size="small">{collection.title}</Text>
-											</div>
-										))
-									) : (
-										<Text size="small" className="text-ui-fg-subtle">
-											Keine Sammlungen gefunden
-										</Text>
-									)}
-								</div>
-							</div>
-
-							{/* Sales Channels Filter */}
-							<div className="mb-6">
-								<Text size="small" className="font-semibold mb-2 block">
-									Vertriebskanäle
-								</Text>
-								<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
-									{salesChannelsData && salesChannelsData.length > 0 ? (
-										salesChannelsData.map(channel => (
-											<div key={channel.id} className="flex items-center gap-2">
-												<Checkbox
-													checked={selectedSalesChannels.has(channel.id)}
-													onCheckedChange={checked => {
-														const newSet = new Set(selectedSalesChannels);
-														if (checked) {
-															newSet.add(channel.id);
-														} else {
-															newSet.delete(channel.id);
-														}
-														setSelectedSalesChannels(newSet);
-														setRowSelection({});
-													}}
-												/>
-												<Text size="small">{channel.name}</Text>
-											</div>
-										))
-									) : (
-										<Text size="small" className="text-ui-fg-subtle">
-											Keine Vertriebskanäle gefunden
-										</Text>
-									)}
-								</div>
-							</div>
-
-							{/* Shipping Profiles Filter */}
-							<div className="mb-6">
-								<Text size="small" className="font-semibold mb-2 block">
-									Versandprofile
-								</Text>
-								<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
-									{shippingProfilesData && shippingProfilesData.length > 0 ? (
-										shippingProfilesData.map(profile => (
-											<div key={profile.id} className="flex items-center gap-2">
-												<Checkbox
-													checked={selectedShippingProfiles.has(profile.id)}
-													onCheckedChange={checked => {
-														const newSet = new Set(selectedShippingProfiles);
-														if (checked) {
-															newSet.add(profile.id);
-														} else {
-															newSet.delete(profile.id);
-														}
-														setSelectedShippingProfiles(newSet);
-														setRowSelection({});
-													}}
-												/>
-												<Text size="small">{profile.name}</Text>
-											</div>
-										))
-									) : (
-										<Text size="small" className="text-ui-fg-subtle">
-											Keine Versandprofile gefunden
-										</Text>
-									)}
-								</div>
-							</div>
-
-							{/* Status Filter */}
-							<div className="mb-4">
-								<Text size="small" className="font-semibold mb-2 block">
-									Status
-								</Text>
-								<Select
-									value={selectedStatus}
-									onValueChange={(value: 'all' | 'published' | 'draft') => {
-										setSelectedStatus(value);
-										setRowSelection({});
-										setCurrentPage(1);
-									}}
-								>
-									<Select.Trigger>
-										<Select.Value />
-									</Select.Trigger>
-									<Select.Content>
-										<Select.Item value="all">Alle</Select.Item>
-										<Select.Item value="published">Veröffentlicht</Select.Item>
-										<Select.Item value="draft">Entwurf</Select.Item>
-									</Select.Content>
-								</Select>
-							</div>
-
-							{/* SKU Search */}
+				{/* Filter Sidebar - Collapsible - Hidden on mobile */}
+				{!isMobile && (
+					<div
+						className={`${
+							sidebarCollapsed ? 'w-0' : 'w-80'
+						} flex-shrink-0 transition-all duration-300 overflow-hidden`}
+					>
+						<div className="space-y-6 h-full overflow-y-auto pr-2">
 							<div>
-								<Text size="small" className="font-semibold mb-2 block">
-									Artikelnummer (SKU)
-								</Text>
-								<Input
-									value={skuSearch}
-									onChange={e => {
-										setSkuSearch(e.target.value);
-										setRowSelection({});
-									}}
-									placeholder="SKU suchen..."
-									className="w-full"
-								/>
+								<Heading level="h2" className="text-lg font-semibold mb-4">
+									Filter
+								</Heading>
+
+								{hasActiveFilters && (
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={clearAllFilters}
+										className="mb-4 w-full"
+									>
+										<X className="w-4 h-4 mr-2" />
+										Alle Filter zurücksetzen
+									</Button>
+								)}
+
+								{/* Category Tree */}
+								<div className="mb-6">
+									<Text size="small" className="font-semibold mb-2 block">
+										Kategorien
+									</Text>
+									<div className="border border-ui-border-base rounded-lg p-3 max-h-[400px] overflow-y-auto">
+										{categoryTreeData && categoryTreeData.length > 0 ? (
+											<CategoryTree
+												categories={categoryTreeData}
+												selectedCategories={selectedCategories}
+												onToggleCategory={id => {
+													const newSet = new Set(selectedCategories);
+													if (newSet.has(id)) {
+														newSet.delete(id);
+														console.log(
+															'[PRODUCTS-BY-CATEGORY] Deselected category:',
+															id,
+														);
+													} else {
+														newSet.add(id);
+														console.log(
+															'[PRODUCTS-BY-CATEGORY] Selected category:',
+															id,
+														);
+													}
+													console.log(
+														'[PRODUCTS-BY-CATEGORY] Selected categories:',
+														Array.from(newSet),
+													);
+													setSelectedCategories(newSet);
+													setRowSelection({});
+												}}
+												expandedCategories={expandedCategories}
+												onToggleExpand={id => {
+													const newSet = new Set(expandedCategories);
+													if (newSet.has(id)) {
+														newSet.delete(id);
+													} else {
+														newSet.add(id);
+													}
+													setExpandedCategories(newSet);
+												}}
+											/>
+										) : (
+											<Text size="small" className="text-ui-fg-subtle">
+												Keine Kategorien gefunden
+											</Text>
+										)}
+									</div>
+								</div>
+
+								{/* Collections Filter */}
+								<div className="mb-6">
+									<Text size="small" className="font-semibold mb-2 block">
+										Sammlungen
+									</Text>
+									<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+										{collectionsData && collectionsData.length > 0 ? (
+											collectionsData.map(collection => (
+												<div
+													key={collection.id}
+													className="flex items-center gap-2"
+												>
+													<Checkbox
+														checked={selectedCollections.has(collection.id)}
+														onCheckedChange={checked => {
+															const newSet = new Set(selectedCollections);
+															if (checked) {
+																newSet.add(collection.id);
+															} else {
+																newSet.delete(collection.id);
+															}
+															setSelectedCollections(newSet);
+															setRowSelection({});
+														}}
+													/>
+													<Text size="small">{collection.title}</Text>
+												</div>
+											))
+										) : (
+											<Text size="small" className="text-ui-fg-subtle">
+												Keine Sammlungen gefunden
+											</Text>
+										)}
+									</div>
+								</div>
+
+								{/* Sales Channels Filter */}
+								<div className="mb-6">
+									<Text size="small" className="font-semibold mb-2 block">
+										Vertriebskanäle
+									</Text>
+									<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+										{salesChannelsData && salesChannelsData.length > 0 ? (
+											salesChannelsData.map(channel => (
+												<div
+													key={channel.id}
+													className="flex items-center gap-2"
+												>
+													<Checkbox
+														checked={selectedSalesChannels.has(channel.id)}
+														onCheckedChange={checked => {
+															const newSet = new Set(selectedSalesChannels);
+															if (checked) {
+																newSet.add(channel.id);
+															} else {
+																newSet.delete(channel.id);
+															}
+															setSelectedSalesChannels(newSet);
+															setRowSelection({});
+														}}
+													/>
+													<Text size="small">{channel.name}</Text>
+												</div>
+											))
+										) : (
+											<Text size="small" className="text-ui-fg-subtle">
+												Keine Vertriebskanäle gefunden
+											</Text>
+										)}
+									</div>
+								</div>
+
+								{/* Shipping Profiles Filter */}
+								<div className="mb-6">
+									<Text size="small" className="font-semibold mb-2 block">
+										Versandprofile
+									</Text>
+									<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+										{shippingProfilesData && shippingProfilesData.length > 0 ? (
+											shippingProfilesData.map(profile => (
+												<div
+													key={profile.id}
+													className="flex items-center gap-2"
+												>
+													<Checkbox
+														checked={selectedShippingProfiles.has(profile.id)}
+														onCheckedChange={checked => {
+															const newSet = new Set(selectedShippingProfiles);
+															if (checked) {
+																newSet.add(profile.id);
+															} else {
+																newSet.delete(profile.id);
+															}
+															setSelectedShippingProfiles(newSet);
+															setRowSelection({});
+														}}
+													/>
+													<Text size="small">{profile.name}</Text>
+												</div>
+											))
+										) : (
+											<Text size="small" className="text-ui-fg-subtle">
+												Keine Versandprofile gefunden
+											</Text>
+										)}
+									</div>
+								</div>
+
+								{/* Status Filter */}
+								<div className="mb-4">
+									<Text size="small" className="font-semibold mb-2 block">
+										Status
+									</Text>
+									<Select
+										value={selectedStatus}
+										onValueChange={(value: 'all' | 'published' | 'draft') => {
+											setSelectedStatus(value);
+											setRowSelection({});
+											setCurrentPage(1);
+										}}
+									>
+										<Select.Trigger>
+											<Select.Value />
+										</Select.Trigger>
+										<Select.Content>
+											<Select.Item value="all">Alle</Select.Item>
+											<Select.Item value="published">
+												Veröffentlicht
+											</Select.Item>
+											<Select.Item value="draft">Entwurf</Select.Item>
+										</Select.Content>
+									</Select>
+								</div>
+
+								{/* SKU Search */}
+								<div>
+									<Text size="small" className="font-semibold mb-2 block">
+										Artikelnummer (SKU)
+									</Text>
+									<Input
+										value={skuSearch}
+										onChange={e => {
+											setSkuSearch(e.target.value);
+											setRowSelection({});
+										}}
+										placeholder="SKU suchen..."
+										className="w-full"
+									/>
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				)}
 
-				{/* Sidebar Toggle Button */}
-				<button
-					onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-					className="flex-shrink-0 w-6 h-12 self-center rounded-md border border-ui-border-base bg-ui-bg-base hover:bg-ui-bg-subtle transition-colors flex items-center justify-center"
-					aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-				>
-					{sidebarCollapsed ? (
-						<ChevronRight className="w-4 h-4" />
-					) : (
-						<ChevronLeft className="w-4 h-4" />
-					)}
-				</button>
+				{/* Sidebar Toggle Button - Hidden on Mobile */}
+				{!isMobile && (
+					<button
+						onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+						className="flex-shrink-0 w-6 h-12 self-center rounded-md border border-ui-border-base bg-ui-bg-base hover:bg-ui-bg-subtle transition-colors flex items-center justify-center"
+						aria-label={
+							sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
+						}
+					>
+						{sidebarCollapsed ? (
+							<ChevronRight className="w-4 h-4" />
+						) : (
+							<ChevronLeft className="w-4 h-4" />
+						)}
+					</button>
+				)}
 
 				{/* Main Content */}
-				<div className="flex-1 flex flex-col gap-3 min-w-0 h-full">
+				<div className="flex-1 flex flex-col gap-3 min-w-0 h-full p-3 md:p-0">
 					{/* Header */}
-					<div className="flex-shrink-0">
-						<Heading level="h1" className="text-2xl font-bold">
-							Produkte filtern
-						</Heading>
-						<Text size="small" className="text-ui-fg-subtle mt-1">
-							Verwalten Sie Produkte mit erweiterten Filtern und Bulk-Actions
-						</Text>
+					<div className="flex-shrink-0 flex justify-between items-start">
+						<div>
+							<Heading level="h1" className="text-xl md:text-2xl font-bold">
+								Produkte filtern
+							</Heading>
+							{!isMobile && (
+								<Text size="small" className="text-ui-fg-subtle mt-1">
+									Verwalten Sie Produkte mit erweiterten Filtern und
+									Bulk-Actions
+								</Text>
+							)}
+						</div>
+						{isMobile && (
+							<Button
+								variant="secondary"
+								size="small"
+								onClick={() => {
+									setEditingProduct(null);
+									setShowProductEditor(true);
+								}}
+							>
+								<Plus className="w-4 h-4" />
+							</Button>
+						)}
 					</div>
 
-					{/* Products Table - Always show, filtered by selected categories */}
+					{isMobile && (
+						<MobileControlBar
+							onFilterClick={() => setShowFilterSheet(true)}
+							onSortClick={() => setShowSortSheet(true)}
+							onColumnsClick={() => setShowColumnSheet(true)}
+							onCategoryClick={() => setShowCategorySheet(true)}
+							activeFiltersCount={
+								(selectedCategories.size > 0 ? 1 : 0) +
+								(selectedCollections.size > 0 ? 1 : 0) +
+								(selectedSalesChannels.size > 0 ? 1 : 0) +
+								(selectedStatus !== 'all' ? 1 : 0)
+							}
+						/>
+					)}
+
+					{/* Mobile Search Bar */}
+					{isMobile && (
+						<div className="px-2 pb-2">
+							<Input
+								value={searchQuery}
+								onChange={e => setSearchQuery(e.target.value)}
+								placeholder="Nach Titel oder Handle suchen..."
+								className="w-full"
+							/>
+						</div>
+					)}
+
+					{/* Products Table Header Info - Modified for Mobile */}
 					<div className="flex-1 flex flex-col gap-2 min-h-0">
 						{error && (
 							<div className="p-2 bg-red-50 border border-red-200 rounded-lg flex-shrink-0">
@@ -813,124 +884,143 @@ export default function ProductsByCategoryPage() {
 							</div>
 						)}
 						<div className="flex justify-between items-center flex-shrink-0 py-1">
-							<Heading level="h2" className="text-lg">
+							<Heading level="h2" className="text-base md:text-lg">
 								Produkte
 								{productsData?.total !== undefined && (
 									<Text size="small" className="text-ui-fg-subtle ml-2">
-										({products.length} von {productsData.total} angezeigt
-										{hasActiveFilters && ' gefiltert'})
+										({products.length} von {productsData.total})
 									</Text>
 								)}
 							</Heading>
-							<Button
-								variant="secondary"
-								size="small"
-								onClick={() => {
-									setEditingProduct(null);
-									setShowProductEditor(true);
-								}}
-							>
-								<Plus className="w-4 h-4 mr-2" />
-								Produkt erstellen
-							</Button>
-						</div>
-
-						{/* Search and Sort Toolbar */}
-						<div className="flex gap-3 items-center p-2 bg-ui-bg-subtle rounded-lg border border-ui-border-base flex-shrink-0">
-							<div className="flex-1">
-								<Input
-									value={searchQuery}
-									onChange={e => setSearchQuery(e.target.value)}
-									placeholder="Nach Titel oder Handle suchen..."
-									className="w-full"
-								/>
-							</div>
-						<div className="flex gap-2 items-center">
-							{/* Column Visibility Control */}
-							<ColumnVisibilityControl
-								columns={tableColumns}
-								visibleColumns={visibleColumns}
-								onToggle={(key) => {
-									const newVisible = new Set(visibleColumns);
-									if (newVisible.has(key)) {
-										newVisible.delete(key);
-									} else {
-										newVisible.add(key);
-									}
-									setVisibleColumns(newVisible);
-									localStorage.setItem('products-table-visible-columns', JSON.stringify([...newVisible]));
-								}}
-								onShowAll={() => {
-									const allColumns = new Set(tableColumns.map(c => c.key));
-									setVisibleColumns(allColumns);
-									localStorage.setItem('products-table-visible-columns', JSON.stringify([...allColumns]));
-								}}
-								onHideAll={() => {
-									// Keep only essential columns
-									const essentialColumns = new Set(['select', 'title', 'actions']);
-									setVisibleColumns(essentialColumns);
-									localStorage.setItem('products-table-visible-columns', JSON.stringify([...essentialColumns]));
-								}}
-							/>
-
-							{selectedCount > 0 && (
-								<Text
+							{!isMobile && (
+								<Button
+									variant="secondary"
 									size="small"
-									className="font-medium text-ui-fg-base whitespace-nowrap"
-								>
-									{selectedCount} ausgewählt
-								</Text>
-							)}
-							<Text size="small" className="whitespace-nowrap">
-								Sortieren nach:
-							</Text>
-								<Select value={sortBy} onValueChange={v => setSortBy(v as any)}>
-									<Select.Trigger className="w-[180px]">
-										<Select.Value />
-									</Select.Trigger>
-									<Select.Content>
-										<Select.Item value="title">Titel</Select.Item>
-										<Select.Item value="created_at">Erstellt am</Select.Item>
-										<Select.Item value="updated_at">
-											Aktualisiert am
-										</Select.Item>
-									</Select.Content>
-								</Select>
-								<Select
-									value={sortOrder}
-									onValueChange={v => setSortOrder(v as any)}
-								>
-									<Select.Trigger className="w-[120px]">
-										<Select.Value />
-									</Select.Trigger>
-									<Select.Content>
-										<Select.Item value="asc">Aufsteigend</Select.Item>
-										<Select.Item value="desc">Absteigend</Select.Item>
-									</Select.Content>
-								</Select>
-								<Text size="small" className="whitespace-nowrap">
-									Pro Seite:
-								</Text>
-								<Select
-									value={pageSize.toString()}
-									onValueChange={v => {
-										setPageSize(parseInt(v));
-										setCurrentPage(1); // Reset to first page when changing page size
-										setRowSelection({}); // Clear selection when changing page size
+									onClick={() => {
+										setEditingProduct(null);
+										setShowProductEditor(true);
 									}}
 								>
-									<Select.Trigger className="w-[100px]">
-										<Select.Value />
-									</Select.Trigger>
-									<Select.Content>
-										<Select.Item value="25">25</Select.Item>
-										<Select.Item value="50">50</Select.Item>
-										<Select.Item value="100">100</Select.Item>
-										<Select.Item value="200">200</Select.Item>
-									</Select.Content>
-								</Select>
-							</div>
+									<Plus className="w-4 h-4 mr-2" />
+									Produkt erstellen
+								</Button>
+							)}
 						</div>
+
+						{/* Search and Sort Toolbar - Hidden on Mobile (moved to Control Bar) */}
+						{!isMobile && (
+							<div className="flex gap-3 items-center p-2 bg-ui-bg-subtle rounded-lg border border-ui-border-base flex-shrink-0">
+								<div className="flex-1">
+									<Input
+										value={searchQuery}
+										onChange={e => setSearchQuery(e.target.value)}
+										placeholder="Nach Titel oder Handle suchen..."
+										className="w-full"
+									/>
+								</div>
+								<div className="flex gap-2 items-center">
+									{/* Column Visibility Control */}
+									<ColumnVisibilityControl
+										columns={tableColumns}
+										visibleColumns={visibleColumns}
+										onToggle={key => {
+											const newVisible = new Set(visibleColumns);
+											if (newVisible.has(key)) {
+												newVisible.delete(key);
+											} else {
+												newVisible.add(key);
+											}
+											setVisibleColumns(newVisible);
+											localStorage.setItem(
+												'products-table-visible-columns',
+												JSON.stringify([...newVisible]),
+											);
+										}}
+										onShowAll={() => {
+											const allColumns = new Set(tableColumns.map(c => c.key));
+											setVisibleColumns(allColumns);
+											localStorage.setItem(
+												'products-table-visible-columns',
+												JSON.stringify([...allColumns]),
+											);
+										}}
+										onHideAll={() => {
+											// Keep only essential columns
+											const essentialColumns = new Set([
+												'select',
+												'title',
+												'actions',
+											]);
+											setVisibleColumns(essentialColumns);
+											localStorage.setItem(
+												'products-table-visible-columns',
+												JSON.stringify([...essentialColumns]),
+											);
+										}}
+									/>
+
+									{selectedCount > 0 && (
+										<Text
+											size="small"
+											className="font-medium text-ui-fg-base whitespace-nowrap"
+										>
+											{selectedCount} ausgewählt
+										</Text>
+									)}
+									<Text size="small" className="whitespace-nowrap">
+										Sortieren nach:
+									</Text>
+									<Select
+										value={sortBy}
+										onValueChange={v => setSortBy(v as any)}
+									>
+										<Select.Trigger className="w-[180px]">
+											<Select.Value />
+										</Select.Trigger>
+										<Select.Content>
+											<Select.Item value="title">Titel</Select.Item>
+											<Select.Item value="created_at">Erstellt am</Select.Item>
+											<Select.Item value="updated_at">
+												Aktualisiert am
+											</Select.Item>
+										</Select.Content>
+									</Select>
+									<Select
+										value={sortOrder}
+										onValueChange={v => setSortOrder(v as any)}
+									>
+										<Select.Trigger className="w-[120px]">
+											<Select.Value />
+										</Select.Trigger>
+										<Select.Content>
+											<Select.Item value="asc">Aufsteigend</Select.Item>
+											<Select.Item value="desc">Absteigend</Select.Item>
+										</Select.Content>
+									</Select>
+									<Text size="small" className="whitespace-nowrap">
+										Pro Seite:
+									</Text>
+									<Select
+										value={pageSize.toString()}
+										onValueChange={v => {
+											setPageSize(parseInt(v));
+											setCurrentPage(1); // Reset to first page when changing page size
+											setRowSelection({}); // Clear selection when changing page size
+										}}
+									>
+										<Select.Trigger className="w-[100px]">
+											<Select.Value />
+										</Select.Trigger>
+										<Select.Content>
+											<Select.Item value="25">25</Select.Item>
+											<Select.Item value="50">50</Select.Item>
+											<Select.Item value="100">100</Select.Item>
+											<Select.Item value="200">200</Select.Item>
+										</Select.Content>
+									</Select>
+								</div>
+							</div>
+						)}
 
 						{/* Bulk Actions Toolbar */}
 						{selectedCount > 0 && (
@@ -981,7 +1071,11 @@ export default function ProductsByCategoryPage() {
 										size="small"
 										onClick={async () => {
 											const productIds = Object.keys(rowSelection);
-											if (!window.confirm(`Sind Sie sicher, dass Sie ${productIds.length} Produkt${productIds.length !== 1 ? 'e' : ''} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+											if (
+												!window.confirm(
+													`Sind Sie sicher, dass Sie ${productIds.length} Produkt${productIds.length !== 1 ? 'e' : ''} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.`,
+												)
+											) {
 												return;
 											}
 
@@ -989,14 +1083,19 @@ export default function ProductsByCategoryPage() {
 												// Delete products one by one
 												let deletedCount = 0;
 												for (const productId of productIds) {
-													const res = await fetch(`/admin/products/${productId}`, {
-														method: 'DELETE',
-														credentials: 'include',
-													});
+													const res = await fetch(
+														`/admin/products/${productId}`,
+														{
+															method: 'DELETE',
+															credentials: 'include',
+														},
+													);
 													if (res.ok) deletedCount++;
 												}
 
-												toast.success(`${deletedCount} Produkt${deletedCount !== 1 ? 'e' : ''} erfolgreich gelöscht`);
+												toast.success(
+													`${deletedCount} Produkt${deletedCount !== 1 ? 'e' : ''} erfolgreich gelöscht`,
+												);
 												setRowSelection({});
 												queryClient.invalidateQueries({
 													queryKey: ['admin-products-filtered'],
@@ -1105,9 +1204,9 @@ export default function ProductsByCategoryPage() {
 									});
 									return res.json();
 								}}
-							isLoading={isLoading}
-							visibleColumns={visibleColumns}
-						/>
+								isLoading={isLoading}
+								visibleColumns={visibleColumns}
+							/>
 						</div>
 
 						{/* Pagination Controls */}
@@ -1218,6 +1317,215 @@ export default function ProductsByCategoryPage() {
 					</Prompt.Footer>
 				</Prompt.Content>
 			</Prompt>
+			{/* Mobile Bottom Sheets */}
+			{isMobile && (
+				<>
+					{/* Category Sheet */}
+					<BottomSheet
+						isOpen={showCategorySheet}
+						onClose={() => setShowCategorySheet(false)}
+						title="Kategorien"
+					>
+						<div className="space-y-4">
+							{categoryTreeData && categoryTreeData.length > 0 ? (
+								<CategoryTree
+									categories={categoryTreeData}
+									selectedCategories={selectedCategories}
+									onToggleCategory={id => {
+										const newSet = new Set(selectedCategories);
+										if (newSet.has(id)) newSet.delete(id);
+										else newSet.add(id);
+										setSelectedCategories(newSet);
+										setRowSelection({});
+									}}
+									expandedCategories={expandedCategories}
+									onToggleExpand={id => {
+										const newSet = new Set(expandedCategories);
+										if (newSet.has(id)) newSet.delete(id);
+										else newSet.add(id);
+										setExpandedCategories(newSet);
+									}}
+								/>
+							) : (
+								<Text size="small" className="text-ui-fg-subtle">
+									Keine Kategorien gefunden
+								</Text>
+							)}
+						</div>
+					</BottomSheet>
+
+					{/* Filter Sheet */}
+					<BottomSheet
+						isOpen={showFilterSheet}
+						onClose={() => setShowFilterSheet(false)}
+						title="Filter"
+					>
+						<div className="space-y-6 pb-6">
+							{/* Search */}
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Suche
+								</Text>
+								<Input
+									value={searchQuery}
+									onChange={e => setSearchQuery(e.target.value)}
+									placeholder="Titel oder Handle..."
+								/>
+							</div>
+
+							{/* SKU Search */}
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Artikelnummer (SKU)
+								</Text>
+								<Input
+									value={skuSearch}
+									onChange={e => setSkuSearch(e.target.value)}
+									placeholder="SKU suchen..."
+								/>
+							</div>
+
+							{/* Status */}
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Status
+								</Text>
+								<Select
+									value={selectedStatus}
+									onValueChange={(v: any) => setSelectedStatus(v)}
+								>
+									<Select.Trigger>
+										<Select.Value />
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Item value="all">Alle</Select.Item>
+										<Select.Item value="published">Veröffentlicht</Select.Item>
+										<Select.Item value="draft">Entwurf</Select.Item>
+									</Select.Content>
+								</Select>
+							</div>
+
+							{/* Collections */}
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Sammlungen
+								</Text>
+								<div className="space-y-2 max-h-[200px] overflow-auto border border-ui-border-base rounded-md p-2">
+									{(collectionsData || []).map(c => (
+										<div key={c.id} className="flex items-center gap-2">
+											<Checkbox
+												checked={selectedCollections.has(c.id)}
+												onCheckedChange={checked => {
+													const newSet = new Set(selectedCollections);
+													if (checked) newSet.add(c.id);
+													else newSet.delete(c.id);
+													setSelectedCollections(newSet);
+												}}
+											/>
+											<Text size="small">{c.title}</Text>
+										</div>
+									))}
+								</div>
+							</div>
+
+							<Button
+								variant="secondary"
+								className="w-full"
+								onClick={() => {
+									clearAllFilters();
+									setShowFilterSheet(false);
+								}}
+							>
+								Alle Filter zurücksetzen
+							</Button>
+						</div>
+					</BottomSheet>
+
+					{/* Sort Sheet */}
+					<BottomSheet
+						isOpen={showSortSheet}
+						onClose={() => setShowSortSheet(false)}
+						title="Sortieren"
+					>
+						<div className="space-y-4 pb-6">
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Sortieren nach
+								</Text>
+								<div className="grid grid-cols-1 gap-2">
+									{[
+										{ label: 'Titel', value: 'title' },
+										{ label: 'Erstellt am', value: 'created_at' },
+										{ label: 'Aktualisiert am', value: 'updated_at' },
+									].map(opt => (
+										<Button
+											key={opt.value}
+											variant={sortBy === opt.value ? 'primary' : 'secondary'}
+											className="justify-start"
+											onClick={() => setSortBy(opt.value as any)}
+										>
+											{opt.label}
+										</Button>
+									))}
+								</div>
+							</div>
+							<div>
+								<Text size="small" weight="plus" className="mb-2 block">
+									Reihenfolge
+								</Text>
+								<div className="grid grid-cols-2 gap-2">
+									<Button
+										variant={sortOrder === 'asc' ? 'primary' : 'secondary'}
+										onClick={() => setSortOrder('asc')}
+									>
+										Aufsteigend
+									</Button>
+									<Button
+										variant={sortOrder === 'desc' ? 'primary' : 'secondary'}
+										onClick={() => setSortOrder('desc')}
+									>
+										Absteigend
+									</Button>
+								</div>
+							</div>
+						</div>
+					</BottomSheet>
+
+					{/* Columns Sheet */}
+					<BottomSheet
+						isOpen={showColumnSheet}
+						onClose={() => setShowColumnSheet(false)}
+						title="Spalten anpassen"
+					>
+						<div className="space-y-4 pb-6">
+							<div className="grid grid-cols-1 gap-3">
+								{tableColumns.map(col => (
+									<div
+										key={col.key}
+										className="flex items-center justify-between"
+									>
+										<Text size="small">{col.label || col.key}</Text>
+										<Checkbox
+											checked={visibleColumns.has(col.key)}
+											onCheckedChange={checked => {
+												const newVisible = new Set(visibleColumns);
+												if (checked) newVisible.add(col.key);
+												else newVisible.delete(col.key);
+												setVisibleColumns(newVisible);
+												localStorage.setItem(
+													'products-table-visible-columns',
+													JSON.stringify([...newVisible]),
+												);
+											}}
+											disabled={col.key === 'title' || col.key === 'actions'}
+										/>
+									</div>
+								))}
+							</div>
+						</div>
+					</BottomSheet>
+				</>
+			)}
 		</Container>
 	);
 }

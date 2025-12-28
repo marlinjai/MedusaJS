@@ -1,7 +1,9 @@
 import { Button, Container, Table, Text } from '@medusajs/ui';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Eye, Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Supplier } from '../../../../modules/supplier/models/supplier';
+import { useIsMobile } from '../../../utils/use-mobile';
+import { MobileDataCard } from '../../../components/MobileDataCard';
 
 // Type for supplier with details
 type SupplierWithDetails = Supplier & {
@@ -352,6 +354,76 @@ const SupplierTable = ({
 		}
 	};
 
+	const isMobile = useIsMobile();
+
+	// Render mobile card view
+	const renderMobileCards = () => {
+		return (
+			<div className="space-y-2 p-2">
+				{suppliers.map((supplier) => (
+				<MobileDataCard
+					key={supplier.id}
+					recordId={supplier.company}
+					actions={[
+						{
+							icon: <Edit className="w-4 h-4" />,
+							onClick: () => onEdit(supplier),
+							label: 'Bearbeiten',
+						},
+						{
+							icon: <Trash2 className="w-4 h-4" />,
+							onClick: () => {
+								if (window.confirm(`Lieferant ${supplier.company} wirklich löschen?`)) {
+									onDelete(supplier.id);
+								}
+							},
+							label: 'Löschen',
+						},
+					]}
+						rows={[
+							...((!visibleColumns || visibleColumns.has('company')) && supplier.supplier_number
+								? [{
+										label: "Lieferantennr.",
+										value: supplier.supplier_number,
+								  }]
+								: []),
+							...((!visibleColumns || visibleColumns.has('addresses')) && supplier.addresses?.[0]?.city
+								? [{
+										label: "Ort",
+										value: supplier.addresses[0].city,
+								  }]
+								: []),
+							...((!visibleColumns || visibleColumns.has('contacts')) && supplier.contacts?.[0]?.emails?.[0]?.email
+								? [{
+										label: "E-Mail",
+										value: supplier.contacts[0].emails[0].email,
+								  }]
+								: []),
+							...((!visibleColumns || visibleColumns.has('contacts')) && supplier.contacts?.[0]?.phones?.[0]?.number
+								? [{
+										label: "Telefon",
+										value: supplier.contacts[0].phones[0].number,
+								  }]
+								: []),
+							...((!visibleColumns || visibleColumns.has('numbers')) && supplier.vat_id
+								? [{
+										label: "USt-ID",
+										value: supplier.vat_id,
+								  }]
+								: []),
+							...((!visibleColumns || visibleColumns.has('bank_info')) && supplier.bank_name
+								? [{
+										label: "Bank",
+										value: supplier.bank_name,
+								  }]
+								: []),
+						]}
+					/>
+				))}
+			</div>
+		);
+	};
+
 	if (isLoading) {
 		return (
 			<Container className="flex items-center justify-center py-16">
@@ -370,6 +442,14 @@ const SupplierTable = ({
 					Erstellen Sie Ihren ersten Lieferanten
 				</Text>
 			</Container>
+		);
+	}
+
+	if (isMobile) {
+		return (
+			<div className="flex-1 overflow-auto pb-20">
+				{renderMobileCards()}
+			</div>
 		);
 	}
 

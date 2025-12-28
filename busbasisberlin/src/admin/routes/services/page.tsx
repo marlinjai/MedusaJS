@@ -6,13 +6,16 @@
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { HandTruck } from '@medusajs/icons';
 import { Button, Checkbox, Container, Select, Text } from '@medusajs/ui';
-import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import BulkActions from './components-advanced/BulkActions';
 import PriceAdjustmentModal from './components-advanced/PriceAdjustmentModal';
 import ServiceTableAdvanced from './components-advanced/ServiceTableAdvanced';
+import { BottomSheet, FloatingActionButton } from '../../components/BottomSheet';
+import { MobileControlBar } from '../../components/MobileControlBar';
+import { useIsMobile } from '../../utils/use-mobile';
 
 // Service category tree node
 type ServiceCategoryNode = {
@@ -122,6 +125,7 @@ export const config = defineRouteConfig({
 
 export default function ServicesByCategoryPage() {
 	const navigate = useNavigate();
+	const isMobile = useIsMobile();
 	const [categories, setCategories] = useState<ServiceCategoryNode[]>([]);
 	const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
 		new Set(),
@@ -130,6 +134,9 @@ export default function ServicesByCategoryPage() {
 		new Set(),
 	);
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	const [showBottomSheet, setShowBottomSheet] = useState(false);
+	const [showSortSheet, setShowSortSheet] = useState(false);
+	const [showColumnSheet, setShowColumnSheet] = useState(false);
 	const [services, setServices] = useState<Service[]>([]);
 	const [totalServices, setTotalServices] = useState(0);
 	const [loading, setLoading] = useState(false);
@@ -547,26 +554,36 @@ export default function ServicesByCategoryPage() {
 	};
 
 	return (
-		<Container className="h-[calc(100vh-120px)] flex flex-col">
-			<div className="flex items-center justify-between mb-6 flex-shrink-0">
+		<Container className="p-0 md:p-6 h-[calc(100vh-120px)] flex flex-col">
+			<div className="flex items-center justify-between px-2 py-1.5 md:px-0 md:py-0 md:mb-6 mb-2 flex-shrink-0">
 				<div>
-					<Text size="xlarge" weight="plus" className="text-ui-fg-base">
+					<Text size="xlarge" weight="plus" className="text-ui-fg-base text-sm md:text-xl">
 						Dienstleistungen
 					</Text>
-					<Text size="small" className="text-ui-fg-subtle">
+					<Text size="small" className="text-ui-fg-subtle text-xs md:text-sm hidden sm:block">
 						Verwalten Sie Services organisiert nach Kategorien
 					</Text>
 				</div>
-				<Button onClick={() => navigate('/services/new')}>
-					<Plus className="w-4 h-4 mr-2" />
-					Neuer Service
+				<Button onClick={() => navigate('/services/new')} size="small">
+					<Plus className="w-4 h-4 md:mr-2" />
+					<span className="hidden sm:inline">Neuer Service</span>
 				</Button>
 			</div>
 
-			<div className="flex gap-6 flex-1 min-h-0">
-				{/* Left Sidebar - Category Tree (Collapsible) */}
+			{/* Mobile Control Bar */}
+			{isMobile && (
+				<MobileControlBar
+					onFilterClick={() => setShowBottomSheet(true)}
+					onSortClick={() => setShowSortSheet(true)}
+					onColumnsClick={() => setShowColumnSheet(true)}
+					filterCount={selectedCategories.size}
+				/>
+			)}
+
+			<div className="flex gap-2 md:gap-6 flex-1 min-h-0">
+				{/* Left Sidebar - Category Tree (Collapsible) - Hidden on mobile */}
 				<div
-					className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 overflow-hidden flex-shrink-0 flex flex-col`}
+					className={`hidden md:flex ${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 overflow-hidden flex-shrink-0 flex-col`}
 				>
 					<div className="bg-ui-bg-subtle rounded-lg p-4 flex flex-col h-full">
 						<Text size="large" weight="plus" className="mb-4 flex-shrink-0">
@@ -590,10 +607,10 @@ export default function ServicesByCategoryPage() {
 					</div>
 				</div>
 
-				{/* Toggle Button */}
+				{/* Toggle Button - Hidden on mobile */}
 				<button
 					onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-					className="flex-shrink-0 w-6 h-12 self-center rounded-md border border-ui-border-base bg-ui-bg-base hover:bg-ui-bg-subtle transition-colors flex items-center justify-center"
+					className="hidden md:flex flex-shrink-0 w-6 h-12 self-center rounded-md border border-ui-border-base bg-ui-bg-base hover:bg-ui-bg-subtle transition-colors items-center justify-center"
 					title={sidebarCollapsed ? 'Sidebar einblenden' : 'Sidebar ausblenden'}
 				>
 					{sidebarCollapsed ? (
@@ -605,17 +622,17 @@ export default function ServicesByCategoryPage() {
 
 				{/* Main Content - Services Table */}
 				<div className="flex-1 flex flex-col min-h-0">
-					<div className="flex-1 flex flex-col bg-ui-bg-subtle rounded-lg p-6 min-h-0">
+					<div className="flex-1 flex flex-col bg-ui-bg-subtle rounded-lg p-2 md:p-6 min-h-0">
 						{/* Header with pagination controls */}
-						<div className="flex items-center justify-between mb-4 flex-shrink-0">
-							<div className="flex items-center gap-4">
-								<Text size="base" weight="plus">
+						<div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 md:gap-4 mb-2 md:mb-4 flex-shrink-0">
+							<div className="flex items-center gap-2 md:gap-4">
+								<Text size="base" weight="plus" className="text-xs md:text-base">
 									{selectedCategories.size === 0
 										? 'Alle Services'
-										: `${totalServices} Service(s) gefunden`}
+										: `${totalServices} Service(s)`}
 								</Text>
 								{totalServices > 0 && (
-									<Text size="small" className="text-ui-fg-subtle">
+									<Text size="small" className="text-ui-fg-subtle text-xs hidden sm:inline">
 										{offset + 1}-{Math.min(offset + limit, totalServices)} von{' '}
 										{totalServices}
 									</Text>
@@ -623,8 +640,8 @@ export default function ServicesByCategoryPage() {
 							</div>
 
 							{/* Pagination controls */}
-							<div className="flex items-center gap-3">
-								<Text size="small" className="text-ui-fg-subtle">
+							<div className="flex items-center gap-2 md:gap-3">
+								<Text size="small" className="text-ui-fg-subtle text-xs hidden sm:inline">
 									Pro Seite:
 								</Text>
 								<Select
@@ -634,7 +651,7 @@ export default function ServicesByCategoryPage() {
 										setOffset(0);
 									}}
 								>
-									<Select.Trigger className="w-24">
+									<Select.Trigger className="w-16 md:w-24 text-xs md:text-sm">
 										<Select.Value />
 									</Select.Trigger>
 									<Select.Content>
@@ -647,22 +664,26 @@ export default function ServicesByCategoryPage() {
 								</Select>
 
 								{/* Prev/Next buttons */}
-								<div className="flex items-center gap-2">
+								<div className="flex items-center gap-1 md:gap-2">
 									<Button
 										variant="secondary"
 										size="small"
 										disabled={offset === 0}
 										onClick={() => setOffset(Math.max(0, offset - limit))}
+										className="text-xs md:text-sm px-2 md:px-3"
 									>
-										Zurück
+										<span className="hidden sm:inline">Zurück</span>
+										<span className="sm:hidden">←</span>
 									</Button>
 									<Button
 										variant="secondary"
 										size="small"
 										disabled={offset + limit >= totalServices}
 										onClick={() => setOffset(offset + limit)}
+										className="text-xs md:text-sm px-2 md:px-3"
 									>
-										Weiter
+										<span className="hidden sm:inline">Weiter</span>
+										<span className="sm:hidden">→</span>
 									</Button>
 								</div>
 							</div>
@@ -693,6 +714,62 @@ export default function ServicesByCategoryPage() {
 					</div>
 				</div>
 			</div>
+
+			{/* Mobile: Floating Action Button to open category filters */}
+			{isMobile && (
+				<FloatingActionButton
+					onClick={() => setShowBottomSheet(true)}
+					label="Kategorien filtern"
+					icon={<Filter className="w-5 h-5" />}
+				/>
+			)}
+
+			{/* Mobile: Bottom Sheet for categories */}
+			<BottomSheet
+				isOpen={showBottomSheet}
+				onClose={() => setShowBottomSheet(false)}
+				title="Kategorien"
+			>
+				{loadingCategories ? (
+					<div className="flex items-center justify-center py-8">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ui-fg-base"></div>
+					</div>
+				) : (
+					<CategoryTree
+						categories={categories}
+						selectedCategories={selectedCategories}
+						onToggleCategory={toggleCategory}
+						expandedCategories={expandedCategories}
+						onToggleExpand={toggleExpand}
+					/>
+				)}
+			</BottomSheet>
+
+			{/* Sort Bottom Sheet */}
+			<BottomSheet
+				isOpen={showSortSheet}
+				onClose={() => setShowSortSheet(false)}
+				title="Sortieren"
+			>
+				<div className="space-y-4 pb-6">
+					<Text size="small" className="text-ui-fg-subtle">
+						Sortieroptionen für Dienstleistungen sind auf der Desktop-Version verfügbar.
+					</Text>
+				</div>
+			</BottomSheet>
+
+			{/* Columns Bottom Sheet */}
+			<BottomSheet
+				isOpen={showColumnSheet}
+				onClose={() => setShowColumnSheet(false)}
+				title="Spalten"
+			>
+				<div className="space-y-4 pb-6">
+					<Text size="small" className="text-ui-fg-subtle">
+						Spaltenauswahl ist auf der Desktop-Version verfügbar.
+					</Text>
+				</div>
+			</BottomSheet>
 
 			{/* Price Adjustment Modal */}
 			<PriceAdjustmentModal

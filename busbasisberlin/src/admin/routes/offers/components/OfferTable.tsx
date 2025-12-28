@@ -3,8 +3,11 @@
  * Enhanced table component with sorting, filtering, and column resizing for offers
  */
 import { Badge, Button, Table, Text } from '@medusajs/ui';
-import { ArrowDown, ArrowUp, Edit, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Edit, Trash2, X, Eye, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { LandscapePrompt } from '../../../components/LandscapePrompt';
+import { useLandscapePrompt, useIsMobile } from '../../../utils/use-mobile';
+import { MobileDataCard } from '../../../components/MobileDataCard';
 
 type OfferStatus = 'draft' | 'active' | 'accepted' | 'completed' | 'cancelled';
 
@@ -139,6 +142,12 @@ const OfferTable = ({
 		{},
 	);
 	const tableRef = useRef<HTMLTableElement>(null);
+
+	// Landscape prompt for mobile (7 columns)
+	const { shouldShow, dismiss } = useLandscapePrompt(
+		columns.length,
+		'offers-table-landscape-prompt'
+	);
 
 	// Calculate total table width
 	const totalTableWidth = Object.values(columnWidths).reduce(
@@ -406,6 +415,64 @@ const OfferTable = ({
 		}
 	};
 
+	const isMobile = useIsMobile();
+
+	// Render mobile card view
+	const renderMobileCards = () => {
+		return (
+			<div className="space-y-2 p-2">
+				{offers.map((offer) => (
+				<MobileDataCard
+					key={offer.id}
+					recordId={offer.offer_number}
+					actions={[
+						{
+							icon: <Trash2 className="w-4 h-4" />,
+							onClick: () => {
+								if (window.confirm(`Angebot ${offer.offer_number} wirklich löschen?`)) {
+									onDelete(offer.id);
+								}
+							},
+							label: 'Löschen',
+						},
+							{
+								icon: <Edit className="w-4 h-4" />,
+								onClick: () => onEdit(offer),
+								label: 'Bearbeiten',
+							},
+						]}
+						rows={[
+							{
+								label: "Kunde",
+								value: offer.customer_name || 'Kein Name',
+							},
+							{
+								label: "Status",
+								value: (
+									<Badge color={getStatusBadgeProps(offer.status).color}>
+										{getStatusText(offer.status)}
+									</Badge>
+								)
+							},
+							{
+								label: "Wert",
+								value: formatCurrency(offer.total_amount, offer.currency_code),
+							},
+							{
+								label: "Erstellt",
+								value: formatDate(offer.created_at),
+							},
+							{
+								label: "Gültig bis",
+								value: offer.valid_until ? formatDate(offer.valid_until) : '-',
+							}
+						]}
+					/>
+				))}
+			</div>
+		);
+	};
+
 	if (isLoading || isFetching) {
 		return (
 			<div className="flex items-center justify-center h-64">
@@ -422,59 +489,70 @@ const OfferTable = ({
 		);
 	}
 
+	if (isMobile) {
+		return (
+			<div className="flex-1 overflow-auto pb-20">
+				{renderMobileCards()}
+			</div>
+		);
+	}
+
 	return (
-		<div className="relative overflow-x-auto">
-			<Table
-				ref={tableRef}
-				style={{
-					width: `${totalTableWidth}px`,
-					minWidth: `${totalTableWidth}px`,
-					tableLayout: 'fixed',
-				}}
-			>
-				<Table.Header>
-					<Table.Row>
-						{columns.map((column, index) => (
-							<Table.HeaderCell
-								key={column.key}
-								style={{
-									width: `${columnWidths[column.key]}px`,
-									maxWidth: `${columnWidths[column.key]}px`,
-									minWidth: `${columnWidths[column.key]}px`,
-									position: 'relative',
-									overflow: 'visible',
-								}}
-								className="select-none"
-							>
-								{/* Clickable header for column menu */}
-								<div
-									className={`column-header flex items-center rounded px-2 py-1 -mx-2 -my-1 ${
-										column.noMenu ? '' : 'cursor-pointer hover:bg-ui-bg-subtle'
-									}`}
-									onClick={e => {
-										if (column.noMenu) return;
-										e.stopPropagation();
-										toggleColumnMenu(column.key);
-									}}
-									style={{ minWidth: '0px' }}
-								>
-									{/* Text content with truncation */}
-									<div
-										className="flex items-center line-height-120 min-w-0 text-sm"
-										style={{ flex: '1 1 auto' }}
+		<>
+			{shouldShow && <LandscapePrompt onDismiss={dismiss} />}
+			<div className="relative overflow-x-auto -mx-2 md:mx-0 touch-pan-x">
+				<div className="inline-block min-w-full align-middle">
+					<Table
+						ref={tableRef}
+						style={{
+							width: `${totalTableWidth}px`,
+							minWidth: `${totalTableWidth}px`,
+							tableLayout: 'fixed',
+						}}
+					>
+						<Table.Header>
+							<Table.Row>
+								{columns.map((column, index) => (
+									<Table.HeaderCell
+										key={column.key}
+										style={{
+											width: `${columnWidths[column.key]}px`,
+											maxWidth: `${columnWidths[column.key]}px`,
+											minWidth: `${columnWidths[column.key]}px`,
+											position: 'relative',
+											overflow: 'visible',
+										}}
+										className="select-none px-1 md:px-2"
 									>
+										{/* Clickable header for column menu */}
 										<div
-											className="mr-1.5"
-											style={{
-												whiteSpace: 'nowrap',
-												overflow: 'hidden',
-												textOverflow: 'ellipsis',
+											className={`column-header flex items-center rounded px-1 py-0.5 md:px-2 md:py-1 -mx-1 -my-0.5 md:-mx-2 md:-my-1 ${
+												column.noMenu ? '' : 'cursor-pointer hover:bg-ui-bg-subtle'
+											}`}
+											onClick={e => {
+												if (column.noMenu) return;
+												e.stopPropagation();
+												toggleColumnMenu(column.key);
 											}}
-											title={column.label}
+											style={{ minWidth: '0px' }}
 										>
-											{column.label}
-										</div>
-									</div>
+											{/* Text content with truncation */}
+											<div
+												className="flex items-center line-height-120 min-w-0 text-xs md:text-sm"
+												style={{ flex: '1 1 auto' }}
+											>
+												<div
+													className="mr-1.5"
+													style={{
+														whiteSpace: 'nowrap',
+														overflow: 'hidden',
+														textOverflow: 'ellipsis',
+													}}
+													title={column.label}
+												>
+													{column.label}
+												</div>
+											</div>
 
 									{/* Indicators container */}
 									<div className="flex items-center gap-1 flex-shrink-0">
@@ -662,7 +740,7 @@ const OfferTable = ({
 										minWidth: `${columnWidths[column.key]}px`,
 										overflow: 'hidden',
 									}}
-									className="px-2"
+									className="px-1 py-1 md:px-2 md:py-2 text-xs md:text-sm"
 								>
 									{renderCellContent(offer, column.key)}
 								</Table.Cell>
@@ -672,6 +750,8 @@ const OfferTable = ({
 				</Table.Body>
 			</Table>
 		</div>
+	</div>
+		</>
 	);
 };
 

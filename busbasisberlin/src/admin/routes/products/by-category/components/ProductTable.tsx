@@ -13,6 +13,8 @@ import {
 } from '@medusajs/ui';
 import { Edit, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { MobileDataCard } from '../../../../components/MobileDataCard';
+import { useIsMobile } from '../../../../utils/use-mobile';
 import InlineCollectionSelector from './InlineCollectionSelector';
 import InlineTagsEditor from './InlineTagsEditor';
 
@@ -106,6 +108,8 @@ const ProductTable = ({
 	onRowSelectionChange,
 	visibleColumns,
 }: ProductTableProps) => {
+	const isMobile = useIsMobile();
+
 	// Inline editing state
 	const [editingCell, setEditingCell] = useState<EditableCell | null>(null);
 	const [tempValues, setTempValues] = useState<Record<string, any>>({});
@@ -452,17 +456,17 @@ const ProductTable = ({
 								}
 							}}
 						>
-						<Select.Trigger className="h-auto border-none bg-transparent shadow-none p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 w-auto">
-							<div
-								className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-									isPublished
-										? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-										: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-								}`}
-							>
-								{isPublished ? 'Veröffentlicht' : 'Entwurf'}
-							</div>
-						</Select.Trigger>
+							<Select.Trigger className="h-auto border-none bg-transparent shadow-none p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 w-auto">
+								<div
+									className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+										isPublished
+											? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+											: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+									}`}
+								>
+									{isPublished ? 'Veröffentlicht' : 'Entwurf'}
+								</div>
+							</Select.Trigger>
 							<Select.Content>
 								<Select.Item value="published">Veröffentlicht</Select.Item>
 								<Select.Item value="draft">Entwurf</Select.Item>
@@ -512,7 +516,7 @@ const ProductTable = ({
 						) : (
 							<Text size="small" className="text-ui-fg-subtle">
 								+ Sammlung hinzufügen
-						</Text>
+							</Text>
 						)}
 					</div>
 				);
@@ -636,6 +640,134 @@ const ProductTable = ({
 		}
 	};
 
+	// Mobile Card View
+	const renderMobileCards = () => {
+		const toggleSelect = (productId: string) => {
+			if (!onRowSelectionChange) return;
+			const newSelection = { ...rowSelection };
+			if (newSelection[productId]) {
+				delete newSelection[productId];
+			} else {
+				newSelection[productId] = true;
+			}
+			onRowSelectionChange(newSelection);
+		};
+
+		return (
+			<div className="space-y-2 p-2">
+				{products.map(product => (
+					<MobileDataCard
+						key={product.id}
+						recordId={product.title}
+						rows={[
+							{
+								label: 'Status',
+								value: (
+									<Badge
+										color={product.status === 'published' ? 'green' : 'grey'}
+										size="small"
+									>
+										{product.status === 'published'
+											? 'Veröffentlicht'
+											: 'Entwurf'}
+									</Badge>
+								),
+							},
+							...((!visibleColumns || visibleColumns.has('collection')) &&
+							product.collection
+								? [
+										{
+											label: 'Sammlung',
+											value: product.collection.title,
+										},
+									]
+								: []),
+							...((!visibleColumns || visibleColumns.has('variants')) &&
+							product.variants &&
+							product.variants.length > 0
+								? [
+										{
+											label: 'Artikelnummern',
+											value:
+												product.variants
+													.map(v => v.sku)
+													.filter(Boolean)
+													.join(', ') || '-',
+										},
+									]
+								: []),
+							...((!visibleColumns || visibleColumns.has('categories')) &&
+							product.categories &&
+							product.categories.length > 0
+								? [
+										{
+											label: 'Kategorien',
+											value: product.categories.map(c => c.name).join(', '),
+										},
+									]
+								: []),
+							...((!visibleColumns || visibleColumns.has('shipping_profile')) &&
+							product.shipping_profile
+								? [
+										{
+											label: 'Versandprofil',
+											value: product.shipping_profile.name,
+										},
+									]
+								: []),
+							...((!visibleColumns || visibleColumns.has('sales_channels')) &&
+							product.sales_channels &&
+							product.sales_channels.length > 0
+								? [
+										{
+											label: 'Vertriebskanäle',
+											value: product.sales_channels
+												.map(sc => sc.name)
+												.join(', '),
+										},
+									]
+								: []),
+							...((!visibleColumns || visibleColumns.has('tags')) &&
+							product.tags &&
+							product.tags.length > 0
+								? [
+										{
+											label: 'Tags',
+											value: product.tags.map(t => t.value).join(', '),
+										},
+									]
+								: []),
+						]}
+						actions={[
+							{
+								icon: <Edit className="w-4 h-4" />,
+								onClick: () => onEdit?.(product),
+								label: 'Bearbeiten',
+							},
+							{
+								icon: <Trash2 className="w-4 h-4" />,
+								onClick: () => {
+									if (
+										window.confirm(
+											`Möchten Sie "${product.title}" wirklich löschen?`,
+										)
+									) {
+										onDelete?.(product.id);
+									}
+								},
+								label: 'Löschen',
+							},
+						]}
+						onSelect={
+							onRowSelectionChange ? () => toggleSelect(product.id) : undefined
+						}
+						selected={rowSelection[product.id]}
+					/>
+				))}
+			</div>
+		);
+	};
+
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center h-64">
@@ -649,6 +781,12 @@ const ProductTable = ({
 			<div className="flex items-center justify-center h-64">
 				<Text>Keine Produkte gefunden</Text>
 			</div>
+		);
+	}
+
+	if (isMobile) {
+		return (
+			<div className="flex-1 overflow-auto pb-20">{renderMobileCards()}</div>
 		);
 	}
 
@@ -692,13 +830,13 @@ const ProductTable = ({
 							>
 								{column.key === 'select' ? (
 									<div className="flex items-center justify-center">
-									<Checkbox
-										checked={allSelected}
-										onCheckedChange={handleSelectAll}
+										<Checkbox
+											checked={allSelected}
+											onCheckedChange={handleSelectAll}
 											{...(someSelected && !allSelected
 												? { indeterminate: true }
 												: {})}
-									/>
+										/>
 									</div>
 								) : (
 									<div className="flex items-center min-w-0 text-sm">

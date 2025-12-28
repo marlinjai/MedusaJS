@@ -13,10 +13,13 @@ import {
 	Text,
 	toast,
 } from '@medusajs/ui';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Eye, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import ColumnVisibilityControl from './ColumnVisibilityControl';
+import { LandscapePrompt } from '../../../components/LandscapePrompt';
+import { useLandscapePrompt, useIsMobile } from '../../../utils/use-mobile';
+import { MobileDataCard } from '../../../components/MobileDataCard';
 
 type Service = {
 	id: string;
@@ -69,6 +72,8 @@ export default function ServiceTableAdvanced({
 	rowSelection = {},
 	onRowSelectionChange,
 }: ServiceTableProps) {
+	const isMobile = useIsMobile();
+
 	// Column widths state
 	const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
 		const saved = localStorage.getItem(STORAGE_KEY_WIDTHS);
@@ -121,6 +126,18 @@ export default function ServiceTableAdvanced({
 		return new Set(columns.map(c => c.key));
 	});
 
+	// Get ordered columns filtered by visibility (must be before useLandscapePrompt)
+	const orderedColumns = columnOrder
+		.map(key => columns.find(c => c.key === key))
+		.filter((c): c is typeof columns[0] => c !== undefined)
+		.filter(c => visibleColumns.has(c.key));
+
+	// Landscape prompt for mobile (7+ columns)
+	const { shouldShow, dismiss } = useLandscapePrompt(
+		orderedColumns.length,
+		'services-table-landscape-prompt'
+	);
+
 	// Persist column widths
 	useEffect(() => {
 		localStorage.setItem(STORAGE_KEY_WIDTHS, JSON.stringify(columnWidths));
@@ -135,12 +152,6 @@ export default function ServiceTableAdvanced({
 	useEffect(() => {
 		localStorage.setItem('services-table-visible-columns', JSON.stringify([...visibleColumns]));
 	}, [visibleColumns]);
-
-	// Get ordered columns filtered by visibility
-	const orderedColumns = columnOrder
-		.map(key => columns.find(c => c.key === key))
-		.filter((c): c is typeof columns[0] => c !== undefined)
-		.filter(c => visibleColumns.has(c.key));
 
 	// Column resize handlers
 	const handleResizeStart = (e: React.MouseEvent, columnKey: string) => {
@@ -301,14 +312,118 @@ export default function ServiceTableAdvanced({
 		onRowSelectionChange(newSelection);
 	};
 
+	// Render mobile card view
+	const renderMobileCards = () => {
+		const toggleSelect = (serviceId: string) => {
+			if (!onRowSelectionChange) return;
+			const newSelection = { ...rowSelection };
+			if (newSelection[serviceId]) {
+				delete newSelection[serviceId];
+			} else {
+				newSelection[serviceId] = true;
+			}
+			onRowSelectionChange(newSelection);
+		};
+
+		return (
+			<div className="space-y-2 p-2">
+				{services.map(service => (
+				<MobileDataCard
+					key={service.id}
+					recordId={service.service_code || service.id.slice(-6).toUpperCase()}
+					actions={[
+						{
+							icon: <Edit className="w-4 h-4" />,
+							onClick: () => onEdit?.(service),
+							label: 'Bearbeiten',
+						},
+						{
+							icon: <Trash2 className="w-4 h-4" />,
+							onClick: () => {
+								if (window.confirm(`Dienstleistung "${service.title}" wirklich löschen?`)) {
+									onDelete?.(service.id);
+								}
+							},
+							label: 'Löschen',
+						},
+					]}
+						rows={[
+							{
+								label: 'Titel',
+								value: service.title,
+							},
+							...(service.category
+								? [{
+										label: 'Kategorie',
+										value: service.category,
+								  }]
+								: []),
+							...(service.base_price !== null
+								? [{
+										label: 'Preis',
+										value: new Intl.NumberFormat('de-DE', {
+											style: 'currency',
+											currency: service.currency_code || 'EUR',
+										}).format(service.base_price / 100),
+								  }]
+								: []),
+							...(service.service_type
+								? [{
+										label: 'Typ',
+										value: service.service_type,
+								  }]
+								: []),
+							{
+								label: 'Status',
+								value: (
+									<Badge size="small" color={service.is_active ? 'green' : 'grey'}>
+										{service.is_active ? 'Aktiv' : 'Inaktiv'}
+									</Badge>
+								),
+							},
+						]}
+						onSelect={onRowSelectionChange ? () => toggleSelect(service.id) : undefined}
+						selected={rowSelection[service.id]}
+					/>
+				))}
+			</div>
+		);
+	};
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<Text>Lade Dienstleistungen...</Text>
+			</div>
+		);
+	}
+
+	if (services.length === 0) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<Text>Keine Dienstleistungen gefunden</Text>
+			</div>
+		);
+	}
+
+	if (isMobile) {
+		return (
+			<div className="flex-1 overflow-auto pb-20">
+				{renderMobileCards()}
+			</div>
+		);
+	}
+
 	return (
-		<div className="w-full">
-			{/* Column Visibility Toolbar */}
-			<div className="flex items-center justify-end gap-2 mb-2">
-				<ColumnVisibilityControl
-					columns={columns}
-					visibleColumns={visibleColumns}
-					onToggle={(key) => {
+		<>
+			{shouldShow && <LandscapePrompt onDismiss={dismiss} />}
+			<div className="w-full">
+				{/* Column Visibility Toolbar */}
+				<div className="flex items-center justify-end gap-2 mb-2">
+					<ColumnVisibilityControl
+						columns={columns}
+						visibleColumns={visibleColumns}
+						onToggle={(key) => {
 						const newVisible = new Set(visibleColumns);
 						if (newVisible.has(key)) {
 							newVisible.delete(key);
@@ -323,7 +438,7 @@ export default function ServiceTableAdvanced({
 			</div>
 
 			{/* Table */}
-			<div className="w-full overflow-x-auto">
+			<div className="w-full overflow-x-auto -mx-2 md:mx-0 touch-pan-x">
 				<Table>
 				<Table.Header>
 					<Table.Row>
@@ -336,7 +451,7 @@ export default function ServiceTableAdvanced({
 								onDragOver={(e) => handleColumnDragOver(e, col.key)}
 								onDrop={(e) => handleColumnDrop(e, col.key)}
 								onDragEnd={() => setDraggedColumn(null)}
-								className={`relative ${col.draggable ? 'cursor-move' : ''} ${
+								className={`relative px-1 md:px-2 ${col.draggable ? 'cursor-move' : ''} ${
 									dragOverColumn === col.key ? 'bg-ui-bg-subtle' : ''
 								}`}
 							>
@@ -350,7 +465,7 @@ export default function ServiceTableAdvanced({
 											onCheckedChange={toggleSelectAll}
 										/>
 									) : (
-										<Text size="xsmall" weight="plus">
+										<Text size="xsmall" weight="plus" className="text-xs md:text-sm">
 											{col.label}
 										</Text>
 									)}
@@ -398,7 +513,7 @@ export default function ServiceTableAdvanced({
 								{orderedColumns.map(col => {
 									if (col.key === 'select') {
 										return (
-											<Table.Cell key={col.key}>
+											<Table.Cell key={col.key} className="px-1 py-1 md:px-2 md:py-2">
 												<Checkbox
 													checked={rowSelection[service.id] || false}
 													onCheckedChange={() => toggleSelectRow(service.id)}
@@ -445,7 +560,7 @@ export default function ServiceTableAdvanced({
 
 									if (col.key === 'category') {
 										return (
-											<Table.Cell key={col.key}>
+											<Table.Cell key={col.key} className="px-1 py-1 md:px-2 md:py-2 text-xs md:text-sm">
 												<Text size="small" className="text-ui-fg-subtle">
 													{service.category_level_2 || service.category || '-'}
 												</Text>
@@ -494,7 +609,7 @@ export default function ServiceTableAdvanced({
 												startEditing(service.id, 'service_type', service.service_type);
 											}
 										}}
-										className="cursor-pointer"
+										className="cursor-pointer px-1 py-1 md:px-2 md:py-2 text-xs md:text-sm"
 									>
 										{editingCell?.serviceId === service.id && editingCell?.field === 'service_type' ? (
 											<Select
@@ -539,7 +654,7 @@ export default function ServiceTableAdvanced({
 
 									if (col.key === 'status') {
 										return (
-											<Table.Cell key={col.key}>
+											<Table.Cell key={col.key} className="px-1 py-1 md:px-2 md:py-2 text-xs md:text-sm">
 												<Badge size="small" color={service.is_active ? 'green' : 'grey'}>
 													{service.is_active ? 'Aktiv' : 'Inaktiv'}
 												</Badge>
@@ -549,7 +664,7 @@ export default function ServiceTableAdvanced({
 
 									if (col.key === 'actions') {
 										return (
-											<Table.Cell key={col.key}>
+											<Table.Cell key={col.key} className="px-1 py-1 md:px-2 md:py-2">
 												<div className="flex items-center gap-2">
 													{onEdit && (
 														<Button
@@ -557,7 +672,7 @@ export default function ServiceTableAdvanced({
 															size="small"
 															onClick={() => onEdit(service)}
 														>
-															<Edit className="w-5 h-5" />
+															<Edit className="w-4 h-4 md:w-5 md:h-5" />
 														</Button>
 													)}
 													{onDelete && (
@@ -566,7 +681,7 @@ export default function ServiceTableAdvanced({
 															size="small"
 															onClick={() => onDelete(service.id)}
 														>
-															<Trash2 className="w-5 h-5" />
+															<Trash2 className="w-4 h-4 md:w-5 md:h-5" />
 														</Button>
 													)}
 												</div>
@@ -574,7 +689,7 @@ export default function ServiceTableAdvanced({
 										);
 									}
 
-									return <Table.Cell key={col.key}>-</Table.Cell>;
+									return <Table.Cell key={col.key} className="px-1 py-1 md:px-2 md:py-2 text-xs md:text-sm">-</Table.Cell>;
 								})}
 							</Table.Row>
 						))
@@ -583,6 +698,7 @@ export default function ServiceTableAdvanced({
 			</Table>
 			</div>
 		</div>
+		</>
 	);
 }
 
