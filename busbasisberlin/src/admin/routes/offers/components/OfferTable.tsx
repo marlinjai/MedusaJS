@@ -502,57 +502,57 @@ const OfferTable = ({
 			{shouldShow && <LandscapePrompt onDismiss={dismiss} />}
 			<div className="relative overflow-x-auto -mx-2 md:mx-0 touch-pan-x">
 				<div className="inline-block min-w-full align-middle">
-					<Table
-						ref={tableRef}
-						style={{
-							width: `${totalTableWidth}px`,
-							minWidth: `${totalTableWidth}px`,
-							tableLayout: 'fixed',
-						}}
-					>
-						<Table.Header>
-							<Table.Row>
-								{columns.map((column, index) => (
-									<Table.HeaderCell
-										key={column.key}
-										style={{
-											width: `${columnWidths[column.key]}px`,
-											maxWidth: `${columnWidths[column.key]}px`,
-											minWidth: `${columnWidths[column.key]}px`,
-											position: 'relative',
-											overflow: 'visible',
-										}}
+			<Table
+				ref={tableRef}
+				style={{
+					width: `${totalTableWidth}px`,
+					minWidth: `${totalTableWidth}px`,
+					tableLayout: 'fixed',
+				}}
+			>
+				<Table.Header>
+					<Table.Row>
+						{columns.map((column, index) => (
+							<Table.HeaderCell
+								key={column.key}
+								style={{
+									width: `${columnWidths[column.key]}px`,
+									maxWidth: `${columnWidths[column.key]}px`,
+									minWidth: `${columnWidths[column.key]}px`,
+									position: 'relative',
+									overflow: 'visible',
+								}}
 										className="select-none px-1 md:px-2"
-									>
-										{/* Clickable header for column menu */}
-										<div
+							>
+								{/* Clickable header for column menu */}
+								<div
 											className={`column-header flex items-center rounded px-1 py-0.5 md:px-2 md:py-1 -mx-1 -my-0.5 md:-mx-2 md:-my-1 ${
-												column.noMenu ? '' : 'cursor-pointer hover:bg-ui-bg-subtle'
-											}`}
-											onClick={e => {
-												if (column.noMenu) return;
-												e.stopPropagation();
-												toggleColumnMenu(column.key);
-											}}
-											style={{ minWidth: '0px' }}
-										>
-											{/* Text content with truncation */}
-											<div
+										column.noMenu ? '' : 'cursor-pointer hover:bg-ui-bg-subtle'
+									}`}
+									onClick={e => {
+										if (column.noMenu) return;
+										e.stopPropagation();
+										toggleColumnMenu(column.key);
+									}}
+									style={{ minWidth: '0px' }}
+								>
+									{/* Text content with truncation */}
+									<div
 												className="flex items-center line-height-120 min-w-0 text-xs md:text-sm"
-												style={{ flex: '1 1 auto' }}
-											>
-												<div
-													className="mr-1.5"
-													style={{
-														whiteSpace: 'nowrap',
-														overflow: 'hidden',
-														textOverflow: 'ellipsis',
-													}}
-													title={column.label}
-												>
-													{column.label}
-												</div>
-											</div>
+										style={{ flex: '1 1 auto' }}
+									>
+										<div
+											className="mr-1.5"
+											style={{
+												whiteSpace: 'nowrap',
+												overflow: 'hidden',
+												textOverflow: 'ellipsis',
+											}}
+											title={column.label}
+										>
+											{column.label}
+										</div>
+									</div>
 
 									{/* Indicators container */}
 									<div className="flex items-center gap-1 flex-shrink-0">

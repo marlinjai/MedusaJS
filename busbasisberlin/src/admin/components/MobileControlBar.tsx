@@ -2,7 +2,7 @@
 // Control bar for mobile with Filter, Sort, and Columns buttons
 
 import { Button } from '@medusajs/ui';
-import { Filter, ArrowUpDown, Columns3, FolderTree } from 'lucide-react';
+import { ArrowUpDown, Columns3, Filter, FolderTree } from 'lucide-react';
 
 type MobileControlBarProps = {
 	onFilterClick: () => void;

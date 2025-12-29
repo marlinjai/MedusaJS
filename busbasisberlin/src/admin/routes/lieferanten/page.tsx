@@ -303,31 +303,31 @@ const SuppliersPage = () => {
 				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
 					{/* Column Visibility Control */}
 					<div className="hidden md:block">
-						<ColumnVisibilityControl
-							columns={[
-								{ key: 'company', label: 'Firma', width: 250 },
-								{ key: 'contacts', label: 'Kontaktinformation', width: 220 },
-								{ key: 'addresses', label: 'Adresse', width: 200 },
-								{ key: 'numbers', label: 'Nummern', width: 150 },
-								{ key: 'bank_info', label: 'Bankdaten', width: 180 },
-								{ key: 'actions', label: 'Aktionen', width: 80 },
-							]}
-							visibleColumns={visibleColumns}
-							onToggle={(key) => {
-								const newVisible = new Set(visibleColumns);
-								if (newVisible.has(key)) {
-									newVisible.delete(key);
-								} else {
-									newVisible.add(key);
-								}
-								setVisibleColumns(newVisible);
-							}}
-							onShowAll={() => {
-								setVisibleColumns(new Set(['company', 'contacts', 'addresses', 'numbers', 'bank_info', 'actions']));
-							}}
-							onHideAll={() => {
-								setVisibleColumns(new Set(['company', 'actions']));
-							}}
+					<ColumnVisibilityControl
+						columns={[
+							{ key: 'company', label: 'Firma', width: 250 },
+							{ key: 'contacts', label: 'Kontaktinformation', width: 220 },
+							{ key: 'addresses', label: 'Adresse', width: 200 },
+							{ key: 'numbers', label: 'Nummern', width: 150 },
+							{ key: 'bank_info', label: 'Bankdaten', width: 180 },
+							{ key: 'actions', label: 'Aktionen', width: 80 },
+						]}
+						visibleColumns={visibleColumns}
+						onToggle={(key) => {
+							const newVisible = new Set(visibleColumns);
+							if (newVisible.has(key)) {
+								newVisible.delete(key);
+							} else {
+								newVisible.add(key);
+							}
+							setVisibleColumns(newVisible);
+						}}
+						onShowAll={() => {
+							setVisibleColumns(new Set(['company', 'contacts', 'addresses', 'numbers', 'bank_info', 'actions']));
+						}}
+						onHideAll={() => {
+							setVisibleColumns(new Set(['company', 'actions']));
+						}}
 					/>
 					</div>
 

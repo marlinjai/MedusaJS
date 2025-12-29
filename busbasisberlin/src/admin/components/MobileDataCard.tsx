@@ -26,23 +26,23 @@ type MobileDataCardProps = {
 
 export function MobileDataCard({
 	recordId,
-	rows,
+  rows,
 	actions = [],
 	onSelect,
 	selected = false,
 }: MobileDataCardProps) {
-	return (
+  return (
 		<div className="bg-ui-bg-base border border-ui-border-base rounded-lg p-3 mb-2 shadow-sm">
 			{/* Header Row */}
 			<div className="flex items-center justify-between mb-3 pb-2 border-b border-ui-border-base">
-				<div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
 					{onSelect && (
 						<Checkbox checked={selected} onCheckedChange={onSelect} />
-					)}
+          )}
 					<Text weight="plus" className="text-sm">
 						{recordId}
-					</Text>
-				</div>
+          </Text>
+        </div>
 				<div className="flex items-center gap-1">
 					{actions.map((action, index) => (
 						<button
@@ -54,32 +54,32 @@ export function MobileDataCard({
 							{action.icon}
 						</button>
 					))}
-				</div>
-			</div>
+        </div>
+      </div>
 
 			{/* Data Rows */}
 			<div className="space-y-2">
-				{rows.map((row, index) => (
+        {rows.map((row, index) => (
 					<div
 						key={index}
 						className="flex justify-between items-start py-1.5 border-b border-ui-border-base last:border-0"
 					>
 						<Text size="small" className="text-ui-fg-subtle min-w-[100px]">
-							{row.label}
-						</Text>
+              {row.label}
+            </Text>
 						<div className="text-right flex-1">
 							{typeof row.value === 'string' ? (
 								<Text size="small" weight="plus">
-									{row.value}
+              {row.value}
 								</Text>
 							) : (
 								row.value
 							)}
-						</div>
-					</div>
-				))}
-			</div>
-		</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
 	);
 }
 

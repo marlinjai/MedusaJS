@@ -100,23 +100,37 @@ check_database() {
 check_redis() {
     log_info "Checking Redis connectivity..."
 
-    local redis_check=$(docker exec medusa_redis redis-cli ping 2>/dev/null || echo "failed")
+    # Try with password if REDIS_PASSWORD is set, otherwise without
+    local redis_auth=""
+    if [[ -n "${REDIS_PASSWORD:-}" ]]; then
+        redis_auth="-a ${REDIS_PASSWORD}"
+    fi
+
+    local redis_check=$(docker exec medusa_redis redis-cli $redis_auth ping 2>/dev/null || echo "failed")
 
     if [[ "$redis_check" == "PONG" ]]; then
         log_success "Redis: responding to ping"
-        
+
         # SECURITY: Check if Redis is in read-only replica mode
-        local redis_role=$(docker exec medusa_redis redis-cli INFO replication 2>/dev/null | grep "^role:" | cut -d: -f2 | tr -d '\r\n' || echo "unknown")
+        local redis_role=$(docker exec medusa_redis redis-cli $redis_auth INFO replication 2>/dev/null | grep "^role:" | cut -d: -f2 | tr -d '\r\n' || echo "unknown")
         if [[ "$redis_role" == "master" ]]; then
             log_success "Redis: operating as master (writable)"
         elif [[ "$redis_role" == "slave" ]]; then
             log_error "Redis: WARNING - operating as READ-ONLY REPLICA!"
-            log_error "This will cause authentication failures. Run: docker exec medusa_redis redis-cli REPLICAOF NO ONE"
+            log_error "This will cause authentication failures. Run: docker exec medusa_redis redis-cli $redis_auth REPLICAOF NO ONE"
             return 1
         else
             log_warning "Redis: role unknown ($redis_role)"
         fi
-        
+
+        # SECURITY: Check if REPLICAOF is configured (should be empty)
+        local replicaof_config=$(docker exec medusa_redis redis-cli $redis_auth CONFIG GET replicaof 2>/dev/null | tail -1 | tr -d '\r\n' || echo "unknown")
+        if [[ "$replicaof_config" != "" && "$replicaof_config" != "unknown" ]]; then
+            log_error "Redis: SECURITY WARNING - REPLICAOF is configured: $replicaof_config"
+            log_error "This is a security risk. Run: docker exec medusa_redis redis-cli $redis_auth REPLICAOF NO ONE"
+            return 1
+        fi
+
         return 0
     else
         log_error "Redis: not responding to ping"

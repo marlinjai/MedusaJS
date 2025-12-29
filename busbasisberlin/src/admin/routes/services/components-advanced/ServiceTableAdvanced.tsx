@@ -417,13 +417,13 @@ export default function ServiceTableAdvanced({
 	return (
 		<>
 			{shouldShow && <LandscapePrompt onDismiss={dismiss} />}
-			<div className="w-full">
-				{/* Column Visibility Toolbar */}
-				<div className="flex items-center justify-end gap-2 mb-2">
-					<ColumnVisibilityControl
-						columns={columns}
-						visibleColumns={visibleColumns}
-						onToggle={(key) => {
+		<div className="w-full">
+			{/* Column Visibility Toolbar */}
+			<div className="flex items-center justify-end gap-2 mb-2">
+				<ColumnVisibilityControl
+					columns={columns}
+					visibleColumns={visibleColumns}
+					onToggle={(key) => {
 						const newVisible = new Set(visibleColumns);
 						if (newVisible.has(key)) {
 							newVisible.delete(key);

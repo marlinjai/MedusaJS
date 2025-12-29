@@ -361,8 +361,8 @@ const SupplierTable = ({
 		return (
 			<div className="space-y-2 p-2">
 				{suppliers.map((supplier) => (
-				<MobileDataCard
-					key={supplier.id}
+					<MobileDataCard
+						key={supplier.id}
 					recordId={supplier.company}
 					actions={[
 						{
@@ -389,19 +389,19 @@ const SupplierTable = ({
 								: []),
 							...((!visibleColumns || visibleColumns.has('addresses')) && supplier.addresses?.[0]?.city
 								? [{
-										label: "Ort",
+								label: "Ort",
 										value: supplier.addresses[0].city,
 								  }]
 								: []),
 							...((!visibleColumns || visibleColumns.has('contacts')) && supplier.contacts?.[0]?.emails?.[0]?.email
 								? [{
-										label: "E-Mail",
+								label: "E-Mail",
 										value: supplier.contacts[0].emails[0].email,
 								  }]
 								: []),
 							...((!visibleColumns || visibleColumns.has('contacts')) && supplier.contacts?.[0]?.phones?.[0]?.number
 								? [{
-										label: "Telefon",
+								label: "Telefon",
 										value: supplier.contacts[0].phones[0].number,
 								  }]
 								: []),
