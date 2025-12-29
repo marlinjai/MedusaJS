@@ -575,227 +575,227 @@ export default function ProductsByCategoryPage() {
 							sidebarCollapsed ? 'w-0' : 'w-80'
 						} flex-shrink-0 transition-all duration-300 overflow-hidden`}
 					>
-						<div className="space-y-6 h-full overflow-y-auto pr-2">
-							<div>
-								<Heading level="h2" className="text-lg font-semibold mb-4">
-									Filter
-								</Heading>
+					<div className="space-y-6 h-full overflow-y-auto pr-2">
+						<div>
+							<Heading level="h2" className="text-lg font-semibold mb-4">
+								Filter
+							</Heading>
 
-								{hasActiveFilters && (
-									<Button
-										variant="secondary"
-										size="small"
-										onClick={clearAllFilters}
-										className="mb-4 w-full"
-									>
-										<X className="w-4 h-4 mr-2" />
-										Alle Filter zurücksetzen
-									</Button>
-								)}
+							{hasActiveFilters && (
+								<Button
+									variant="secondary"
+									size="small"
+									onClick={clearAllFilters}
+									className="mb-4 w-full"
+								>
+									<X className="w-4 h-4 mr-2" />
+									Alle Filter zurücksetzen
+								</Button>
+							)}
 
-								{/* Category Tree */}
-								<div className="mb-6">
-									<Text size="small" className="font-semibold mb-2 block">
-										Kategorien
-									</Text>
-									<div className="border border-ui-border-base rounded-lg p-3 max-h-[400px] overflow-y-auto">
-										{categoryTreeData && categoryTreeData.length > 0 ? (
-											<CategoryTree
-												categories={categoryTreeData}
-												selectedCategories={selectedCategories}
-												onToggleCategory={id => {
-													const newSet = new Set(selectedCategories);
-													if (newSet.has(id)) {
-														newSet.delete(id);
-														console.log(
-															'[PRODUCTS-BY-CATEGORY] Deselected category:',
-															id,
-														);
-													} else {
-														newSet.add(id);
-														console.log(
-															'[PRODUCTS-BY-CATEGORY] Selected category:',
-															id,
-														);
-													}
+							{/* Category Tree */}
+							<div className="mb-6">
+								<Text size="small" className="font-semibold mb-2 block">
+									Kategorien
+								</Text>
+								<div className="border border-ui-border-base rounded-lg p-3 max-h-[400px] overflow-y-auto">
+									{categoryTreeData && categoryTreeData.length > 0 ? (
+										<CategoryTree
+											categories={categoryTreeData}
+											selectedCategories={selectedCategories}
+											onToggleCategory={id => {
+												const newSet = new Set(selectedCategories);
+												if (newSet.has(id)) {
+													newSet.delete(id);
 													console.log(
-														'[PRODUCTS-BY-CATEGORY] Selected categories:',
-														Array.from(newSet),
+														'[PRODUCTS-BY-CATEGORY] Deselected category:',
+														id,
 													);
-													setSelectedCategories(newSet);
-													setRowSelection({});
-												}}
-												expandedCategories={expandedCategories}
-												onToggleExpand={id => {
-													const newSet = new Set(expandedCategories);
-													if (newSet.has(id)) {
-														newSet.delete(id);
-													} else {
-														newSet.add(id);
-													}
-													setExpandedCategories(newSet);
-												}}
-											/>
-										) : (
-											<Text size="small" className="text-ui-fg-subtle">
-												Keine Kategorien gefunden
-											</Text>
-										)}
-									</div>
+												} else {
+													newSet.add(id);
+													console.log(
+														'[PRODUCTS-BY-CATEGORY] Selected category:',
+														id,
+													);
+												}
+												console.log(
+													'[PRODUCTS-BY-CATEGORY] Selected categories:',
+													Array.from(newSet),
+												);
+												setSelectedCategories(newSet);
+												setRowSelection({});
+											}}
+											expandedCategories={expandedCategories}
+											onToggleExpand={id => {
+												const newSet = new Set(expandedCategories);
+												if (newSet.has(id)) {
+													newSet.delete(id);
+												} else {
+													newSet.add(id);
+												}
+												setExpandedCategories(newSet);
+											}}
+										/>
+									) : (
+										<Text size="small" className="text-ui-fg-subtle">
+											Keine Kategorien gefunden
+										</Text>
+									)}
 								</div>
+							</div>
 
-								{/* Collections Filter */}
-								<div className="mb-6">
-									<Text size="small" className="font-semibold mb-2 block">
-										Sammlungen
-									</Text>
-									<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
-										{collectionsData && collectionsData.length > 0 ? (
-											collectionsData.map(collection => (
-												<div
-													key={collection.id}
-													className="flex items-center gap-2"
-												>
-													<Checkbox
-														checked={selectedCollections.has(collection.id)}
-														onCheckedChange={checked => {
-															const newSet = new Set(selectedCollections);
-															if (checked) {
-																newSet.add(collection.id);
-															} else {
-																newSet.delete(collection.id);
-															}
-															setSelectedCollections(newSet);
-															setRowSelection({});
-														}}
-													/>
-													<Text size="small">{collection.title}</Text>
-												</div>
-											))
-										) : (
-											<Text size="small" className="text-ui-fg-subtle">
-												Keine Sammlungen gefunden
-											</Text>
-										)}
-									</div>
+							{/* Collections Filter */}
+							<div className="mb-6">
+								<Text size="small" className="font-semibold mb-2 block">
+									Sammlungen
+								</Text>
+								<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+									{collectionsData && collectionsData.length > 0 ? (
+										collectionsData.map(collection => (
+											<div
+												key={collection.id}
+												className="flex items-center gap-2"
+											>
+												<Checkbox
+													checked={selectedCollections.has(collection.id)}
+													onCheckedChange={checked => {
+														const newSet = new Set(selectedCollections);
+														if (checked) {
+															newSet.add(collection.id);
+														} else {
+															newSet.delete(collection.id);
+														}
+														setSelectedCollections(newSet);
+														setRowSelection({});
+													}}
+												/>
+												<Text size="small">{collection.title}</Text>
+											</div>
+										))
+									) : (
+										<Text size="small" className="text-ui-fg-subtle">
+											Keine Sammlungen gefunden
+										</Text>
+									)}
 								</div>
+							</div>
 
-								{/* Sales Channels Filter */}
-								<div className="mb-6">
-									<Text size="small" className="font-semibold mb-2 block">
-										Vertriebskanäle
-									</Text>
-									<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
-										{salesChannelsData && salesChannelsData.length > 0 ? (
-											salesChannelsData.map(channel => (
+							{/* Sales Channels Filter */}
+							<div className="mb-6">
+								<Text size="small" className="font-semibold mb-2 block">
+									Vertriebskanäle
+								</Text>
+								<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+									{salesChannelsData && salesChannelsData.length > 0 ? (
+										salesChannelsData.map(channel => (
 												<div
 													key={channel.id}
 													className="flex items-center gap-2"
 												>
-													<Checkbox
-														checked={selectedSalesChannels.has(channel.id)}
-														onCheckedChange={checked => {
-															const newSet = new Set(selectedSalesChannels);
-															if (checked) {
-																newSet.add(channel.id);
-															} else {
-																newSet.delete(channel.id);
-															}
-															setSelectedSalesChannels(newSet);
-															setRowSelection({});
-														}}
-													/>
-													<Text size="small">{channel.name}</Text>
-												</div>
-											))
-										) : (
-											<Text size="small" className="text-ui-fg-subtle">
-												Keine Vertriebskanäle gefunden
-											</Text>
-										)}
-									</div>
+												<Checkbox
+													checked={selectedSalesChannels.has(channel.id)}
+													onCheckedChange={checked => {
+														const newSet = new Set(selectedSalesChannels);
+														if (checked) {
+															newSet.add(channel.id);
+														} else {
+															newSet.delete(channel.id);
+														}
+														setSelectedSalesChannels(newSet);
+														setRowSelection({});
+													}}
+												/>
+												<Text size="small">{channel.name}</Text>
+											</div>
+										))
+									) : (
+										<Text size="small" className="text-ui-fg-subtle">
+											Keine Vertriebskanäle gefunden
+										</Text>
+									)}
 								</div>
+							</div>
 
-								{/* Shipping Profiles Filter */}
-								<div className="mb-6">
-									<Text size="small" className="font-semibold mb-2 block">
-										Versandprofile
-									</Text>
-									<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
-										{shippingProfilesData && shippingProfilesData.length > 0 ? (
-											shippingProfilesData.map(profile => (
+							{/* Shipping Profiles Filter */}
+							<div className="mb-6">
+								<Text size="small" className="font-semibold mb-2 block">
+									Versandprofile
+								</Text>
+								<div className="border border-ui-border-base rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+									{shippingProfilesData && shippingProfilesData.length > 0 ? (
+										shippingProfilesData.map(profile => (
 												<div
 													key={profile.id}
 													className="flex items-center gap-2"
 												>
-													<Checkbox
-														checked={selectedShippingProfiles.has(profile.id)}
-														onCheckedChange={checked => {
-															const newSet = new Set(selectedShippingProfiles);
-															if (checked) {
-																newSet.add(profile.id);
-															} else {
-																newSet.delete(profile.id);
-															}
-															setSelectedShippingProfiles(newSet);
-															setRowSelection({});
-														}}
-													/>
-													<Text size="small">{profile.name}</Text>
-												</div>
-											))
-										) : (
-											<Text size="small" className="text-ui-fg-subtle">
-												Keine Versandprofile gefunden
-											</Text>
-										)}
-									</div>
+												<Checkbox
+													checked={selectedShippingProfiles.has(profile.id)}
+													onCheckedChange={checked => {
+														const newSet = new Set(selectedShippingProfiles);
+														if (checked) {
+															newSet.add(profile.id);
+														} else {
+															newSet.delete(profile.id);
+														}
+														setSelectedShippingProfiles(newSet);
+														setRowSelection({});
+													}}
+												/>
+												<Text size="small">{profile.name}</Text>
+											</div>
+										))
+									) : (
+										<Text size="small" className="text-ui-fg-subtle">
+											Keine Versandprofile gefunden
+										</Text>
+									)}
 								</div>
+							</div>
 
-								{/* Status Filter */}
-								<div className="mb-4">
-									<Text size="small" className="font-semibold mb-2 block">
-										Status
-									</Text>
-									<Select
-										value={selectedStatus}
-										onValueChange={(value: 'all' | 'published' | 'draft') => {
-											setSelectedStatus(value);
-											setRowSelection({});
-											setCurrentPage(1);
-										}}
-									>
-										<Select.Trigger>
-											<Select.Value />
-										</Select.Trigger>
-										<Select.Content>
-											<Select.Item value="all">Alle</Select.Item>
+							{/* Status Filter */}
+							<div className="mb-4">
+								<Text size="small" className="font-semibold mb-2 block">
+									Status
+								</Text>
+								<Select
+									value={selectedStatus}
+									onValueChange={(value: 'all' | 'published' | 'draft') => {
+										setSelectedStatus(value);
+										setRowSelection({});
+										setCurrentPage(1);
+									}}
+								>
+									<Select.Trigger>
+										<Select.Value />
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Item value="all">Alle</Select.Item>
 											<Select.Item value="published">
 												Veröffentlicht
 											</Select.Item>
-											<Select.Item value="draft">Entwurf</Select.Item>
-										</Select.Content>
-									</Select>
-								</div>
+										<Select.Item value="draft">Entwurf</Select.Item>
+									</Select.Content>
+								</Select>
+							</div>
 
-								{/* SKU Search */}
-								<div>
-									<Text size="small" className="font-semibold mb-2 block">
-										Artikelnummer (SKU)
-									</Text>
-									<Input
-										value={skuSearch}
-										onChange={e => {
-											setSkuSearch(e.target.value);
-											setRowSelection({});
-										}}
-										placeholder="SKU suchen..."
-										className="w-full"
-									/>
-								</div>
+							{/* SKU Search */}
+							<div>
+								<Text size="small" className="font-semibold mb-2 block">
+									Artikelnummer (SKU)
+								</Text>
+								<Input
+									value={skuSearch}
+									onChange={e => {
+										setSkuSearch(e.target.value);
+										setRowSelection({});
+									}}
+									placeholder="SKU suchen..."
+									className="w-full"
+								/>
 							</div>
 						</div>
 					</div>
+				</div>
 				)}
 
 				{/* Sidebar Toggle Button - Hidden on Mobile */}
@@ -910,116 +910,116 @@ export default function ProductsByCategoryPage() {
 						{/* Search and Sort Toolbar - Hidden on Mobile (moved to Control Bar) */}
 						{!isMobile && (
 							<div className="flex gap-3 items-center p-2 bg-ui-bg-subtle rounded-lg border border-ui-border-base flex-shrink-0">
-								<div className="flex-1">
-									<Input
-										value={searchQuery}
-										onChange={e => setSearchQuery(e.target.value)}
-										placeholder="Nach Titel oder Handle suchen..."
-										className="w-full"
-									/>
-								</div>
-								<div className="flex gap-2 items-center">
-									{/* Column Visibility Control */}
-									<ColumnVisibilityControl
-										columns={tableColumns}
-										visibleColumns={visibleColumns}
+							<div className="flex-1">
+								<Input
+									value={searchQuery}
+									onChange={e => setSearchQuery(e.target.value)}
+									placeholder="Nach Titel oder Handle suchen..."
+									className="w-full"
+								/>
+							</div>
+						<div className="flex gap-2 items-center">
+							{/* Column Visibility Control */}
+							<ColumnVisibilityControl
+								columns={tableColumns}
+								visibleColumns={visibleColumns}
 										onToggle={key => {
-											const newVisible = new Set(visibleColumns);
-											if (newVisible.has(key)) {
-												newVisible.delete(key);
-											} else {
-												newVisible.add(key);
-											}
-											setVisibleColumns(newVisible);
+									const newVisible = new Set(visibleColumns);
+									if (newVisible.has(key)) {
+										newVisible.delete(key);
+									} else {
+										newVisible.add(key);
+									}
+									setVisibleColumns(newVisible);
 											localStorage.setItem(
 												'products-table-visible-columns',
 												JSON.stringify([...newVisible]),
 											);
-										}}
-										onShowAll={() => {
-											const allColumns = new Set(tableColumns.map(c => c.key));
-											setVisibleColumns(allColumns);
+								}}
+								onShowAll={() => {
+									const allColumns = new Set(tableColumns.map(c => c.key));
+									setVisibleColumns(allColumns);
 											localStorage.setItem(
 												'products-table-visible-columns',
 												JSON.stringify([...allColumns]),
 											);
-										}}
-										onHideAll={() => {
-											// Keep only essential columns
+								}}
+								onHideAll={() => {
+									// Keep only essential columns
 											const essentialColumns = new Set([
 												'select',
 												'title',
 												'actions',
 											]);
-											setVisibleColumns(essentialColumns);
+									setVisibleColumns(essentialColumns);
 											localStorage.setItem(
 												'products-table-visible-columns',
 												JSON.stringify([...essentialColumns]),
 											);
-										}}
-									/>
+								}}
+							/>
 
-									{selectedCount > 0 && (
-										<Text
-											size="small"
-											className="font-medium text-ui-fg-base whitespace-nowrap"
-										>
-											{selectedCount} ausgewählt
-										</Text>
-									)}
-									<Text size="small" className="whitespace-nowrap">
-										Sortieren nach:
-									</Text>
+							{selectedCount > 0 && (
+								<Text
+									size="small"
+									className="font-medium text-ui-fg-base whitespace-nowrap"
+								>
+									{selectedCount} ausgewählt
+								</Text>
+							)}
+							<Text size="small" className="whitespace-nowrap">
+								Sortieren nach:
+							</Text>
 									<Select
 										value={sortBy}
 										onValueChange={v => setSortBy(v as any)}
 									>
-										<Select.Trigger className="w-[180px]">
-											<Select.Value />
-										</Select.Trigger>
-										<Select.Content>
-											<Select.Item value="title">Titel</Select.Item>
-											<Select.Item value="created_at">Erstellt am</Select.Item>
-											<Select.Item value="updated_at">
-												Aktualisiert am
-											</Select.Item>
-										</Select.Content>
-									</Select>
-									<Select
-										value={sortOrder}
-										onValueChange={v => setSortOrder(v as any)}
-									>
-										<Select.Trigger className="w-[120px]">
-											<Select.Value />
-										</Select.Trigger>
-										<Select.Content>
-											<Select.Item value="asc">Aufsteigend</Select.Item>
-											<Select.Item value="desc">Absteigend</Select.Item>
-										</Select.Content>
-									</Select>
-									<Text size="small" className="whitespace-nowrap">
-										Pro Seite:
-									</Text>
-									<Select
-										value={pageSize.toString()}
-										onValueChange={v => {
-											setPageSize(parseInt(v));
-											setCurrentPage(1); // Reset to first page when changing page size
-											setRowSelection({}); // Clear selection when changing page size
-										}}
-									>
-										<Select.Trigger className="w-[100px]">
-											<Select.Value />
-										</Select.Trigger>
-										<Select.Content>
-											<Select.Item value="25">25</Select.Item>
-											<Select.Item value="50">50</Select.Item>
-											<Select.Item value="100">100</Select.Item>
-											<Select.Item value="200">200</Select.Item>
-										</Select.Content>
-									</Select>
-								</div>
+									<Select.Trigger className="w-[180px]">
+										<Select.Value />
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Item value="title">Titel</Select.Item>
+										<Select.Item value="created_at">Erstellt am</Select.Item>
+										<Select.Item value="updated_at">
+											Aktualisiert am
+										</Select.Item>
+									</Select.Content>
+								</Select>
+								<Select
+									value={sortOrder}
+									onValueChange={v => setSortOrder(v as any)}
+								>
+									<Select.Trigger className="w-[120px]">
+										<Select.Value />
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Item value="asc">Aufsteigend</Select.Item>
+										<Select.Item value="desc">Absteigend</Select.Item>
+									</Select.Content>
+								</Select>
+								<Text size="small" className="whitespace-nowrap">
+									Pro Seite:
+								</Text>
+								<Select
+									value={pageSize.toString()}
+									onValueChange={v => {
+										setPageSize(parseInt(v));
+										setCurrentPage(1); // Reset to first page when changing page size
+										setRowSelection({}); // Clear selection when changing page size
+									}}
+								>
+									<Select.Trigger className="w-[100px]">
+										<Select.Value />
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Item value="25">25</Select.Item>
+										<Select.Item value="50">50</Select.Item>
+										<Select.Item value="100">100</Select.Item>
+										<Select.Item value="200">200</Select.Item>
+									</Select.Content>
+								</Select>
 							</div>
+						</div>
 						)}
 
 						{/* Bulk Actions Toolbar */}
@@ -1086,8 +1086,8 @@ export default function ProductsByCategoryPage() {
 													const res = await fetch(
 														`/admin/products/${productId}`,
 														{
-															method: 'DELETE',
-															credentials: 'include',
+														method: 'DELETE',
+														credentials: 'include',
 														},
 													);
 													if (res.ok) deletedCount++;
@@ -1204,9 +1204,9 @@ export default function ProductsByCategoryPage() {
 									});
 									return res.json();
 								}}
-								isLoading={isLoading}
-								visibleColumns={visibleColumns}
-							/>
+							isLoading={isLoading}
+							visibleColumns={visibleColumns}
+						/>
 						</div>
 
 						{/* Pagination Controls */}
