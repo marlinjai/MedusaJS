@@ -20,7 +20,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-medusa_password}@postgres:5432/medusa-store
-      - REDIS_URL=redis://default:${REDIS_PASSWORD:-change_me_in_production}@redis:6379
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-change_me_in_production}@redis:6379
       - MEDUSA_WORKER_MODE=server
       - DISABLE_MEDUSA_ADMIN=false
       - PORT=9002

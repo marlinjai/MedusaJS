@@ -10,7 +10,7 @@
 The initial Redis password integration caused deployment failures with this error:
 
 ```
-[ioredis] Unhandled error event: AggregateError [ECONNREFUSED]: 
+[ioredis] Unhandled error event: AggregateError [ECONNREFUSED]:
 Error: connect ECONNREFUSED 127.0.0.1:6379
 (node:67) [DEP0170] DeprecationWarning: The URL redis://:PASSWORD@redis:6379 is invalid
 ```
