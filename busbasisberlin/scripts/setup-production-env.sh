@@ -123,12 +123,11 @@ AUTH_CORS=$(quote_value "https://$DOMAIN_NAME/,https://docs.medusajs.com")
 MEDUSA_BACKEND_URL=$(quote_value "https://$DOMAIN_NAME/")
 
 # Redis Configuration (with password authentication)
-# REDIS_PASSWORD is quoted for .env safety, REDIS_URL is quoted as a whole
 # Using query parameter format to avoid Node.js URL parser deprecation warnings
-REDIS_PASSWORD_QUOTED=$(quote_value "$REDIS_PASSWORD")
-REDIS_URL_VALUE="redis://redis:6379/0?password=${REDIS_PASSWORD}"
-REDIS_PASSWORD=$REDIS_PASSWORD_QUOTED
-REDIS_URL=$(quote_value "$REDIS_URL_VALUE")
+# Note: REDIS_PASSWORD must NOT be quoted because docker-compose uses ${REDIS_PASSWORD}
+# and will include the quotes in the URL if present
+REDIS_PASSWORD=$REDIS_PASSWORD
+REDIS_URL=$(quote_value "redis://redis:6379/0?password=${REDIS_PASSWORD}")
 
 # Security Secrets
 JWT_SECRET=$(quote_value "$JWT_SECRET")
