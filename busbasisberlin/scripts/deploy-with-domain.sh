@@ -74,6 +74,7 @@ verify_ssl_certs() {
 # Check required environment variables
 required_vars=(
     "POSTGRES_PASSWORD"
+    "REDIS_PASSWORD"
     "JWT_SECRET"
     "COOKIE_SECRET"
     "RESEND_API_KEY"
