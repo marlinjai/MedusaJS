@@ -35,6 +35,7 @@ log_info "Setting up production environment configuration..."
 REQUIRED_VARS=(
     "DOMAIN_NAME"
     "POSTGRES_PASSWORD"
+    "REDIS_PASSWORD"
     "JWT_SECRET"
     "COOKIE_SECRET"
     "RESEND_API_KEY"
@@ -121,8 +122,9 @@ AUTH_CORS=$(quote_value "https://$DOMAIN_NAME/,https://docs.medusajs.com")
 # Backend URL (CRITICAL for admin authentication)
 MEDUSA_BACKEND_URL=$(quote_value "https://$DOMAIN_NAME/")
 
-# Redis Configuration
-REDIS_URL=redis://localhost:6379
+# Redis Configuration (with password authentication)
+REDIS_PASSWORD=$(quote_value "$REDIS_PASSWORD")
+REDIS_URL=redis://default:$REDIS_PASSWORD@redis:6379
 
 # Security Secrets
 JWT_SECRET=$(quote_value "$JWT_SECRET")
