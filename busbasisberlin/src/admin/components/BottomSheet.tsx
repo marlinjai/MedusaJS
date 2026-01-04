@@ -22,7 +22,7 @@ export function BottomSheet({
 		<Drawer open={isOpen} onOpenChange={onClose}>
 			<Drawer.Content
 				side="bottom"
-				className="md:hidden fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[85vh] flex-col rounded-t-[10px] border-t bg-ui-bg-base"
+				className="md:hidden fixed inset-x-0 bottom-0 z-[60] mt-24 flex h-auto max-h-[85vh] flex-col rounded-t-[10px] border-t bg-ui-bg-base"
 			>
 				<Drawer.Header className="px-4 py-3 border-b border-ui-border-base flex-shrink-0">
 					<div className="flex items-center justify-between">

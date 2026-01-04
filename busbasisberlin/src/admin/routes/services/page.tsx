@@ -406,93 +406,28 @@ export default function ServicesByCategoryPage() {
 		serviceId: string,
 		updates: Partial<Service>,
 	) => {
-		// #region agent log
-		fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				location: 'page.tsx:299',
-				message: 'handleUpdateService called',
-				data: { serviceId, updates, updatesKeys: Object.keys(updates) },
-				timestamp: Date.now(),
-				sessionId: 'debug-session',
-				hypothesisId: 'A,B,C',
-			}),
-		}).catch(() => {});
-		// #endregion
-
 		try {
 			const response = await fetch(`/admin/services/${serviceId}`, {
 				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-				},
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(updates),
 			});
 
-			// #region agent log
-			fetch(
-				'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						location: 'page.tsx:312',
-						message: 'Backend response',
-						data: { ok: response.ok, status: response.status, serviceId },
-						timestamp: Date.now(),
-						sessionId: 'debug-session',
-						hypothesisId: 'A,B,C,D',
-					}),
-				},
-			).catch(() => {});
-			// #endregion
-
 			if (!response.ok) {
-				const errorData = await response.json();
-				// #region agent log
-				fetch(
-					'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
-					{
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							location: 'page.tsx:316',
-							message: 'Backend error response',
-							data: { status: response.status, errorData, serviceId, updates },
-							timestamp: Date.now(),
-							sessionId: 'debug-session',
-							hypothesisId: 'A,D',
-						}),
-					},
-				).catch(() => {});
-				// #endregion
-
-				throw new Error('Failed to update service');
+				// Extract actual error message from backend
+				const errorData = await response.json().catch(() => ({}));
+				const errorMessage =
+					errorData?.message ||
+					errorData?.error ||
+					`Fehler ${response.status}: Speichern fehlgeschlagen`;
+				throw new Error(errorMessage);
 			}
 
 			// Refresh services
 			await fetchServices();
 		} catch (error: any) {
-			// #region agent log
-			fetch(
-				'http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						location: 'page.tsx:327',
-						message: 'handleUpdateService error',
-						data: { error: error.message, serviceId },
-						timestamp: Date.now(),
-						sessionId: 'debug-session',
-						hypothesisId: 'A,B,C,D',
-					}),
-				},
-			).catch(() => {});
-			// #endregion
-
-			throw error;
+			// Re-throw with the actual error message for display
+			throw new Error(error.message || 'Fehler beim Speichern');
 		}
 	};
 

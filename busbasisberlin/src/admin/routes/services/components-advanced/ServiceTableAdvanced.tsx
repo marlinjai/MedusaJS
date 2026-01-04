@@ -226,10 +226,6 @@ export default function ServiceTableAdvanced({
 	};
 
 	const saveEdit = async () => {
-		// #region agent log
-		fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServiceTableAdvanced.tsx:215',message:'saveEdit called',data:{editingCell,tempValue,hasOnUpdate:!!onUpdate},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,E'})}).catch(()=>{});
-		// #endregion
-
 		if (!editingCell || !onUpdate) {
 			setEditingCell(null);
 			return;
@@ -238,43 +234,31 @@ export default function ServiceTableAdvanced({
 		try {
 			const updates: Partial<Service> = {};
 
-		if (editingCell.field === 'title') {
-			updates.title = tempValue;
-		} else if (editingCell.field === 'base_price') {
-			if (tempValue.trim() === '') {
-				toast.error('Bitte geben Sie einen Preis ein');
-				setEditingCell(null);
-				return;
+			if (editingCell.field === 'title') {
+				updates.title = tempValue;
+			} else if (editingCell.field === 'base_price') {
+				if (tempValue.trim() === '') {
+					toast.error('Bitte geben Sie einen Preis ein');
+					setEditingCell(null);
+					return;
+				}
+				const price = parseFloat(tempValue.replace(',', '.'));
+				if (!isNaN(price) && price >= 0) {
+					updates.base_price = Math.round(price * 100);
+				} else {
+					toast.error('Ungültiger Preis');
+					setEditingCell(null);
+					return;
+				}
+			} else if (editingCell.field === 'service_type') {
+				updates.service_type = tempValue;
 			}
-			const price = parseFloat(tempValue.replace(',', '.'));
-			if (!isNaN(price) && price >= 0) {
-				updates.base_price = Math.round(price * 100);
-			} else {
-				toast.error('Ungültiger Preis');
-				setEditingCell(null);
-				return;
-			}
-		} else if (editingCell.field === 'service_type') {
-			updates.service_type = tempValue;
-		}
-
-			// #region agent log
-			fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServiceTableAdvanced.tsx:244',message:'Before onUpdate call',data:{serviceId:editingCell.serviceId,updates,updatesKeys:Object.keys(updates),hasTitle:'title' in updates},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C'})}).catch(()=>{});
-			// #endregion
 
 			await onUpdate(editingCell.serviceId, updates);
-
-			// #region agent log
-			fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServiceTableAdvanced.tsx:247',message:'onUpdate succeeded',data:{serviceId:editingCell.serviceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
-			// #endregion
-
 			toast.success('Service aktualisiert');
-		} catch (error) {
-			// #region agent log
-			fetch('http://127.0.0.1:7242/ingest/8dec15ee-be69-4a0f-a1bf-ccc71cc82934',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ServiceTableAdvanced.tsx:251',message:'onUpdate failed',data:{error:error.message,serviceId:editingCell?.serviceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
-			// #endregion
-
-			toast.error('Fehler beim Aktualisieren');
+		} catch (error: any) {
+			// Display the actual error message from backend
+			toast.error(error.message || 'Fehler beim Aktualisieren');
 		} finally {
 			setEditingCell(null);
 		}
