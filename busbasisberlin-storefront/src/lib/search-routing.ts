@@ -15,19 +15,29 @@ function stateToRoute(uiState: UiState): Record<string, any> {
 	// Extract hierarchical category - find the deepest selected level
 	// This ensures subcategories are preserved when paginating
 	const hierarchicalMenu = indexUiState.hierarchicalMenu || {};
+	
+	// DEBUG: Log the full hierarchicalMenu structure
+	console.log('[stateToRoute] INDEX_NAME:', INDEX_NAME);
+	console.log('[stateToRoute] hierarchicalMenu keys:', Object.keys(hierarchicalMenu));
+	console.log('[stateToRoute] hierarchicalMenu full:', JSON.stringify(hierarchicalMenu, null, 2));
+	
 	const categoryPath =
 		hierarchicalMenu['hierarchical_categories.lvl3']?.[0] ||
 		hierarchicalMenu['hierarchical_categories.lvl2']?.[0] ||
 		hierarchicalMenu['hierarchical_categories.lvl1']?.[0] ||
 		hierarchicalMenu['hierarchical_categories.lvl0']?.[0] ||
 		undefined;
+	
+	// DEBUG: Log what we extracted
+	console.log('[stateToRoute] categoryPath extracted:', categoryPath);
+	console.log('[stateToRoute] page:', indexUiState.page);
 
 	// Extract refinement lists
 	const refinementList = indexUiState.refinementList || {};
 	const availability = refinementList.is_available?.[0] || undefined;
 	const tags = refinementList.tags || undefined;
 
-	return {
+	const result = {
 		q: indexUiState.query || undefined,
 		category: categoryPath || undefined,
 		available: availability || undefined,
@@ -43,6 +53,11 @@ function stateToRoute(uiState: UiState): Record<string, any> {
 				? indexUiState.hitsPerPage
 				: undefined,
 	};
+	
+	// DEBUG: Log final URL params
+	console.log('[stateToRoute] RESULT (URL params):', JSON.stringify(result, null, 2));
+	
+	return result;
 }
 
 /**
@@ -50,13 +65,21 @@ function stateToRoute(uiState: UiState): Record<string, any> {
  * Converts clean URL params to internal state structure
  */
 function routeToState(routeState: Record<string, any>): UiState {
+	// DEBUG: Log incoming URL params
+	console.log('[routeToState] CALLED with routeState:', JSON.stringify(routeState, null, 2));
+	
 	// Determine the correct level based on category path depth
 	// Category paths use " > " separator (e.g., "Beleuchtung > Scheinwerfer")
 	const categoryLevel = routeState.category
 		? `hierarchical_categories.lvl${(routeState.category.match(/ > /g) || []).length}`
 		: null;
+	
+	// DEBUG: Log computed category level
+	console.log('[routeToState] categoryLevel:', categoryLevel);
+	console.log('[routeToState] category from URL:', routeState.category);
+	console.log('[routeToState] page from URL:', routeState.page);
 
-	return {
+	const result = {
 		[INDEX_NAME]: {
 			query: routeState.q || '',
 			// Only include hierarchicalMenu when a category IS selected
@@ -82,6 +105,11 @@ function routeToState(routeState: Record<string, any>): UiState {
 				: 12,
 		},
 	};
+	
+	// DEBUG: Log the full result state
+	console.log('[routeToState] RESULT (UI state):', JSON.stringify(result, null, 2));
+	
+	return result;
 }
 
 /**
