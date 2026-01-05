@@ -12,32 +12,21 @@ const INDEX_NAME = process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME || 'products';
 function stateToRoute(uiState: UiState): Record<string, any> {
 	const indexUiState = uiState[INDEX_NAME] || {};
 
-	// Extract hierarchical category - find the deepest selected level
-	// This ensures subcategories are preserved when paginating
+	// Extract hierarchical category
+	// Meilisearch stores categories as an ARRAY: ["Parent", "Child", "Grandchild"]
+	// We need to JOIN them with " > " to create the full path for the URL
 	const hierarchicalMenu = indexUiState.hierarchicalMenu || {};
-
-	// DEBUG: Log the full hierarchicalMenu structure
-	console.log('[stateToRoute] INDEX_NAME:', INDEX_NAME);
-	console.log('[stateToRoute] hierarchicalMenu keys:', Object.keys(hierarchicalMenu));
-	console.log('[stateToRoute] hierarchicalMenu full:', JSON.stringify(hierarchicalMenu, null, 2));
-
-	const categoryPath =
-		hierarchicalMenu['hierarchical_categories.lvl3']?.[0] ||
-		hierarchicalMenu['hierarchical_categories.lvl2']?.[0] ||
-		hierarchicalMenu['hierarchical_categories.lvl1']?.[0] ||
-		hierarchicalMenu['hierarchical_categories.lvl0']?.[0] ||
-		undefined;
-
-	// DEBUG: Log what we extracted
-	console.log('[stateToRoute] categoryPath extracted:', categoryPath);
-	console.log('[stateToRoute] page:', indexUiState.page);
+	const categoryArray = hierarchicalMenu['hierarchical_categories.lvl0'] || [];
+	const categoryPath = categoryArray.length > 0 
+		? categoryArray.join(' > ') 
+		: undefined;
 
 	// Extract refinement lists
 	const refinementList = indexUiState.refinementList || {};
 	const availability = refinementList.is_available?.[0] || undefined;
 	const tags = refinementList.tags || undefined;
 
-	const result = {
+	return {
 		q: indexUiState.query || undefined,
 		category: categoryPath || undefined,
 		available: availability || undefined,
@@ -53,11 +42,6 @@ function stateToRoute(uiState: UiState): Record<string, any> {
 				? indexUiState.hitsPerPage
 				: undefined,
 	};
-
-	// DEBUG: Log final URL params
-	console.log('[stateToRoute] RESULT (URL params):', JSON.stringify(result, null, 2));
-
-	return result;
 }
 
 /**
@@ -65,29 +49,20 @@ function stateToRoute(uiState: UiState): Record<string, any> {
  * Converts clean URL params to internal state structure
  */
 function routeToState(routeState: Record<string, any>): UiState {
-	// DEBUG: Log incoming URL params
-	console.log('[routeToState] CALLED with routeState:', JSON.stringify(routeState, null, 2));
+	// Convert category path back to array format for Meilisearch
+	// URL: "Parent > Child > Grandchild" → Array: ["Parent", "Child", "Grandchild"]
+	const categoryArray = routeState.category 
+		? routeState.category.split(' > ') 
+		: [];
 
-	// Determine the correct level based on category path depth
-	// Category paths use " > " separator (e.g., "Beleuchtung > Scheinwerfer")
-	const categoryLevel = routeState.category
-		? `hierarchical_categories.lvl${(routeState.category.match(/ > /g) || []).length}`
-		: null;
-
-	// DEBUG: Log computed category level
-	console.log('[routeToState] categoryLevel:', categoryLevel);
-	console.log('[routeToState] category from URL:', routeState.category);
-	console.log('[routeToState] page from URL:', routeState.page);
-
-	const result = {
+	return {
 		[INDEX_NAME]: {
 			query: routeState.q || '',
 			// Only include hierarchicalMenu when a category IS selected
-			// Empty array = "filter active with no values" = no results
-			// Omitting the key = "no filter" = show all products
-			...(categoryLevel && {
+			// Meilisearch expects the array at lvl0
+			...(categoryArray.length > 0 && {
 				hierarchicalMenu: {
-					[categoryLevel]: [routeState.category],
+					'hierarchical_categories.lvl0': categoryArray,
 				},
 			}),
 			refinementList: {
@@ -105,11 +80,6 @@ function routeToState(routeState: Record<string, any>): UiState {
 				: 12,
 		},
 	};
-
-	// DEBUG: Log the full result state
-	console.log('[routeToState] RESULT (UI state):', JSON.stringify(result, null, 2));
-
-	return result;
 }
 
 /**
