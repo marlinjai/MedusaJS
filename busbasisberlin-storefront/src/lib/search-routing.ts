@@ -12,10 +12,15 @@ const INDEX_NAME = process.env.NEXT_PUBLIC_MEILISEARCH_INDEX_NAME || 'products';
 function stateToRoute(uiState: UiState): Record<string, any> {
 	const indexUiState = uiState[INDEX_NAME] || {};
 
-	// Extract hierarchical category (only the selected path)
+	// Extract hierarchical category - find the deepest selected level
+	// This ensures subcategories are preserved when paginating
 	const hierarchicalMenu = indexUiState.hierarchicalMenu || {};
 	const categoryPath =
-		hierarchicalMenu['hierarchical_categories.lvl0']?.[0] || undefined;
+		hierarchicalMenu['hierarchical_categories.lvl3']?.[0] ||
+		hierarchicalMenu['hierarchical_categories.lvl2']?.[0] ||
+		hierarchicalMenu['hierarchical_categories.lvl1']?.[0] ||
+		hierarchicalMenu['hierarchical_categories.lvl0']?.[0] ||
+		undefined;
 
 	// Extract refinement lists
 	const refinementList = indexUiState.refinementList || {};
@@ -45,14 +50,23 @@ function stateToRoute(uiState: UiState): Record<string, any> {
  * Converts clean URL params to internal state structure
  */
 function routeToState(routeState: Record<string, any>): UiState {
+	// Determine the correct level based on category path depth
+	// Category paths use " > " separator (e.g., "Beleuchtung > Scheinwerfer")
+	const categoryLevel = routeState.category
+		? `hierarchical_categories.lvl${(routeState.category.match(/ > /g) || []).length}`
+		: null;
+
 	return {
 		[INDEX_NAME]: {
 			query: routeState.q || '',
-			hierarchicalMenu: {
-				'hierarchical_categories.lvl0': routeState.category
-					? [routeState.category]
-					: [],
-			},
+			// Only include hierarchicalMenu when a category IS selected
+			// Empty array = "filter active with no values" = no results
+			// Omitting the key = "no filter" = show all products
+			...(categoryLevel && {
+				hierarchicalMenu: {
+					[categoryLevel]: [routeState.category],
+				},
+			}),
 			refinementList: {
 				is_available: routeState.available ? [routeState.available] : [],
 				tags: Array.isArray(routeState.tags)
