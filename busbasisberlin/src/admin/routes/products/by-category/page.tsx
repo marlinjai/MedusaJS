@@ -141,6 +141,7 @@ function CategoryTree({
 // Define available table columns for visibility control
 const tableColumns = [
 	{ key: 'select', label: '', width: 50 },
+	{ key: 'thumbnail', label: 'Bild', width: 70 },
 	{ key: 'title', label: 'Titel', width: 300 },
 	{ key: 'status', label: 'Status', width: 120 },
 	{ key: 'collection', label: 'Sammlung', width: 200 },
@@ -172,7 +173,10 @@ export default function ProductsByCategoryPage() {
 		const saved = localStorage.getItem('products-table-visible-columns');
 		if (saved) {
 			try {
-				return new Set(JSON.parse(saved));
+				const savedColumns = new Set(JSON.parse(saved));
+				// Always include thumbnail column by default
+				savedColumns.add('thumbnail');
+				return savedColumns;
 			} catch {
 				return new Set(tableColumns.map(c => c.key));
 			}

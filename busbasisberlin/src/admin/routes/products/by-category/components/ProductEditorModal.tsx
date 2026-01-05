@@ -2,6 +2,7 @@
 // Product editor modal with Details/Organisieren/Varianten tabs
 
 import { Button, FocusModal, Heading, Text } from '@medusajs/ui';
+import { ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ProductDetailsTab from './ProductDetailsTab';
 import ProductOrganizeTab from './ProductOrganizeTab';
@@ -23,6 +24,7 @@ export type Variant = {
 	price_europe?: number;
 	enabled?: boolean;
 	option_values?: string[];
+	images?: Array<{ id?: string; url: string }>;
 };
 
 type Product = {
@@ -42,7 +44,8 @@ type Product = {
 	variants?: Variant[];
 	has_variants?: boolean;
 	options?: ProductOption[];
-	images?: Array<{ url: string }>;
+	images?: Array<{ id?: string; url: string }>;
+	thumbnail?: string;
 };
 
 interface ProductEditorModalProps {
@@ -73,6 +76,7 @@ const ProductEditorModal = ({
 		has_variants: false,
 		options: [],
 		images: [],
+		thumbnail: undefined,
 	});
 
 	// Update formData when product prop changes
@@ -134,6 +138,8 @@ const ProductEditorModal = ({
 				shipping_profile_id: product.shipping_profile?.id || product.shipping_profile_id,
 				// Use transformed variants with flat price fields
 				variants: transformedVariants,
+				// Preserve thumbnail from product
+				thumbnail: product.thumbnail,
 			});
 			setActiveTab('details'); // Reset to details tab when product changes
 		} else {
@@ -149,6 +155,7 @@ const ProductEditorModal = ({
 				has_variants: false,
 				options: [],
 				images: [],
+				thumbnail: undefined,
 			});
 		}
 	}, [product]);
@@ -181,9 +188,24 @@ const ProductEditorModal = ({
 		<FocusModal open={open} onOpenChange={onOpenChange}>
 			<FocusModal.Content className="max-w-[95vw] w-full max-h-[95vh] h-full m-auto">
 				<FocusModal.Header>
-					<Heading level="h1" className="text-2xl font-bold">
-						{product ? 'Produkt bearbeiten' : 'Neues Produkt'}
-					</Heading>
+					<div className="flex items-center justify-between w-full">
+						<Heading level="h1" className="text-2xl font-bold">
+							{product ? 'Produkt bearbeiten' : 'Neues Produkt'}
+						</Heading>
+						{product?.id && (
+							<Button
+								variant="transparent"
+								size="small"
+								onClick={() => {
+									window.open(`/app/products/${product.id}`, '_blank');
+								}}
+								className="flex items-center gap-2"
+							>
+								<ExternalLink className="w-4 h-4" />
+								<Text size="small">Core Produktseite</Text>
+							</Button>
+						)}
+					</div>
 				</FocusModal.Header>
 
 				{/* Tabs Navigation */}

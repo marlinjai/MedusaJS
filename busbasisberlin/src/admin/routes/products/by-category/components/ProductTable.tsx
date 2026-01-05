@@ -23,6 +23,8 @@ type Product = {
 	title: string;
 	handle: string;
 	status: 'published' | 'draft';
+	thumbnail?: string;
+	images?: Array<{ id?: string; url: string }>;
 	sales_channels?: Array<{ id: string; name: string }>;
 	categories?: Array<{ id: string; name: string }>;
 	collection?: { id: string; title: string };
@@ -53,6 +55,11 @@ const columns = [
 		key: 'select',
 		label: '',
 		width: 50,
+	},
+	{
+		key: 'thumbnail',
+		label: 'Bild',
+		width: 70,
 	},
 	{
 		key: 'title',
@@ -389,6 +396,27 @@ const ProductTable = ({
 						/>
 					</div>
 				);
+			case 'thumbnail':
+				const imageUrl = product.thumbnail || product.images?.[0]?.url;
+				return (
+					<div
+						className="flex items-center justify-center cursor-pointer group"
+						onClick={() => onEdit && onEdit(product)}
+						title={imageUrl ? 'Klicken zum Bearbeiten' : 'Kein Bild'}
+					>
+						{imageUrl ? (
+							<img
+								src={imageUrl}
+								alt={product.title}
+								className="w-12 h-12 object-cover rounded border border-ui-border-base group-hover:border-ui-fg-interactive transition-colors shadow-sm"
+							/>
+						) : (
+							<div className="w-12 h-12 bg-ui-bg-subtle rounded border border-dashed border-ui-border-base flex items-center justify-center group-hover:border-ui-fg-subtle transition-colors">
+								<Text size="small" className="text-ui-fg-muted">—</Text>
+							</div>
+						)}
+					</div>
+				);
 			case 'title':
 				if (isEditing && onUpdate) {
 					return (
@@ -655,10 +683,13 @@ const ProductTable = ({
 
 		return (
 			<div className="space-y-2 p-2">
-				{products.map(product => (
+				{products.map(product => {
+					const productImageUrl = product.thumbnail || product.images?.[0]?.url;
+					return (
 					<MobileDataCard
 						key={product.id}
 						recordId={product.title}
+						imageUrl={productImageUrl}
 						rows={[
 							{
 								label: 'Status',
@@ -763,7 +794,7 @@ const ProductTable = ({
 						}
 						selected={rowSelection[product.id]}
 					/>
-				))}
+				)})}
 			</div>
 		);
 	};

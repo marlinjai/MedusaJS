@@ -22,6 +22,7 @@ type MobileDataCardProps = {
 	actions?: CardAction[];
 	onSelect?: () => void;
 	selected?: boolean;
+	imageUrl?: string;
 };
 
 export function MobileDataCard({
@@ -30,6 +31,7 @@ export function MobileDataCard({
 	actions = [],
 	onSelect,
 	selected = false,
+	imageUrl,
 }: MobileDataCardProps) {
   return (
 		<div className="bg-ui-bg-base border border-ui-border-base rounded-lg p-3 mb-2 shadow-sm">
@@ -39,6 +41,13 @@ export function MobileDataCard({
 					{onSelect && (
 						<Checkbox checked={selected} onCheckedChange={onSelect} />
           )}
+					{imageUrl && (
+						<img
+							src={imageUrl}
+							alt={recordId}
+							className="w-10 h-10 object-cover rounded border border-ui-border-base"
+						/>
+					)}
 					<Text weight="plus" className="text-sm">
 						{recordId}
           </Text>

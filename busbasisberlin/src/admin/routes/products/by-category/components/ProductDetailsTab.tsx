@@ -1,8 +1,8 @@
 // busbasisberlin/src/admin/routes/products/by-category/components/ProductDetailsTab.tsx
 // Product details tab for basic product information
 
-import { Button, Checkbox, Input, Label, Switch, Text, Textarea } from '@medusajs/ui';
-import { CloudUpload, X } from 'lucide-react';
+import { Button, Input, Label, Switch, Text, Textarea } from '@medusajs/ui';
+import { Check, CloudUpload, Star, Trash2, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 type ProductFormData = {
@@ -12,7 +12,8 @@ type ProductFormData = {
 	description?: string;
 	status?: 'published' | 'draft';
 	has_variants?: boolean;
-	images?: Array<{ url: string }>;
+	images?: Array<{ id?: string; url: string }>;
+	thumbnail?: string;
 };
 
 interface ProductDetailsTabProps {
@@ -26,6 +27,57 @@ const ProductDetailsTab = ({
 }: ProductDetailsTabProps) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isDragging, setIsDragging] = useState(false);
+	const [selectedImages, setSelectedImages] = useState<Set<number>>(new Set());
+
+	// Toggle image selection
+	const toggleImageSelection = (index: number, e: React.MouseEvent) => {
+		e.stopPropagation();
+		const newSelection = new Set(selectedImages);
+		if (newSelection.has(index)) {
+			newSelection.delete(index);
+		} else {
+			newSelection.add(index);
+		}
+		setSelectedImages(newSelection);
+	};
+
+	// Clear selection
+	const clearSelection = () => {
+		setSelectedImages(new Set());
+	};
+
+	// Delete selected images
+	const deleteSelectedImages = () => {
+		const newImages = (formData.images || []).filter((_, i) => !selectedImages.has(i));
+		// If the thumbnail was deleted, clear it
+		const deletedUrls = (formData.images || [])
+			.filter((_, i) => selectedImages.has(i))
+			.map(img => img.url);
+		const newThumbnail = deletedUrls.includes(formData.thumbnail || '')
+			? undefined
+			: formData.thumbnail;
+
+		onChange({
+			...formData,
+			images: newImages,
+			thumbnail: newThumbnail,
+		});
+		clearSelection();
+	};
+
+	// Set selected image as thumbnail
+	const setAsThumbnail = () => {
+		if (selectedImages.size !== 1) return;
+		const selectedIndex = Array.from(selectedImages)[0];
+		const selectedImage = formData.images?.[selectedIndex];
+		if (selectedImage) {
+			onChange({
+				...formData,
+				thumbnail: selectedImage.url,
+			});
+			clearSelection();
+		}
+	};
 
 	const handleFileSelect = (files: FileList | null) => {
 		if (!files || files.length === 0) return;
@@ -65,14 +117,6 @@ const ProductDetailsTab = ({
 		e.preventDefault();
 		setIsDragging(false);
 		handleFileSelect(e.dataTransfer.files);
-	};
-
-	const removeImage = (index: number) => {
-		const newImages = (formData.images || []).filter((_, i) => i !== index);
-		onChange({
-			...formData,
-			images: newImages,
-		});
 	};
 
 	return (
@@ -190,25 +234,88 @@ const ProductDetailsTab = ({
 						onChange={e => handleFileSelect(e.target.files)}
 					/>
 				</div>
+
+				{/* Action Bar - shown when images are selected */}
+				{selectedImages.size > 0 && (
+					<div className="flex items-center gap-3 mt-4 p-3 bg-ui-bg-subtle rounded-lg border border-ui-border-base">
+						<Text size="small" className="text-ui-fg-subtle">
+							{selectedImages.size} ausgewählt
+						</Text>
+						<div className="flex-1" />
+						{selectedImages.size === 1 && (
+							<Button
+								variant="secondary"
+								size="small"
+								onClick={setAsThumbnail}
+							>
+								<Star className="w-4 h-4 mr-2" />
+								Als Hauptbild
+							</Button>
+						)}
+						<Button
+							variant="secondary"
+							size="small"
+							onClick={deleteSelectedImages}
+							className="text-red-500 hover:text-red-700"
+						>
+							<Trash2 className="w-4 h-4 mr-2" />
+							Löschen ({selectedImages.size})
+						</Button>
+						<Button
+							variant="transparent"
+							size="small"
+							onClick={clearSelection}
+						>
+							<X className="w-4 h-4" />
+						</Button>
+					</div>
+				)}
+
+				{/* Image Grid */}
 				{formData.images && formData.images.length > 0 && (
 					<div className="grid grid-cols-4 gap-4 mt-4">
-						{formData.images.map((image, index) => (
-							<div key={index} className="relative group">
-								<img
-									src={image.url}
-									alt={`Upload ${index + 1}`}
-									className="w-full h-32 object-cover rounded border border-ui-border-base"
-								/>
-								<Button
-									variant="transparent"
-									size="small"
-									onClick={() => removeImage(index)}
-									className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white"
+						{formData.images.map((image, index) => {
+							const isSelected = selectedImages.has(index);
+							const isThumbnail = formData.thumbnail === image.url;
+
+							return (
+								<div
+									key={index}
+									className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+										isSelected
+											? 'border-blue-500 ring-2 ring-blue-200'
+											: 'border-ui-border-base hover:border-ui-fg-subtle'
+									}`}
+									onClick={(e) => toggleImageSelection(index, e)}
 								>
-									<X className="w-4 h-4" />
-								</Button>
-							</div>
-						))}
+									{/* Thumbnail Badge */}
+									{isThumbnail && (
+										<div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
+											<Star className="w-3 h-3 fill-current" />
+											<span>Hauptbild</span>
+										</div>
+									)}
+
+									{/* Selection Checkbox */}
+									<div
+										className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+											isSelected
+												? 'bg-blue-500 border-blue-500'
+												: 'bg-white/80 border-ui-border-base opacity-0 group-hover:opacity-100'
+										}`}
+									>
+										{isSelected && <Check className="w-4 h-4 text-white" />}
+									</div>
+
+									{/* Image */}
+									<img
+										src={image.url}
+										alt={`Upload ${index + 1}`}
+										className="w-full h-32 object-cover"
+									/>
+								</div>
+							);
+						})}
 					</div>
 				)}
 			</div>
