@@ -119,6 +119,9 @@ const ProductTable = ({
 
 	// Keyboard navigation state
 	const [focusedRowIndex, setFocusedRowIndex] = useState<number | null>(null);
+	const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<
+		number | null
+	>(null);
 	const tableContainerRef = useRef<HTMLDivElement>(null);
 
 	// Inline editing state
@@ -149,10 +152,12 @@ const ProductTable = ({
 			try {
 				const savedOrder = JSON.parse(saved);
 				// Filter out 'open' if it exists and filter to valid columns
-				const filteredOrder = savedOrder.filter((key: string) =>
-					key !== 'open' && columns.some(c => c.key === key)
+				const filteredOrder = savedOrder.filter(
+					(key: string) => key !== 'open' && columns.some(c => c.key === key),
 				);
-				return filteredOrder.length > 0 ? filteredOrder : columns.map(c => c.key);
+				return filteredOrder.length > 0
+					? filteredOrder
+					: columns.map(c => c.key);
 			} catch {
 				return columns.map(c => c.key);
 			}
@@ -274,7 +279,7 @@ const ProductTable = ({
 				(activeElement.tagName === 'INPUT' ||
 					activeElement.tagName === 'TEXTAREA' ||
 					activeElement.tagName === 'SELECT' ||
-					activeElement.isContentEditable ||
+					(activeElement as HTMLElement).isContentEditable ||
 					activeElement.closest('[role="dialog"]') || // Don't handle in modals
 					activeElement.closest('[role="menu"]')) // Don't handle in dropdowns
 			) {
@@ -282,7 +287,8 @@ const ProductTable = ({
 			}
 
 			// Check if table container is visible and contains the active element
-			const isTableVisible = tableContainerRef.current &&
+			const isTableVisible =
+				tableContainerRef.current &&
 				tableContainerRef.current.offsetParent !== null;
 
 			if (!isTableVisible) return;
@@ -291,12 +297,12 @@ const ProductTable = ({
 			// 1. Table container is focused
 			// 2. Active element is inside the table
 			// 3. No specific input is focused (body/document is active)
-			const isTableFocused = tableContainerRef.current && (
-				document.activeElement === tableContainerRef.current ||
-				tableContainerRef.current.contains(document.activeElement) ||
-				document.activeElement === document.body ||
-				document.activeElement === document.documentElement
-			);
+			const isTableFocused =
+				tableContainerRef.current &&
+				(document.activeElement === tableContainerRef.current ||
+					tableContainerRef.current.contains(document.activeElement) ||
+					document.activeElement === document.body ||
+					document.activeElement === document.documentElement);
 
 			if (!isTableFocused) return;
 
@@ -305,13 +311,48 @@ const ProductTable = ({
 					e.preventDefault();
 					e.stopPropagation();
 					setFocusedRowIndex(prev => {
-						const newIndex = prev === null ? 0 : Math.min(products.length - 1, prev + 1);
+						const newIndex =
+							prev === null ? 0 : Math.min(products.length - 1, prev + 1);
+
+						// Handle Shift key for range selection
+						if (e.shiftKey && onRowSelectionChange) {
+							// Set anchor if not set
+							if (selectionAnchorIndex === null) {
+								setSelectionAnchorIndex(prev === null ? 0 : prev);
+							}
+
+							// Calculate range from anchor to new index
+							const anchor =
+								selectionAnchorIndex !== null
+									? selectionAnchorIndex
+									: prev === null
+										? 0
+										: prev;
+							const startIndex = Math.min(anchor, newIndex);
+							const endIndex = Math.max(anchor, newIndex);
+
+							// Select all rows in range
+							const newSelection = { ...rowSelection };
+							for (let i = startIndex; i <= endIndex; i++) {
+								if (products[i]) {
+									newSelection[products[i].id] = true;
+								}
+							}
+							onRowSelectionChange(newSelection);
+						} else {
+							// Reset anchor when not using Shift
+							setSelectionAnchorIndex(null);
+						}
+
 						// Scroll into view
 						setTimeout(() => {
 							const rowElement = tableContainerRef.current?.querySelector(
-								`[data-row-index="${newIndex}"]`
+								`[data-row-index="${newIndex}"]`,
 							);
-							rowElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+							rowElement?.scrollIntoView({
+								behavior: 'smooth',
+								block: 'nearest',
+							});
 						}, 0);
 						return newIndex;
 					});
@@ -322,13 +363,50 @@ const ProductTable = ({
 					e.preventDefault();
 					e.stopPropagation();
 					setFocusedRowIndex(prev => {
-						const newIndex = prev === null ? products.length - 1 : Math.max(0, prev - 1);
+						const newIndex =
+							prev === null ? products.length - 1 : Math.max(0, prev - 1);
+
+						// Handle Shift key for range selection
+						if (e.shiftKey && onRowSelectionChange) {
+							// Set anchor if not set
+							if (selectionAnchorIndex === null) {
+								setSelectionAnchorIndex(
+									prev === null ? products.length - 1 : prev,
+								);
+							}
+
+							// Calculate range from anchor to new index
+							const anchor =
+								selectionAnchorIndex !== null
+									? selectionAnchorIndex
+									: prev === null
+										? products.length - 1
+										: prev;
+							const startIndex = Math.min(anchor, newIndex);
+							const endIndex = Math.max(anchor, newIndex);
+
+							// Select all rows in range
+							const newSelection = { ...rowSelection };
+							for (let i = startIndex; i <= endIndex; i++) {
+								if (products[i]) {
+									newSelection[products[i].id] = true;
+								}
+							}
+							onRowSelectionChange(newSelection);
+						} else {
+							// Reset anchor when not using Shift
+							setSelectionAnchorIndex(null);
+						}
+
 						// Scroll into view
 						setTimeout(() => {
 							const rowElement = tableContainerRef.current?.querySelector(
-								`[data-row-index="${newIndex}"]`
+								`[data-row-index="${newIndex}"]`,
 							);
-							rowElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+							rowElement?.scrollIntoView({
+								behavior: 'smooth',
+								block: 'nearest',
+							});
 						}, 0);
 						return newIndex;
 					});
@@ -342,6 +420,8 @@ const ProductTable = ({
 						const product = products[focusedRowIndex];
 						if (product && onRowSelectionChange) {
 							handleSelectRow(product.id, !rowSelection[product.id]);
+							// Reset anchor on single row selection
+							setSelectionAnchorIndex(null);
 						}
 					}
 					break;
@@ -364,7 +444,15 @@ const ProductTable = ({
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown, true);
 		};
-	}, [focusedRowIndex, products, rowSelection, onRowSelectionChange, onEdit, editingCell]);
+	}, [
+		focusedRowIndex,
+		products,
+		rowSelection,
+		onRowSelectionChange,
+		onEdit,
+		editingCell,
+		selectionAnchorIndex,
+	]);
 
 	// Start editing a cell
 	const startEditing = (
@@ -464,13 +552,37 @@ const ProductTable = ({
 	// Handle row selection
 	const handleSelectRow = (productId: string, checked: boolean) => {
 		if (!onRowSelectionChange) return;
-		const newSelection = { ...rowSelection };
-		if (checked) {
-			newSelection[productId] = true;
+
+		// Check if multiple rows are selected for bulk toggle
+		const selectedIds = Object.keys(rowSelection).filter(
+			id => rowSelection[id],
+		);
+		if (selectedIds.length > 1 && selectedIds.includes(productId)) {
+			// Bulk toggle: toggle all selected rows
+			const newState = !rowSelection[productId];
+			const newSelection = { ...rowSelection };
+			selectedIds.forEach(id => {
+				if (newState) {
+					newSelection[id] = true;
+				} else {
+					delete newSelection[id];
+				}
+			});
+			onRowSelectionChange(newSelection);
+			// Reset anchor after bulk toggle
+			setSelectionAnchorIndex(null);
 		} else {
-			delete newSelection[productId];
+			// Single row toggle (existing behavior)
+			const newSelection = { ...rowSelection };
+			if (checked) {
+				newSelection[productId] = true;
+			} else {
+				delete newSelection[productId];
+			}
+			onRowSelectionChange(newSelection);
+			// Reset anchor on single row selection
+			setSelectionAnchorIndex(null);
 		}
-		onRowSelectionChange(newSelection);
 	};
 
 	// Handle select all
@@ -526,7 +638,9 @@ const ProductTable = ({
 							/>
 						) : (
 							<div className="w-12 h-12 bg-ui-bg-subtle rounded border border-dashed border-ui-border-base flex items-center justify-center group-hover:border-ui-fg-subtle transition-colors">
-								<Text size="small" className="text-ui-fg-muted">—</Text>
+								<Text size="small" className="text-ui-fg-muted">
+									—
+								</Text>
 							</div>
 						)}
 					</div>
@@ -557,7 +671,7 @@ const ProductTable = ({
 				}
 				return (
 					<div
-						className="relative group cursor-pointer px-1 py-0.5 rounded h-7 flex items-center w-full"
+						className="relative group cursor-pointer px-1 py-0.5 rounded h-7 flex items-center w-full min-w-0"
 						onClick={e => {
 							e.stopPropagation();
 							if (onUpdate) {
@@ -566,25 +680,30 @@ const ProductTable = ({
 						}}
 					>
 						<Text
-							className="font-medium truncate flex-1 pr-28"
+							className="font-medium flex-1 min-w-0"
 							title={product.title}
 							size="small"
+							style={{
+								overflow: 'hidden',
+								textOverflow: 'ellipsis',
+								whiteSpace: 'nowrap',
+							}}
 						>
 							{product.title}
 						</Text>
 						{onEdit && (
 							<Button
 								variant="transparent"
-								size="small"
+								size="base"
 								onClick={e => {
 									e.stopPropagation();
 									onEdit(product);
 								}}
-								className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-ui-bg-base/80 backdrop-blur-sm border border-ui-border-base text-ui-fg-subtle hover:text-ui-fg-base hover:bg-ui-bg-base flex items-center gap-1.5 h-6 px-2 rounded shadow-sm"
+								className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-ui-bg-base/95 backdrop-blur-sm border border-ui-border-base text-ui-fg-subtle hover:text-ui-fg-base hover:bg-ui-bg-base flex items-center gap-1.5 h-7 px-3 py-2 rounded shadow-sm z-10"
 								title="Produkt bearbeiten"
 							>
 								<Edit className="w-3.5 h-3.5" />
-								<Text size="small">Bearbeiten</Text>
+								<Text size="base">Bearbeiten</Text>
 							</Button>
 						)}
 					</div>
@@ -815,115 +934,119 @@ const ProductTable = ({
 				{products.map(product => {
 					const productImageUrl = product.thumbnail || product.images?.[0]?.url;
 					return (
-					<MobileDataCard
-						key={product.id}
-						recordId={product.title}
-						imageUrl={productImageUrl}
-						rows={[
-							{
-								label: 'Status',
-								value: (
-									<Badge
-										color={product.status === 'published' ? 'green' : 'grey'}
-										size="small"
-									>
-										{product.status === 'published'
-											? 'Veröffentlicht'
-											: 'Entwurf'}
-									</Badge>
-								),
-							},
-							...((!visibleColumns || visibleColumns.has('collection')) &&
-							product.collection
-								? [
-										{
-											label: 'Sammlung',
-											value: product.collection.title,
-										},
-									]
-								: []),
-							...((!visibleColumns || visibleColumns.has('variants')) &&
-							product.variants &&
-							product.variants.length > 0
-								? [
-										{
-											label: 'Artikelnummern',
-											value:
-												product.variants
-													.map(v => v.sku)
-													.filter(Boolean)
-													.join(', ') || '-',
-										},
-									]
-								: []),
-							...((!visibleColumns || visibleColumns.has('categories')) &&
-							product.categories &&
-							product.categories.length > 0
-								? [
-										{
-											label: 'Kategorien',
-											value: product.categories.map(c => c.name).join(', '),
-										},
-									]
-								: []),
-							...((!visibleColumns || visibleColumns.has('shipping_profile')) &&
-							product.shipping_profile
-								? [
-										{
-											label: 'Versandprofil',
-											value: product.shipping_profile.name,
-										},
-									]
-								: []),
-							...((!visibleColumns || visibleColumns.has('sales_channels')) &&
-							product.sales_channels &&
-							product.sales_channels.length > 0
-								? [
-										{
-											label: 'Vertriebskanäle',
-											value: product.sales_channels
-												.map(sc => sc.name)
-												.join(', '),
-										},
-									]
-								: []),
-							...((!visibleColumns || visibleColumns.has('tags')) &&
-							product.tags &&
-							product.tags.length > 0
-								? [
-										{
-											label: 'Tags',
-											value: product.tags.map(t => t.value).join(', '),
-										},
-									]
-								: []),
-						]}
-						actions={[
-							{
-								icon: <Edit className="w-4 h-4" />,
-								onClick: () => onEdit?.(product),
-								label: 'Bearbeiten',
-							},
-							{
-								icon: <Trash2 className="w-4 h-4" />,
-								onClick: () => {
-									if (
-										window.confirm(
-											`Möchten Sie "${product.title}" wirklich löschen?`,
-										)
-									) {
-										onDelete?.(product.id);
-									}
+						<MobileDataCard
+							key={product.id}
+							recordId={product.title}
+							imageUrl={productImageUrl}
+							rows={[
+								{
+									label: 'Status',
+									value: (
+										<Badge
+											color={product.status === 'published' ? 'green' : 'grey'}
+											size="small"
+										>
+											{product.status === 'published'
+												? 'Veröffentlicht'
+												: 'Entwurf'}
+										</Badge>
+									),
 								},
-								label: 'Löschen',
-							},
-						]}
-						onSelect={
-							onRowSelectionChange ? () => toggleSelect(product.id) : undefined
-						}
-						selected={rowSelection[product.id]}
-					/>
-				)})}
+								...((!visibleColumns || visibleColumns.has('collection')) &&
+								product.collection
+									? [
+											{
+												label: 'Sammlung',
+												value: product.collection.title,
+											},
+										]
+									: []),
+								...((!visibleColumns || visibleColumns.has('variants')) &&
+								product.variants &&
+								product.variants.length > 0
+									? [
+											{
+												label: 'Artikelnummern',
+												value:
+													product.variants
+														.map(v => v.sku)
+														.filter(Boolean)
+														.join(', ') || '-',
+											},
+										]
+									: []),
+								...((!visibleColumns || visibleColumns.has('categories')) &&
+								product.categories &&
+								product.categories.length > 0
+									? [
+											{
+												label: 'Kategorien',
+												value: product.categories.map(c => c.name).join(', '),
+											},
+										]
+									: []),
+								...((!visibleColumns ||
+									visibleColumns.has('shipping_profile')) &&
+								product.shipping_profile
+									? [
+											{
+												label: 'Versandprofil',
+												value: product.shipping_profile.name,
+											},
+										]
+									: []),
+								...((!visibleColumns || visibleColumns.has('sales_channels')) &&
+								product.sales_channels &&
+								product.sales_channels.length > 0
+									? [
+											{
+												label: 'Vertriebskanäle',
+												value: product.sales_channels
+													.map(sc => sc.name)
+													.join(', '),
+											},
+										]
+									: []),
+								...((!visibleColumns || visibleColumns.has('tags')) &&
+								product.tags &&
+								product.tags.length > 0
+									? [
+											{
+												label: 'Tags',
+												value: product.tags.map(t => t.value).join(', '),
+											},
+										]
+									: []),
+							]}
+							actions={[
+								{
+									icon: <Edit className="w-4 h-4" />,
+									onClick: () => onEdit?.(product),
+									label: 'Bearbeiten',
+								},
+								{
+									icon: <Trash2 className="w-4 h-4" />,
+									onClick: () => {
+										if (
+											window.confirm(
+												`Möchten Sie "${product.title}" wirklich löschen?`,
+											)
+										) {
+											onDelete?.(product.id);
+										}
+									},
+									label: 'Löschen',
+								},
+							]}
+							onSelect={
+								onRowSelectionChange
+									? () => toggleSelect(product.id)
+									: undefined
+							}
+							selected={rowSelection[product.id]}
+						/>
+					);
+				})}
 			</div>
 		);
 	};
@@ -955,14 +1078,21 @@ const ProductTable = ({
 			ref={tableContainerRef}
 			className="relative overflow-x-auto outline-none"
 			tabIndex={0}
-			onClick={(e) => {
+			onClick={e => {
 				// Focus table container when clicking on it
-				if (e.currentTarget === e.target || e.currentTarget.contains(e.target as Node)) {
+				if (
+					e.currentTarget === e.target ||
+					e.currentTarget.contains(e.target as Node)
+				) {
 					tableContainerRef.current?.focus();
 					// Set focus to clicked row if clicking on a row
-					const rowElement = (e.target as HTMLElement).closest('[data-row-index]');
+					const rowElement = (e.target as HTMLElement).closest(
+						'[data-row-index]',
+					);
 					if (rowElement) {
-						const index = parseInt(rowElement.getAttribute('data-row-index') || '-1');
+						const index = parseInt(
+							rowElement.getAttribute('data-row-index') || '-1',
+						);
 						if (index >= 0) {
 							setFocusedRowIndex(index);
 						}
@@ -1062,34 +1192,49 @@ const ProductTable = ({
 					{products.map((product, index) => {
 						const isFocused = focusedRowIndex === index;
 						return (
-						<Table.Row
-							key={product.id}
-							data-row-index={index}
-							className={isFocused ? 'bg-ui-bg-subtle' : ''}
-							onClick={() => setFocusedRowIndex(index)}
-						>
-							{orderedColumns.map(column => (
-								<Table.Cell
-									key={column.key}
-									style={{
-										width: `${columnWidths[column.key]}px`,
-										maxWidth: `${columnWidths[column.key]}px`,
-										minWidth: `${columnWidths[column.key]}px`,
-										overflow: 'visible',
-									}}
-									className="px-2 py-1"
-									onClick={e => {
-										// Prevent row click from interfering with cell editing
-										if (column.key !== 'actions') {
-											e.stopPropagation();
-										}
-									}}
-								>
-									{renderCellContent(product, column.key)}
-								</Table.Cell>
-							))}
-						</Table.Row>
-					)})}
+							<Table.Row
+								key={product.id}
+								data-row-index={index}
+								className={
+									isFocused || rowSelection[product.id] ? 'bg-ui-bg-subtle' : ''
+								}
+								onClick={e => {
+									setFocusedRowIndex(index);
+
+									// Handle Cmd/Ctrl + Click for multi-select
+									if ((e.metaKey || e.ctrlKey) && onRowSelectionChange) {
+										e.preventDefault();
+										e.stopPropagation();
+										// Toggle this row's selection without affecting others
+										handleSelectRow(product.id, !rowSelection[product.id]);
+										// Reset anchor on Cmd/Ctrl click
+										setSelectionAnchorIndex(null);
+									}
+								}}
+							>
+								{orderedColumns.map(column => (
+									<Table.Cell
+										key={column.key}
+										style={{
+											width: `${columnWidths[column.key]}px`,
+											maxWidth: `${columnWidths[column.key]}px`,
+											minWidth: `${columnWidths[column.key]}px`,
+											overflow: 'visible',
+										}}
+										className="px-2 py-1"
+										onClick={e => {
+											// Prevent row click from interfering with cell editing
+											if (column.key !== 'actions') {
+												e.stopPropagation();
+											}
+										}}
+									>
+										{renderCellContent(product, column.key)}
+									</Table.Cell>
+								))}
+							</Table.Row>
+						);
+					})}
 				</Table.Body>
 			</Table>
 

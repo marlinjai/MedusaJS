@@ -191,6 +191,7 @@ export default function ProductsByCategoryPage() {
 		}
 		return ensureThumbnailVisible(new Set(tableColumns.map(c => c.key)));
 	});
+
 	const [skuSearch, setSkuSearch] = useState('');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [sortBy, setSortBy] = useState<'title' | 'created_at' | 'updated_at'>(
