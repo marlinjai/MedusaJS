@@ -48,21 +48,58 @@ const ProductVariantsTab = ({
 	// Image selector state
 	const [imageSelectorOpen, setImageSelectorOpen] = useState(false);
 	const [selectedVariantIndex, setSelectedVariantIndex] = useState<number | null>(null);
+	const [selectedImageUrls, setSelectedImageUrls] = useState<Set<string>>(new Set());
 
 	// Handle clicking on variant image to open selector
 	const handleImageClick = (variantIndex: number) => {
+		const variant = mergedVariants[variantIndex];
+		// Initialize selected images with current variant images
+		const currentImages = new Set(variant.images?.map(img => img.url) || []);
+		setSelectedImageUrls(currentImages);
 		setSelectedVariantIndex(variantIndex);
 		setImageSelectorOpen(true);
 	};
 
-	// Assign image to variant
-	const assignImageToVariant = (imageUrl: string) => {
+	// Toggle image selection (multi-select)
+	const toggleImageSelection = (imageUrl: string) => {
+		const newSelection = new Set(selectedImageUrls);
+		if (newSelection.has(imageUrl)) {
+			newSelection.delete(imageUrl);
+		} else {
+			newSelection.add(imageUrl);
+		}
+		setSelectedImageUrls(newSelection);
+	};
+
+	// Set image as variant thumbnail
+	const setAsVariantThumbnail = (imageUrl: string) => {
 		if (selectedVariantIndex === null) return;
 
 		const newVariants = [...mergedVariants];
 		newVariants[selectedVariantIndex] = {
 			...newVariants[selectedVariantIndex],
-			images: [{ url: imageUrl }],
+			variant_thumbnail: imageUrl,
+		};
+		onChange({
+			...formData,
+			variants: newVariants,
+		});
+	};
+
+	// Save selected images to variant
+	const saveVariantImages = () => {
+		if (selectedVariantIndex === null) return;
+
+		const newVariants = [...mergedVariants];
+		const imageArray = Array.from(selectedImageUrls).map(url => ({ url }));
+		newVariants[selectedVariantIndex] = {
+			...newVariants[selectedVariantIndex],
+			images: imageArray.length > 0 ? imageArray : undefined,
+			// Keep existing thumbnail if it's still in the selected images
+			variant_thumbnail: newVariants[selectedVariantIndex].variant_thumbnail &&
+				selectedImageUrls.has(newVariants[selectedVariantIndex].variant_thumbnail!)
+					? newVariants[selectedVariantIndex].variant_thumbnail
+					: imageArray.length > 0 ? imageArray[0].url : undefined,
 		};
 		onChange({
 			...formData,
@@ -70,19 +107,26 @@ const ProductVariantsTab = ({
 		});
 		setImageSelectorOpen(false);
 		setSelectedVariantIndex(null);
+		setSelectedImageUrls(new Set());
 	};
 
-	// Remove image from variant
-	const removeVariantImage = (variantIndex: number) => {
+	// Remove all images from variant
+	const removeAllVariantImages = () => {
+		if (selectedVariantIndex === null) return;
+
 		const newVariants = [...mergedVariants];
-		newVariants[variantIndex] = {
-			...newVariants[variantIndex],
+		newVariants[selectedVariantIndex] = {
+			...newVariants[selectedVariantIndex],
 			images: undefined,
+			variant_thumbnail: undefined,
 		};
 		onChange({
 			...formData,
 			variants: newVariants,
 		});
+		setImageSelectorOpen(false);
+		setSelectedVariantIndex(null);
+		setSelectedImageUrls(new Set());
 	};
 
 	// Generate variants from options when in options mode
@@ -443,15 +487,16 @@ const ProductVariantsTab = ({
 				{/* Image Selector Modal */}
 				{imageSelectorOpen && selectedVariantIndex !== null && (
 					<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-						<div className="bg-ui-bg-base rounded-lg p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-auto">
+						<div className="bg-ui-bg-base rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto">
 							<div className="flex items-center justify-between mb-4">
-								<Text weight="plus">Bild für Variante auswählen</Text>
+								<Text weight="plus">Bilder für Variante auswählen</Text>
 								<Button
 									variant="transparent"
 									size="small"
 									onClick={() => {
 										setImageSelectorOpen(false);
 										setSelectedVariantIndex(null);
+										setSelectedImageUrls(new Set());
 									}}
 								>
 									<X className="w-4 h-4" />
@@ -465,48 +510,92 @@ const ProductVariantsTab = ({
 									</Text>
 								</div>
 							) : (
-								<div className="grid grid-cols-3 gap-3">
-									{productImages.map((image, imgIndex) => {
-										const isSelected = mergedVariants[selectedVariantIndex]?.images?.[0]?.url === image.url;
-										return (
-											<div
-												key={imgIndex}
-												className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-													isSelected
-														? 'border-blue-500 ring-2 ring-blue-200'
-														: 'border-ui-border-base hover:border-ui-fg-subtle'
-												}`}
-												onClick={() => assignImageToVariant(image.url)}
-											>
-												<img
-													src={image.url}
-													alt={`Image ${imgIndex + 1}`}
-													className="w-full h-24 object-cover"
-												/>
-												{isSelected && (
-													<div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-														<Check className="w-3 h-3 text-white" />
+								<>
+									<div className="grid grid-cols-4 gap-3 mb-4">
+										{productImages.map((image, imgIndex) => {
+											const isSelected = selectedImageUrls.has(image.url);
+											const isThumbnail = mergedVariants[selectedVariantIndex]?.variant_thumbnail === image.url;
+											return (
+												<div
+													key={imgIndex}
+													className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all group ${
+														isSelected
+															? 'border-blue-500 ring-2 ring-blue-200'
+															: 'border-ui-border-base hover:border-ui-fg-subtle'
+													}`}
+													onClick={() => toggleImageSelection(image.url)}
+												>
+													<img
+														src={image.url}
+														alt={`Image ${imgIndex + 1}`}
+														className="w-full h-24 object-cover"
+													/>
+													{/* Selection Checkbox */}
+													<div
+														className={`absolute top-1 right-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+															isSelected
+																? 'bg-blue-500 border-blue-500'
+																: 'bg-white/80 border-ui-border-base opacity-0 group-hover:opacity-100'
+														}`}
+													>
+														{isSelected && <Check className="w-3 h-3 text-white" />}
 													</div>
-												)}
-											</div>
-										);
-									})}
-								</div>
-							)}
-							{mergedVariants[selectedVariantIndex]?.images?.[0] && (
-								<Button
-									variant="secondary"
-									size="small"
-									onClick={() => {
-										removeVariantImage(selectedVariantIndex);
-										setImageSelectorOpen(false);
-										setSelectedVariantIndex(null);
-									}}
-									className="mt-4 w-full text-red-500"
-								>
-									<Trash2 className="w-4 h-4 mr-2" />
-									Bild entfernen
-								</Button>
+													{/* Thumbnail Badge */}
+													{isThumbnail && (
+														<div className="absolute top-1 left-1 flex items-center gap-1 bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+															<Star className="w-3 h-3 fill-current" />
+															<span>Miniatur</span>
+														</div>
+													)}
+												</div>
+											);
+										})}
+									</div>
+									{/* Action Bar */}
+									{selectedImageUrls.size > 0 && (
+										<div className="flex items-center gap-3 p-3 bg-ui-bg-subtle rounded-lg border border-ui-border-base mb-4">
+											<Text size="small" className="text-ui-fg-subtle">
+												{selectedImageUrls.size} ausgewählt
+											</Text>
+											<div className="flex-1" />
+											{selectedImageUrls.size === 1 && (
+												<Button
+													variant="secondary"
+													size="small"
+													onClick={() => {
+														const imageUrl = Array.from(selectedImageUrls)[0];
+														setAsVariantThumbnail(imageUrl);
+													}}
+												>
+													<Star className="w-4 h-4 mr-2" />
+													Als Miniatur
+												</Button>
+											)}
+										</div>
+									)}
+									{/* Action Buttons */}
+									<div className="flex gap-3">
+										<Button
+											variant="primary"
+											size="small"
+											onClick={saveVariantImages}
+											className="flex-1"
+										>
+											Speichern ({selectedImageUrls.size})
+										</Button>
+										{mergedVariants[selectedVariantIndex]?.images && mergedVariants[selectedVariantIndex].images!.length > 0 && (
+											<Button
+												variant="secondary"
+												size="small"
+												onClick={removeAllVariantImages}
+												className="text-red-500"
+											>
+												<Trash2 className="w-4 h-4 mr-2" />
+												Alle entfernen
+											</Button>
+										)}
+									</div>
+								</>
 							)}
 						</div>
 					</div>
@@ -721,18 +810,31 @@ function renderCellContent(
 ) {
 	switch (columnKey) {
 		case 'image':
-			const variantImage = variant.images?.[0]?.url;
+			const variantThumbnail = variant.variant_thumbnail || variant.images?.[0]?.url;
+			const imageCount = variant.images?.length || 0;
 			return (
 				<div
-					className="flex items-center justify-center cursor-pointer"
+					className="flex items-center justify-center cursor-pointer relative"
 					onClick={() => onImageClick?.(index)}
 				>
-					{variantImage ? (
-						<img
-							src={variantImage}
-							alt={variant.title || 'Variant'}
-							className="w-12 h-12 object-cover rounded border border-ui-border-base hover:border-ui-fg-interactive transition-colors"
-						/>
+					{variantThumbnail ? (
+						<div className="relative">
+							<img
+								src={variantThumbnail}
+								alt={variant.title || 'Variant'}
+								className="w-12 h-12 object-cover rounded border border-ui-border-base hover:border-ui-fg-interactive transition-colors"
+							/>
+							{imageCount > 1 && (
+								<div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+									{imageCount}
+								</div>
+							)}
+							{variant.variant_thumbnail && (
+								<div className="absolute -top-1 -left-1 bg-yellow-500 rounded-full p-0.5">
+									<Star className="w-2.5 h-2.5 text-white fill-current" />
+								</div>
+							)}
+						</div>
 					) : (
 						<div className="w-12 h-12 bg-ui-bg-subtle rounded border border-dashed border-ui-border-base flex items-center justify-center hover:border-ui-fg-interactive transition-colors">
 							<Plus className="w-4 h-4 text-ui-fg-muted" />

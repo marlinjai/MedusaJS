@@ -39,6 +39,8 @@ type ProductListItem = {
 	status: 'published' | 'draft';
 	created_at?: string;
 	updated_at?: string;
+	thumbnail?: string;
+	images?: Array<{ id?: string; url: string }>;
 	sales_channels?: Array<{ id: string; name: string }>;
 	categories?: Array<{ id: string; name: string }>;
 	collection?: { id: string; title: string };

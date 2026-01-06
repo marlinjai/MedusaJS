@@ -25,6 +25,7 @@ export type Variant = {
 	enabled?: boolean;
 	option_values?: string[];
 	images?: Array<{ id?: string; url: string }>;
+	variant_thumbnail?: string;
 };
 
 type Product = {

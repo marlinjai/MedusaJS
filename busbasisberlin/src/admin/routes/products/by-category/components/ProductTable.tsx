@@ -117,6 +117,10 @@ const ProductTable = ({
 }: ProductTableProps) => {
 	const isMobile = useIsMobile();
 
+	// Keyboard navigation state
+	const [focusedRowIndex, setFocusedRowIndex] = useState<number | null>(null);
+	const tableContainerRef = useRef<HTMLDivElement>(null);
+
 	// Inline editing state
 	const [editingCell, setEditingCell] = useState<EditableCell | null>(null);
 	const [tempValues, setTempValues] = useState<Record<string, any>>({});
@@ -143,7 +147,12 @@ const ProductTable = ({
 		const saved = localStorage.getItem('products-table-column-order');
 		if (saved) {
 			try {
-				return JSON.parse(saved);
+				const savedOrder = JSON.parse(saved);
+				// Filter out 'open' if it exists and filter to valid columns
+				const filteredOrder = savedOrder.filter((key: string) =>
+					key !== 'open' && columns.some(c => c.key === key)
+				);
+				return filteredOrder.length > 0 ? filteredOrder : columns.map(c => c.key);
 			} catch {
 				return columns.map(c => c.key);
 			}
@@ -251,6 +260,111 @@ const ProductTable = ({
 			editInputRef.current.select();
 		}
 	}, [editingCell]);
+
+	// Keyboard navigation handler
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Don't handle keys when editing a cell
+			if (editingCell) return;
+
+			// Don't handle if user is typing in an input/textarea/select
+			const activeElement = document.activeElement;
+			if (
+				activeElement &&
+				(activeElement.tagName === 'INPUT' ||
+					activeElement.tagName === 'TEXTAREA' ||
+					activeElement.tagName === 'SELECT' ||
+					activeElement.isContentEditable ||
+					activeElement.closest('[role="dialog"]') || // Don't handle in modals
+					activeElement.closest('[role="menu"]')) // Don't handle in dropdowns
+			) {
+				return;
+			}
+
+			// Check if table container is visible and contains the active element
+			const isTableVisible = tableContainerRef.current &&
+				tableContainerRef.current.offsetParent !== null;
+
+			if (!isTableVisible) return;
+
+			// Allow keyboard navigation when:
+			// 1. Table container is focused
+			// 2. Active element is inside the table
+			// 3. No specific input is focused (body/document is active)
+			const isTableFocused = tableContainerRef.current && (
+				document.activeElement === tableContainerRef.current ||
+				tableContainerRef.current.contains(document.activeElement) ||
+				document.activeElement === document.body ||
+				document.activeElement === document.documentElement
+			);
+
+			if (!isTableFocused) return;
+
+			switch (e.key) {
+				case 'ArrowDown':
+					e.preventDefault();
+					e.stopPropagation();
+					setFocusedRowIndex(prev => {
+						const newIndex = prev === null ? 0 : Math.min(products.length - 1, prev + 1);
+						// Scroll into view
+						setTimeout(() => {
+							const rowElement = tableContainerRef.current?.querySelector(
+								`[data-row-index="${newIndex}"]`
+							);
+							rowElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+						}, 0);
+						return newIndex;
+					});
+					// Focus the table container
+					tableContainerRef.current?.focus();
+					break;
+				case 'ArrowUp':
+					e.preventDefault();
+					e.stopPropagation();
+					setFocusedRowIndex(prev => {
+						const newIndex = prev === null ? products.length - 1 : Math.max(0, prev - 1);
+						// Scroll into view
+						setTimeout(() => {
+							const rowElement = tableContainerRef.current?.querySelector(
+								`[data-row-index="${newIndex}"]`
+							);
+							rowElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+						}, 0);
+						return newIndex;
+					});
+					// Focus the table container
+					tableContainerRef.current?.focus();
+					break;
+				case 'Enter':
+					if (focusedRowIndex !== null) {
+						e.preventDefault();
+						e.stopPropagation();
+						const product = products[focusedRowIndex];
+						if (product && onRowSelectionChange) {
+							handleSelectRow(product.id, !rowSelection[product.id]);
+						}
+					}
+					break;
+				case ' ':
+					if (focusedRowIndex !== null) {
+						e.preventDefault();
+						e.stopPropagation();
+						const product = products[focusedRowIndex];
+						if (product && onEdit) {
+							onEdit(product);
+						}
+					}
+					break;
+			}
+		};
+
+		// Add event listener
+		window.addEventListener('keydown', handleKeyDown, true); // Use capture phase
+
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown, true);
+		};
+	}, [focusedRowIndex, products, rowSelection, onRowSelectionChange, onEdit, editingCell]);
 
 	// Start editing a cell
 	const startEditing = (
@@ -443,7 +557,7 @@ const ProductTable = ({
 				}
 				return (
 					<div
-						className="cursor-pointer hover:bg-ui-bg-subtle px-1 py-0.5 rounded h-7 flex items-center w-full"
+						className="relative group cursor-pointer px-1 py-0.5 rounded h-7 flex items-center w-full"
 						onClick={e => {
 							e.stopPropagation();
 							if (onUpdate) {
@@ -452,12 +566,27 @@ const ProductTable = ({
 						}}
 					>
 						<Text
-							className="font-medium truncate"
+							className="font-medium truncate flex-1 pr-28"
 							title={product.title}
 							size="small"
 						>
 							{product.title}
 						</Text>
+						{onEdit && (
+							<Button
+								variant="transparent"
+								size="small"
+								onClick={e => {
+									e.stopPropagation();
+									onEdit(product);
+								}}
+								className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-ui-bg-base/80 backdrop-blur-sm border border-ui-border-base text-ui-fg-subtle hover:text-ui-fg-base hover:bg-ui-bg-base flex items-center gap-1.5 h-6 px-2 rounded shadow-sm"
+								title="Produkt bearbeiten"
+							>
+								<Edit className="w-3.5 h-3.5" />
+								<Text size="small">Bearbeiten</Text>
+							</Button>
+						)}
 					</div>
 				);
 			case 'status':
@@ -822,7 +951,31 @@ const ProductTable = ({
 	}
 
 	return (
-		<div className="relative overflow-x-auto">
+		<div
+			ref={tableContainerRef}
+			className="relative overflow-x-auto outline-none"
+			tabIndex={0}
+			onClick={(e) => {
+				// Focus table container when clicking on it
+				if (e.currentTarget === e.target || e.currentTarget.contains(e.target as Node)) {
+					tableContainerRef.current?.focus();
+					// Set focus to clicked row if clicking on a row
+					const rowElement = (e.target as HTMLElement).closest('[data-row-index]');
+					if (rowElement) {
+						const index = parseInt(rowElement.getAttribute('data-row-index') || '-1');
+						if (index >= 0) {
+							setFocusedRowIndex(index);
+						}
+					}
+				}
+			}}
+			onFocus={() => {
+				// Set initial focus if none
+				if (focusedRowIndex === null && products.length > 0) {
+					setFocusedRowIndex(0);
+				}
+			}}
+		>
 			<Table
 				ref={tableRef}
 				style={{
@@ -906,8 +1059,15 @@ const ProductTable = ({
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
-					{products.map(product => (
-						<Table.Row key={product.id}>
+					{products.map((product, index) => {
+						const isFocused = focusedRowIndex === index;
+						return (
+						<Table.Row
+							key={product.id}
+							data-row-index={index}
+							className={isFocused ? 'bg-ui-bg-subtle' : ''}
+							onClick={() => setFocusedRowIndex(index)}
+						>
 							{orderedColumns.map(column => (
 								<Table.Cell
 									key={column.key}
@@ -929,7 +1089,7 @@ const ProductTable = ({
 								</Table.Cell>
 							))}
 						</Table.Row>
-					))}
+					)})}
 				</Table.Body>
 			</Table>
 
