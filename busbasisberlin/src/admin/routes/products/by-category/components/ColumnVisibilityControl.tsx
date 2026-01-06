@@ -30,7 +30,7 @@ export default function ColumnVisibilityControl({
 	const [isOpen, setIsOpen] = useState(false);
 
 	// Columns that shouldn't be hideable (critical columns)
-	const nonHideableColumns = ['select', 'title', 'actions'];
+	const nonHideableColumns = ['select', 'thumbnail', 'title', 'actions'];
 
 	return (
 		<div className="relative">

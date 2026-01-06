@@ -154,6 +154,13 @@ const tableColumns = [
 	{ key: 'actions', label: 'Aktionen', width: 100 },
 ];
 
+// Helper function to ensure thumbnail is always visible
+const ensureThumbnailVisible = (columns: Set<string>): Set<string> => {
+	const result = new Set(columns);
+	result.add('thumbnail');
+	return result;
+};
+
 export default function ProductsByCategoryPage() {
 	const queryClient = useQueryClient();
 	const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
@@ -177,13 +184,12 @@ export default function ProductsByCategoryPage() {
 			try {
 				const savedColumns = new Set(JSON.parse(saved));
 				// Always include thumbnail column by default
-				savedColumns.add('thumbnail');
-				return savedColumns;
+				return ensureThumbnailVisible(savedColumns);
 			} catch {
-				return new Set(tableColumns.map(c => c.key));
+				return ensureThumbnailVisible(new Set(tableColumns.map(c => c.key)));
 			}
 		}
-		return new Set(tableColumns.map(c => c.key));
+		return ensureThumbnailVisible(new Set(tableColumns.map(c => c.key)));
 	});
 	const [skuSearch, setSkuSearch] = useState('');
 	const [searchQuery, setSearchQuery] = useState('');
@@ -936,32 +942,33 @@ export default function ProductsByCategoryPage() {
 									} else {
 										newVisible.add(key);
 									}
-									setVisibleColumns(newVisible);
-											localStorage.setItem(
-												'products-table-visible-columns',
-												JSON.stringify([...newVisible]),
-											);
+									const ensuredVisible = ensureThumbnailVisible(newVisible);
+									setVisibleColumns(ensuredVisible);
+									localStorage.setItem(
+										'products-table-visible-columns',
+										JSON.stringify([...ensuredVisible]),
+									);
 								}}
 								onShowAll={() => {
-									const allColumns = new Set(tableColumns.map(c => c.key));
+									const allColumns = ensureThumbnailVisible(
+										new Set(tableColumns.map(c => c.key)),
+									);
 									setVisibleColumns(allColumns);
-											localStorage.setItem(
-												'products-table-visible-columns',
-												JSON.stringify([...allColumns]),
-											);
+									localStorage.setItem(
+										'products-table-visible-columns',
+										JSON.stringify([...allColumns]),
+									);
 								}}
 								onHideAll={() => {
 									// Keep only essential columns
-											const essentialColumns = new Set([
-												'select',
-												'title',
-												'actions',
-											]);
+									const essentialColumns = ensureThumbnailVisible(
+										new Set(['select', 'thumbnail', 'title', 'actions']),
+									);
 									setVisibleColumns(essentialColumns);
-											localStorage.setItem(
-												'products-table-visible-columns',
-												JSON.stringify([...essentialColumns]),
-											);
+									localStorage.setItem(
+										'products-table-visible-columns',
+										JSON.stringify([...essentialColumns]),
+									);
 								}}
 							/>
 
@@ -1517,13 +1524,18 @@ export default function ProductsByCategoryPage() {
 												const newVisible = new Set(visibleColumns);
 												if (checked) newVisible.add(col.key);
 												else newVisible.delete(col.key);
-												setVisibleColumns(newVisible);
+												const ensuredVisible = ensureThumbnailVisible(newVisible);
+												setVisibleColumns(ensuredVisible);
 												localStorage.setItem(
 													'products-table-visible-columns',
-													JSON.stringify([...newVisible]),
+													JSON.stringify([...ensuredVisible]),
 												);
 											}}
-											disabled={col.key === 'title' || col.key === 'actions'}
+											disabled={
+												col.key === 'title' ||
+												col.key === 'actions' ||
+												col.key === 'thumbnail'
+											}
 										/>
 									</div>
 								))}
