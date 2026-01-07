@@ -272,7 +272,7 @@ export const GET = async (
 			if (shippingProfileIds && shippingProfileIds.length > 0) {
 				allProducts = allProducts.filter((product: any) =>
 					shippingProfileIds.includes(product.shipping_profile?.id),
-				);
+				) as any;
 			}
 
 			// Apply SKU filter if provided
@@ -282,7 +282,7 @@ export const GET = async (
 					product.variants?.some((variant: any) =>
 						variant.sku?.toLowerCase().includes(skuFilter),
 					),
-				);
+				) as any;
 			}
 
 			total = allProducts.length;
