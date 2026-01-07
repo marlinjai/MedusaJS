@@ -356,15 +356,31 @@ generate_nginx_configs() {
 # Function to analyze and fix current VPS state
 analyze_and_fix_state() {
     log_info "Analyzing current VPS state..."
+    
+    # Debug: Check if Docker is available
+    if ! command -v docker &> /dev/null; then
+        log_error "Docker command not found!"
+        return 1
+    fi
+    
+    log_info "Docker is available, checking services..."
 
-    # Check base services
-    local postgres_running=$(docker ps --filter "name=medusa_postgres" --filter "status=running" --quiet)
-    local redis_running=$(docker ps --filter "name=medusa_redis" --filter "status=running" --quiet)
-    local nginx_running=$(docker ps --filter "name=medusa_nginx" --filter "status=running" --quiet)
+    # Check base services with error handling
+    log_info "Checking PostgreSQL container..."
+    local postgres_running=$(docker ps --filter "name=medusa_postgres" --filter "status=running" --quiet 2>/dev/null || echo "")
+    
+    log_info "Checking Redis container..."
+    local redis_running=$(docker ps --filter "name=medusa_redis" --filter "status=running" --quiet 2>/dev/null || echo "")
+    
+    log_info "Checking Nginx container..."
+    local nginx_running=$(docker ps --filter "name=medusa_nginx" --filter "status=running" --quiet 2>/dev/null || echo "")
 
     # Check deployment containers
-    local blue_running=$(docker ps --filter "name=medusa_backend_server_blue" --filter "status=running" --quiet)
-    local green_running=$(docker ps --filter "name=medusa_backend_server_green" --filter "status=running" --quiet)
+    log_info "Checking Blue deployment container..."
+    local blue_running=$(docker ps --filter "name=medusa_backend_server_blue" --filter "status=running" --quiet 2>/dev/null || echo "")
+    
+    log_info "Checking Green deployment container..."
+    local green_running=$(docker ps --filter "name=medusa_backend_server_green" --filter "status=running" --quiet 2>/dev/null || echo "")
 
     # Get file state vs actual state
     local file_state="blue"
@@ -379,9 +395,17 @@ analyze_and_fix_state() {
     log_info "  Base services: Postgres=$([ -n "$postgres_running" ] && echo "UP" || echo "DOWN") Redis=$([ -n "$redis_running" ] && echo "UP" || echo "DOWN") Nginx=$([ -n "$nginx_running" ] && echo "UP" || echo "DOWN")"
 
     # Determine corrective action
+    log_info "Checking if base services need to be started..."
     if [[ -z "$postgres_running" || -z "$redis_running" || -z "$nginx_running" ]]; then
         log_warning "Base services are down - starting them first"
-        start_base_services
+        log_info "About to call start_base_services function..."
+        if ! start_base_services; then
+            log_error "Failed to start base services"
+            return 1
+        fi
+        log_info "Base services started successfully"
+    else
+        log_info "All base services are running"
     fi
 
     # Handle deployment container state
@@ -438,8 +462,14 @@ analyze_and_fix_state() {
 # Function to start base services
 start_base_services() {
     log_info "Starting base services..."
-    cd "$PROJECT_DIR"
+    
+    log_info "Changing to project directory: $PROJECT_DIR"
+    if ! cd "$PROJECT_DIR"; then
+        log_error "Failed to change to project directory: $PROJECT_DIR"
+        return 1
+    fi
 
+    log_info "Exporting environment variables for base services..."
     # Export environment variables for base services
     export POSTGRES_PASSWORD REDIS_PASSWORD JWT_SECRET COOKIE_SECRET RESEND_API_KEY RESEND_FROM_EMAIL
     export S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_REGION S3_BUCKET S3_ENDPOINT S3_FILE_URL
@@ -453,8 +483,14 @@ start_base_services() {
     export STOREFRONT_URL
     export COMPANY_LOGO_URL COMPANY_SUPPORT_EMAIL BRAND_PRIMARY_COLOR BRAND_SECONDARY_COLOR
 
+    log_info "Starting base services with docker-compose..."
     # Don't use --remove-orphans - it stops blue/green deployment containers
-    docker compose -f docker-compose.base.yml up -d
+    if ! docker compose -f docker-compose.base.yml up -d; then
+        log_error "Failed to start base services with docker-compose"
+        return 1
+    fi
+    
+    log_info "Base services docker-compose command completed"
 
     # Wait for base services to be healthy
     log_info "Waiting for base services to be ready..."
