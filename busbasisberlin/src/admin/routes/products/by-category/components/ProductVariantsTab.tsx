@@ -2,13 +2,20 @@
 // Product variants tab with options-based variant generation and draggable columns
 
 import { Button, Checkbox, Input, Table, Text } from '@medusajs/ui';
-import { Check, GripVertical, Plus, Trash2, X } from 'lucide-react';
+import {
+	Check,
+	CloudUpload,
+	GripVertical,
+	Plus,
+	Star,
+	Trash2,
+	X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCurrencies } from '../hooks/useCurrencies';
+import { generateVariantsFromOptions } from '../utils/variant-generation';
 import type { ProductOption, Variant } from './ProductEditorModal';
 import ProductOptionsSection from './ProductOptionsSection';
-import {
-	generateVariantsFromOptions,
-} from '../utils/variant-generation';
 
 type ProductFormData = {
 	variants?: Variant[];
@@ -22,16 +29,14 @@ interface ProductVariantsTabProps {
 	onChange: (data: Partial<ProductFormData>) => void;
 }
 
-// Column configuration for variant table
-const variantColumns = [
+// Base column configuration (non-price columns)
+const BASE_VARIANT_COLUMNS = [
 	{ key: 'image', label: 'Bild', width: 80 },
 	{ key: 'option_combination', label: 'option(z.B.Farbe) / größe', width: 250 },
 	{ key: 'title', label: 'Titel', width: 200 },
 	{ key: 'sku', label: 'Artikelnummer', width: 150 },
 	{ key: 'manage_inventory', label: 'Verwalteter Bestand', width: 120 },
 	{ key: 'allow_backorder', label: 'Rückstand zulassen', width: 120 },
-	{ key: 'price_eur', label: 'Preis EUR', width: 120 },
-	{ key: 'price_europe', label: 'Preis Europe', width: 120 },
 ];
 
 const STORAGE_KEY = 'product-variants-table-column-widths';
@@ -42,13 +47,47 @@ const ProductVariantsTab = ({
 }: ProductVariantsTabProps) => {
 	const hasVariants = formData.has_variants || false;
 	const options = formData.options || [];
+
+	// Fetch available currencies dynamically using React Query
+	const { data: currencies = [], isLoading: currenciesLoading, isPlaceholderData, isFetching } = useCurrencies();
+
+	// Debug logging for currencies
+	useEffect(() => {
+		console.log('[ProductVariantsTab] Currencies state:', {
+			count: currencies.length,
+			codes: currencies.map(c => c.code),
+			isLoading: currenciesLoading,
+			isPlaceholderData,
+			isFetching,
+		});
+	}, [currencies, currenciesLoading, isPlaceholderData, isFetching]);
+
+	// Build variant columns dynamically based on available currencies
+	const variantColumns = useMemo(() => {
+		const currencyColumns = currencies.map(currency => ({
+			key: `price_${currency.code}`,
+			label: `Preis ${currency.code.toUpperCase()} (${currency.symbol})`,
+			width: 120,
+			currency: currency, // Store currency metadata for rendering
+		}));
+
+		console.log('[ProductVariantsTab] Building columns with', currencies.length, 'currencies');
+		return [...BASE_VARIANT_COLUMNS, ...currencyColumns];
+	}, [currencies]);
+
 	const existingVariants = formData.variants || [];
 	const productImages = formData.images || [];
 
 	// Image selector state
 	const [imageSelectorOpen, setImageSelectorOpen] = useState(false);
-	const [selectedVariantIndex, setSelectedVariantIndex] = useState<number | null>(null);
-	const [selectedImageUrls, setSelectedImageUrls] = useState<Set<string>>(new Set());
+	const [selectedVariantIndex, setSelectedVariantIndex] = useState<
+		number | null
+	>(null);
+	const [selectedImageUrls, setSelectedImageUrls] = useState<Set<string>>(
+		new Set(),
+	);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [isDragging, setIsDragging] = useState(false);
 
 	// Handle clicking on variant image to open selector
 	const handleImageClick = (variantIndex: number) => {
@@ -71,19 +110,72 @@ const ProductVariantsTab = ({
 		setSelectedImageUrls(newSelection);
 	};
 
-	// Set image as variant thumbnail
-	const setAsVariantThumbnail = (imageUrl: string) => {
-		if (selectedVariantIndex === null) return;
+	// Set image as variant thumbnail (works with multiple selected - uses first)
+	const setAsVariantThumbnail = () => {
+		if (selectedVariantIndex === null || selectedImageUrls.size === 0) return;
 
 		const newVariants = [...mergedVariants];
+		// Use first selected image as thumbnail
+		const thumbnailUrl = Array.from(selectedImageUrls)[0];
 		newVariants[selectedVariantIndex] = {
 			...newVariants[selectedVariantIndex],
-			variant_thumbnail: imageUrl,
+			variant_thumbnail: thumbnailUrl,
 		};
 		onChange({
 			...formData,
 			variants: newVariants,
 		});
+	};
+
+	// Handle file selection for upload
+	const handleFileSelect = (files: FileList | null) => {
+		if (!files || files.length === 0) return;
+
+		const fileArray = Array.from(files);
+		const imagePromises = fileArray.map(file => {
+			return new Promise<{ url: string }>(resolve => {
+				const reader = new FileReader();
+				reader.onload = e => {
+					const result = e.target?.result;
+					if (typeof result === 'string') {
+						resolve({ url: result });
+					}
+				};
+				reader.readAsDataURL(file);
+			});
+		});
+
+		Promise.all(imagePromises).then(images => {
+			// Add to product images
+			const newProductImages = [...productImages, ...images];
+
+			// Add to selected variant images
+			const newSelectedUrls = new Set(selectedImageUrls);
+			images.forEach(img => newSelectedUrls.add(img.url));
+			setSelectedImageUrls(newSelectedUrls);
+
+			// Update formData
+			onChange({
+				...formData,
+				images: newProductImages,
+			});
+		});
+	};
+
+	// Handle drag and drop
+	const handleDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+		setIsDragging(true);
+	};
+
+	const handleDragLeave = () => {
+		setIsDragging(false);
+	};
+
+	const handleDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		setIsDragging(false);
+		handleFileSelect(e.dataTransfer.files);
 	};
 
 	// Save selected images to variant
@@ -92,22 +184,81 @@ const ProductVariantsTab = ({
 
 		const newVariants = [...mergedVariants];
 		const imageArray = Array.from(selectedImageUrls).map(url => ({ url }));
+
+		// Auto-set thumbnail if only one image
+		const autoThumbnail =
+			imageArray.length === 1 ? imageArray[0].url : undefined;
+
+		// Ensure all variant images are in product images
+		const currentProductImages = formData.images || [];
+		const missingImages = imageArray.filter(
+			img => !currentProductImages.some(prodImg => prodImg.url === img.url),
+		);
+
 		newVariants[selectedVariantIndex] = {
 			...newVariants[selectedVariantIndex],
 			images: imageArray.length > 0 ? imageArray : undefined,
-			// Keep existing thumbnail if it's still in the selected images
-			variant_thumbnail: newVariants[selectedVariantIndex].variant_thumbnail &&
-				selectedImageUrls.has(newVariants[selectedVariantIndex].variant_thumbnail!)
+			variant_thumbnail:
+				autoThumbnail ||
+				(newVariants[selectedVariantIndex].variant_thumbnail &&
+				selectedImageUrls.has(
+					newVariants[selectedVariantIndex].variant_thumbnail!,
+				)
 					? newVariants[selectedVariantIndex].variant_thumbnail
-					: imageArray.length > 0 ? imageArray[0].url : undefined,
+					: imageArray.length > 0
+						? imageArray[0].url
+						: undefined),
 		};
+
 		onChange({
 			...formData,
+			images: [...currentProductImages, ...missingImages],
 			variants: newVariants,
 		});
 		setImageSelectorOpen(false);
 		setSelectedVariantIndex(null);
 		setSelectedImageUrls(new Set());
+	};
+
+	// Remove selected images from variant (keeps them in product images)
+	const removeSelectedVariantImages = () => {
+		if (selectedVariantIndex === null || selectedImageUrls.size === 0) return;
+
+		const newVariants = [...mergedVariants];
+		const variant = newVariants[selectedVariantIndex];
+		const currentVariantImages = variant.images || [];
+
+		// Remove only selected images from variant (not from product)
+		const remainingImages = currentVariantImages.filter(
+			img => !selectedImageUrls.has(img.url),
+		);
+
+		// Clear thumbnail if it was removed
+		const newThumbnail =
+			variant.variant_thumbnail &&
+			!selectedImageUrls.has(variant.variant_thumbnail)
+				? variant.variant_thumbnail
+				: remainingImages.length > 0
+					? remainingImages[0].url
+					: undefined;
+
+		newVariants[selectedVariantIndex] = {
+			...newVariants[selectedVariantIndex],
+			images: remainingImages.length > 0 ? remainingImages : undefined,
+			variant_thumbnail: newThumbnail,
+		};
+
+		// Update selected images in modal to reflect removal
+		const newSelectedUrls = new Set(selectedImageUrls);
+		currentVariantImages
+			.filter(img => selectedImageUrls.has(img.url))
+			.forEach(img => newSelectedUrls.delete(img.url));
+
+		onChange({
+			...formData,
+			variants: newVariants,
+		});
+		setSelectedImageUrls(newSelectedUrls);
 	};
 
 	// Remove all images from variant
@@ -122,6 +273,45 @@ const ProductVariantsTab = ({
 		};
 		onChange({
 			...formData,
+			variants: newVariants,
+		});
+		setImageSelectorOpen(false);
+		setSelectedVariantIndex(null);
+		setSelectedImageUrls(new Set());
+	};
+
+	// Save selected images to variant (for manual mode - now supports multiple)
+	const saveVariantImagesManual = () => {
+		if (selectedVariantIndex === null) return;
+
+		const newVariants = [...mergedVariants];
+		const imageArray = Array.from(selectedImageUrls).map(url => ({ url }));
+
+		// Ensure all variant images are in product images
+		const currentProductImages = formData.images || [];
+		const missingImages = imageArray.filter(
+			img => !currentProductImages.some(prodImg => prodImg.url === img.url),
+		);
+
+		// Preserve thumbnail if it's still in selected images, otherwise use first
+		const currentThumbnail =
+			mergedVariants[selectedVariantIndex]?.variant_thumbnail;
+		const newThumbnail =
+			currentThumbnail && selectedImageUrls.has(currentThumbnail)
+				? currentThumbnail
+				: imageArray.length > 0
+					? imageArray[0].url
+					: undefined;
+
+		newVariants[selectedVariantIndex] = {
+			...newVariants[selectedVariantIndex],
+			images: imageArray.length > 0 ? imageArray : undefined,
+			variant_thumbnail: newThumbnail,
+		};
+
+		onChange({
+			...formData,
+			images: [...currentProductImages, ...missingImages],
 			variants: newVariants,
 		});
 		setImageSelectorOpen(false);
@@ -185,6 +375,33 @@ const ProductVariantsTab = ({
 	const [columnWidths, setColumnWidths] = useState<{ [key: string]: number }>(
 		loadColumnWidths,
 	);
+
+	// Sync column widths when variantColumns changes (e.g., when currencies load)
+	// This ensures new columns get initialized with proper widths
+	useEffect(() => {
+		setColumnWidths(prevWidths => {
+			const newWidths = { ...prevWidths };
+			let hasChanges = false;
+
+			// Add widths for new columns that don't exist yet
+			variantColumns.forEach(col => {
+				if (!(col.key in newWidths)) {
+					newWidths[col.key] = col.width;
+					hasChanges = true;
+				}
+			});
+
+			// Remove widths for columns that no longer exist
+			Object.keys(newWidths).forEach(key => {
+				if (!variantColumns.find(col => col.key === key)) {
+					delete newWidths[key];
+					hasChanges = true;
+				}
+			});
+
+			return hasChanges ? newWidths : prevWidths;
+		});
+	}, [variantColumns]);
 	const [isResizing, setIsResizing] = useState<string | null>(null);
 	const tableRef = useRef<HTMLTableElement>(null);
 
@@ -249,18 +466,19 @@ const ProductVariantsTab = ({
 			case 'option_combination':
 			case 'title':
 				return 200;
-			case 'sku':
-				return 150;
-			case 'manage_inventory':
-			case 'allow_backorder':
+		case 'sku':
+			return 150;
+		case 'manage_inventory':
+		case 'allow_backorder':
+			return 120;
+		default:
+			// Handle all price columns dynamically
+			if (columnKey.startsWith('price_')) {
 				return 120;
-			case 'price_eur':
-			case 'price_europe':
-				return 100;
-			default:
-				return 100;
-		}
-	};
+			}
+			return 100;
+	}
+};
 
 	const handleOptionsChange = (newOptions: ProductOption[]) => {
 		onChange({
@@ -286,18 +504,22 @@ const ProductVariantsTab = ({
 	};
 
 	const addManualVariant = () => {
-		const newVariant: Variant = {
+		const newVariant: any = {
 			title: '',
 			sku: '',
 			manage_inventory: false,
 			allow_backorder: false,
-			price_eur: 0,
-			price_europe: 0,
 			enabled: true,
 		};
+
+		// Add price fields for all available currencies dynamically
+		currencies.forEach(currency => {
+			newVariant[`price_${currency.code}`] = 0;
+		});
+
 		onChange({
 			...formData,
-			variants: [...mergedVariants, newVariant],
+			variants: [...mergedVariants, newVariant as Variant],
 		});
 	};
 
@@ -326,8 +548,8 @@ const ProductVariantsTab = ({
 							Produktvarianten
 						</Text>
 						<Text size="small" className="text-ui-fg-subtle">
-							Dieses Ranking wirkt sich auf die Reihenfolge der Varianten in Ihrem
-							Store aus.
+							Dieses Ranking wirkt sich auf die Reihenfolge der Varianten in
+							Ihrem Store aus.
 						</Text>
 					</div>
 
@@ -408,9 +630,7 @@ const ProductVariantsTab = ({
 																? 'bg-blue-300 border-l-2 border-blue-500'
 																: ''
 														}`}
-														onMouseDown={e =>
-															handleMouseDown(e, column.key)
-														}
+														onMouseDown={e => handleMouseDown(e, column.key)}
 														style={{
 															right: '-2px',
 															zIndex: 30,
@@ -439,16 +659,17 @@ const ProductVariantsTab = ({
 																width: `${columnWidths[column.key]}px`,
 																maxWidth: `${columnWidths[column.key]}px`,
 																minWidth: `${columnWidths[column.key]}px`,
-																overflow: 'hidden',
-															}}
-															className="px-2"
-														>
-															{renderCellContent(
-																variant,
-																column.key,
-																actualIndex,
-																updateVariant,
-																productImages,
+													overflow: 'hidden',
+												}}
+												className="px-2"
+											>
+												{renderCellContent(
+													variant,
+													column.key,
+													column, // Pass full column object
+													actualIndex,
+													updateVariant,
+													productImages,
 																handleImageClick,
 															)}
 														</Table.Cell>
@@ -477,9 +698,10 @@ const ProductVariantsTab = ({
 							Tipp:
 						</Text>
 						<Text size="small" className="text-ui-fg-subtle">
-							Varianten, die nicht aktiviert sind, werden nicht erstellt. Sie können
-							nachträglich jederzeit Varianten erstellen und bearbeiten, diese Liste
-							passt jedoch zu den Variationen in Ihren Produktoptionen.
+							Varianten, die nicht aktiviert sind, werden nicht erstellt. Sie
+							können nachträglich jederzeit Varianten erstellen und bearbeiten,
+							diese Liste passt jedoch zu den Variationen in Ihren
+							Produktoptionen.
 						</Text>
 					</div>
 				</div>
@@ -497,16 +719,58 @@ const ProductVariantsTab = ({
 										setImageSelectorOpen(false);
 										setSelectedVariantIndex(null);
 										setSelectedImageUrls(new Set());
+										setIsDragging(false);
 									}}
 								>
 									<X className="w-4 h-4" />
 								</Button>
 							</div>
+
+							{/* File Upload Section */}
+							<div
+								className={`border-2 border-dashed rounded-lg p-6 mb-4 transition-colors ${
+									isDragging
+										? 'border-ui-fg-interactive bg-ui-bg-subtle'
+										: 'border-ui-border-base hover:border-ui-fg-subtle'
+								}`}
+								onDragOver={handleDragOver}
+								onDragLeave={handleDragLeave}
+								onDrop={handleDrop}
+							>
+								<div className="flex flex-col items-center justify-center gap-3">
+									<CloudUpload className="w-8 h-8 text-ui-fg-subtle" />
+									<Text size="small" className="text-ui-fg-subtle text-center">
+										Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
+									</Text>
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={() => fileInputRef.current?.click()}
+									>
+										<CloudUpload className="w-4 h-4 mr-2" />
+										Bilder hochladen
+									</Button>
+									<input
+										ref={fileInputRef}
+										type="file"
+										accept="image/*"
+										multiple
+										className="hidden"
+										onChange={e => handleFileSelect(e.target.files)}
+									/>
+									<Text size="small" className="text-ui-fg-muted text-center">
+										Hochgeladene Bilder werden automatisch zu Produktbildern
+										hinzugefügt
+									</Text>
+								</div>
+							</div>
+
+							{/* Existing Product Images */}
 							{productImages.length === 0 ? (
-								<div className="text-center py-8">
+								<div className="text-center py-4">
 									<Text size="small" className="text-ui-fg-subtle">
-										Keine Produktbilder verfügbar. Laden Sie zuerst Bilder im
-										"Details" Tab hoch.
+										Keine Produktbilder verfügbar. Laden Sie Bilder hoch oder
+										verwenden Sie den "Details" Tab.
 									</Text>
 								</div>
 							) : (
@@ -514,7 +778,9 @@ const ProductVariantsTab = ({
 									<div className="grid grid-cols-4 gap-3 mb-4">
 										{productImages.map((image, imgIndex) => {
 											const isSelected = selectedImageUrls.has(image.url);
-											const isThumbnail = mergedVariants[selectedVariantIndex]?.variant_thumbnail === image.url;
+											const isThumbnail =
+												mergedVariants[selectedVariantIndex]
+													?.variant_thumbnail === image.url;
 											return (
 												<div
 													key={imgIndex}
@@ -538,7 +804,9 @@ const ProductVariantsTab = ({
 																: 'bg-white/80 border-ui-border-base opacity-0 group-hover:opacity-100'
 														}`}
 													>
-														{isSelected && <Check className="w-3 h-3 text-white" />}
+														{isSelected && (
+															<Check className="w-3 h-3 text-white" />
+														)}
 													</div>
 													{/* Thumbnail Badge */}
 													{isThumbnail && (
@@ -558,19 +826,23 @@ const ProductVariantsTab = ({
 												{selectedImageUrls.size} ausgewählt
 											</Text>
 											<div className="flex-1" />
-											{selectedImageUrls.size === 1 && (
-												<Button
-													variant="secondary"
-													size="small"
-													onClick={() => {
-														const imageUrl = Array.from(selectedImageUrls)[0];
-														setAsVariantThumbnail(imageUrl);
-													}}
-												>
-													<Star className="w-4 h-4 mr-2" />
-													Als Miniatur
-												</Button>
-											)}
+											<Button
+												variant="secondary"
+												size="small"
+												onClick={setAsVariantThumbnail}
+											>
+												<Star className="w-4 h-4 mr-2" />
+												Als Miniatur
+											</Button>
+											<Button
+												variant="secondary"
+												size="small"
+												onClick={removeSelectedVariantImages}
+												className="text-red-500 hover:text-red-700"
+											>
+												<Trash2 className="w-4 h-4 mr-2" />
+												Entfernen ({selectedImageUrls.size})
+											</Button>
 										</div>
 									)}
 									{/* Action Buttons */}
@@ -583,17 +855,19 @@ const ProductVariantsTab = ({
 										>
 											Speichern ({selectedImageUrls.size})
 										</Button>
-										{mergedVariants[selectedVariantIndex]?.images && mergedVariants[selectedVariantIndex].images!.length > 0 && (
-											<Button
-												variant="secondary"
-												size="small"
-												onClick={removeAllVariantImages}
-												className="text-red-500"
-											>
-												<Trash2 className="w-4 h-4 mr-2" />
-												Alle entfernen
-											</Button>
-										)}
+										{mergedVariants[selectedVariantIndex]?.images &&
+											mergedVariants[selectedVariantIndex].images!.length >
+												0 && (
+												<Button
+													variant="secondary"
+													size="small"
+													onClick={removeAllVariantImages}
+													className="text-red-500"
+												>
+													<Trash2 className="w-4 h-4 mr-2" />
+													Alle entfernen
+												</Button>
+											)}
 									</div>
 								</>
 							)}
@@ -692,17 +966,18 @@ const ProductVariantsTab = ({
 											style={{
 												width: `${columnWidths[column.key]}px`,
 												maxWidth: `${columnWidths[column.key]}px`,
-												minWidth: `${columnWidths[column.key]}px`,
-												overflow: 'hidden',
-											}}
-											className="px-2"
-										>
-											{renderCellContent(
-												variant,
-												column.key,
-												index,
-												updateVariant,
-												productImages,
+											minWidth: `${columnWidths[column.key]}px`,
+											overflow: 'hidden',
+										}}
+										className="px-2"
+									>
+										{renderCellContent(
+											variant,
+											column.key,
+											column, // Pass full column object
+											index,
+											updateVariant,
+											productImages,
 												handleImageClick,
 											)}
 										</Table.Cell>
@@ -736,61 +1011,156 @@ const ProductVariantsTab = ({
 								onClick={() => {
 									setImageSelectorOpen(false);
 									setSelectedVariantIndex(null);
+									setSelectedImageUrls(new Set());
+									setIsDragging(false);
 								}}
 							>
 								<X className="w-4 h-4" />
 							</Button>
 						</div>
+
+						{/* File Upload Section */}
+						<div
+							className={`border-2 border-dashed rounded-lg p-6 mb-4 transition-colors ${
+								isDragging
+									? 'border-ui-fg-interactive bg-ui-bg-subtle'
+									: 'border-ui-border-base hover:border-ui-fg-subtle'
+							}`}
+							onDragOver={handleDragOver}
+							onDragLeave={handleDragLeave}
+							onDrop={handleDrop}
+						>
+							<div className="flex flex-col items-center justify-center gap-3">
+								<CloudUpload className="w-8 h-8 text-ui-fg-subtle" />
+								<Text size="small" className="text-ui-fg-subtle text-center">
+									Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
+								</Text>
+								<Button
+									variant="secondary"
+									size="small"
+									onClick={() => fileInputRef.current?.click()}
+								>
+									<CloudUpload className="w-4 h-4 mr-2" />
+									Bilder hochladen
+								</Button>
+								<input
+									ref={fileInputRef}
+									type="file"
+									accept="image/*"
+									multiple
+									className="hidden"
+									onChange={e => handleFileSelect(e.target.files)}
+								/>
+								<Text size="small" className="text-ui-fg-muted text-center">
+									Hochgeladene Bilder werden automatisch zu Produktbildern
+									hinzugefügt
+								</Text>
+							</div>
+						</div>
+
 						{productImages.length === 0 ? (
 							<div className="text-center py-8">
 								<Text size="small" className="text-ui-fg-subtle">
-									Keine Produktbilder verfügbar. Laden Sie zuerst Bilder im
-									"Details" Tab hoch.
+									Keine Produktbilder verfügbar. Laden Sie Bilder hoch oder
+									verwenden Sie den "Details" Tab.
 								</Text>
 							</div>
 						) : (
-							<div className="grid grid-cols-3 gap-3">
-								{productImages.map((image, imgIndex) => {
-									const isSelected = mergedVariants[selectedVariantIndex]?.images?.[0]?.url === image.url;
-									return (
-										<div
-											key={imgIndex}
-											className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-												isSelected
-													? 'border-blue-500 ring-2 ring-blue-200'
-													: 'border-ui-border-base hover:border-ui-fg-subtle'
-											}`}
-											onClick={() => assignImageToVariant(image.url)}
-										>
-											<img
-												src={image.url}
-												alt={`Image ${imgIndex + 1}`}
-												className="w-full h-24 object-cover"
-											/>
-											{isSelected && (
-												<div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-													<Check className="w-3 h-3 text-white" />
+							<>
+								<div className="grid grid-cols-4 gap-3 mb-4">
+									{productImages.map((image, imgIndex) => {
+										const isSelected = selectedImageUrls.has(image.url);
+										const isThumbnail =
+											mergedVariants[selectedVariantIndex]
+												?.variant_thumbnail === image.url;
+										return (
+											<div
+												key={imgIndex}
+												className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all group ${
+													isSelected
+														? 'border-blue-500 ring-2 ring-blue-200'
+														: 'border-ui-border-base hover:border-ui-fg-subtle'
+												}`}
+												onClick={() => toggleImageSelection(image.url)}
+											>
+												<img
+													src={image.url}
+													alt={`Image ${imgIndex + 1}`}
+													className="w-full h-24 object-cover"
+												/>
+												{/* Selection Checkbox */}
+												<div
+													className={`absolute top-1 right-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+														isSelected
+															? 'bg-blue-500 border-blue-500'
+															: 'bg-white/80 border-ui-border-base opacity-0 group-hover:opacity-100'
+													}`}
+												>
+													{isSelected && (
+														<Check className="w-3 h-3 text-white" />
+													)}
 												</div>
-											)}
-										</div>
-									);
-								})}
-							</div>
-						)}
-						{mergedVariants[selectedVariantIndex]?.images?.[0] && (
-							<Button
-								variant="secondary"
-								size="small"
-								onClick={() => {
-									removeVariantImage(selectedVariantIndex);
-									setImageSelectorOpen(false);
-									setSelectedVariantIndex(null);
-								}}
-								className="mt-4 w-full text-red-500"
-							>
-								<Trash2 className="w-4 h-4 mr-2" />
-								Bild entfernen
-							</Button>
+												{/* Thumbnail Badge */}
+												{isThumbnail && (
+													<div className="absolute top-1 left-1 flex items-center gap-1 bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+														<Star className="w-3 h-3 fill-current" />
+														<span>Miniatur</span>
+													</div>
+												)}
+											</div>
+										);
+									})}
+								</div>
+								{/* Action Bar */}
+								{selectedImageUrls.size > 0 && (
+									<div className="flex items-center gap-3 p-3 bg-ui-bg-subtle rounded-lg border border-ui-border-base mb-4">
+										<Text size="small" className="text-ui-fg-subtle">
+											{selectedImageUrls.size} ausgewählt
+										</Text>
+										<div className="flex-1" />
+										<Button
+											variant="secondary"
+											size="small"
+											onClick={setAsVariantThumbnail}
+										>
+											<Star className="w-4 h-4 mr-2" />
+											Als Miniatur
+										</Button>
+										<Button
+											variant="secondary"
+											size="small"
+											onClick={removeSelectedVariantImages}
+											className="text-red-500 hover:text-red-700"
+										>
+											<Trash2 className="w-4 h-4 mr-2" />
+											Entfernen ({selectedImageUrls.size})
+										</Button>
+									</div>
+								)}
+								{/* Action Buttons */}
+								<div className="flex gap-3">
+									<Button
+										variant="primary"
+										size="small"
+										onClick={saveVariantImagesManual}
+										className="flex-1"
+									>
+										Speichern ({selectedImageUrls.size})
+									</Button>
+									{mergedVariants[selectedVariantIndex]?.images &&
+										mergedVariants[selectedVariantIndex].images!.length > 0 && (
+											<Button
+												variant="secondary"
+												size="small"
+												onClick={removeAllVariantImages}
+												className="text-red-500"
+											>
+												<Trash2 className="w-4 h-4 mr-2" />
+												Alle entfernen
+											</Button>
+										)}
+								</div>
+							</>
 						)}
 					</div>
 				</div>
@@ -803,14 +1173,49 @@ const ProductVariantsTab = ({
 function renderCellContent(
 	variant: Variant,
 	columnKey: string,
+	column: any, // Column object with currency metadata
 	index: number,
 	updateVariant: (index: number, field: keyof Variant, value: any) => void,
 	productImages?: Array<{ id?: string; url: string }>,
 	onImageClick?: (index: number) => void,
 ) {
+	// Handle all price columns dynamically
+	if (columnKey.startsWith('price_')) {
+		const currency = column.currency;
+		if (!currency) return null;
+
+	return (
+		<div className="flex items-center gap-1">
+			<Text size="small">{currency.symbol}</Text>
+			<Input
+				type="text"
+				inputMode="decimal"
+				value={(variant as any)[columnKey] || 0}
+				onChange={e => {
+					const value = e.target.value;
+					// Allow empty string, numbers, and decimal points while typing
+					if (value === '' || /^\d*\.?\d*$/.test(value)) {
+						updateVariant(index, columnKey as keyof Variant, value === '' ? 0 : parseFloat(value) || 0);
+					}
+				}}
+				onBlur={e => {
+					// Ensure valid number on blur
+					const value = parseFloat(e.target.value) || 0;
+					updateVariant(index, columnKey as keyof Variant, value);
+				}}
+				placeholder="0.00"
+				size="small"
+				className="flex-1"
+			/>
+		</div>
+	);
+	}
+
+	// Handle non-price columns
 	switch (columnKey) {
 		case 'image':
-			const variantThumbnail = variant.variant_thumbnail || variant.images?.[0]?.url;
+			const variantThumbnail =
+				variant.variant_thumbnail || variant.images?.[0]?.url;
 			const imageCount = variant.images?.length || 0;
 			return (
 				<div
@@ -876,58 +1281,18 @@ function renderCellContent(
 						updateVariant(index, 'manage_inventory', checked)
 					}
 				/>
-			);
-		case 'allow_backorder':
-			return (
-				<Checkbox
-					checked={variant.allow_backorder || false}
-					onCheckedChange={checked =>
-						updateVariant(index, 'allow_backorder', checked)
-					}
-				/>
-			);
-		case 'price_eur':
-			return (
-				<div className="flex items-center gap-1">
-					<Text size="small">€</Text>
-					<Input
-						type="number"
-						value={variant.price_eur || 0}
-						onChange={e =>
-							updateVariant(
-								index,
-								'price_eur',
-								parseFloat(e.target.value) || 0,
-							)
-						}
-						placeholder="0.00"
-						size="small"
-						className="flex-1"
-					/>
-				</div>
-			);
-		case 'price_europe':
-			return (
-				<div className="flex items-center gap-1">
-					<Text size="small">€</Text>
-					<Input
-						type="number"
-						value={variant.price_europe || 0}
-						onChange={e =>
-							updateVariant(
-								index,
-								'price_europe',
-								parseFloat(e.target.value) || 0,
-							)
-						}
-						placeholder="0.00"
-						size="small"
-						className="flex-1"
-					/>
-				</div>
-			);
-		default:
-			return null;
+		);
+	case 'allow_backorder':
+		return (
+			<Checkbox
+				checked={variant.allow_backorder || false}
+				onCheckedChange={checked =>
+					updateVariant(index, 'allow_backorder', checked)
+				}
+			/>
+		);
+	default:
+		return null;
 	}
 }
 

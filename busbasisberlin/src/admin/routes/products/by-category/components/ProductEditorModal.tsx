@@ -21,7 +21,6 @@ export type Variant = {
 	allow_backorder?: boolean;
 	with_inventory_set?: boolean;
 	price_eur?: number;
-	price_europe?: number;
 	enabled?: boolean;
 	option_values?: string[];
 	images?: Array<{ id?: string; url: string }>;
@@ -62,9 +61,9 @@ const ProductEditorModal = ({
 	product,
 	onSave,
 }: ProductEditorModalProps) => {
-	const [activeTab, setActiveTab] = useState<'details' | 'organize' | 'variants'>(
-		'details',
-	);
+	const [activeTab, setActiveTab] = useState<
+		'details' | 'organize' | 'variants'
+	>('details');
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState<Partial<Product>>({
 		title: '',
@@ -84,44 +83,53 @@ const ProductEditorModal = ({
 	useEffect(() => {
 		if (product) {
 			// Transform variant prices from Medusa format (prices array) to form format (flat fields)
-			const transformedVariants = product.variants?.map((variant: any) => {
-				// Find EUR and EUROPE prices from the prices array
-				const eurPrice = variant.prices?.find(
-					(p: any) => p?.currency_code?.toLowerCase() === 'eur'
-				);
-				const europePrice = variant.prices?.find(
-					(p: any) => p?.currency_code?.toLowerCase() === 'europe'
-				);
+			const transformedVariants =
+				product.variants?.map((variant: any) => {
+					// Find EUR price from the prices array
+					const eurPrice = variant.prices?.find(
+						(p: any) => p?.currency_code?.toLowerCase() === 'eur',
+					);
 
-				// Debug logging to understand the price format
-				if (eurPrice) {
-					console.log('[ProductEditorModal] Price debug:', {
-						sku: variant.sku,
-						eurPrice,
-						amount: eurPrice.amount,
-						amountType: typeof eurPrice.amount,
-						isLikelyCents: eurPrice.amount >= 100,
-						calculatedPrice: eurPrice.amount / 100,
-					});
-				}
+					// Debug logging to understand the price format
+					if (eurPrice) {
+						console.log('[ProductEditorModal] Price debug:', {
+							sku: variant.sku,
+							eurPrice,
+							amount: eurPrice.amount,
+							amountType: typeof eurPrice.amount,
+							isLikelyCents: eurPrice.amount >= 100,
+							calculatedPrice: eurPrice.amount / 100,
+						});
+					}
 
-				// Smart price conversion: if amount is >= 100, it's likely in cents (Medusa standard)
-				// If amount is < 100, it might already be in euros (incorrectly stored)
-				const convertPrice = (price: any) => {
-					if (!price) return 0;
-					const amount = price.amount;
-					// If amount >= 100, assume it's in cents and divide by 100
-					// If amount < 100, assume it's already in euros (edge case for products under €1)
-					// But we need to handle the case where 2.99 was stored directly
-					return amount >= 100 ? amount / 100 : amount;
-				};
+					// Debug logging for variant images
+					if (variant.images) {
+						console.log('[ProductEditorModal] Variant images found:', {
+							sku: variant.sku,
+							variantId: variant.id,
+							imagesCount: variant.images.length,
+							images: variant.images,
+						});
+					} else {
+						console.log('[ProductEditorModal] No variant images for:', {
+							sku: variant.sku,
+							variantId: variant.id,
+						});
+					}
 
-				return {
-					...variant,
-					price_eur: convertPrice(eurPrice),
-					price_europe: convertPrice(europePrice),
-				};
-			}) || [];
+					// Smart price conversion: if amount is >= 100, it's likely in cents (Medusa standard)
+					// If amount is < 100, it might already be in euros (incorrectly stored)
+			// The backend GET endpoint already converts prices from cents to euros
+			// via price_<currency> fields (see line 157-158 of [id]/route.ts)
+			// So we use variant.price_eur which is already in euros from the backend
+			return {
+				...variant,
+				price_eur: variant.price_eur || 0, // Already in euros from backend GET
+				// Explicitly preserve images and thumbnail
+				images: variant.images || [],
+				variant_thumbnail: variant.variant_thumbnail, // Preserve thumbnail setting
+			};
+		}) || [];
 
 			setFormData({
 				...product,
@@ -130,13 +138,15 @@ const ProductEditorModal = ({
 				// Map sales_channels array to sales_channel_ids
 				sales_channel_ids: product.sales_channels?.map(sc => sc.id) || [],
 				// Map tags array to tag values (tags come as objects with id and value)
-				tags: product.tags?.map((tag: any) =>
-					typeof tag === 'string' ? tag : tag.value
-				) || [],
+				tags:
+					product.tags?.map((tag: any) =>
+						typeof tag === 'string' ? tag : tag.value,
+					) || [],
 				// Map type object to type_id
 				type_id: product.type?.id || product.type_id,
 				// Map shipping_profile object to shipping_profile_id
-				shipping_profile_id: product.shipping_profile?.id || product.shipping_profile_id,
+				shipping_profile_id:
+					product.shipping_profile?.id || product.shipping_profile_id,
 				// Use transformed variants with flat price fields
 				variants: transformedVariants,
 				// Preserve thumbnail from product
@@ -296,4 +306,3 @@ const ProductEditorModal = ({
 };
 
 export default ProductEditorModal;
-

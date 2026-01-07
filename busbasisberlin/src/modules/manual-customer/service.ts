@@ -142,36 +142,39 @@ class ManualCustomerService extends MedusaService({
 	}
 
 	/**
-	 * Search customers by various fields
+	 * Search customers by various fields using database-level filtering
+	 * Optimized for performance with pg_trgm GIN indexes
 	 * @param searchTerm - Search term to match against multiple fields
-	 * @returns Array of matching customers
+	 * @returns Array of matching customers (limited to 50 results)
 	 */
 	async searchCustomers(searchTerm: string): Promise<ManualCustomer[]> {
 		if (!searchTerm || searchTerm.trim() === '') {
 			return [];
 		}
 
-		const allCustomers = await this.listManualCustomers({});
-		const term = searchTerm.toLowerCase().trim();
+		const term = searchTerm.trim();
 
-		return allCustomers.filter(customer => {
-			const searchableFields = [
-				customer.customer_number,
-				customer.first_name,
-				customer.last_name,
-				customer.company,
-				customer.email,
-				customer.phone,
-				customer.mobile,
-				customer.city,
-				customer.legacy_customer_id,
-				customer.internal_key,
-			];
-
-			return searchableFields.some(
-				field => field && field.toLowerCase().includes(term),
+		// Use database-level filtering with $or and $ilike operators
+		// This utilizes the pg_trgm GIN indexes for fast fuzzy search
+		return await this.listManualCustomers(
+			{
+				$or: [
+					{ company: { $ilike: `%${term}%` } },
+					{ first_name: { $ilike: `%${term}%` } },
+					{ last_name: { $ilike: `%${term}%` } },
+					{ email: { $ilike: `%${term}%` } },
+					{ phone: { $ilike: `%${term}%` } },
+					{ mobile: { $ilike: `%${term}%` } },
+					{ customer_number: { $ilike: `%${term}%` } },
+					{ city: { $ilike: `%${term}%` } },
+					{ legacy_customer_id: { $ilike: `%${term}%` } },
+					{ internal_key: { $ilike: `%${term}%` } },
+				],
+			},
+			{
+				take: 50, // Limit results for performance
+			},
 			);
-		});
 	}
 
 	/**
