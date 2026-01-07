@@ -125,10 +125,11 @@ export async function GET(
 	} catch (error) {
 		// Handle Zod validation errors
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({
+			res.status(400).json({
 				error: 'Validation error',
 				details: error.errors,
 			});
+			return;
 		}
 
 		logger.error('Error listing offers:', error);
@@ -185,14 +186,21 @@ export async function POST(
 
 			const coreCustomer = coreCustomers[0];
 			if (!coreCustomer) {
-				return res.status(400).json({
+				res.status(400).json({
 					error: 'Validation error',
 					message: 'Core customer not found',
 				});
+				return;
 			}
 
 			// Try to auto-link to existing manual customer
-			const linkResult = await manualCustomerService.autoLinkCustomer(coreCustomer);
+			const linkResult = await manualCustomerService.autoLinkCustomer({
+				id: coreCustomer.id,
+				email: coreCustomer.email || undefined,
+				first_name: coreCustomer.first_name || undefined,
+				last_name: coreCustomer.last_name || undefined,
+				phone: coreCustomer.phone || undefined,
+			});
 
 			if (linkResult.linked && linkResult.manualCustomer) {
 				// Use linked manual customer's data
@@ -294,10 +302,11 @@ export async function POST(
 	} catch (error) {
 		// Handle Zod validation errors
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({
+			res.status(400).json({
 				error: 'Validation error',
 				details: error.errors,
 			});
+			return;
 		}
 
 		logger.error('Error creating offer:', error);

@@ -23,6 +23,9 @@ export type CreateOfferInput = Partial<
 	>
 > & {
 	items?: CreateOfferItemInput[];
+	// NEW: Support for dual customer sources
+	core_customer_id?: string;
+	manual_customer_id?: string;
 };
 
 export type CreateOfferItemInput = Partial<

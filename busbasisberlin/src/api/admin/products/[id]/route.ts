@@ -991,7 +991,7 @@ export const PUT = async (
 				? salesChannelResult.data[0]
 				: null;
 			const currentChannelIds =
-				currentProduct?.sales_channels?.map((sc: any) => sc.id) || [];
+				(currentProduct as any)?.sales_channels?.map((sc: any) => sc.id) || [];
 
 			const newChannelIds = Array.isArray(sales_channel_ids)
 				? sales_channel_ids

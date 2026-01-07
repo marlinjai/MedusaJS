@@ -65,7 +65,7 @@ export const syncCategoriesStep = createStep(
 					entity: 'product',
 					fields: ['id', 'sales_channels.id', 'sales_channels.name'],
 					filters: {
-						categories: { id: allCategoryIds },
+						categories: { id: allCategoryIds } as any,
 					},
 					pagination: { take: 500, skip: 0 }, // Increased limit to catch more products
 				});

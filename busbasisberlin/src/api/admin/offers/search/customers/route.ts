@@ -35,7 +35,7 @@ export async function GET(
 
 		// Also search core customers (from online shop)
 		let coreCustomers: any[] = [];
-		if (q && q.trim()) {
+		if (q && typeof q === 'string' && q.trim()) {
 			const { data } = await query.graph({
 				entity: 'customer',
 				fields: ['id', 'email', 'first_name', 'last_name', 'phone', 'has_account'],

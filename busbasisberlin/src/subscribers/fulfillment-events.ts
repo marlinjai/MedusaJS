@@ -44,14 +44,14 @@ export async function handleFulfillmentCreated({
 		});
 
 		const fulfillment = fulfillments[0];
-		if (!fulfillment || !fulfillment.order) {
+		if (!fulfillment || !(fulfillment as any).order) {
 			logger.warn(
 				`[FULFILLMENT-SUBSCRIBER] Fulfillment ${data.id} or order not found`,
 			);
 			return;
 		}
 
-		const order = fulfillment.order;
+		const order = (fulfillment as any).order;
 
 		// Validate email exists
 		if (!order.email) {
@@ -137,14 +137,14 @@ export async function handleFulfillmentDelivered({
 		});
 
 		const fulfillment = fulfillments[0];
-		if (!fulfillment || !fulfillment.order) {
+		if (!fulfillment || !(fulfillment as any).order) {
 			logger.warn(
 				`[FULFILLMENT-SUBSCRIBER] Fulfillment ${data.id} or order not found`,
 			);
 			return;
 		}
 
-		const order = fulfillment.order;
+		const order = (fulfillment as any).order;
 
 		// Validate email exists
 		if (!order.email) {

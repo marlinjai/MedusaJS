@@ -53,7 +53,7 @@ export const sendOrderConfirmationWorkflow = createWorkflow(
 		const shippingOptionName = (typeof shippingOptionNameRaw === 'string' ? shippingOptionNameRaw : '').toLowerCase();
 		const isPickupOrder = shippingOptionName.includes('abholung') || shippingOptionName.includes('pickup');
 
-		const payment = order?.payment_collections?.[0]?.payments?.[0];
+		const payment = (order as any)?.payment_collections?.[0]?.payments?.[0];
 		const isManualPayment = payment?.provider_id === 'pp_system' || payment?.provider_id === 'pp_system_default';
 
 		// Use pickup template if both conditions are met

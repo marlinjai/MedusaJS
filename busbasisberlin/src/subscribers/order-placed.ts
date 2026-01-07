@@ -39,13 +39,13 @@ export default async function orderPlacedHandler({
 				MANUAL_CUSTOMER_MODULE,
 			);
 
-			const linkResult = await manualCustomerService.autoLinkCustomer({
-				id: order.customer.id,
-				email: order.customer.email,
-				first_name: order.customer.first_name,
-				last_name: order.customer.last_name,
-				phone: order.customer.phone,
-			});
+		const linkResult = await manualCustomerService.autoLinkCustomer({
+			id: order.customer.id,
+			email: order.customer.email || undefined,
+			first_name: order.customer.first_name || undefined,
+			last_name: order.customer.last_name || undefined,
+			phone: order.customer.phone || undefined,
+		});
 
 			if (linkResult.linked) {
 				logger.info(

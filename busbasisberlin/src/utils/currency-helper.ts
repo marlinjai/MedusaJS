@@ -91,7 +91,7 @@ export async function getStoreSupportedCurrencies(
 			.map((sc: any) => {
 				const currency = currencyMap.get(sc.currency_code);
 				if (currency) {
-					currency.is_default = sc.is_default === true;
+					(currency as any).is_default = (sc as any).is_default === true;
 					return currency;
 				}
 				return null;

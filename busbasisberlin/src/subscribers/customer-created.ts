@@ -43,13 +43,13 @@ export default async function customerCreatedHandler({
 			const manualCustomerService: ManualCustomerService = container.resolve(
 				MANUAL_CUSTOMER_MODULE,
 			);
-			const linkResult = await manualCustomerService.autoLinkCustomer({
-				id: customer.id,
-				email: customer.email,
-				first_name: customer.first_name,
-				last_name: customer.last_name,
-				phone: customer.phone,
-			});
+		const linkResult = await manualCustomerService.autoLinkCustomer({
+			id: customer.id,
+			email: customer.email || undefined,
+			first_name: customer.first_name || undefined,
+			last_name: customer.last_name || undefined,
+			phone: customer.phone || undefined,
+		});
 
 			if (linkResult.linked) {
 				logger.info(
