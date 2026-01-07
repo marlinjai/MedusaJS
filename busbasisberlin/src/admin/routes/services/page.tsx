@@ -6,16 +6,27 @@
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { HandTruck } from '@medusajs/icons';
 import { Button, Checkbox, Container, Select, Text } from '@medusajs/ui';
-import { ChevronDown, ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react';
+import {
+	ChevronDown,
+	ChevronLeft,
+	ChevronRight,
+	Filter,
+	Plus,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import {
+	BottomSheet,
+	FloatingActionButton,
+} from '../../components/BottomSheet';
+import { MobileControlBar } from '../../components/MobileControlBar';
+import { useIsMobile } from '../../utils/use-mobile';
 import BulkActions from './components-advanced/BulkActions';
 import PriceAdjustmentModal from './components-advanced/PriceAdjustmentModal';
 import ServiceTableAdvanced from './components-advanced/ServiceTableAdvanced';
-import { BottomSheet, FloatingActionButton } from '../../components/BottomSheet';
-import { MobileControlBar } from '../../components/MobileControlBar';
-import { useIsMobile } from '../../utils/use-mobile';
+// Note: Not using usePagination hook here - this page uses manual fetching with useEffect
+// which requires direct state control for proper offset calculation
 
 // Service category tree node
 type ServiceCategoryNode = {
@@ -144,12 +155,17 @@ export default function ServicesByCategoryPage() {
 	const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 	const [showPriceModal, setShowPriceModal] = useState(false);
 
-	// Pagination state
-	const [limit, setLimit] = useState(() => {
+	// Pagination state - simple useState (original working pattern)
+	const [pageSize, setPageSize] = useState(() => {
 		const saved = localStorage.getItem('services-pagination-limit');
 		return saved ? parseInt(saved) : 50;
 	});
 	const [offset, setOffset] = useState(0);
+
+	// Persist pageSize preference
+	useEffect(() => {
+		localStorage.setItem('services-pagination-limit', pageSize.toString());
+	}, [pageSize]);
 
 	// Fetch categories on mount
 	useEffect(() => {
@@ -161,15 +177,10 @@ export default function ServicesByCategoryPage() {
 		if (selectedCategories.size > 0) {
 			fetchServices();
 		} else {
-			setServices([]);
-			setTotalServices(0);
+			// Show all services when no categories are selected
+			fetchAllServices();
 		}
-	}, [selectedCategories, limit, offset]);
-
-	// Persist limit preference
-	useEffect(() => {
-		localStorage.setItem('services-pagination-limit', limit.toString());
-	}, [limit]);
+	}, [selectedCategories, pageSize, offset]);
 
 	const fetchCategories = async () => {
 		setLoadingCategories(true);
@@ -178,20 +189,8 @@ export default function ServicesByCategoryPage() {
 			const data = await response.json();
 			setCategories(data.categories || []);
 
-			// Auto-select "Arbeitspositionen" category by default if nothing is selected
-			if (selectedCategories.size === 0 && data.categories?.length > 0) {
-				const arbeitspositionenCategory = data.categories.find(
-					(cat: ServiceCategoryNode) => cat.name === 'Arbeitspositionen',
-				);
-				if (arbeitspositionenCategory) {
-					const newSelection = new Set([arbeitspositionenCategory.path]);
-					setSelectedCategories(newSelection);
-					setExpandedCategories(new Set([arbeitspositionenCategory.path]));
-
-					// Manually trigger initial fetch since state update is async
-					fetchServicesWithCategories(newSelection);
-				}
-			}
+			// Don't auto-select any category - show all services by default
+			// Users can manually select categories to filter if needed
 		} catch (error) {
 			console.error('Failed to fetch service categories:', error);
 		} finally {
@@ -277,7 +276,10 @@ export default function ServicesByCategoryPage() {
 			const allServices: Service[] = [];
 			for (const category of categoryFilters) {
 				const response = await fetch(
-					`/admin/services?category=${encodeURIComponent(category)}&limit=10000`,
+					`/admin/services?category=${encodeURIComponent(category)}&limit=500`,
+					{
+						credentials: 'include',
+					},
 				);
 
 				// #region agent log
@@ -334,7 +336,7 @@ export default function ServicesByCategoryPage() {
 
 			// Apply pagination
 			setTotalServices(uniqueServices.length);
-			const paginatedServices = uniqueServices.slice(offset, offset + limit);
+			const paginatedServices = uniqueServices.slice(offset, offset + pageSize);
 			setServices(paginatedServices);
 		} catch (error) {
 			console.error('Failed to fetch services:', error);
@@ -347,6 +349,33 @@ export default function ServicesByCategoryPage() {
 
 	const fetchServices = async () => {
 		return fetchServicesWithCategories();
+	};
+
+	const fetchAllServices = async () => {
+		setLoading(true);
+		try {
+			const response = await fetch(
+				`/admin/services?limit=${pageSize}&offset=${offset}`,
+				{
+					credentials: 'include',
+				},
+			);
+			const data = await response.json();
+
+			if (data.services) {
+				setServices(data.services);
+				setTotalServices(data.count || data.services.length);
+			} else {
+				setServices([]);
+				setTotalServices(0);
+			}
+		} catch (error) {
+			console.error('Failed to fetch all services:', error);
+			setServices([]);
+			setTotalServices(0);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	const toggleCategory = (path: string) => {
@@ -492,10 +521,17 @@ export default function ServicesByCategoryPage() {
 		<Container className="p-0 md:p-6 h-[calc(100vh-120px)] flex flex-col">
 			<div className="flex items-center justify-between px-2 py-1.5 md:px-0 md:py-0 md:mb-6 mb-2 flex-shrink-0">
 				<div>
-					<Text size="xlarge" weight="plus" className="text-ui-fg-base text-sm md:text-xl">
+					<Text
+						size="xlarge"
+						weight="plus"
+						className="text-ui-fg-base text-sm md:text-xl"
+					>
 						Dienstleistungen
 					</Text>
-					<Text size="small" className="text-ui-fg-subtle text-xs md:text-sm hidden sm:block">
+					<Text
+						size="small"
+						className="text-ui-fg-subtle text-xs md:text-sm hidden sm:block"
+					>
 						Verwalten Sie Services organisiert nach Kategorien
 					</Text>
 				</div>
@@ -561,29 +597,39 @@ export default function ServicesByCategoryPage() {
 						{/* Header with pagination controls */}
 						<div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 md:gap-4 mb-2 md:mb-4 flex-shrink-0">
 							<div className="flex items-center gap-2 md:gap-4">
-								<Text size="base" weight="plus" className="text-xs md:text-base">
+								<Text
+									size="base"
+									weight="plus"
+									className="text-xs md:text-base"
+								>
 									{selectedCategories.size === 0
 										? 'Alle Services'
 										: `${totalServices} Service(s)`}
 								</Text>
 								{totalServices > 0 && (
-									<Text size="small" className="text-ui-fg-subtle text-xs hidden sm:inline">
-										{offset + 1}-{Math.min(offset + limit, totalServices)} von{' '}
-										{totalServices}
+									<Text
+										size="small"
+										className="text-ui-fg-subtle text-xs hidden sm:inline"
+									>
+										{offset + 1}-{Math.min(offset + pageSize, totalServices)}{' '}
+										von {totalServices}
 									</Text>
 								)}
 							</div>
 
 							{/* Pagination controls */}
 							<div className="flex items-center gap-2 md:gap-3">
-								<Text size="small" className="text-ui-fg-subtle text-xs hidden sm:inline">
+								<Text
+									size="small"
+									className="text-ui-fg-subtle text-xs hidden sm:inline"
+								>
 									Pro Seite:
 								</Text>
 								<Select
-									value={limit.toString()}
+							value={pageSize.toString()}
 									onValueChange={v => {
-										setLimit(parseInt(v));
-										setOffset(0);
+								setPageSize(parseInt(v));
+								setOffset(0); // Reset to first page when changing page size
 									}}
 								>
 									<Select.Trigger className="w-16 md:w-24 text-xs md:text-sm">
@@ -604,7 +650,9 @@ export default function ServicesByCategoryPage() {
 										variant="secondary"
 										size="small"
 										disabled={offset === 0}
-										onClick={() => setOffset(Math.max(0, offset - limit))}
+										onClick={() =>
+											setOffset(prev => Math.max(0, prev - pageSize))
+										}
 										className="text-xs md:text-sm px-2 md:px-3"
 									>
 										<span className="hidden sm:inline">Zurück</span>
@@ -613,8 +661,8 @@ export default function ServicesByCategoryPage() {
 									<Button
 										variant="secondary"
 										size="small"
-										disabled={offset + limit >= totalServices}
-										onClick={() => setOffset(offset + limit)}
+								disabled={offset + pageSize >= totalServices}
+								onClick={() => setOffset(prev => prev + pageSize)}
 										className="text-xs md:text-sm px-2 md:px-3"
 									>
 										<span className="hidden sm:inline">Weiter</span>
@@ -688,7 +736,8 @@ export default function ServicesByCategoryPage() {
 			>
 				<div className="space-y-4 pb-6">
 					<Text size="small" className="text-ui-fg-subtle">
-						Sortieroptionen für Dienstleistungen sind auf der Desktop-Version verfügbar.
+						Sortieroptionen für Dienstleistungen sind auf der Desktop-Version
+						verfügbar.
 					</Text>
 				</div>
 			</BottomSheet>
