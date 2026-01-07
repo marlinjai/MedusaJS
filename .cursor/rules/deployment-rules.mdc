@@ -1,9 +1,0 @@
----
-description:
-globs:
-alwaysApply: true
----
-
-Always check running deployments before pushing
-
-Always ask to Cancel older ones to prevent VPS overload before pushing and starting more deplyments
