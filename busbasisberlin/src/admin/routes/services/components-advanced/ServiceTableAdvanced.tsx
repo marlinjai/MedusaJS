@@ -16,7 +16,7 @@ import {
 import { Edit, Trash2, Eye, Copy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import ColumnVisibilityControl from './ColumnVisibilityControl';
+import ColumnVisibilityControl from '../../../components/ColumnVisibilityControl';
 import { LandscapePrompt } from '../../../components/LandscapePrompt';
 import { useLandscapePrompt, useIsMobile } from '../../../utils/use-mobile';
 import { MobileDataCard } from '../../../components/MobileDataCard';

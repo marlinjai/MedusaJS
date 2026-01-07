@@ -10,7 +10,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import ColumnVisibilityControl from './components/ColumnVisibilityControl';
+import ColumnVisibilityControl from '../../components/ColumnVisibilityControl';
+import { useColumnVisibility } from '../../hooks';
 import ManualCustomerTable from './components/ManualCustomerTable';
 
 // TypeScript types for our manual customer data
@@ -42,35 +43,26 @@ const ManualCustomersPage = () => {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [typeFilter, setTypeFilter] = useState('all');
 	const [statusFilter, setStatusFilter] = useState('all');
+
+	// Pagination state - simple useState (works directly with React Query)
 	const [currentPage, setCurrentPage] = useState(1);
-	const [pageSize, setPageSize] = useState(50); // Show 50 customers per page
+	const [pageSize, setPageSize] = useState(50);
 
-	// Column sorting and filtering state
-	const [sortConfig, setSortConfig] = useState<{
-		key: string;
-		direction: 'asc' | 'desc';
-	} | null>(null);
-	const [columnFilters, setColumnFilters] = useState<{ [key: string]: string }>(
-		{},
-	);
+	// Sorting state - simple useState
+	const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
-	// Column visibility state
-	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
-		const saved = localStorage.getItem('manual-customers-visible-columns');
-		if (saved) {
-			try {
-				return new Set(JSON.parse(saved));
-			} catch {
-				// Default: all columns visible
-			}
-		}
-		return new Set(['customer_number', 'name', 'contact', 'address', 'customer_type', 'status', 'total_purchases', 'total_spent', 'created_at', 'actions']);
+	// Column filters - simple useState
+	const [columnFilters, setColumnFilters] = useState<{ [key: string]: string }>({});
+	const setColumnFilter = (key: string, value: string) => {
+		setColumnFilters(prev => ({ ...prev, [key]: value }));
+	};
+	const clearColumnFilters = () => setColumnFilters({});
+
+	const { visibleColumns, toggleColumn, showAllColumns, hideAllColumns } = useColumnVisibility({
+		storageKey: 'manual-customers-visible-columns',
+		defaultVisibleColumns: ['customer_number', 'name', 'contact', 'address', 'customer_type', 'status', 'total_purchases', 'total_spent', 'created_at', 'actions'],
+		allColumns: ['customer_number', 'name', 'contact', 'address', 'customer_type', 'status', 'total_purchases', 'total_spent', 'created_at', 'actions'],
 	});
-
-	// Persist visible columns
-	useEffect(() => {
-		localStorage.setItem('manual-customers-visible-columns', JSON.stringify([...visibleColumns]));
-	}, [visibleColumns]);
 
 	// Fetch manual customers with pagination
 	const { data, isLoading, error, isFetching } = useQuery({
@@ -532,43 +524,33 @@ const ManualCustomersPage = () => {
 			{/* Filter Results Info and Controls */}
 			<div className="mt-2 flex justify-between items-center">
 				<div className="flex items-center gap-3">
-					{/* Column Visibility Control */}
-					<ColumnVisibilityControl
-						columns={[
-							{ key: 'customer_number', label: 'Kundennummer', width: 90 },
-							{ key: 'name', label: 'Name / Firma', width: 200 },
-							{ key: 'contact', label: 'Kontakt', width: 180 },
-							{ key: 'address', label: 'Adresse', width: 200 },
-							{ key: 'customer_type', label: 'Typ', width: 100 },
-							{ key: 'status', label: 'Status', width: 100 },
-							{ key: 'total_purchases', label: 'Käufe', width: 80 },
-							{ key: 'total_spent', label: 'Umsatz', width: 100 },
-							{ key: 'created_at', label: 'Erstellt', width: 120 },
-							{ key: 'actions', label: 'Aktionen', width: 100 },
-						]}
-						visibleColumns={visibleColumns}
-						onToggle={(key) => {
-							const newVisible = new Set(visibleColumns);
-							if (newVisible.has(key)) {
-								newVisible.delete(key);
-							} else {
-								newVisible.add(key);
-							}
-							setVisibleColumns(newVisible);
-						}}
-						onShowAll={() => {
-							setVisibleColumns(new Set(['customer_number', 'name', 'contact', 'address', 'customer_type', 'status', 'total_purchases', 'total_spent', 'created_at', 'actions']));
-						}}
-						onHideAll={() => {
-							setVisibleColumns(new Set(['customer_number', 'name', 'actions']));
-						}}
-					/>
+			{/* Column Visibility Control */}
+			<ColumnVisibilityControl
+				columns={[
+					{ key: 'customer_number', label: 'Kundennummer', width: 90 },
+					{ key: 'name', label: 'Name / Firma', width: 200 },
+					{ key: 'contact', label: 'Kontakt', width: 180 },
+					{ key: 'address', label: 'Adresse', width: 200 },
+					{ key: 'customer_type', label: 'Typ', width: 100 },
+					{ key: 'status', label: 'Status', width: 100 },
+					{ key: 'total_purchases', label: 'Käufe', width: 80 },
+					{ key: 'total_spent', label: 'Umsatz', width: 100 },
+					{ key: 'created_at', label: 'Erstellt', width: 120 },
+					{ key: 'actions', label: 'Aktionen', width: 100 },
+				]}
+				visibleColumns={visibleColumns}
+				onToggle={toggleColumn}
+				onShowAll={showAllColumns}
+				onHideAll={hideAllColumns}
+				nonHideableColumns={['customer_number', 'name', 'actions']}
+				variant="simple"
+			/>
 
 					{/* Result Amount Selector */}
-					<Select value={pageSize.toString()} onValueChange={(value) => {
-						setPageSize(parseInt(value));
-						setCurrentPage(1);
-					}}>
+			<Select value={pageSize.toString()} onValueChange={(value) => {
+				setPageSize(parseInt(value));
+				setCurrentPage(1); // Reset to page 1 when changing page size
+			}}>
 						<Select.Trigger className="w-32">
 							<Select.Value />
 						</Select.Trigger>

@@ -68,7 +68,6 @@ export function generateVariantsFromOptions(
 			manage_inventory: false,
 			allow_backorder: false,
 			price_eur: 0,
-			price_europe: 0,
 			enabled: true, // Default to enabled
 			option_values: combination,
 		};

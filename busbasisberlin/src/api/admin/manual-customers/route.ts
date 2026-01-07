@@ -2,11 +2,44 @@
  * route.ts
  * Admin API routes for manual customers
  * Handles list and create operations for manual customers
+ * Includes Zod validation for input validation and type safety
  */
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+import { z } from 'zod';
 
 import { MANUAL_CUSTOMER_MODULE } from '../../../modules/manual-customer';
 import ManualCustomerService from '../../../modules/manual-customer/service';
+
+// Zod validation schemas
+const listManualCustomersSchema = z.object({
+	search: z.string().optional(),
+	customer_type: z.string().optional(),
+	status: z.string().optional(),
+	source: z.string().optional(),
+	limit: z.coerce.number().min(1).max(250).default(20),
+	offset: z.coerce.number().min(0).default(0),
+	sort_by: z.string().optional(),
+	sort_direction: z.enum(['asc', 'desc']).default('asc'),
+}).catchall(z.string()); // Allow filter_* parameters
+
+const createManualCustomerSchema = z.object({
+	customer_number: z.string().optional(),
+	customer_type: z.string().optional(),
+	status: z.string().default('active'),
+	salutation: z.string().optional(),
+	first_name: z.string().optional(),
+	last_name: z.string().optional(),
+	company: z.string().optional(),
+	email: z.string().email().optional().or(z.literal('')),
+	phone: z.string().optional(),
+	website: z.string().url().optional().or(z.literal('')),
+	street: z.string().optional(),
+	postal_code: z.string().optional(),
+	city: z.string().optional(),
+	country: z.string().optional(),
+	vat_id: z.string().optional(),
+	tax_rate: z.string().optional(),
+});
 
 // GET /admin/manual-customers - List all manual customers with filtering, sorting, and search
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
@@ -15,41 +48,18 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 	);
 
 	try {
-		const {
-			search,
-			customer_type,
-			status,
-			source,
-			limit = '20',
-			offset = '0',
-			sort_by,
-			sort_direction = 'asc',
-		} = req.query;
+		// Validate query parameters
+		const params = listManualCustomersSchema.parse(req.query);
 
-		// Convert query parameters to strings to avoid TypeScript errors
-		const sortBy = Array.isArray(sort_by)
-			? String(sort_by[0])
-			: String(sort_by || '');
-		const sortDirection = Array.isArray(sort_direction)
-			? String(sort_direction[0])
-			: String(sort_direction || 'asc');
-
-		const limitNum = parseInt(limit as string);
-		const offsetNum = parseInt(offset as string);
+		const sortBy = params.sort_by || '';
+		const sortDirection = params.sort_direction;
 
 		// Extract column filters (parameters starting with 'filter_')
 		const columnFilters: Record<string, string> = {};
-		Object.entries(req.query).forEach(([key, value]) => {
+		Object.entries(params).forEach(([key, value]) => {
 			if (key.startsWith('filter_') && value) {
 				const filterKey = key.replace('filter_', '');
-				// Handle query parameter types properly - convert to string
-				if (Array.isArray(value)) {
-					columnFilters[filterKey] = String(value[0]);
-				} else if (typeof value === 'string') {
-					columnFilters[filterKey] = value;
-				} else {
-					columnFilters[filterKey] = String(value);
-				}
+				columnFilters[filterKey] = String(value);
 			}
 		});
 
@@ -57,19 +67,17 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 		let totalCount = 0;
 
 		// If search term is provided, use search functionality
-		if (search) {
-			const searchResults = await manualCustomerService.searchCustomers(
-				search as string,
-			);
+		if (params.search) {
+			const searchResults = await manualCustomerService.searchCustomers(params.search);
 			customers = searchResults;
 			totalCount = searchResults.length;
 		} else {
-			// Build filter object
+			// Build filter object from validated params
 			const filters: any = {};
 
-			if (customer_type) filters.customer_type = customer_type;
-			if (status) filters.status = status;
-			if (source) filters.source = source;
+			if (params.customer_type) filters.customer_type = params.customer_type;
+			if (params.status) filters.status = params.status;
+			if (params.source) filters.source = params.source;
 
 			// Get all customers with basic filters
 			customers = await manualCustomerService.listManualCustomers(filters);
@@ -173,7 +181,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 		}
 
 		// Apply pagination after filtering and sorting
-		const paginatedCustomers = customers.slice(offsetNum, offsetNum + limitNum);
+		const paginatedCustomers = customers.slice(params.offset, params.offset + params.limit);
 
 		// Get statistics (these are global stats, not filtered)
 		const stats = await manualCustomerService.getStatistics();
@@ -183,11 +191,19 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 			stats,
 			count: paginatedCustomers.length,
 			total: totalCount,
-			limit: limitNum,
-			offset: offsetNum,
-			has_more: offsetNum + limitNum < totalCount,
+			limit: params.limit,
+			offset: params.offset,
+			has_more: params.offset + params.limit < totalCount,
 		});
 	} catch (error) {
+		// Handle Zod validation errors
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({
+				error: 'Validation error',
+				details: error.errors,
+			});
+		}
+
 		console.error('Error fetching manual customers:', error);
 		res.status(500).json({ error: 'Fehler beim Laden der Kunden' });
 	}
@@ -200,21 +216,8 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 	);
 
 	try {
-		const customerData = req.body as any;
-
-		// Basic validation
-		if (
-			!customerData.first_name &&
-			!customerData.last_name &&
-			!customerData.company &&
-			!customerData.email
-		) {
-			return res.status(400).json({
-				error: 'Invalid customer data',
-				message:
-					'At least one of first_name, last_name, company, or email must be provided',
-			});
-		}
+		// Validate request body with Zod
+		const customerData = createManualCustomerSchema.parse(req.body);
 
 		const customer =
 			await manualCustomerService.createManualCustomerWithNumber(customerData);
@@ -224,6 +227,14 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 			message: 'Manual customer created successfully',
 		});
 	} catch (error) {
+		// Handle Zod validation errors
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({
+				error: 'Validation error',
+				details: error.errors,
+			});
+		}
+
 		console.error('Error creating manual customer:', error);
 		res.status(500).json({
 			error: 'Failed to create manual customer',

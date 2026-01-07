@@ -194,14 +194,6 @@ export const POST = async (
 									},
 								]
 							: []),
-						...(variant.price_europe
-							? [
-									{
-										currency_code: 'eur',
-										amount: Math.round((variant.price_europe || 0) * 100),
-									},
-								]
-							: []),
 					],
 				};
 			});
@@ -212,20 +204,12 @@ export const POST = async (
 				sku: variant.sku || undefined,
 				manage_inventory: variant.manage_inventory || false,
 				allow_backorder: variant.allow_backorder || false,
-				prices: [
-					...(variant.price_eur
-						? [
+					prices: [
+						...(variant.price_eur
+							? [
 								{
 									currency_code: 'eur',
 									amount: Math.round((variant.price_eur || 0) * 100),
-								},
-							]
-						: []),
-					...(variant.price_europe
-						? [
-								{
-									currency_code: 'eur',
-									amount: Math.round((variant.price_europe || 0) * 100),
 								},
 							]
 						: []),

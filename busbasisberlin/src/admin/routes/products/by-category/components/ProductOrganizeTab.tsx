@@ -15,7 +15,6 @@ type Variant = {
 	allow_backorder?: boolean;
 	prices?: Array<{ amount: number; currency_code: string }>;
 	price_eur?: number;
-	price_europe?: number;
 };
 
 type ProductFormData = {
@@ -790,9 +789,6 @@ const ProductOrganizeTab = ({
 									<th className="text-right px-3 py-2 text-sm font-medium text-ui-fg-base">
 										Preis EUR
 									</th>
-									<th className="text-right px-3 py-2 text-sm font-medium text-ui-fg-base">
-										Preis Europe
-									</th>
 									<th className="text-center px-3 py-2 text-sm font-medium text-ui-fg-base">
 										Bestandsverwaltung
 									</th>
@@ -807,9 +803,8 @@ const ProductOrganizeTab = ({
 							<tbody>
 								{formData.variants.map((variant, index) => {
 									// Use flat price fields (already transformed from Medusa format in ProductEditorModal)
-									// price_eur and price_europe are in euros (not cents)
+									// price_eur is in euros (not cents)
 									const eurPrice = variant.price_eur ?? 0;
-									const europePrice = variant.price_europe ?? 0;
 
 									const inventory = variant.id
 										? inventoryData?.[variant.id] || 0
@@ -831,11 +826,6 @@ const ProductOrganizeTab = ({
 											<td className="px-3 py-2 text-right">
 												<Text size="small">
 													{eurPrice > 0 ? `€${eurPrice.toFixed(2)}` : '-'}
-												</Text>
-											</td>
-											<td className="px-3 py-2 text-right">
-												<Text size="small">
-													{europePrice > 0 ? `€${europePrice.toFixed(2)}` : '-'}
 												</Text>
 											</td>
 											<td className="px-3 py-2 text-center">

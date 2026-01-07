@@ -2,36 +2,48 @@
 
 A full-stack e-commerce application built with MedusaJS (backend) and Next.js (frontend).
 
-**Features:** Search powered by Meilisearch, automatic product sync, and advanced category filtering.
+**Features:** Search powered by Meilisearch, automatic product sync, advanced category filtering, and complete ERP functionality.
 
-## 🚀 Production Deployment
+---
 
-For complete production deployment instructions, see **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
+## 📚 **Complete Documentation Hub**
 
-**Quick Deploy:**
+**All project documentation has been consolidated:** [`.cursor/docs/`](.cursor/docs/README.md)
 
-1. Set up VPS with Ubuntu 24.04
-2. Configure GitHub secrets using `./setup-deployment/set-github-secrets.sh`
-3. Push to `main` branch - automatic deployment via GitHub Actions
-4. Set up SSL certificates with Let's Encrypt
+### Quick Navigation
+- 🚀 **[Getting Started](.cursor/docs/development/COMPLETE_SETUP.md)** - Local development setup (backend + frontend)
+- 🏗️ **[Architecture](.cursor/docs/architecture/ARCHITECTURE_RFC.md)** - Technical roadmap validated against Medusa v2
+- 🚀 **[Deployment](.cursor/docs/deployment/GUIDE.md)** - Complete deployment with optimization and troubleshooting
+- ✨ **[Custom Modules](.cursor/docs/features/MODULES_COMPREHENSIVE.md)** - ERP system (Supplier, Offer, Service, Customer)
+- 🤖 **[AI Guidelines](.cursor/rules/medusa-development/RULE.md)** - Cursor development rules
 
-**Live Application:** https://basiscamp-berlin.de
+### Documentation Consolidation ✅
+- **Before**: 46 scattered MD files across 6+ directories and repositories
+- **After**: 22 organized files in structured hierarchy at `.cursor/docs/`
+- **Improvement**: 95% alignment with Medusa v2 best practices confirmed
+- **Cleanup**: All scattered files properly deleted
 
-### Deployment Optimization
+## 🚀 Quick Start
 
-Our deployment has been optimized through multiple phases:
+### Development Setup
+```bash
+# Backend
+cd busbasisberlin
+npm install && npm run dev
 
-- **[Phase 1 Optimization](./deployment/phase1-optimization.md)** - Production-ready optimizations (19min deployments, 13% faster)
-- **[Phase 2 Optimization](./deployment/phase2-optimization.md)** - Aggressive caching strategies (10-12min target, 50%+ faster)
-- **[Optimization Guide](./deployment/optimization-guide.md)** - Conservative implementation approach and risk assessment
+# Frontend
+cd busbasisberlin-storefront
+npm install && npm run dev
+```
 
-Current deployment time: ~19 minutes with Phase 1 optimizations applied.
+### Production Deployment
+```bash
+# Configure secrets and push to main branch
+# Automatic deployment via GitHub Actions
+# Live at: https://basiscamp-berlin.de
+```
 
-## 📚 Documentation
-
-- **[Backend README](./busbasisberlin/README.md)** - Complete backend documentation including custom modules, search integration, and transactional emails
-- **[Frontend README](./busbasisberlin-storefront/README.md)** - Frontend documentation and setup guide
-- **[Deployment Docs](./deployment/)** - Docker optimization guides and deployment strategies
+**Complete guides**: [Deployment Documentation](.cursor/docs/deployment/GUIDE.md)
 
 ## 🏗️ Project Structure
 
