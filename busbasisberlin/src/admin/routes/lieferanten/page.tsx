@@ -1,17 +1,26 @@
 // busbasisberlin/src/admin/routes/lieferanten/page.tsx
 import { defineRouteConfig } from '@medusajs/admin-sdk';
 import { HandTruck, MagnifyingGlass, Plus, XMark } from '@medusajs/icons';
-import { Button, Container, Input, Select, Text, toast } from '@medusajs/ui';
+import {
+	Button,
+	Checkbox,
+	Container,
+	Input,
+	Select,
+	Text,
+	toast,
+} from '@medusajs/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { Supplier } from '../../../modules/supplier/models/supplier';
-import ColumnVisibilityControl from './components/ColumnVisibilityControl';
-import SupplierTable from './components/SupplierTable';
-import { MobileControlBar } from '../../components/MobileControlBar';
 import { BottomSheet } from '../../components/BottomSheet';
+import ColumnVisibilityControl from '../../components/ColumnVisibilityControl';
+import { MobileControlBar } from '../../components/MobileControlBar';
+import { useColumnVisibility } from '../../hooks';
 import { useIsMobile } from '../../utils/use-mobile';
+import SupplierTable from './components/SupplierTable';
 
 // Type for supplier with details
 type SupplierWithDetails = Supplier & {
@@ -52,40 +61,26 @@ const SuppliersPage = () => {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const [searchTerm, setSearchTerm] = useState('');
+
+	// Pagination state - simple useState (works directly with React Query)
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize, setPageSize] = useState(50);
 
-	// Column sorting state
+	// Sorting state - simple useState
 	const [sortConfig, setSortConfig] = useState<{
 		key: string;
 		direction: 'asc' | 'desc';
 	} | null>(null);
 
-	// Mobile state
-	const isMobile = useIsMobile();
-	const [showFilterSheet, setShowFilterSheet] = useState(false);
-	const [showSortSheet, setShowSortSheet] = useState(false);
-	const [showColumnSheet, setShowColumnSheet] = useState(false);
-
-	// Column visibility state
-	const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
-		const saved = localStorage.getItem('suppliers-visible-columns');
-		if (saved) {
-			try {
-				return new Set(JSON.parse(saved));
-			} catch {}
-		}
-		return new Set(['company', 'contacts', 'addresses', 'numbers', 'bank_info', 'actions']);
-	});
-
-	// Persist visible columns
-	useEffect(() => {
-		localStorage.setItem('suppliers-visible-columns', JSON.stringify([...visibleColumns]));
-	}, [visibleColumns]);
-
 	// Fetch suppliers with details with pagination
 	const { data, isLoading, isFetching } = useQuery({
-		queryKey: ['admin-suppliers-with-details', searchTerm, currentPage, pageSize, sortConfig],
+		queryKey: [
+			'admin-suppliers-with-details',
+			searchTerm,
+			currentPage,
+			pageSize,
+			sortConfig,
+		],
 		queryFn: async () => {
 			const params = new URLSearchParams();
 			params.append('withDetails', 'true');
@@ -107,6 +102,34 @@ const SuppliersPage = () => {
 		placeholderData: previousData => previousData,
 	});
 
+	// Column visibility - shared hook (works independently of data fetching)
+	const { visibleColumns, toggleColumn, showAllColumns, hideAllColumns } =
+		useColumnVisibility({
+			storageKey: 'suppliers-visible-columns',
+			defaultVisibleColumns: [
+				'company',
+				'contacts',
+				'addresses',
+				'numbers',
+				'bank_info',
+				'actions',
+			],
+			allColumns: [
+				'company',
+				'contacts',
+				'addresses',
+				'numbers',
+				'bank_info',
+				'actions',
+			],
+		});
+
+	// Mobile state
+	const isMobile = useIsMobile();
+	const [showFilterSheet, setShowFilterSheet] = useState(false);
+	const [showSortSheet, setShowSortSheet] = useState(false);
+	const [showColumnSheet, setShowColumnSheet] = useState(false);
+
 	const suppliers = data?.suppliers || [];
 	const stats = data?.stats || {
 		total: 0,
@@ -118,6 +141,7 @@ const SuppliersPage = () => {
 		withBankInfo: 0,
 	};
 
+	// Calculated values
 	const totalPages = Math.ceil((data?.stats?.total || 0) / pageSize);
 
 	// Handlers
@@ -128,18 +152,6 @@ const SuppliersPage = () => {
 			setSortConfig({ key, direction });
 		}
 		setCurrentPage(1);
-	};
-
-	const handlePageChange = (page: number) => {
-		setCurrentPage(page);
-	};
-
-	const handlePreviousPage = () => {
-		if (currentPage > 1) setCurrentPage(currentPage - 1);
-	};
-
-	const handleNextPage = () => {
-		if (currentPage < totalPages) setCurrentPage(currentPage + 1);
 	};
 
 	// Delete supplier
@@ -195,7 +207,9 @@ const SuppliersPage = () => {
 								<div className="text-xs font-medium text-ui-fg-subtle">
 									Gesamt
 								</div>
-								<div className="text-sm md:text-lg font-semibold">{stats.total}</div>
+								<div className="text-sm md:text-lg font-semibold">
+									{stats.total}
+								</div>
 							</div>
 						</div>
 					</div>
@@ -206,7 +220,9 @@ const SuppliersPage = () => {
 								<div className="text-xs font-medium text-ui-fg-subtle">
 									Aktive
 								</div>
-								<div className="text-sm md:text-lg font-semibold">{stats.active}</div>
+								<div className="text-sm md:text-lg font-semibold">
+									{stats.active}
+								</div>
 							</div>
 						</div>
 					</div>
@@ -243,7 +259,9 @@ const SuppliersPage = () => {
 								<div className="text-xs font-medium text-ui-fg-subtle">
 									USt-ID
 								</div>
-								<div className="text-sm md:text-lg font-semibold">{stats.withVatId}</div>
+								<div className="text-sm md:text-lg font-semibold">
+									{stats.withVatId}
+								</div>
 							</div>
 						</div>
 					</div>
@@ -270,7 +288,9 @@ const SuppliersPage = () => {
 					onSortClick={() => setShowSortSheet(true)}
 					onColumnsClick={() => setShowColumnSheet(true)}
 					filterCount={0}
-					sortLabel={sortConfig ? `${sortConfig.key} ${sortConfig.direction}` : undefined}
+					sortLabel={
+						sortConfig ? `${sortConfig.key} ${sortConfig.direction}` : undefined
+					}
 				/>
 			)}
 
@@ -298,109 +318,109 @@ const SuppliersPage = () => {
 					</div>
 				</div>
 
-			{/* Results Info and Controls */}
-			<div className="mt-2 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
-				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
-					{/* Column Visibility Control */}
-					<div className="hidden md:block">
-					<ColumnVisibilityControl
-						columns={[
-							{ key: 'company', label: 'Firma', width: 250 },
-							{ key: 'contacts', label: 'Kontaktinformation', width: 220 },
-							{ key: 'addresses', label: 'Adresse', width: 200 },
-							{ key: 'numbers', label: 'Nummern', width: 150 },
-							{ key: 'bank_info', label: 'Bankdaten', width: 180 },
-							{ key: 'actions', label: 'Aktionen', width: 80 },
-						]}
-						visibleColumns={visibleColumns}
-						onToggle={(key) => {
-							const newVisible = new Set(visibleColumns);
-							if (newVisible.has(key)) {
-								newVisible.delete(key);
-							} else {
-								newVisible.add(key);
-							}
-							setVisibleColumns(newVisible);
-						}}
-						onShowAll={() => {
-							setVisibleColumns(new Set(['company', 'contacts', 'addresses', 'numbers', 'bank_info', 'actions']));
-						}}
-						onHideAll={() => {
-							setVisibleColumns(new Set(['company', 'actions']));
-						}}
-					/>
-					</div>
+				{/* Results Info and Controls */}
+				<div className="mt-2 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
+						{/* Column Visibility Control */}
+						<div className="hidden md:block">
+							<ColumnVisibilityControl
+								columns={[
+									{ key: 'company', label: 'Firma', width: 250 },
+									{ key: 'contacts', label: 'Kontaktinformation', width: 220 },
+									{ key: 'addresses', label: 'Adresse', width: 200 },
+									{ key: 'numbers', label: 'Nummern', width: 150 },
+									{ key: 'bank_info', label: 'Bankdaten', width: 180 },
+									{ key: 'actions', label: 'Aktionen', width: 80 },
+								]}
+								visibleColumns={visibleColumns}
+								onToggle={toggleColumn}
+								onShowAll={showAllColumns}
+								onHideAll={hideAllColumns}
+								nonHideableColumns={['company', 'actions']}
+								variant="simple"
+							/>
+						</div>
 
-					{/* Result Amount Selector */}
-					<Select value={pageSize.toString()} onValueChange={(value) => {
-						setPageSize(parseInt(value));
-						setCurrentPage(1);
-					}}>
-						<Select.Trigger className="w-20 md:w-32 text-xs md:text-sm">
-							<Select.Value />
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value="25">25<span className="hidden sm:inline"> pro Seite</span></Select.Item>
-							<Select.Item value="50">50<span className="hidden sm:inline"> pro Seite</span></Select.Item>
-							<Select.Item value="100">100<span className="hidden sm:inline"> pro Seite</span></Select.Item>
-							<Select.Item value="200">200<span className="hidden sm:inline"> pro Seite</span></Select.Item>
-						</Select.Content>
-					</Select>
-
-					<span className="text-xs md:text-sm text-ui-fg-muted">
-						{isFetching
-							? 'Lädt...'
-							: `${suppliers.length} <span className="hidden sm:inline">Lieferanten</span><span className="sm:hidden">St.</span> • S. ${currentPage}/${totalPages}`}
-						{searchTerm && ` • "${searchTerm}"`}
-					</span>
-				</div>
-
-				{/* Pagination Controls */}
-				{totalPages > 1 && (
-					<div className="flex items-center gap-1 md:gap-2">
-						<Button
-							variant="secondary"
-							size="small"
-							onClick={handlePreviousPage}
-							disabled={currentPage === 1 || isFetching}
-							className="text-xs md:text-sm px-2 md:px-3"
+						{/* Result Amount Selector */}
+						<Select
+							value={pageSize.toString()}
+							onValueChange={value => {
+								setPageSize(parseInt(value));
+								setCurrentPage(1); // Reset to page 1 when changing page size
+							}}
 						>
-							<span className="hidden sm:inline">Zurück</span>
-							<span className="sm:hidden">←</span>
-						</Button>
-						<span className="text-xs md:text-sm text-ui-fg-muted hidden sm:inline">
-							Seite {currentPage} von {totalPages}
+							<Select.Trigger className="w-20 md:w-32 text-xs md:text-sm">
+								<Select.Value />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="25">
+									25<span className="hidden sm:inline"> pro Seite</span>
+								</Select.Item>
+								<Select.Item value="50">
+									50<span className="hidden sm:inline"> pro Seite</span>
+								</Select.Item>
+								<Select.Item value="100">
+									100<span className="hidden sm:inline"> pro Seite</span>
+								</Select.Item>
+								<Select.Item value="200">
+									200<span className="hidden sm:inline"> pro Seite</span>
+								</Select.Item>
+							</Select.Content>
+						</Select>
+
+						<span className="text-xs md:text-sm text-ui-fg-muted">
+							{isFetching ? 'Lädt...' : <></>}
 						</span>
-						<Button
-							variant="secondary"
-							size="small"
-							onClick={handleNextPage}
-							disabled={currentPage >= totalPages || isFetching}
-							className="text-xs md:text-sm px-2 md:px-3"
-						>
-							<span className="hidden sm:inline">Weiter</span>
-							<span className="sm:hidden">→</span>
-						</Button>
 					</div>
-				)}
-			</div>
-		</div>
 
-		{/* Table */}
-		<div className="flex-1 overflow-hidden">
-			<div className="h-full overflow-auto px-2 py-2 md:px-6 md:py-4">
-				<SupplierTable
-					suppliers={suppliers}
-					onEdit={handleEdit}
-					onDelete={handleDelete}
-					isLoading={isLoading}
-					isFetching={isFetching}
-					onSort={handleSort}
-					sortConfig={sortConfig}
-					visibleColumns={visibleColumns}
-				/>
+					{/* Pagination Controls */}
+					{totalPages > 1 && (
+						<div className="flex items-center gap-1 md:gap-2">
+							<Button
+								variant="secondary"
+								size="small"
+								onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+								disabled={currentPage === 1 || isFetching}
+								className="text-xs md:text-sm px-2 md:px-3"
+							>
+								<span className="hidden sm:inline">Zurück</span>
+								<span className="sm:hidden">←</span>
+							</Button>
+							<span className="text-xs md:text-sm text-ui-fg-muted hidden sm:inline">
+								Seite {currentPage} von {totalPages}
+							</span>
+							<Button
+								variant="secondary"
+								size="small"
+								onClick={() =>
+									setCurrentPage(prev => Math.min(totalPages, prev + 1))
+								}
+								disabled={currentPage >= totalPages || isFetching}
+								className="text-xs md:text-sm px-2 md:px-3"
+							>
+								<span className="hidden sm:inline">Weiter</span>
+								<span className="sm:hidden">→</span>
+							</Button>
+						</div>
+					)}
+				</div>
 			</div>
-		</div>
+
+			{/* Table */}
+			<div className="flex-1 overflow-hidden">
+				<div className="h-full overflow-auto px-2 py-2 md:px-6 md:py-4">
+					<SupplierTable
+						suppliers={suppliers}
+						onEdit={handleEdit}
+						onDelete={handleDelete}
+						isLoading={isLoading}
+						isFetching={isFetching}
+						onSort={handleSort}
+						sortConfig={sortConfig}
+						visibleColumns={visibleColumns}
+					/>
+				</div>
+			</div>
 			{/* Mobile Bottom Sheets */}
 			{isMobile && (
 				<>
@@ -417,7 +437,7 @@ const SuppliersPage = () => {
 								</Text>
 								<Input
 									value={searchTerm}
-									onChange={(e) => setSearchTerm(e.target.value)}
+									onChange={e => setSearchTerm(e.target.value)}
 									placeholder="Firma, Kontakt, E-Mail..."
 								/>
 							</div>
@@ -426,7 +446,7 @@ const SuppliersPage = () => {
 								variant="secondary"
 								className="w-full"
 								onClick={() => {
-									setSearchTerm("");
+									setSearchTerm('');
 									setShowFilterSheet(false);
 								}}
 							>
@@ -448,15 +468,19 @@ const SuppliersPage = () => {
 								</Text>
 								<div className="grid grid-cols-1 gap-2">
 									{[
-										{ label: "Firma", value: "company" },
-										{ label: "Ort", value: "city" },
-										{ label: "Erstellt am", value: "created_at" },
-									].map((opt) => (
+										{ label: 'Firma', value: 'company' },
+										{ label: 'Ort', value: 'city' },
+										{ label: 'Erstellt am', value: 'created_at' },
+									].map(opt => (
 										<Button
 											key={opt.value}
-											variant={sortConfig?.key === opt.value ? "primary" : "secondary"}
+											variant={
+												sortConfig?.key === opt.value ? 'primary' : 'secondary'
+											}
 											className="justify-start"
-											onClick={() => handleSort(opt.value)}
+											onClick={() =>
+												handleSort(opt.value, sortConfig?.direction || 'asc')
+											}
 										>
 											{opt.label}
 										</Button>
@@ -469,14 +493,22 @@ const SuppliersPage = () => {
 								</Text>
 								<div className="grid grid-cols-2 gap-2">
 									<Button
-										variant={sortConfig?.direction === "asc" ? "primary" : "secondary"}
-										onClick={() => handleSort(sortConfig?.key || "company", "asc")}
+										variant={
+											sortConfig?.direction === 'asc' ? 'primary' : 'secondary'
+										}
+										onClick={() =>
+											handleSort(sortConfig?.key || 'company', 'asc')
+										}
 									>
 										Aufsteigend
 									</Button>
 									<Button
-										variant={sortConfig?.direction === "desc" ? "primary" : "secondary"}
-										onClick={() => handleSort(sortConfig?.key || "company", "desc")}
+										variant={
+											sortConfig?.direction === 'desc' ? 'primary' : 'secondary'
+										}
+										onClick={() =>
+											handleSort(sortConfig?.key || 'company', 'desc')
+										}
 									>
 										Absteigend
 									</Button>
@@ -500,18 +532,18 @@ const SuppliersPage = () => {
 									{ key: 'numbers', label: 'Nummern' },
 									{ key: 'bank_info', label: 'Bankdaten' },
 									{ key: 'actions', label: 'Aktionen' },
-								].map((col) => (
-									<div key={col.key} className="flex items-center justify-between">
+								].map(col => (
+									<div
+										key={col.key}
+										className="flex items-center justify-between"
+									>
 										<Text size="small">{col.label}</Text>
 										<Checkbox
 											checked={visibleColumns.has(col.key)}
-											onCheckedChange={(checked) => {
-												const newVisible = new Set(visibleColumns);
-												if (checked) newVisible.add(col.key);
-												else newVisible.delete(col.key);
-												setVisibleColumns(newVisible);
+											onCheckedChange={(_checked: boolean) => {
+												toggleColumn(col.key);
 											}}
-											disabled={col.key === "company" || col.key === "actions"}
+											disabled={col.key === 'company' || col.key === 'actions'}
 										/>
 									</div>
 								))}
