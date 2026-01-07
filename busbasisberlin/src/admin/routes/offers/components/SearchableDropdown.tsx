@@ -179,7 +179,9 @@ const SearchableDropdown = ({
 	const getItemTypeBadge = (item: SearchableItem): string => {
 		switch (itemType) {
 			case 'customer':
-				return item.type === 'manual' ? 'MC' : 'Core';
+				if (item.customer_source === 'linked') return 'Verknüpft';
+				if (item.customer_source === 'core') return 'Online';
+				return 'Manuell';
 			case 'product':
 				return 'Prod';
 			case 'service':
@@ -192,7 +194,9 @@ const SearchableDropdown = ({
 	const getItemTypeColor = (item: SearchableItem): string => {
 		switch (itemType) {
 			case 'customer':
-				return item.type === 'manual' ? 'blue' : 'green';
+				if (item.customer_source === 'linked') return 'purple';
+				if (item.customer_source === 'core') return 'green';
+				return 'blue';
 			case 'product':
 				return 'purple';
 			case 'service':

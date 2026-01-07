@@ -157,6 +157,15 @@ export default function OfferDetailPage() {
 	const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 	const [loadingPreview, setLoadingPreview] = useState(false);
 	const [previewTab, setPreviewTab] = useState<'pdf' | 'email'>('pdf');
+
+	// Customer editing state
+	const [editingCustomer, setEditingCustomer] = useState(false);
+	const [customerFormData, setCustomerFormData] = useState({
+		customer_name: '',
+		customer_email: '',
+		customer_phone: '',
+		customer_address: '',
+	});
 	const [showInfoModal, setShowInfoModal] = useState(false);
 	const [showItemSelector, setShowItemSelector] = useState(false);
 
@@ -182,6 +191,14 @@ export default function OfferDetailPage() {
 				priceStates[item.id] = (item.unit_price / 100).toFixed(2);
 			});
 			setPriceInputStates(priceStates);
+
+			// Initialize customer form data
+			setCustomerFormData({
+				customer_name: data.offer.customer_name || '',
+				customer_email: data.offer.customer_email || '',
+				customer_phone: data.offer.customer_phone || '',
+				customer_address: data.offer.customer_address || '',
+			});
 		} catch (error) {
 			console.error('Error loading offer:', error);
 			toast.error(
@@ -565,6 +582,58 @@ export default function OfferDetailPage() {
 	}, [offer?.id, offer?.status, offer?.items?.length, offer?.items]); // Re-run when offer ID, status, or items change
 
 	// Update offer status
+	// Update customer information
+	const updateCustomerInfo = async () => {
+		if (!offer) return;
+
+		setUpdating(true);
+		try {
+			const response = await fetch(`/admin/offers/${offer.id}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					customer_name: customerFormData.customer_name,
+					customer_email: customerFormData.customer_email,
+					customer_phone: customerFormData.customer_phone,
+					customer_address: customerFormData.customer_address,
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(
+					error.message || 'Fehler beim Aktualisieren der Kundeninformationen',
+				);
+			}
+
+			const data = await response.json();
+			setOffer(data.offer);
+			setEditingCustomer(false);
+			toast.success('Kundeninformationen erfolgreich aktualisiert');
+		} catch (error) {
+			console.error('Error updating customer info:', error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Fehler beim Aktualisieren der Kundeninformationen',
+			);
+		} finally {
+			setUpdating(false);
+		}
+	};
+
+	// Handle customer selection from dropdown
+	const handleCustomerSelect = (customer: SearchableItem) => {
+		setCustomerFormData({
+			customer_name: customer.company_name || customer.company || customer.name || customer.display_name || '',
+			customer_email: customer.email || '',
+			customer_phone: customer.phone || customer.mobile || '',
+			customer_address: customer.address || '',
+		});
+	};
+
 	const updateStatus = async (newStatus: string) => {
 		if (!offer) return;
 
@@ -1555,10 +1624,132 @@ export default function OfferDetailPage() {
 				<div className="space-y-6 lg:col-span-4">
 					{/* Customer Information */}
 					<div className="bg-ui-bg-subtle rounded-lg p-6">
-						<Text size="large" weight="plus" className="text-ui-fg-base mb-4">
+						<div className="flex items-center justify-between mb-4">
+							<Text size="large" weight="plus" className="text-ui-fg-base">
 							Kundeninformationen
 						</Text>
+							{!editingCustomer && (
+								<Button
+									variant="secondary"
+									size="small"
+									onClick={() => setEditingCustomer(true)}
+								>
+									<Edit className="w-4 h-4" />
+								</Button>
+							)}
+						</div>
 
+						{editingCustomer ? (
+							<div className="space-y-3">
+								<div>
+									<SearchableDropdown
+										label=""
+										placeholder="Kunde suchen und auswählen..."
+										value=""
+										onValueChange={() => {}}
+										onItemSelect={handleCustomerSelect}
+										searchEndpoint="/admin/offers/search/customers"
+										itemType="customer"
+									/>
+								</div>
+
+								<div>
+									<Text size="small" weight="plus" className="text-ui-fg-base mb-1">
+										Name:
+									</Text>
+									<Input
+										type="text"
+										value={customerFormData.customer_name}
+										onChange={e =>
+											setCustomerFormData(prev => ({
+												...prev,
+												customer_name: e.target.value,
+											}))
+										}
+										placeholder="Kundenname"
+									/>
+								</div>
+
+								<div>
+									<Text size="small" weight="plus" className="text-ui-fg-base mb-1">
+										E-Mail:
+									</Text>
+									<Input
+										type="email"
+										value={customerFormData.customer_email}
+										onChange={e =>
+											setCustomerFormData(prev => ({
+												...prev,
+												customer_email: e.target.value,
+											}))
+										}
+										placeholder="kunde@beispiel.de"
+									/>
+								</div>
+
+								<div>
+									<Text size="small" weight="plus" className="text-ui-fg-base mb-1">
+										Telefon:
+									</Text>
+									<Input
+										type="tel"
+										value={customerFormData.customer_phone}
+										onChange={e =>
+											setCustomerFormData(prev => ({
+												...prev,
+												customer_phone: e.target.value,
+											}))
+										}
+										placeholder="+49 123 456789"
+									/>
+								</div>
+
+								<div>
+									<Text size="small" weight="plus" className="text-ui-fg-base mb-1">
+										Adresse:
+									</Text>
+									<Textarea
+										value={customerFormData.customer_address}
+										onChange={e =>
+											setCustomerFormData(prev => ({
+												...prev,
+												customer_address: e.target.value,
+											}))
+										}
+										placeholder="Straße, PLZ Ort"
+										rows={3}
+									/>
+								</div>
+
+								<div className="flex gap-2 mt-4">
+									<Button
+										variant="primary"
+										size="small"
+										onClick={updateCustomerInfo}
+										disabled={updating}
+									>
+										{updating ? 'Speichere...' : 'Speichern'}
+									</Button>
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={() => {
+											setEditingCustomer(false);
+											// Reset form data to original values
+											setCustomerFormData({
+												customer_name: offer.customer_name || '',
+												customer_email: offer.customer_email || '',
+												customer_phone: offer.customer_phone || '',
+												customer_address: offer.customer_address || '',
+											});
+										}}
+										disabled={updating}
+									>
+										Abbrechen
+									</Button>
+								</div>
+							</div>
+						) : (
 						<div className="space-y-3">
 							{offer.customer_name && (
 								<div>
@@ -1604,6 +1795,7 @@ export default function OfferDetailPage() {
 								</div>
 							)}
 						</div>
+						)}
 					</div>
 
 					{/* Dates */}

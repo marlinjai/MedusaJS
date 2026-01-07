@@ -228,18 +228,31 @@ export default function CreateOfferPage() {
 		setLoading(true);
 
 		try {
+			// Prepare request body with customer IDs based on selection
+			const requestBody: any = {
+				...formData,
+				items: formData.items.map(item => ({
+					...item,
+					unit_price: Math.round(item.unit_price), // Already in cents
+				})),
+			};
+
+			// Add customer IDs if a customer was selected
+			if (formData.selected_customer) {
+				if (formData.selected_customer.core_customer_id) {
+					requestBody.core_customer_id = formData.selected_customer.core_customer_id;
+				}
+				if (formData.selected_customer.manual_customer_id) {
+					requestBody.manual_customer_id = formData.selected_customer.manual_customer_id;
+				}
+			}
+
 			const response = await fetch('/admin/offers', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({
-					...formData,
-					items: formData.items.map(item => ({
-						...item,
-						unit_price: Math.round(item.unit_price), // Already in cents
-					})),
-				}),
+				body: JSON.stringify(requestBody),
 			});
 
 			if (!response.ok) {

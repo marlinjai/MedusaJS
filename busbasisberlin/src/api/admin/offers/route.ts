@@ -2,12 +2,30 @@
  * route.ts
  * Main admin API route for offer management
  * Handles GET (list offers) and POST (create offer) operations
+ * Includes Zod validation for input validation and type safety
  */
 import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { z } from 'zod';
 
 import OfferService from '../../../modules/offer/service';
 import { CreateOfferInput } from '../../../modules/offer/types';
+import { MANUAL_CUSTOMER_MODULE } from '../../../modules/manual-customer';
+import ManualCustomerService from '../../../modules/manual-customer/service';
+
+// Zod validation schemas
+const listOffersSchema = z.object({
+	limit: z.coerce.number().min(1).max(250).default(20),
+	offset: z.coerce.number().min(0).default(0),
+	status: z.string().optional(),
+	customer_email: z.string().optional(),
+	created_by: z.string().optional(),
+	assigned_to: z.string().optional(),
+	created_after: z.string().optional(),
+	created_before: z.string().optional(),
+	valid_after: z.string().optional(),
+	valid_before: z.string().optional(),
+});
 
 // Module constant for service resolution
 const OFFER_MODULE = 'offer';
@@ -40,51 +58,37 @@ export async function GET(
 	const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
 
 	try {
-		const {
-			limit = 20,
-			offset = 0,
-			status,
-			customer_email,
-			created_by,
-			assigned_to,
-			created_after,
-			created_before,
-			valid_after,
-			valid_before,
-		} = req.query;
+		// Validate query parameters
+		const params = listOffersSchema.parse(req.query);
 
-		// Convert string parameters to numbers
-		const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : 20;
-		const offsetNum = typeof offset === 'string' ? parseInt(offset, 10) : 0;
-
-		// Build filters
+		// Build filters from validated params
 		const filters: any = {};
 
-		if (status) filters.status = status;
-		if (customer_email) filters.customer_email = customer_email;
-		if (created_by) filters.created_by = created_by;
-		if (assigned_to) filters.assigned_to = assigned_to;
-		if (created_after)
-			filters.created_at = { $gte: new Date(created_after as string) };
-		if (created_before) {
+		if (params.status) filters.status = params.status;
+		if (params.customer_email) filters.customer_email = params.customer_email;
+		if (params.created_by) filters.created_by = params.created_by;
+		if (params.assigned_to) filters.assigned_to = params.assigned_to;
+		if (params.created_after)
+			filters.created_at = { $gte: new Date(params.created_after) };
+		if (params.created_before) {
 			filters.created_at = {
 				...filters.created_at,
-				$lte: new Date(created_before as string),
+				$lte: new Date(params.created_before),
 			};
 		}
-		if (valid_after)
-			filters.valid_until = { $gte: new Date(valid_after as string) };
-		if (valid_before) {
+		if (params.valid_after)
+			filters.valid_until = { $gte: new Date(params.valid_after) };
+		if (params.valid_before) {
 			filters.valid_until = {
 				...filters.valid_until,
-				$lte: new Date(valid_before as string),
+				$lte: new Date(params.valid_before),
 			};
 		}
 
 		// Get offers from service
 		const offers = await offerService.listOffers(filters, {
-			take: limitNum,
-			skip: offsetNum,
+			take: params.limit,
+			skip: params.offset,
 		});
 
 		// Get total count for pagination
@@ -114,11 +118,19 @@ export async function GET(
 		res.json({
 			offers,
 			count: totalCount.length,
-			offset: offsetNum,
-			limit: limitNum,
+			offset: params.offset,
+			limit: params.limit,
 			stats,
 		});
 	} catch (error) {
+		// Handle Zod validation errors
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({
+				error: 'Validation error',
+				details: error.errors,
+			});
+		}
+
 		logger.error('Error listing offers:', error);
 		res.status(500).json({
 			error: 'Failed to list offers',
@@ -150,7 +162,76 @@ export async function POST(
 			customer_notes,
 			currency_code,
 			items = [],
+			core_customer_id, // NEW: Support selecting core customers
+			manual_customer_id, // NEW: Explicit manual customer ID
 		} = req.body;
+
+		// NEW: Handle core customer selection - auto-create manual customer if needed
+		let finalCustomerName = customer_name;
+		let finalCustomerEmail = customer_email;
+		let finalCustomerPhone = customer_phone;
+		let finalCustomerAddress = customer_address;
+
+		if (core_customer_id && !manual_customer_id) {
+			const manualCustomerService = req.scope.resolve(MANUAL_CUSTOMER_MODULE);
+			const query = req.scope.resolve('query');
+
+			// Get core customer data
+			const { data: coreCustomers } = await query.graph({
+				entity: 'customer',
+				fields: ['id', 'email', 'first_name', 'last_name', 'phone'],
+				filters: { id: core_customer_id },
+			});
+
+			const coreCustomer = coreCustomers[0];
+			if (!coreCustomer) {
+				return res.status(400).json({
+					error: 'Validation error',
+					message: 'Core customer not found',
+				});
+			}
+
+			// Try to auto-link to existing manual customer
+			const linkResult = await manualCustomerService.autoLinkCustomer(coreCustomer);
+
+			if (linkResult.linked && linkResult.manualCustomer) {
+				// Use linked manual customer's data
+				logger.info(`Auto-linked core customer ${core_customer_id} to existing manual customer`);
+				finalCustomerName = linkResult.manualCustomer.company ||
+					`${linkResult.manualCustomer.first_name} ${linkResult.manualCustomer.last_name}`.trim();
+				finalCustomerEmail = linkResult.manualCustomer.email || coreCustomer.email;
+				finalCustomerPhone = linkResult.manualCustomer.phone || coreCustomer.phone;
+				finalCustomerAddress = `${linkResult.manualCustomer.street} ${linkResult.manualCustomer.street_number}, ${linkResult.manualCustomer.postal_code} ${linkResult.manualCustomer.city}`.trim();
+			} else {
+				// No existing match - create new manual customer and link
+				logger.info(`Creating new manual customer for core customer ${core_customer_id}`);
+
+				const newManualCustomer = await manualCustomerService.createManualCustomerWithNumber({
+					first_name: coreCustomer.first_name,
+					last_name: coreCustomer.last_name,
+					email: coreCustomer.email,
+					phone: coreCustomer.phone,
+					customer_type: 'business', // Default type
+					source: 'auto-linked',
+					status: 'active',
+				});
+
+				// Link the newly created manual customer to core customer
+				await manualCustomerService.linkToCustomer(
+					newManualCustomer.id,
+					core_customer_id,
+					'manual-link',
+				);
+
+				logger.info(`Created and linked manual customer ${newManualCustomer.id} to core customer ${core_customer_id}`);
+
+				// Use core customer data for offer
+				finalCustomerName = customer_name || `${coreCustomer.first_name} ${coreCustomer.last_name}`.trim();
+				finalCustomerEmail = customer_email || coreCustomer.email;
+				finalCustomerPhone = customer_phone || coreCustomer.phone;
+				finalCustomerAddress = customer_address || '';
+			}
+		}
 
 		// Validate items
 		if (items.length === 0) {
@@ -187,13 +268,13 @@ export async function POST(
 			}
 		}
 
-		// Prepare offer data
+		// Prepare offer data (use final customer data which may come from core customer)
 		const offerData = {
 			description: description?.trim(),
-			customer_name: customer_name?.trim(),
-			customer_email: customer_email?.trim(),
-			customer_phone: customer_phone?.trim(),
-			customer_address: customer_address?.trim(),
+			customer_name: finalCustomerName?.trim(),
+			customer_email: finalCustomerEmail?.trim(),
+			customer_phone: finalCustomerPhone?.trim(),
+			customer_address: finalCustomerAddress?.trim(),
 			valid_until: valid_until ? new Date(valid_until) : undefined,
 			internal_notes: internal_notes?.trim(),
 			customer_notes: customer_notes?.trim(),
@@ -211,6 +292,14 @@ export async function POST(
 			message: 'Offer created successfully',
 		});
 	} catch (error) {
+		// Handle Zod validation errors
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({
+				error: 'Validation error',
+				details: error.errors,
+			});
+		}
+
 		logger.error('Error creating offer:', error);
 		res.status(500).json({
 			error: 'Failed to create offer',
