@@ -9,6 +9,14 @@ import messages from '../../messages/de.json';
 
 export const metadata: Metadata = {
 	metadataBase: new URL(getBaseURL()),
+	icons: {
+		icon: [
+			{ url: '/favicon.ico', sizes: 'any' },
+			{ url: '/bbb_fav.png', type: 'image/png' },
+		],
+		shortcut: '/bbb_fav.png',
+		apple: '/bbb_fav.png',
+	},
 };
 
 export default function RootLayout(props: { children: React.ReactNode }) {

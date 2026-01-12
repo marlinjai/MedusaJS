@@ -2,11 +2,15 @@
 // Admin API route to fetch products filtered by category, collection, sales channel, shipping profile
 
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
-import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import {
+	ContainerRegistrationKeys,
+	getVariantAvailability,
+} from '@medusajs/framework/utils';
 import {
 	getAllDescendantCategoryIds,
 	type CategoryNode,
 } from '../../product-categories/utils';
+import { getDefaultSalesChannelIdFromQuery } from '../../../../utils/sales-channel-helper';
 
 export const GET = async (
 	req: MedusaRequest,
@@ -158,6 +162,8 @@ export const GET = async (
 		);
 
 		// Define fields to retrieve
+		// NOTE: Use wildcards for variants and prices to properly load nested relations
+		// Specific fields like 'variants.prices.amount' don't work in Medusa V2
 		const productFields = [
 			'id',
 			'title',
@@ -177,13 +183,8 @@ export const GET = async (
 			'shipping_profile.type',
 			'sales_channels.id',
 			'sales_channels.name',
-			'variants.id',
-			'variants.sku',
-			'variants.title',
-			'variants.manage_inventory',
-			'variants.allow_backorder',
-			'variants.prices.amount',
-			'variants.prices.currency_code',
+			'variants.*', // Use wildcard for all variant fields including prices relation
+			'variants.prices.*', // Expand price objects within variants
 			'tags.id',
 			'tags.value',
 		];
@@ -241,6 +242,75 @@ export const GET = async (
 			const actualOffset = parseInt(offset as string);
 			products = products.slice(actualOffset, actualOffset + actualLimit);
 		}
+
+		// Log price data for first product to debug
+		if (products.length > 0 && products[0].variants?.length > 0) {
+			const firstVariant = products[0].variants[0];
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Price debug - Product: ${products[0].title}, Variant: ${firstVariant.title}, SKU: ${firstVariant.sku}`,
+			);
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Price debug - Prices array: ${JSON.stringify(firstVariant.prices)}`,
+			);
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Price debug - Prices count: ${firstVariant.prices?.length || 0}`,
+			);
+		}
+
+		// Fetch inventory data for all variants
+		const allVariantIds = products.flatMap((p: any) =>
+			p.variants ? p.variants.map((v: any) => v.id) : [],
+		);
+		let inventoryMap: Record<string, number> = {};
+
+		if (allVariantIds.length > 0) {
+			try {
+				// Use sales_channel_id if provided, otherwise get default
+				let channelId = sales_channel_id as string | undefined;
+				if (!channelId) {
+					channelId = await getDefaultSalesChannelIdFromQuery(query);
+					logger.info(
+						`[PRODUCTS-BY-CATEGORY] Using default sales channel: ${channelId}`,
+					);
+				}
+
+				// @ts-ignore - Type conflict between @medusajs/types versions
+				const availability = await getVariantAvailability(query, {
+					variant_ids: allVariantIds,
+					sales_channel_id: channelId,
+				});
+
+				inventoryMap = Object.fromEntries(
+					Object.entries(availability).map(
+						([variantId, data]: [string, any]) => [
+							variantId,
+							data.availability || 0,
+						],
+					),
+				);
+
+				logger.info(
+					`[PRODUCTS-BY-CATEGORY] Fetched inventory for ${allVariantIds.length} variants`,
+				);
+			} catch (error) {
+				logger.error(
+					`[PRODUCTS-BY-CATEGORY] Error getting variant availability: ${error instanceof Error ? error.message : String(error)}`,
+				);
+				// Fallback: set all variants to 0 inventory
+				allVariantIds.forEach((variantId: string) => {
+					inventoryMap[variantId] = 0;
+				});
+			}
+		}
+
+		// Add inventory_quantity to each variant
+		products = products.map((product: any) => ({
+			...product,
+			variants: product.variants?.map((variant: any) => ({
+				...variant,
+				inventory_quantity: inventoryMap[variant.id] ?? 0,
+			})),
+		}));
 
 		// Get total count for pagination
 		let total: number;

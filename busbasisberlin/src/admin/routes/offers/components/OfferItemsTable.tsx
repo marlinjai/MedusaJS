@@ -20,7 +20,7 @@ import {
 	verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Input, Text, Textarea } from '@medusajs/ui';
+import { Button, Input, Select, Text, Textarea } from '@medusajs/ui';
 import {
 	ChevronDown,
 	ChevronRight,
@@ -39,6 +39,7 @@ export type OfferItem = {
 	unit: string;
 	unit_price: number;
 	discount_percentage: number;
+	tax_rate: number;
 	total_price: number;
 	product_id?: string;
 	service_id?: string;
@@ -83,6 +84,9 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
 	actions: 60,
 };
 
+// Common unit options for the unit dropdown
+const COMMON_UNITS = ['STK', 'Std', 'Psch', 'Set', 'm', 'kg'];
+
 // Sortable row component
 function SortableRow({
 	item,
@@ -116,22 +120,38 @@ function SortableRow({
 		opacity: isDragging ? 0.5 : 1,
 	};
 
+	// Check if this is a manual item (no product_id or service_id)
+	const isManualItem = !item.product_id && !item.service_id;
+
 	// Local state for inline editing
 	const [editingField, setEditingField] = useState<string | null>(null);
 	const [editValues, setEditValues] = useState({
+		title: item.title,
 		quantity: item.quantity.toString(),
+		unit: item.unit,
 		unit_price: (item.unit_price / 100).toFixed(2),
 		discount_percentage: item.discount_percentage.toString(),
 	});
+	const [isCustomUnit, setIsCustomUnit] = useState(
+		!COMMON_UNITS.includes(item.unit),
+	);
 
 	const handleFieldBlur = (field: keyof typeof editValues) => {
 		setEditingField(null);
 		const value = editValues[field];
 
-		if (field === 'quantity') {
+		if (field === 'title') {
+			if (value && value.trim()) {
+				onUpdate({ title: value.trim() });
+			}
+		} else if (field === 'quantity') {
 			const num = parseInt(value);
 			if (!isNaN(num) && num > 0) {
 				onUpdate({ quantity: num });
+			}
+		} else if (field === 'unit') {
+			if (value && value.trim()) {
+				onUpdate({ unit: value.trim() });
 			}
 		} else if (field === 'unit_price') {
 			const num = parseFloat(value.replace(',', '.'));
@@ -173,18 +193,37 @@ function SortableRow({
 					)}
 				</div>
 
-				{/* Title */}
+				{/* Title - editable for manual items */}
 				<div
 					className="p-2 flex-1 overflow-hidden"
 					style={{ minWidth: columnWidths.title }}
+					onClick={isManualItem ? () => setEditingField('title') : undefined}
 				>
-					<Text size="small" className="font-medium truncate">
-						{item.title}
-					</Text>
-					{item.sku && (
-						<Text size="xsmall" className="text-ui-fg-subtle">
-							SKU: {item.sku}
-						</Text>
+					{isManualItem && editingField === 'title' ? (
+						<Input
+							value={editValues.title}
+							onChange={e =>
+								setEditValues(prev => ({ ...prev, title: e.target.value }))
+							}
+							onBlur={() => handleFieldBlur('title')}
+							autoFocus
+							placeholder="Artikelbezeichnung..."
+							className="w-full"
+						/>
+					) : (
+						<>
+							<Text
+								size="small"
+								className={`font-medium truncate ${isManualItem ? 'cursor-pointer hover:bg-ui-bg-subtle p-1 rounded' : ''}`}
+							>
+								{item.title || (isManualItem ? 'Artikelbezeichnung eingeben...' : '')}
+							</Text>
+							{item.sku && (
+								<Text size="xsmall" className="text-ui-fg-subtle">
+									SKU: {item.sku}
+								</Text>
+							)}
+						</>
 					)}
 				</div>
 
@@ -213,9 +252,57 @@ function SortableRow({
 					)}
 				</div>
 
-				{/* Unit */}
-				<div className="p-2" style={{ width: columnWidths.unit }}>
-					<Text size="small">{item.unit}</Text>
+				{/* Unit - inline editable */}
+				<div
+					className="p-2"
+					style={{ width: columnWidths.unit }}
+					onClick={() => setEditingField('unit')}
+				>
+					{editingField === 'unit' ? (
+						isCustomUnit ? (
+							<Input
+								value={editValues.unit}
+								onChange={e =>
+									setEditValues(prev => ({ ...prev, unit: e.target.value }))
+								}
+								onBlur={() => handleFieldBlur('unit')}
+								autoFocus
+								placeholder="Einheit..."
+								className="w-full"
+							/>
+						) : (
+							<Select
+								value={editValues.unit}
+								onValueChange={val => {
+									if (val === '__custom__') {
+										setIsCustomUnit(true);
+										setEditValues(prev => ({ ...prev, unit: '' }));
+									} else {
+										setEditValues(prev => ({ ...prev, unit: val }));
+										onUpdate({ unit: val });
+										setEditingField(null);
+									}
+								}}
+							>
+								<Select.Trigger className="w-full" autoFocus />
+								<Select.Content className="z-[100]">
+									{COMMON_UNITS.map(u => (
+										<Select.Item key={u} value={u}>
+											{u}
+										</Select.Item>
+									))}
+									<Select.Item value="__custom__">Andere...</Select.Item>
+								</Select.Content>
+							</Select>
+						)
+					) : (
+						<Text
+							size="small"
+							className="cursor-pointer hover:bg-ui-bg-subtle p-1 rounded"
+						>
+							{item.unit}
+						</Text>
+					)}
 				</div>
 
 				{/* Price - inline editable */}
@@ -295,6 +382,37 @@ function SortableRow({
 			{/* Expanded details */}
 			{expanded && (
 				<div className="bg-ui-bg-subtle p-4 space-y-3">
+					{/* Item type selector for manual items */}
+					{isManualItem && (
+						<div className="flex items-center gap-4">
+							<Text size="small" weight="plus">
+								Artikeltyp:
+							</Text>
+							<div className="flex gap-2">
+								<button
+									onClick={() => onUpdate({ item_type: 'product' })}
+									className={`px-3 py-1 rounded text-sm transition-colors ${
+										item.item_type === 'product'
+											? 'bg-ui-bg-interactive text-ui-fg-on-color'
+											: 'bg-ui-bg-base hover:bg-ui-bg-base-hover border border-ui-border-base'
+									}`}
+								>
+									Produkt
+								</button>
+								<button
+									onClick={() => onUpdate({ item_type: 'service' })}
+									className={`px-3 py-1 rounded text-sm transition-colors ${
+										item.item_type === 'service'
+											? 'bg-ui-bg-interactive text-ui-fg-on-color'
+											: 'bg-ui-bg-base hover:bg-ui-bg-base-hover border border-ui-border-base'
+									}`}
+								>
+									Service
+								</button>
+							</div>
+						</div>
+					)}
+
 					<div>
 						<Text size="small" weight="plus" className="mb-2">
 							Beschreibung

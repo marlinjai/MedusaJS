@@ -8,11 +8,13 @@ import { Button, Text, Tabs } from '@medusajs/ui';
 import {
 	ChevronDown,
 	ChevronRight,
+	GripHorizontal,
 	Package,
+	Plus,
 	Wrench,
 	X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import OfferItemsTable, { OfferItem } from './OfferItemsTable';
 
@@ -263,7 +265,7 @@ function ProductSelector({
 											</td>
 											<td className="p-2 text-right">
 												<Text size="small" weight="plus">
-													{((variant.price?.amount || 0) / 100).toFixed(2)} €
+													{(variant.price?.amount || variant.prices?.find(p => p.currency_code?.toLowerCase() === 'eur')?.amount || 0).toFixed(2)} €
 												</Text>
 											</td>
 											<td className="p-2 text-right">
@@ -501,6 +503,11 @@ function ServiceSelector({
 	);
 }
 
+// Minimum heights for sections (in percentage)
+const MIN_TOP_HEIGHT = 30;
+const MAX_TOP_HEIGHT = 85;
+const DEFAULT_TOP_HEIGHT = 65; // Default 65% top, 35% bottom
+
 export default function ItemSelectorModal({
 	isOpen,
 	onClose,
@@ -510,14 +517,100 @@ export default function ItemSelectorModal({
 	onItemRemove,
 	currency = 'EUR',
 }: ItemSelectorModalProps) {
+	// Resizable divider state
+	const [topHeightPercent, setTopHeightPercent] = useState(() => {
+		const stored = localStorage.getItem('itemSelectorModal_topHeight');
+		return stored ? parseFloat(stored) : DEFAULT_TOP_HEIGHT;
+	});
+	const [isDragging, setIsDragging] = useState(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	// Save height to localStorage when it changes
+	useEffect(() => {
+		localStorage.setItem(
+			'itemSelectorModal_topHeight',
+			topHeightPercent.toString(),
+		);
+	}, [topHeightPercent]);
+
+	// Handle mouse down on divider
+	const handleDividerMouseDown = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault();
+			setIsDragging(true);
+		},
+		[],
+	);
+
+	// Handle mouse move while dragging
+	useEffect(() => {
+		if (!isDragging) return;
+
+		const handleMouseMove = (e: MouseEvent) => {
+			if (!containerRef.current) return;
+
+			const containerRect = containerRef.current.getBoundingClientRect();
+			const containerHeight = containerRect.height;
+			const mouseY = e.clientY - containerRect.top;
+
+			// Calculate percentage (account for header height ~80px)
+			const headerHeight = 80;
+			const contentHeight = containerHeight - headerHeight;
+			const relativeY = mouseY - headerHeight;
+			let newPercent = (relativeY / contentHeight) * 100;
+
+			// Clamp to min/max
+			newPercent = Math.max(MIN_TOP_HEIGHT, Math.min(MAX_TOP_HEIGHT, newPercent));
+			setTopHeightPercent(newPercent);
+		};
+
+		const handleMouseUp = () => {
+			setIsDragging(false);
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+
+		return () => {
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+	}, [isDragging]);
+
+	// Handler for adding manual items (without product/service reference)
+	const handleAddManualItem = () => {
+		const newItem: OfferItem = {
+			id: Date.now().toString() + Math.random(),
+			item_type: 'product', // Default type
+			title: '', // User fills in via inline editing
+			description: '',
+			quantity: 1,
+			unit: 'STK',
+			unit_price: 0, // User fills in via inline editing
+			discount_percentage: 0,
+			total_price: 0,
+			display_order: items.length,
+			// No product_id or service_id = manual item
+		};
+		onItemsChange([...items, newItem]);
+	};
+
 	const handleProductSelect = (
 		product: Product,
 		variant: Product['variants'][0],
 	) => {
-		const variantPrice =
-			variant.price?.amount ||
-			variant.prices?.find(p => p.currency_code === 'EUR')?.amount ||
-			0;
+		// Get price from variant for offer module (needs cents)
+		// variant.price (from /offers/search/products) is already in cents
+		// variant.prices (from /products/by-category) is in euros, needs conversion
+		let variantPrice = 0;
+		if (variant.price?.amount) {
+			// Already in cents from the formatted endpoint
+			variantPrice = variant.price.amount;
+		} else {
+			// Raw prices from Medusa are in euros, convert to cents
+			const eurPrice = variant.prices?.find(p => p.currency_code?.toLowerCase() === 'eur')?.amount || 0;
+			variantPrice = Math.round(eurPrice * 100);
+		}
 
 		const newItem: OfferItem = {
 			id: Date.now().toString() + Math.random(),
@@ -566,9 +659,12 @@ export default function ItemSelectorModal({
 
 	return (
 		<div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-			<div className="bg-ui-bg-base rounded-lg w-full h-full max-w-7xl max-h-[90vh] flex flex-col shadow-2xl">
+			<div
+				ref={containerRef}
+				className="bg-ui-bg-base rounded-lg w-full h-full max-w-7xl max-h-[90vh] flex flex-col shadow-2xl"
+			>
 				{/* Modal Header */}
-				<div className="flex items-center justify-between p-6 border-b border-ui-border-base">
+				<div className="flex items-center justify-between p-6 border-b border-ui-border-base shrink-0">
 					<div>
 						<Text size="xlarge" weight="plus">
 							Artikel zum Angebot hinzufügen
@@ -582,48 +678,76 @@ export default function ItemSelectorModal({
 					</Button>
 				</div>
 
-				{/* Modal Content - 75% Top: Item Browser */}
-				<div className="flex-[3] border-b border-ui-border-base p-6 overflow-hidden">
-					<Tabs defaultValue="products" className="h-full flex flex-col">
-						<Tabs.List className="mb-4">
-							<Tabs.Trigger value="products" className="flex items-center gap-2">
-								<Package className="w-4 h-4" />
-								Produkte
-							</Tabs.Trigger>
-							<Tabs.Trigger value="services" className="flex items-center gap-2">
-								<Wrench className="w-4 h-4" />
-								Services
-							</Tabs.Trigger>
-						</Tabs.List>
+				{/* Resizable content area */}
+				<div className="flex-1 flex flex-col min-h-0">
+					{/* Top Section: Item Browser */}
+					<div
+						className="p-6 overflow-hidden"
+						style={{ height: `${topHeightPercent}%` }}
+					>
+						<Tabs defaultValue="products" className="h-full flex flex-col">
+							<Tabs.List className="mb-4 shrink-0">
+								<Tabs.Trigger value="products" className="flex items-center gap-2">
+									<Package className="w-4 h-4" />
+									Produkte
+								</Tabs.Trigger>
+								<Tabs.Trigger value="services" className="flex items-center gap-2">
+									<Wrench className="w-4 h-4" />
+									Services
+								</Tabs.Trigger>
+							</Tabs.List>
 
-						<Tabs.Content value="products" className="flex-1 overflow-hidden">
-							<ProductSelector onProductSelect={handleProductSelect} />
-						</Tabs.Content>
+							<Tabs.Content value="products" className="flex-1 overflow-hidden">
+								<ProductSelector onProductSelect={handleProductSelect} />
+							</Tabs.Content>
 
-						<Tabs.Content value="services" className="flex-1 overflow-hidden">
-							<ServiceSelector onServiceSelect={handleServiceSelect} />
-						</Tabs.Content>
-					</Tabs>
-				</div>
-
-				{/* Modal Content - 25% Bottom: Selected Items */}
-				<div className="flex-1 p-6 overflow-hidden flex flex-col bg-ui-bg-subtle">
-					<div className="flex items-center justify-between mb-4">
-						<Text size="large" weight="plus">
-							Ausgewählte Artikel ({items.length})
-						</Text>
-						<Button onClick={onClose} variant="secondary">
-							Fertig
-						</Button>
+							<Tabs.Content value="services" className="flex-1 overflow-hidden">
+								<ServiceSelector onServiceSelect={handleServiceSelect} />
+							</Tabs.Content>
+						</Tabs>
 					</div>
-					<div className="flex-1 overflow-auto">
-						<OfferItemsTable
-							items={items}
-							onItemsChange={onItemsChange}
-							onItemUpdate={onItemUpdate}
-							onItemRemove={onItemRemove}
-							currency={currency}
-						/>
+
+					{/* Resizable Divider */}
+					<div
+						className={`shrink-0 h-2 bg-ui-border-base hover:bg-ui-bg-interactive cursor-row-resize flex items-center justify-center transition-colors ${
+							isDragging ? 'bg-ui-bg-interactive' : ''
+						}`}
+						onMouseDown={handleDividerMouseDown}
+					>
+						<GripHorizontal className="w-4 h-4 text-ui-fg-muted" />
+					</div>
+
+					{/* Bottom Section: Selected Items */}
+					<div
+						className="p-6 overflow-hidden flex flex-col bg-ui-bg-subtle"
+						style={{ height: `${100 - topHeightPercent}%` }}
+					>
+						<div className="flex items-center justify-between mb-4 shrink-0">
+							<Text size="large" weight="plus">
+								Ausgewählte Artikel ({items.length})
+							</Text>
+							<Button onClick={onClose} variant="secondary">
+								Fertig
+							</Button>
+						</div>
+						<div className="flex-1 overflow-auto min-h-0">
+							<OfferItemsTable
+								items={items}
+								onItemsChange={onItemsChange}
+								onItemUpdate={onItemUpdate}
+								onItemRemove={onItemRemove}
+								currency={currency}
+							/>
+						</div>
+						{/* Add manual item button */}
+						<Button
+							variant="secondary"
+							onClick={handleAddManualItem}
+							className="mt-3 shrink-0"
+						>
+							<Plus className="w-4 h-4 mr-2" />
+							Artikel hinzufügen
+						</Button>
 					</div>
 				</div>
 			</div>

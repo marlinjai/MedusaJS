@@ -118,11 +118,6 @@ export default function OfferDetailPage() {
 	const [updating, setUpdating] = useState(false);
 	const [saving, setSaving] = useState(false);
 
-	// Add local state for price input values to allow natural typing
-	const [priceInputStates, setPriceInputStates] = useState<
-		Record<string, string>
-	>({});
-
 	// Add inventory checking state
 	const [inventoryStatus, setInventoryStatus] = useState<{
 		can_complete: boolean;
@@ -184,13 +179,6 @@ export default function OfferDetailPage() {
 			}
 			const data = await response.json();
 			setOffer(data.offer);
-
-			// Initialize price input states
-			const priceStates: Record<string, string> = {};
-			data.offer.items.forEach((item: OfferItem) => {
-				priceStates[item.id] = (item.unit_price / 100).toFixed(2);
-			});
-			setPriceInputStates(priceStates);
 
 			// Initialize customer form data
 			setCustomerFormData({
@@ -854,178 +842,6 @@ export default function OfferDetailPage() {
 		return inventoryStatus.items.find(item => item.item_id === itemId);
 	};
 
-	// Handle product selection for an item
-	const handleProductSelect = (itemId: string, product: SearchableItem) => {
-		if (!offer) return;
-
-		setOffer(prev => {
-			if (!prev) return prev;
-			return {
-				...prev,
-				items: prev.items.map(item =>
-					item.id === itemId
-						? {
-								...item,
-								item_type: 'product',
-								title: product.title || product.name || '',
-								description: product.description || '',
-								product_id: product.id,
-								selectedProduct: product,
-								// Reset variant-specific fields - will be set when variant is selected
-								variant_id: undefined,
-								variant_title: undefined,
-								sku: undefined,
-								unit_price: 0,
-								tax_rate: 19, // Default 19% VAT for products
-								inventory_quantity: undefined,
-								category: product.category,
-								total_price: 0,
-							}
-						: item,
-				),
-			};
-		});
-	};
-
-	// Handle variant selection for a product item
-	const handleVariantSelect = (itemId: string, variant: ProductVariant) => {
-		if (!offer) return;
-
-		// Get unit price from variant (supports both old prices array and new single price object)
-		const getVariantPrice = (variant: ProductVariant): number => {
-			// New API format: single price object
-			if (variant.price) {
-				return variant.price.amount;
-			}
-
-			// Old API format: prices array
-			if (variant.prices && variant.prices.length > 0) {
-				// Find EUR price first, then fall back to first available
-				const eurPrice = variant.prices.find(p => p.currency_code === 'EUR');
-				return eurPrice ? eurPrice.amount : variant.prices[0].amount;
-			}
-
-			return 0;
-		};
-
-		const unitPrice = getVariantPrice(variant);
-
-		setOffer(prev => {
-			if (!prev) return prev;
-			return {
-				...prev,
-				items: prev.items.map(item =>
-					item.id === itemId
-						? {
-								...item,
-								variant_id: variant.id,
-								variant_title: variant.title,
-								sku: variant.sku,
-								unit_price: unitPrice,
-								tax_rate: 19, // Default 19% VAT for products
-								inventory_quantity: variant.inventory_quantity, // Use cached value initially
-								currency_code: 'EUR',
-								total_price: calculateItemTotal({
-									...item,
-									variant_id: variant.id,
-									variant_title: variant.title,
-									sku: variant.sku,
-									unit_price: unitPrice,
-									tax_rate: 19,
-									inventory_quantity: variant.inventory_quantity,
-								}),
-							}
-						: item,
-				),
-			};
-		});
-
-		// Sync the price input state with the new variant price
-		setPriceInputStates(prev => ({
-			...prev,
-			[itemId]: (unitPrice / 100).toFixed(2),
-		}));
-
-		// Refresh inventory status immediately after variant selection to get real-time data
-		// Only check if offer is not cancelled
-		if (offer.status !== 'cancelled') {
-			setTimeout(() => checkInventoryAvailability(), 200);
-		}
-	};
-
-	// Handle service selection for an item
-	const handleServiceSelect = (itemId: string, service: SearchableItem) => {
-		if (!offer) return;
-
-		const servicePrice = service.base_price || service.hourly_rate || 0;
-
-		setOffer(prev => {
-			if (!prev) return prev;
-			return {
-				...prev,
-				items: prev.items.map(item =>
-					item.id === itemId
-						? {
-								...item,
-								item_type: 'service',
-								title: service.title || service.name || '',
-								description:
-									service.description || service.short_description || '',
-								service_id: service.id,
-								base_price: servicePrice, // Already in cents from API
-								hourly_rate: service.hourly_rate || 0,
-								currency_code: service.currency_code || 'EUR',
-								category: service.category,
-								service_type: service.service_type,
-								unit_price: servicePrice, // Already in cents from API
-								tax_rate: 19, // Default 19% VAT for services
-								total_price: calculateItemTotal({
-									...item,
-									item_type: 'service',
-									title: service.title || service.name || '',
-									unit_price: servicePrice,
-									tax_rate: 19,
-								}),
-							}
-						: item,
-				),
-			};
-		});
-
-		// Sync the price input state with the new service price
-		setPriceInputStates(prev => ({
-			...prev,
-			[itemId]: (servicePrice / 100).toFixed(2),
-		}));
-	};
-
-	// Handle price input blur - convert to proper format and update model
-	const handlePriceBlur = (itemId: string, inputValue: string) => {
-		if (!offer) return;
-
-		if (!inputValue.trim()) {
-			setPriceInputStates(prev => ({ ...prev, [itemId]: '' }));
-			updateItem(itemId, { unit_price: 0 });
-			return;
-		}
-
-		// Parse the input value and convert to cents
-		const num = Number(inputValue.replace(',', '.'));
-		if (!isNaN(num) && num >= 0) {
-			const cents = Math.round(num * 100);
-			updateItem(itemId, { unit_price: cents });
-			// Format the display value
-			setPriceInputStates(prev => ({ ...prev, [itemId]: num.toFixed(2) }));
-		} else {
-			// Invalid input, reset to current model value
-			const currentItem = offer.items.find(item => item.id === itemId);
-			const displayValue = currentItem?.unit_price
-				? (currentItem.unit_price / 100).toFixed(2)
-				: '';
-			setPriceInputStates(prev => ({ ...prev, [itemId]: displayValue }));
-		}
-	};
-
 	// Add new item to the offer
 	const addItem = () => {
 		if (!offer) return;
@@ -1359,17 +1175,42 @@ export default function OfferDetailPage() {
 								<Text size="small" className="text-ui-fg-muted">
 									Keine Artikel vorhanden.
 								</Text>
+								{editing && (
+									<Button
+										type="button"
+										variant="secondary"
+										size="small"
+										onClick={addItem}
+										className="mt-4"
+									>
+										<Plus className="w-4 h-4 mr-2" />
+										Manuellen Artikel hinzufügen
+									</Button>
+								)}
 							</div>
 						) : editing ? (
-							<OfferItemsTable
-								items={offer.items}
-								onItemsChange={items =>
-									setOffer(prev => (prev ? { ...prev, items } : prev))
-								}
-								onItemUpdate={updateItem}
-								onItemRemove={removeItem}
-								currency={offer.currency_code}
-							/>
+							<>
+								<OfferItemsTable
+									items={offer.items}
+									onItemsChange={items =>
+										setOffer(prev => (prev ? { ...prev, items } : prev))
+									}
+									onItemUpdate={updateItem}
+									onItemRemove={removeItem}
+									currency={offer.currency_code}
+								/>
+								{/* Add manual item button below the table */}
+								<Button
+									type="button"
+									variant="secondary"
+									size="small"
+									onClick={addItem}
+									className="mt-3"
+								>
+									<Plus className="w-4 h-4 mr-2" />
+									Manuellen Artikel hinzufügen
+								</Button>
+							</>
 						) : (
 							<div className="space-y-4">
 								{offer.items.map(item => (
