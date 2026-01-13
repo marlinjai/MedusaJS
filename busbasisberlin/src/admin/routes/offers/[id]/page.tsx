@@ -463,7 +463,32 @@ export default function OfferDetailPage() {
 			}
 
 			const result = await response.json();
+
+			// Show success message
 			toast.success(result.message || 'Inventar erfolgreich reserviert');
+
+			// Show warning if some items were skipped
+			if (result.items_skipped && result.items_skipped.length > 0) {
+				const skippedTitles = result.items_skipped
+					.map((item: { title: string; reason: string }) => {
+						const reasonText = {
+							sku_not_found: 'SKU nicht gefunden',
+							no_inventory_levels: 'Keine Lagerorte',
+							already_reserved: 'Bereits reserviert',
+							manage_inventory_false: 'Kein Lagermanagement',
+						}[item.reason] || item.reason;
+						return `${item.title} (${reasonText})`;
+					})
+					.join(', ');
+
+				toast.warning(
+					`${result.items_skipped.length} Artikel konnten nicht reserviert werden`,
+					{
+						description: skippedTitles,
+						duration: 8000, // Show longer for skipped items
+					},
+				);
+			}
 
 			// Reload offer to reflect reservation status
 			await loadOffer();

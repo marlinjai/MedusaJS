@@ -18,6 +18,7 @@ import { createReservationsWorkflow } from '@medusajs/medusa/core-flows';
 import {
 	CreatedReservation,
 	ReserveOfferInventoryInput,
+	SkippedItem,
 } from '../modules/offer/types';
 import { resolveOfferService } from '../types/services';
 import { getLogger, validateOfferStep } from './shared/offer-validation';
@@ -25,14 +26,20 @@ import { getLogger, validateOfferStep } from './shared/offer-validation';
 // Step: Create reservations for all product items in offer
 const createOfferReservationsStep = createStep(
 	'create-offer-reservations',
-	async (input: { offer: any; productItems: any[] }, { container }) => {
+	async (
+		input: { offer: any; productItems: any[]; filteredOutItems: SkippedItem[] },
+		{ container },
+	) => {
 		const logger = getLogger(container);
 		const inventoryService = container.resolve(Modules.INVENTORY);
 		const offerService = resolveOfferService(container);
 
+		// Start with items filtered out by validation (manage_inventory: false)
+		const skippedItems: SkippedItem[] = [...(input.filteredOutItems || [])];
+
 		if (input.productItems.length === 0) {
 			logger.info('[RESERVE-WORKFLOW] No product items to reserve');
-			return new StepResponse({ reservations: [] });
+			return new StepResponse({ reservations: [], skippedItems });
 		}
 
 		const reservations: CreatedReservation[] = [];
@@ -44,17 +51,43 @@ const createOfferReservationsStep = createStep(
 					logger.info(
 						`[RESERVE-WORKFLOW] Item ${item.title} already has reservation ${item.reservation_id}, skipping`,
 					);
+					skippedItems.push({
+						item_id: item.id,
+						title: item.title,
+						sku: item.sku,
+						reason: 'already_reserved',
+					});
 					continue;
 				}
 
-				// Get inventory item by SKU
-				const inventoryItems = await inventoryService.listInventoryItems({
-					sku: item.sku,
+				// ✅ Normalize SKU to lowercase for lookup (SKUs should always be lowercase)
+				const normalizedSku = item.sku?.toLowerCase();
+
+				// Get inventory item by normalized SKU
+				let inventoryItems = await inventoryService.listInventoryItems({
+					sku: normalizedSku,
 				});
+
+				// Fallback: try original casing for backwards compatibility
+				if (inventoryItems.length === 0 && item.sku !== normalizedSku) {
+					logger.info(
+						`[RESERVE-WORKFLOW] No inventory for lowercase SKU ${normalizedSku}, trying original: ${item.sku}`,
+					);
+					inventoryItems = await inventoryService.listInventoryItems({
+						sku: item.sku,
+					});
+				}
+
 				if (inventoryItems.length === 0) {
 					logger.warn(
-						`[RESERVE-WORKFLOW] No inventory item found for SKU: ${item.sku}`,
+						`[RESERVE-WORKFLOW] No inventory item found for SKU: ${item.sku} (normalized: ${normalizedSku})`,
 					);
+					skippedItems.push({
+						item_id: item.id,
+						title: item.title,
+						sku: item.sku,
+						reason: 'sku_not_found',
+					});
 					continue;
 				}
 
@@ -68,6 +101,12 @@ const createOfferReservationsStep = createStep(
 					logger.warn(
 						`[RESERVE-WORKFLOW] No inventory levels found for item: ${inventoryItem.id}`,
 					);
+					skippedItems.push({
+						item_id: item.id,
+						title: item.title,
+						sku: item.sku,
+						reason: 'no_inventory_levels',
+					});
 					continue;
 				}
 
@@ -127,7 +166,7 @@ const createOfferReservationsStep = createStep(
 			}
 		}
 
-		return new StepResponse({ reservations });
+		return new StepResponse({ reservations, skippedItems });
 	},
 );
 
@@ -145,12 +184,22 @@ export const reserveOfferInventoryWorkflow = createWorkflow(
 		const reservations = createOfferReservationsStep({
 			offer: validation.offer,
 			productItems: validation.productItems,
+			filteredOutItems: validation.filteredOutItems,
 		});
+
+		// Determine status based on results
+		const status =
+			reservations.reservations.length === 0
+				? 'failed'
+				: reservations.skippedItems.length > 0
+					? 'partial'
+					: 'reserved';
 
 		return new WorkflowResponse({
 			offer_id: input.offer_id,
 			reservations_created: reservations.reservations.length,
-			status: 'reserved',
+			items_skipped: reservations.skippedItems,
+			status,
 		});
 	},
 );

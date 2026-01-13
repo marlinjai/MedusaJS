@@ -6,6 +6,7 @@
 import type { Logger } from '@medusajs/framework/types';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
+import { SkippedItem } from '../../modules/offer/types';
 import { resolveOfferService } from '../../types/services';
 
 // Helper: Safe logger resolution
@@ -40,6 +41,9 @@ export const validateOfferStep = createStep(
 			.map(item => item.variant_id)
 			.filter((variantId): variantId is string => Boolean(variantId));
 
+		// Track items filtered out due to manage_inventory: false
+		const filteredOutItems: SkippedItem[] = [];
+
 		if (variantIds.length > 0) {
 			try {
 				const query = container.resolve('query');
@@ -57,6 +61,18 @@ export const validateOfferStep = createStep(
 						.map((v: any) => v.id),
 				);
 
+				// Track items being filtered out before filtering
+				for (const item of productItems) {
+					if (!inventoryManagedVariantIds.has(item.variant_id!)) {
+						filteredOutItems.push({
+							item_id: item.id,
+							title: item.title,
+							sku: item.sku,
+							reason: 'manage_inventory_false',
+						});
+					}
+				}
+
 				// Filter product items to only those with inventory-managed variants
 				productItems = productItems.filter(item =>
 					inventoryManagedVariantIds.has(item.variant_id!),
@@ -65,6 +81,12 @@ export const validateOfferStep = createStep(
 				logger.info(
 					`[OFFER-INVENTORY] ${input.operation}: Filtered ${variantIds.length} variants to ${inventoryManagedVariantIds.size} inventory-managed variants for offer ${offer.offer_number}`,
 				);
+
+				if (filteredOutItems.length > 0) {
+					logger.info(
+						`[OFFER-INVENTORY] ${input.operation}: ${filteredOutItems.length} item(s) skipped due to manage_inventory: false`,
+					);
+				}
 			} catch (error) {
 				logger.warn(
 					`[OFFER-INVENTORY] Could not fetch variant data to check manage_inventory, checking all variants: ${error.message}`,
@@ -80,6 +102,7 @@ export const validateOfferStep = createStep(
 		return new StepResponse({
 			offer,
 			productItems,
+			filteredOutItems,
 			offerNumber: offer.offer_number,
 		});
 	},

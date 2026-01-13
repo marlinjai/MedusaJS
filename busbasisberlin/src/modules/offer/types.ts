@@ -159,3 +159,23 @@ export type CreatedReservation = {
 	variant_id: string;
 	quantity: number;
 };
+
+// ✅ SKIPPED ITEM TYPE: For tracking items that couldn't be reserved
+export type SkippedItem = {
+	item_id: string;
+	title: string;
+	sku: string | null;
+	reason:
+		| 'sku_not_found'
+		| 'no_inventory_levels'
+		| 'already_reserved'
+		| 'manage_inventory_false';
+};
+
+// ✅ WORKFLOW RESULT TYPE: For reserve offer inventory workflow
+export type ReserveOfferInventoryResult = {
+	offer_id: string;
+	reservations_created: number;
+	items_skipped: SkippedItem[];
+	status: 'reserved' | 'partial' | 'failed';
+};

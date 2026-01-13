@@ -82,12 +82,24 @@ export async function POST(
 			},
 		});
 
+		const itemsSkipped = result.result.items_skipped || [];
+		const reservationsCreated = result.result.reservations_created;
+
 		logger.info(
-			`[RESERVE-INVENTORY] Successfully created ${result.result.reservations_created} reservations for offer ${offer.offer_number}`,
+			`[RESERVE-INVENTORY] Created ${reservationsCreated} reservations for offer ${offer.offer_number}` +
+				(itemsSkipped.length > 0
+					? `, ${itemsSkipped.length} item(s) skipped`
+					: ''),
 		);
 
+		if (itemsSkipped.length > 0) {
+			logger.warn(
+				`[RESERVE-INVENTORY] Skipped items: ${JSON.stringify(itemsSkipped)}`,
+			);
+		}
+
 		// Update offer has_reservations flag if reservations were created
-		if (result.result.reservations_created > 0) {
+		if (reservationsCreated > 0) {
 			await offerService.updateOffers([
 				{
 					id: id,
@@ -96,12 +108,20 @@ export async function POST(
 			]);
 		}
 
+		// Build response message
+		let message = `Successfully reserved inventory for ${reservationsCreated} item(s)`;
+		if (itemsSkipped.length > 0) {
+			message += `. ${itemsSkipped.length} item(s) could not be reserved.`;
+		}
+
 		res.json({
 			success: true,
-			message: `Successfully reserved inventory for ${result.result.reservations_created} items`,
+			message,
 			offer_id: id,
 			offer_number: offer.offer_number,
-			reservations_created: result.result.reservations_created,
+			reservations_created: reservationsCreated,
+			items_skipped: itemsSkipped,
+			status: result.result.status,
 		});
 	} catch (error) {
 		logger.error(`[RESERVE-INVENTORY] Error reserving inventory:`, error);
