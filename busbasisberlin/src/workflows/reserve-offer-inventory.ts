@@ -39,7 +39,14 @@ const createOfferReservationsStep = createStep(
 
 		if (input.productItems.length === 0) {
 			logger.info('[RESERVE-WORKFLOW] No product items to reserve');
-			return new StepResponse({ reservations: [], skippedItems });
+			// Calculate status - if we have skipped items it's partial, otherwise failed
+			const earlyStatus = skippedItems.length > 0 ? 'partial' : 'failed';
+			return new StepResponse({
+				reservations: [] as CreatedReservation[],
+				skippedItems,
+				reservations_created: 0,
+				status: earlyStatus as 'reserved' | 'partial' | 'failed',
+			});
 		}
 
 		const reservations: CreatedReservation[] = [];
@@ -166,7 +173,20 @@ const createOfferReservationsStep = createStep(
 			}
 		}
 
-		return new StepResponse({ reservations, skippedItems });
+		// Calculate status based on results
+		const status: 'reserved' | 'partial' | 'failed' =
+			reservations.length === 0
+				? 'failed'
+				: skippedItems.length > 0
+					? 'partial'
+					: 'reserved';
+
+		return new StepResponse({
+			reservations: reservations as CreatedReservation[],
+			skippedItems,
+			reservations_created: reservations.length,
+			status,
+		});
 	},
 );
 
@@ -187,19 +207,11 @@ export const reserveOfferInventoryWorkflow = createWorkflow(
 			filteredOutItems: validation.filteredOutItems,
 		});
 
-		// Determine status based on results
-		const status =
-			reservations.reservations.length === 0
-				? 'failed'
-				: reservations.skippedItems.length > 0
-					? 'partial'
-					: 'reserved';
-
 		return new WorkflowResponse({
 			offer_id: input.offer_id,
-			reservations_created: reservations.reservations.length,
+			reservations_created: reservations.reservations_created,
 			items_skipped: reservations.skippedItems,
-			status,
+			status: reservations.status,
 		});
 	},
 );
