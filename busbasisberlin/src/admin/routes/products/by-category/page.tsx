@@ -25,10 +25,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { BottomSheet } from '../../../components/BottomSheet';
-import { MobileControlBar } from '../../../components/MobileControlBar';
-import { useIsMobile } from '../../../utils/use-mobile';
 import ColumnVisibilityControl from '../../../components/ColumnVisibilityControl';
+import { MobileControlBar } from '../../../components/MobileControlBar';
 import { useColumnVisibility } from '../../../hooks';
+import { useIsMobile } from '../../../utils/use-mobile';
 import ProductEditorModal from './components/ProductEditorModal';
 import ProductTable from './components/ProductTable';
 
@@ -181,7 +181,13 @@ export default function ProductsByCategoryPage() {
 	>('all');
 
 	// Shared hooks for state management
-	const { visibleColumns, toggleColumn, showAllColumns, hideAllColumns, setVisibleColumns } = useColumnVisibility({
+	const {
+		visibleColumns,
+		toggleColumn,
+		showAllColumns,
+		hideAllColumns,
+		setVisibleColumns,
+	} = useColumnVisibility({
 		storageKey: 'products-table-visible-columns',
 		defaultVisibleColumns: tableColumns.map(c => c.key),
 		allColumns: tableColumns.map(c => c.key),
@@ -926,29 +932,34 @@ export default function ProductsByCategoryPage() {
 										columns={tableColumns}
 										visibleColumns={visibleColumns}
 										onToggle={key => {
-									toggleColumn(key);
-									// Ensure thumbnail is always visible
-									setTimeout(() => {
-										const ensured = ensureThumbnailVisible(visibleColumns);
-										if (ensured.size !== visibleColumns.size) {
-											setVisibleColumns(ensured);
-										}
-									}, 0);
+											toggleColumn(key);
+											// Ensure thumbnail is always visible
+											setTimeout(() => {
+												const ensured = ensureThumbnailVisible(visibleColumns);
+												if (ensured.size !== visibleColumns.size) {
+													setVisibleColumns(ensured);
+												}
+											}, 0);
 										}}
 										onShowAll={() => {
-									showAllColumns();
+											showAllColumns();
 										}}
 										onHideAll={() => {
-									hideAllColumns();
-									// Ensure thumbnail is visible after hiding all
-									setTimeout(() => {
-										const ensured = ensureThumbnailVisible(visibleColumns);
-										setVisibleColumns(ensured);
-									}, 0);
-								}}
-								nonHideableColumns={['select', 'thumbnail', 'title', 'actions']}
-								buttonText="Eigenschaften"
-								variant="advanced"
+											hideAllColumns();
+											// Ensure thumbnail is visible after hiding all
+											setTimeout(() => {
+												const ensured = ensureThumbnailVisible(visibleColumns);
+												setVisibleColumns(ensured);
+											}, 0);
+										}}
+										nonHideableColumns={[
+											'select',
+											'thumbnail',
+											'title',
+											'actions',
+										]}
+										buttonText="Eigenschaften"
+										variant="advanced"
 									/>
 
 									{selectedCount > 0 && (

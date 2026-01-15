@@ -94,17 +94,17 @@ const ProductEditorModal = ({
 
 					// Smart price conversion: if amount is >= 100, it's likely in cents (Medusa standard)
 					// If amount is < 100, it might already be in euros (incorrectly stored)
-			// The backend GET endpoint already converts prices from cents to euros
-			// via price_<currency> fields (see line 157-158 of [id]/route.ts)
-			// So we use variant.price_eur which is already in euros from the backend
-			return {
-				...variant,
-				price_eur: variant.price_eur || 0, // Already in euros from backend GET
-				// Explicitly preserve images and thumbnail
-				images: variant.images || [],
-				variant_thumbnail: variant.variant_thumbnail, // Preserve thumbnail setting
-			};
-		}) || [];
+					// The backend GET endpoint already converts prices from cents to euros
+					// via price_<currency> fields (see line 157-158 of [id]/route.ts)
+					// So we use variant.price_eur which is already in euros from the backend
+					return {
+						...variant,
+						price_eur: variant.price_eur || 0, // Already in euros from backend GET
+						// Explicitly preserve images and thumbnail
+						images: variant.images || [],
+						variant_thumbnail: variant.variant_thumbnail, // Preserve thumbnail setting
+					};
+				}) || [];
 
 			setFormData({
 				...product,
