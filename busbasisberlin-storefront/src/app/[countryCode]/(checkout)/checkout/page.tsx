@@ -21,7 +21,7 @@ export default async function Checkout() {
 	const customer = await retrieveCustomer();
 
 	return (
-		<HeroAlertPaddingWrapper size="large" className="content-container pb-12">
+		<HeroAlertPaddingWrapper size="xlarge" className="content-container pb-12">
 			<div className="grid grid-cols-1 small:grid-cols-2 gap-x-8 relative">
 				<PaymentWrapper cart={cart}>
 					<CheckoutForm cart={cart} customer={customer} />

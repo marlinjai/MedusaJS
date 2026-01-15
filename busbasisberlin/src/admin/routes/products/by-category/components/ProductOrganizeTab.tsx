@@ -298,6 +298,7 @@ const ProductOrganizeTab = ({
 	});
 
 	// Fetch inventory data for variants if product ID exists
+	// Note: Medusa v2 requires separate API calls to get location_levels
 	const { data: inventoryData } = useQuery({
 		queryKey: ['product-variant-inventory', formData.id],
 		queryFn: async () => {
@@ -316,6 +317,7 @@ const ProductOrganizeTab = ({
 						return { variantId: variant.id, quantity: 0 };
 					}
 
+					// Step 1: Fetch inventory items for this variant
 					const res = await fetch(
 						`/admin/inventory-items?variant_id=${variant.id}`,
 						{
@@ -332,18 +334,33 @@ const ProductOrganizeTab = ({
 
 					const data = await res.json();
 					const inventoryItems = data?.inventory_items || [];
-					const totalQuantity = inventoryItems.reduce(
-						(sum: number, item: any) => {
-							const levels = item.location_levels || [];
-							return (
-								sum +
-								levels.reduce((levelSum: number, level: any) => {
-									return levelSum + (level.stocked_quantity || 0);
-								}, 0)
+
+					// Step 2: For each inventory item, fetch its location levels separately
+					// Medusa v2 does not include location_levels in the inventory-items response
+					let totalQuantity = 0;
+					for (const item of inventoryItems) {
+						try {
+							const levelsRes = await fetch(
+								`/admin/inventory-items/${item.id}/location-levels`,
+								{ credentials: 'include' },
 							);
-						},
-						0,
-					);
+							if (levelsRes.ok) {
+								const levelsData = await levelsRes.json();
+								// Response format: { inventory_levels: [...] }
+								const levels = levelsData?.inventory_levels || [];
+								totalQuantity += levels.reduce(
+									(sum: number, level: any) =>
+										sum + (level.stocked_quantity || 0),
+									0,
+								);
+							}
+						} catch (levelError) {
+							console.error(
+								`Failed to fetch location levels for inventory item ${item.id}:`,
+								levelError,
+							);
+						}
+					}
 
 					return { variantId: variant.id, quantity: totalQuantity };
 				});
