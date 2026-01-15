@@ -6,11 +6,11 @@ import {
 	ContainerRegistrationKeys,
 	getVariantAvailability,
 } from '@medusajs/framework/utils';
+import { getDefaultSalesChannelIdFromQuery } from '../../../../utils/sales-channel-helper';
 import {
 	getAllDescendantCategoryIds,
 	type CategoryNode,
 } from '../../product-categories/utils';
-import { getDefaultSalesChannelIdFromQuery } from '../../../../utils/sales-channel-helper';
 
 export const GET = async (
 	req: MedusaRequest,
@@ -182,8 +182,8 @@ export const GET = async (
 			);
 
 			// Filter variants by SKU pattern (case-insensitive partial match)
-			const matchingVariants = allVariants.filter(
-				(v: any) => v.sku?.toLowerCase().includes(skuFilter),
+			const matchingVariants = allVariants.filter((v: any) =>
+				v.sku?.toLowerCase().includes(skuFilter),
 			);
 			logger.info(
 				`[PRODUCTS-BY-CATEGORY] Found ${matchingVariants.length} variants matching SKU "${skuFilter}"`,
@@ -366,9 +366,7 @@ export const GET = async (
 			// SKU filter: we already know the total from pre-querying variants
 			// The skuMatchedProductIds array contains all matching product IDs
 			total = skuMatchedProductIds.length;
-			logger.info(
-				`[PRODUCTS-BY-CATEGORY] Total from SKU pre-query: ${total}`,
-			);
+			logger.info(`[PRODUCTS-BY-CATEGORY] Total from SKU pre-query: ${total}`);
 		} else if (shippingProfileIds) {
 			// For shipping profile filtering, we still need to load and filter client-side
 			const countResult = needsIndexQuery
