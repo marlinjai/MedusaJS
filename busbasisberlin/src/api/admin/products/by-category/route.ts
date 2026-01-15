@@ -155,6 +155,65 @@ export const GET = async (
 			filters.q = q as string;
 		}
 
+		// SKU filter - pre-query variants to get product IDs BEFORE pagination
+		// This ensures SKU search works across ALL products, not just the paginated subset
+		let skuMatchedProductIds: string[] | null = null;
+		if (sku) {
+			hasFilters = true;
+			const skuFilter = (sku as string).toLowerCase();
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Pre-querying variants for SKU filter: "${skuFilter}"`,
+			);
+
+			// Query all variants to find those matching the SKU pattern
+			const variantsResult = await query.graph({
+				entity: 'product_variant',
+				fields: ['id', 'product_id', 'sku'],
+				filters: {},
+				pagination: {
+					take: 10000,
+					skip: 0,
+				},
+			});
+
+			const allVariants = variantsResult?.data || [];
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Found ${allVariants.length} total variants`,
+			);
+
+			// Filter variants by SKU pattern (case-insensitive partial match)
+			const matchingVariants = allVariants.filter(
+				(v: any) => v.sku?.toLowerCase().includes(skuFilter),
+			);
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Found ${matchingVariants.length} variants matching SKU "${skuFilter}"`,
+			);
+
+			// Extract unique product IDs from matching variants
+			skuMatchedProductIds = [
+				...new Set(matchingVariants.map((v: any) => v.product_id)),
+			] as string[];
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] SKU filter matched ${skuMatchedProductIds.length} products`,
+			);
+
+			// If no products match the SKU, return empty result early
+			if (skuMatchedProductIds.length === 0) {
+				logger.info(
+					`[PRODUCTS-BY-CATEGORY] No products match SKU filter, returning empty`,
+				);
+				res.json({
+					products: [],
+					count: 0,
+					total: 0,
+				});
+				return;
+			}
+
+			// Add product IDs to filters so they're included in the main query
+			filters.id = skuMatchedProductIds;
+		}
+
 		const queryFilters = hasFilters ? filters : {};
 
 		logger.info(
@@ -229,19 +288,8 @@ export const GET = async (
 			);
 		}
 
-		// Filter by SKU if provided (client-side filter since SKU is in variants)
-		if (sku) {
-			const skuFilter = (sku as string).toLowerCase();
-			products = products.filter((product: any) =>
-				product.variants?.some((variant: any) =>
-					variant.sku?.toLowerCase().includes(skuFilter),
-				),
-			);
-			// Re-apply pagination after SKU filtering
-			const actualLimit = parseInt(limit as string);
-			const actualOffset = parseInt(offset as string);
-			products = products.slice(actualOffset, actualOffset + actualLimit);
-		}
+		// NOTE: SKU filtering is now done BEFORE the main query via pre-querying variants
+		// The matching product IDs are added to filters.id, so no client-side filtering needed here
 
 		// Log price data for first product to debug
 		if (products.length > 0 && products[0].variants?.length > 0) {
@@ -314,12 +362,19 @@ export const GET = async (
 
 		// Get total count for pagination
 		let total: number;
-		if (sku || shippingProfileIds) {
-			// For SKU or shipping profile filtering, we need to load and filter client-side
+		if (skuMatchedProductIds) {
+			// SKU filter: we already know the total from pre-querying variants
+			// The skuMatchedProductIds array contains all matching product IDs
+			total = skuMatchedProductIds.length;
+			logger.info(
+				`[PRODUCTS-BY-CATEGORY] Total from SKU pre-query: ${total}`,
+			);
+		} else if (shippingProfileIds) {
+			// For shipping profile filtering, we still need to load and filter client-side
 			const countResult = needsIndexQuery
 				? await query.index({
 						entity: 'product',
-						fields: ['id', 'variants.sku', 'shipping_profile.id'],
+						fields: ['id', 'shipping_profile.id'],
 						filters: queryFilters,
 						pagination: {
 							take: 10000,
@@ -328,7 +383,7 @@ export const GET = async (
 					})
 				: await query.graph({
 						entity: 'product',
-						fields: ['id', 'variants.sku', 'shipping_profile.id'],
+						fields: ['id', 'shipping_profile.id'],
 						filters: queryFilters,
 						pagination: {
 							take: 10000,
@@ -342,16 +397,6 @@ export const GET = async (
 			if (shippingProfileIds && shippingProfileIds.length > 0) {
 				allProducts = allProducts.filter((product: any) =>
 					shippingProfileIds.includes(product.shipping_profile?.id),
-				) as any;
-			}
-
-			// Apply SKU filter if provided
-			if (sku) {
-				const skuFilter = (sku as string).toLowerCase();
-				allProducts = allProducts.filter((product: any) =>
-					product.variants?.some((variant: any) =>
-						variant.sku?.toLowerCase().includes(skuFilter),
-					),
 				) as any;
 			}
 
