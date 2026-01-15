@@ -2,6 +2,8 @@
 // Product editor modal with Details/Organisieren/Varianten tabs
 
 import { Button, FocusModal, Heading, Text } from '@medusajs/ui';
+import * as Dialog from '@radix-ui/react-dialog';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ProductDetailsTab from './ProductDetailsTab';
@@ -90,33 +92,6 @@ const ProductEditorModal = ({
 						(p: any) => p?.currency_code?.toLowerCase() === 'eur',
 					);
 
-					// Debug logging to understand the price format
-					if (eurPrice) {
-						console.log('[ProductEditorModal] Price debug:', {
-							sku: variant.sku,
-							eurPrice,
-							amount: eurPrice.amount,
-							amountType: typeof eurPrice.amount,
-							isLikelyCents: eurPrice.amount >= 100,
-							calculatedPrice: eurPrice.amount / 100,
-						});
-					}
-
-					// Debug logging for variant images
-					if (variant.images) {
-						console.log('[ProductEditorModal] Variant images found:', {
-							sku: variant.sku,
-							variantId: variant.id,
-							imagesCount: variant.images.length,
-							images: variant.images,
-						});
-					} else {
-						console.log('[ProductEditorModal] No variant images for:', {
-							sku: variant.sku,
-							variantId: variant.id,
-						});
-					}
-
 					// Smart price conversion: if amount is >= 100, it's likely in cents (Medusa standard)
 					// If amount is < 100, it might already be in euros (incorrectly stored)
 			// The backend GET endpoint already converts prices from cents to euros
@@ -198,6 +173,19 @@ const ProductEditorModal = ({
 	return (
 		<FocusModal open={open} onOpenChange={onOpenChange}>
 			<FocusModal.Content className="max-w-[95vw] w-full max-h-[95vh] h-full m-auto">
+				{/* Accessible title and description for screen readers (hidden visually) */}
+				<VisuallyHidden.Root asChild>
+					<Dialog.Title>
+						{product ? 'Produkt bearbeiten' : 'Neues Produkt'}
+					</Dialog.Title>
+				</VisuallyHidden.Root>
+				<VisuallyHidden.Root asChild>
+					<Dialog.Description>
+						{product
+							? `Bearbeiten Sie das Produkt "${product.title}"`
+							: 'Erstellen Sie ein neues Produkt mit Details, Kategorien und Varianten'}
+					</Dialog.Description>
+				</VisuallyHidden.Root>
 				<FocusModal.Header>
 					<div className="flex items-center justify-between w-full">
 						<Heading level="h1" className="text-2xl font-bold">

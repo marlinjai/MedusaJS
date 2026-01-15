@@ -318,7 +318,6 @@ export default function ProductsByCategoryPage() {
 			params.append('status', selectedStatus);
 		}
 		const queryString = params.toString();
-		console.log('[PRODUCTS-BY-CATEGORY] Query params:', queryString);
 		return queryString;
 	}, [
 		selectedCategories,
@@ -370,17 +369,14 @@ export default function ProductsByCategoryPage() {
 		],
 		queryFn: async () => {
 			const url = `/admin/products/by-category${queryParams ? `?${queryParams}` : ''}`;
-			console.log('[PRODUCTS-BY-CATEGORY] Fetching products from:', url);
 			const res = await fetch(url, {
 				credentials: 'include',
 			});
 			if (!res.ok) {
 				const errorText = await res.text();
-				console.error('[PRODUCTS-BY-CATEGORY] Error response:', errorText);
 				throw new Error(`Failed to fetch products: ${res.status} ${errorText}`);
 			}
 			const data = await res.json();
-			console.log('[PRODUCTS-BY-CATEGORY] Received products:', data);
 			return data as {
 				products: ProductListItem[];
 				count: number;
@@ -625,21 +621,9 @@ export default function ProductsByCategoryPage() {
 													const newSet = new Set(selectedCategories);
 													if (newSet.has(id)) {
 														newSet.delete(id);
-														console.log(
-															'[PRODUCTS-BY-CATEGORY] Deselected category:',
-															id,
-														);
 													} else {
 														newSet.add(id);
-														console.log(
-															'[PRODUCTS-BY-CATEGORY] Selected category:',
-															id,
-														);
 													}
-													console.log(
-														'[PRODUCTS-BY-CATEGORY] Selected categories:',
-														Array.from(newSet),
-													);
 													setSelectedCategories(newSet);
 													setRowSelection({});
 												}}
@@ -1178,22 +1162,12 @@ export default function ProductsByCategoryPage() {
 										);
 										if (res.ok) {
 											const data = await res.json();
-											console.log(
-												'[ProductEdit] Fetched product with tags:',
-												data.product,
-											);
 											setEditingProduct(data.product);
 											setShowProductEditor(true);
 										} else {
-											const errorText = await res.text();
-											console.error('[ProductEdit] Error response:', errorText);
 											toast.error('Fehler beim Laden der Produktdetails');
 										}
 									} catch (error) {
-										console.error(
-											'[ProductEdit] Error fetching product:',
-											error,
-										);
 										toast.error('Fehler beim Laden der Produktdetails');
 									}
 								}}

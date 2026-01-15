@@ -133,31 +133,16 @@ const ProductOrganizeTab = ({
 					credentials: 'include',
 				});
 				if (!res.ok) {
-					console.error(
-						'[ProductOrganizeTab] Shipping profiles fetch failed:',
-						res.status,
-						res.statusText,
-					);
 					return [];
 				}
 				const data = await res.json();
-				console.log(
-					'[ProductOrganizeTab] Shipping profiles API response:',
-					data,
-				);
 				// API returns { shipping_profiles: [...] }
 				const profiles =
 					data?.shipping_profiles ||
 					data?.data ||
 					(Array.isArray(data) ? data : []);
-				const result = Array.isArray(profiles) ? profiles : [];
-				console.log('[ProductOrganizeTab] Parsed shipping profiles:', result);
-				return result;
+				return Array.isArray(profiles) ? profiles : [];
 			} catch (error) {
-				console.error(
-					'[ProductOrganizeTab] Error fetching shipping profiles:',
-					error,
-				);
 				return [];
 			}
 		},
@@ -302,11 +287,18 @@ const ProductOrganizeTab = ({
 	const { data: inventoryData } = useQuery({
 		queryKey: ['product-variant-inventory', formData.id],
 		queryFn: async () => {
+			console.log('[ProductOrganizeTab] INVENTORY FETCH START', {
+				productId: formData.id,
+				variantsCount: formData.variants?.length,
+				variants: formData.variants?.map(v => ({ id: v.id, sku: v.sku })),
+			});
+
 			if (
 				!formData.id ||
 				!formData.variants ||
 				formData.variants.length === 0
 			) {
+				console.log('[ProductOrganizeTab] INVENTORY FETCH SKIPPED - no product or variants');
 				return {};
 			}
 
@@ -314,53 +306,90 @@ const ProductOrganizeTab = ({
 				// Fetch inventory for each variant
 				const inventoryPromises = formData.variants.map(async variant => {
 					if (!variant.id) {
+						console.log('[ProductOrganizeTab] Variant has no ID:', variant);
 						return { variantId: variant.id, quantity: 0 };
 					}
 
 					// Step 1: Fetch inventory items for this variant
-					const res = await fetch(
-						`/admin/inventory-items?variant_id=${variant.id}`,
-						{
-							credentials: 'include',
-						},
-					);
+					const inventoryUrl = `/admin/inventory-items?variant_id=${variant.id}`;
+					console.log('[ProductOrganizeTab] Fetching inventory items:', inventoryUrl);
+
+					const res = await fetch(inventoryUrl, {
+						credentials: 'include',
+					});
+
+					console.log('[ProductOrganizeTab] Inventory items response status:', res.status);
 
 					if (!res.ok) {
-						console.error(
-							`Failed to fetch inventory for variant ${variant.id}`,
-						);
+						const errorText = await res.text();
+						console.error('[ProductOrganizeTab] Inventory items fetch FAILED:', {
+							variantId: variant.id,
+							status: res.status,
+							error: errorText,
+						});
 						return { variantId: variant.id, quantity: 0 };
 					}
 
 					const data = await res.json();
+					console.log('[ProductOrganizeTab] Inventory items response:', {
+						variantId: variant.id,
+						fullResponse: data,
+						inventoryItemsCount: data?.inventory_items?.length,
+					});
+
 					const inventoryItems = data?.inventory_items || [];
 
 					// Step 2: For each inventory item, fetch its location levels separately
 					// Medusa v2 does not include location_levels in the inventory-items response
 					let totalQuantity = 0;
 					for (const item of inventoryItems) {
+						const levelsUrl = `/admin/inventory-items/${item.id}/location-levels`;
+						console.log('[ProductOrganizeTab] Fetching location levels:', levelsUrl);
+
 						try {
-							const levelsRes = await fetch(
-								`/admin/inventory-items/${item.id}/location-levels`,
-								{ credentials: 'include' },
-							);
+							const levelsRes = await fetch(levelsUrl, { credentials: 'include' });
+							console.log('[ProductOrganizeTab] Location levels response status:', levelsRes.status);
+
 							if (levelsRes.ok) {
 								const levelsData = await levelsRes.json();
+								console.log('[ProductOrganizeTab] Location levels response:', {
+									inventoryItemId: item.id,
+									fullResponse: levelsData,
+								});
+
 								// Response format: { inventory_levels: [...] }
 								const levels = levelsData?.inventory_levels || [];
+								const levelQuantities = levels.map((level: any) => ({
+									locationId: level.location_id,
+									stockedQuantity: level.stocked_quantity,
+								}));
+								console.log('[ProductOrganizeTab] Location level quantities:', levelQuantities);
+
 								totalQuantity += levels.reduce(
 									(sum: number, level: any) =>
 										sum + (level.stocked_quantity || 0),
 									0,
 								);
+							} else {
+								const errorText = await levelsRes.text();
+								console.error('[ProductOrganizeTab] Location levels fetch FAILED:', {
+									inventoryItemId: item.id,
+									status: levelsRes.status,
+									error: errorText,
+								});
 							}
 						} catch (levelError) {
-							console.error(
-								`Failed to fetch location levels for inventory item ${item.id}:`,
-								levelError,
-							);
+							console.error('[ProductOrganizeTab] Location levels fetch ERROR:', {
+								inventoryItemId: item.id,
+								error: levelError,
+							});
 						}
 					}
+
+					console.log('[ProductOrganizeTab] Total quantity for variant:', {
+						variantId: variant.id,
+						totalQuantity,
+					});
 
 					return { variantId: variant.id, quantity: totalQuantity };
 				});
@@ -374,9 +403,11 @@ const ProductOrganizeTab = ({
 					}
 				});
 
+				console.log('[ProductOrganizeTab] INVENTORY FETCH COMPLETE:', inventoryMap);
+
 				return inventoryMap;
 			} catch (error) {
-				console.error('Error fetching inventory:', error);
+				console.error('[ProductOrganizeTab] INVENTORY FETCH ERROR:', error);
 				return {};
 			}
 		},
@@ -687,10 +718,6 @@ const ProductOrganizeTab = ({
 				<Select
 					value={formData.shipping_profile_id || undefined}
 					onValueChange={value => {
-						console.log(
-							'[ProductOrganizeTab] Shipping profile selected:',
-							value,
-						);
 						onChange({
 							...formData,
 							shipping_profile_id: value || undefined,
@@ -703,17 +730,11 @@ const ProductOrganizeTab = ({
 					<Select.Content>
 						{Array.isArray(shippingProfilesData) &&
 						shippingProfilesData.length > 0 ? (
-							shippingProfilesData.map((profile: any) => {
-								console.log(
-									'[ProductOrganizeTab] Rendering shipping profile:',
-									profile,
-								);
-								return (
-									<Select.Item key={profile.id} value={profile.id}>
-										{profile.name || profile.title || profile.id}
-									</Select.Item>
-								);
-							})
+							shippingProfilesData.map((profile: any) => (
+								<Select.Item key={profile.id} value={profile.id}>
+									{profile.name || profile.title || profile.id}
+								</Select.Item>
+							))
 						) : (
 							<div className="px-2 py-1.5 text-sm text-ui-fg-subtle">
 								{shippingProfilesData === undefined
