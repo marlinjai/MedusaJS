@@ -182,6 +182,10 @@ function FilterSidebar() {
 							<SortBy
 								items={[
 									{
+										label: 'Empfohlen',
+										value: 'products',
+									},
+									{
 										label: 'Neueste zuerst',
 										value: 'products:created_at:desc',
 									},
