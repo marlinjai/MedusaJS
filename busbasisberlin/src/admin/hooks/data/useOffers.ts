@@ -4,11 +4,11 @@
  * Provides consistent data fetching patterns for offer management
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Offer } from '../../../modules/offer/models/offer';
+import type { OfferType } from '../../../modules/offer/models/offer';
 
 // Types for API responses
 type OffersResponse = {
-	offers: Offer[];
+	offers: OfferType[];
 	count: number;
 	offset: number;
 	limit: number;
@@ -16,7 +16,7 @@ type OffersResponse = {
 };
 
 type OfferResponse = {
-	offer: Offer;
+	offer: OfferType;
 };
 
 type OffersParams = {
@@ -161,7 +161,7 @@ export function useUpdateOffer() {
 
 			return res.json() as Promise<OfferResponse>;
 		},
-		onSuccess: (data, variables) => {
+		onSuccess: (_data, variables) => {
 			queryClient.invalidateQueries({ queryKey: ['offers'] });
 			queryClient.invalidateQueries({ queryKey: ['offer', variables.id] });
 		},

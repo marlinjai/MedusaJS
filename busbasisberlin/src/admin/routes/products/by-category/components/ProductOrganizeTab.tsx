@@ -282,6 +282,16 @@ const ProductOrganizeTab = ({
 		retryDelay: 1000,
 	});
 
+	// Debug: Log formData state for inventory check
+	console.log('[ProductOrganizeTab] INVENTORY CHECK - formData state:', {
+		hasId: !!formData.id,
+		id: formData.id,
+		hasVariants: !!formData.variants,
+		variantsLength: formData.variants?.length,
+		variantIds: formData.variants?.map(v => v.id),
+		queryEnabled: !!formData.id && !!formData.variants && (formData.variants?.length || 0) > 0,
+	});
+
 	// Fetch inventory data for variants if product ID exists
 	// Note: Medusa v2 requires separate API calls to get location_levels
 	const { data: inventoryData } = useQuery({
@@ -304,15 +314,23 @@ const ProductOrganizeTab = ({
 
 			try {
 				// Fetch inventory for each variant
+				// In Medusa v2, inventory items are linked to variants by SKU
 				const inventoryPromises = formData.variants.map(async variant => {
 					if (!variant.id) {
 						console.log('[ProductOrganizeTab] Variant has no ID:', variant);
 						return { variantId: variant.id, quantity: 0 };
 					}
 
-					// Step 1: Fetch inventory items for this variant
-					const inventoryUrl = `/admin/inventory-items?variant_id=${variant.id}`;
-					console.log('[ProductOrganizeTab] Fetching inventory items:', inventoryUrl);
+					// In Medusa v2, inventory items are linked by SKU, not variant_id
+					// If no SKU, we can't fetch inventory
+					if (!variant.sku) {
+						console.log('[ProductOrganizeTab] Variant has no SKU, cannot fetch inventory:', variant.id);
+						return { variantId: variant.id, quantity: 0 };
+					}
+
+					// Step 1: Fetch inventory items by SKU (Medusa v2 approach)
+					const inventoryUrl = `/admin/inventory-items?sku=${encodeURIComponent(variant.sku)}`;
+					console.log('[ProductOrganizeTab] Fetching inventory items by SKU:', inventoryUrl);
 
 					const res = await fetch(inventoryUrl, {
 						credentials: 'include',
@@ -324,6 +342,7 @@ const ProductOrganizeTab = ({
 						const errorText = await res.text();
 						console.error('[ProductOrganizeTab] Inventory items fetch FAILED:', {
 							variantId: variant.id,
+							sku: variant.sku,
 							status: res.status,
 							error: errorText,
 						});
@@ -333,73 +352,63 @@ const ProductOrganizeTab = ({
 					const data = await res.json();
 					console.log('[ProductOrganizeTab] Inventory items response:', {
 						variantId: variant.id,
+						sku: variant.sku,
 						fullResponse: data,
 						inventoryItemsCount: data?.inventory_items?.length,
 					});
 
 					const inventoryItems = data?.inventory_items || [];
 
-					// Step 2: For each inventory item, fetch its location levels separately
-					// Medusa v2 does not include location_levels in the inventory-items response
-					let totalQuantity = 0;
+					// Medusa v2 includes location_levels directly in the inventory-items response
+					// Sum up quantities from all inventory items (usually just one per variant)
+					let totalStocked = 0;
+					let totalReserved = 0;
+					let totalAvailable = 0;
+
 					for (const item of inventoryItems) {
-						const levelsUrl = `/admin/inventory-items/${item.id}/location-levels`;
-						console.log('[ProductOrganizeTab] Fetching location levels:', levelsUrl);
+						// Use stocked_quantity from item directly, or sum from location_levels
+						if (item.stocked_quantity !== undefined) {
+							totalStocked += item.stocked_quantity || 0;
+							totalReserved += item.reserved_quantity || 0;
+						}
 
-						try {
-							const levelsRes = await fetch(levelsUrl, { credentials: 'include' });
-							console.log('[ProductOrganizeTab] Location levels response status:', levelsRes.status);
-
-							if (levelsRes.ok) {
-								const levelsData = await levelsRes.json();
-								console.log('[ProductOrganizeTab] Location levels response:', {
-									inventoryItemId: item.id,
-									fullResponse: levelsData,
-								});
-
-								// Response format: { inventory_levels: [...] }
-								const levels = levelsData?.inventory_levels || [];
-								const levelQuantities = levels.map((level: any) => ({
-									locationId: level.location_id,
-									stockedQuantity: level.stocked_quantity,
-								}));
-								console.log('[ProductOrganizeTab] Location level quantities:', levelQuantities);
-
-								totalQuantity += levels.reduce(
-									(sum: number, level: any) =>
-										sum + (level.stocked_quantity || 0),
-									0,
-								);
-							} else {
-								const errorText = await levelsRes.text();
-								console.error('[ProductOrganizeTab] Location levels fetch FAILED:', {
-									inventoryItemId: item.id,
-									status: levelsRes.status,
-									error: errorText,
-								});
+						// Also check location_levels if present (more detailed breakdown)
+						if (item.location_levels && Array.isArray(item.location_levels)) {
+							for (const level of item.location_levels) {
+								totalAvailable += level.available_quantity || 0;
 							}
-						} catch (levelError) {
-							console.error('[ProductOrganizeTab] Location levels fetch ERROR:', {
-								inventoryItemId: item.id,
-								error: levelError,
-							});
+						} else {
+							// Fallback: available = stocked - reserved
+							totalAvailable = totalStocked - totalReserved;
 						}
 					}
 
-					console.log('[ProductOrganizeTab] Total quantity for variant:', {
+					console.log('[ProductOrganizeTab] Inventory totals for variant:', {
 						variantId: variant.id,
-						totalQuantity,
+						sku: variant.sku,
+						stocked: totalStocked,
+						reserved: totalReserved,
+						available: totalAvailable,
 					});
 
-					return { variantId: variant.id, quantity: totalQuantity };
+					return {
+						variantId: variant.id,
+						stocked: totalStocked,
+						reserved: totalReserved,
+						available: totalAvailable,
+					};
 				});
 
 				const results = await Promise.all(inventoryPromises);
-				const inventoryMap: Record<string, number> = {};
+				const inventoryMap: Record<string, { stocked: number; reserved: number; available: number }> = {};
 
 				results.forEach(result => {
 					if (result.variantId) {
-						inventoryMap[result.variantId] = result.quantity;
+						inventoryMap[result.variantId] = {
+							stocked: result.stocked,
+							reserved: result.reserved,
+							available: result.available,
+						};
 					}
 				});
 
@@ -413,8 +422,8 @@ const ProductOrganizeTab = ({
 		},
 		enabled:
 			!!formData.id && !!formData.variants && formData.variants.length > 0,
-		initialData: {},
-		staleTime: 30000, // 30 seconds
+		staleTime: 0, // Always fetch fresh inventory data
+		refetchOnMount: 'always', // Refetch when component mounts
 	});
 
 	const handleAddTag = (tagValue?: string) => {
@@ -833,6 +842,9 @@ const ProductOrganizeTab = ({
 									<th className="text-right px-3 py-2 text-sm font-medium text-ui-fg-base">
 										Bestand
 									</th>
+									<th className="text-right px-3 py-2 text-sm font-medium text-ui-fg-base">
+										Reserviert
+									</th>
 									<th className="text-center px-3 py-2 text-sm font-medium text-ui-fg-base">
 										Rückstand zulassen
 									</th>
@@ -844,9 +856,12 @@ const ProductOrganizeTab = ({
 									// price_eur is in euros (not cents)
 									const eurPrice = variant.price_eur ?? 0;
 
-									const inventory = variant.id
-										? inventoryData?.[variant.id] || 0
-										: 0;
+									// Get inventory data (new structure with stocked, reserved, available)
+									const inventoryInfo = variant.id
+										? inventoryData?.[variant.id]
+										: null;
+									const stocked = inventoryInfo?.stocked ?? 0;
+									const reserved = inventoryInfo?.reserved ?? 0;
 
 									return (
 										<tr
@@ -854,12 +869,34 @@ const ProductOrganizeTab = ({
 											className="border-b border-ui-border-base last:border-b-0 hover:bg-ui-bg-subtle-hover"
 										>
 											<td className="px-3 py-2">
-												<Text size="small">{variant.title || '-'}</Text>
+												{variant.id && formData.id ? (
+													<a
+														href={`/app/products/${formData.id}/variants/${variant.id}`}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="text-sm text-ui-fg-interactive hover:text-ui-fg-interactive-hover hover:underline"
+														title="Variante in neuem Tab öffnen"
+													>
+														{variant.title || '-'}
+													</a>
+												) : (
+													<Text size="small">{variant.title || '-'}</Text>
+												)}
 											</td>
 											<td className="px-3 py-2">
-												<Text size="small" className="font-mono text-xs">
-													{variant.sku || '-'}
-												</Text>
+												{variant.sku ? (
+													<a
+														href={`/app/inventory?q=${encodeURIComponent(variant.sku)}`}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="font-mono text-xs text-ui-fg-interactive hover:text-ui-fg-interactive-hover hover:underline"
+														title="Lagerbestand für diese SKU anzeigen"
+													>
+														{variant.sku}
+													</a>
+												) : (
+													<Text size="small" className="font-mono text-xs">-</Text>
+												)}
 											</td>
 											<td className="px-3 py-2 text-right">
 												<Text size="small">
@@ -883,7 +920,12 @@ const ProductOrganizeTab = ({
 											</td>
 											<td className="px-3 py-2 text-right">
 												<Text size="small" className="font-medium">
-													{variant.manage_inventory ? inventory : 'N/A'}
+													{variant.manage_inventory ? stocked : 'N/A'}
+												</Text>
+											</td>
+											<td className="px-3 py-2 text-right">
+												<Text size="small" className={reserved > 0 ? 'text-orange-600 font-medium' : 'text-ui-fg-subtle'}>
+													{variant.manage_inventory ? reserved : 'N/A'}
 												</Text>
 											</td>
 											<td className="px-3 py-2 text-center">

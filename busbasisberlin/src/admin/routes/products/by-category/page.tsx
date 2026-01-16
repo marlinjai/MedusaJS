@@ -23,7 +23,8 @@ import {
 	Plus,
 	X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BottomSheet } from '../../../components/BottomSheet';
 import ColumnVisibilityControl from '../../../components/ColumnVisibilityControl';
 import { MobileControlBar } from '../../../components/MobileControlBar';
@@ -164,21 +165,55 @@ const ensureThumbnailVisible = (columns: Set<string>): Set<string> => {
 
 export default function ProductsByCategoryPage() {
 	const queryClient = useQueryClient();
+	const [searchParams, setSearchParams] = useSearchParams();
+
+	// Helper function to update URL params
+	const updateUrlParams = useCallback(
+		(updates: Record<string, string | string[] | null>) => {
+			setSearchParams(
+				prev => {
+					const newParams = new URLSearchParams(prev);
+					Object.entries(updates).forEach(([key, value]) => {
+						if (
+							value === null ||
+							value === '' ||
+							(Array.isArray(value) && value.length === 0)
+						) {
+							newParams.delete(key);
+						} else if (Array.isArray(value)) {
+							newParams.delete(key);
+							value.forEach(v => newParams.append(key, v));
+						} else {
+							newParams.set(key, value);
+						}
+					});
+					return newParams;
+				},
+				{ replace: true },
+			);
+		},
+		[setSearchParams],
+	);
+
+	// Initialize state from URL params
 	const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
-		new Set(),
+		() => new Set(searchParams.getAll('cat')),
 	);
 	const [selectedCollections, setSelectedCollections] = useState<Set<string>>(
-		new Set(),
+		() => new Set(searchParams.getAll('col')),
 	);
 	const [selectedSalesChannels, setSelectedSalesChannels] = useState<
 		Set<string>
-	>(new Set());
+	>(() => new Set(searchParams.getAll('sc')));
 	const [selectedShippingProfiles, setSelectedShippingProfiles] = useState<
 		Set<string>
-	>(new Set());
+	>(() => new Set(searchParams.getAll('sp')));
 	const [selectedStatus, setSelectedStatus] = useState<
 		'all' | 'published' | 'draft'
-	>('all');
+	>(() => {
+		const status = searchParams.get('status');
+		return status === 'published' || status === 'draft' ? status : 'all';
+	});
 
 	// Shared hooks for state management
 	const {
@@ -201,12 +236,24 @@ export default function ProductsByCategoryPage() {
 		}
 	}, []); // Only run on mount
 
-	const [skuSearch, setSkuSearch] = useState('');
-	const [searchQuery, setSearchQuery] = useState('');
-	const [sortBy, setSortBy] = useState<'title' | 'created_at' | 'updated_at'>(
-		'created_at',
+	const [skuSearch, setSkuSearch] = useState(
+		() => searchParams.get('sku') || '',
 	);
-	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+	const [searchQuery, setSearchQuery] = useState(
+		() => searchParams.get('q') || '',
+	);
+	const [sortBy, setSortBy] = useState<'title' | 'created_at' | 'updated_at'>(
+		() => {
+			const sort = searchParams.get('sort');
+			return sort === 'title' || sort === 'created_at' || sort === 'updated_at'
+				? sort
+				: 'created_at';
+		},
+	);
+	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
+		const order = searchParams.get('order');
+		return order === 'asc' || order === 'desc' ? order : 'desc';
+	});
 	const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
 		new Set(),
 	);
@@ -216,19 +263,128 @@ export default function ProductsByCategoryPage() {
 	const [showSalesChannelPrompt, setShowSalesChannelPrompt] = useState(false);
 	const [selectedSalesChannelId, setSelectedSalesChannelId] =
 		useState<string>('');
-	const [showProductEditor, setShowProductEditor] = useState(false);
+	const [showProductEditor, setShowProductEditor] = useState(
+		() => !!searchParams.get('product'),
+	);
 	const [editingProduct, setEditingProduct] = useState<any>(null);
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	const [activeModalTab, setActiveModalTab] = useState<
+		'details' | 'organize' | 'variants'
+	>(() => {
+		const tab = searchParams.get('tab');
+		return tab === 'details' || tab === 'organize' || tab === 'variants'
+			? tab
+			: 'details';
+	});
 
-	// Pagination state - simple useState (works directly with React Query)
-	const [currentPage, setCurrentPage] = useState(1);
-	const [pageSize, setPageSize] = useState(50);
+	// Pagination state - initialized from URL params
+	const [currentPage, setCurrentPage] = useState(() => {
+		const page = searchParams.get('page');
+		return page ? parseInt(page, 10) || 1 : 1;
+	});
+	const [pageSize, setPageSize] = useState(() => {
+		const size = searchParams.get('size');
+		return size ? parseInt(size, 10) || 50 : 50;
+	});
 
 	const isMobile = useIsMobile();
 	const [showFilterSheet, setShowFilterSheet] = useState(false);
 	const [showSortSheet, setShowSortSheet] = useState(false);
 	const [showColumnSheet, setShowColumnSheet] = useState(false);
 	const [showCategorySheet, setShowCategorySheet] = useState(false);
+
+	// Sync filter/search state to URL
+	useEffect(() => {
+		updateUrlParams({
+			q: searchQuery || null,
+			sku: skuSearch || null,
+			cat: Array.from(selectedCategories),
+			col: Array.from(selectedCollections),
+			sc: Array.from(selectedSalesChannels),
+			sp: Array.from(selectedShippingProfiles),
+			status: selectedStatus !== 'all' ? selectedStatus : null,
+			sort: sortBy !== 'created_at' ? sortBy : null,
+			order: sortOrder !== 'desc' ? sortOrder : null,
+			page: currentPage > 1 ? currentPage.toString() : null,
+			size: pageSize !== 50 ? pageSize.toString() : null,
+		});
+	}, [
+		searchQuery,
+		skuSearch,
+		selectedCategories,
+		selectedCollections,
+		selectedSalesChannels,
+		selectedShippingProfiles,
+		selectedStatus,
+		sortBy,
+		sortOrder,
+		currentPage,
+		pageSize,
+		updateUrlParams,
+	]);
+
+	// Load product from URL param on mount
+	useEffect(() => {
+		const productId = searchParams.get('product');
+		if (productId && !editingProduct) {
+			// Fetch the product and open modal
+			const loadProduct = async () => {
+				try {
+					const fields = [
+						'id',
+						'title',
+						'subtitle',
+						'handle',
+						'status',
+						'description',
+						'discountable',
+						'thumbnail',
+						'images.id',
+						'images.url',
+						'tags.id',
+						'tags.value',
+						'categories.id',
+						'categories.name',
+						'sales_channels.id',
+						'sales_channels.name',
+						'type.id',
+						'type.value',
+						'shipping_profile.id',
+						'shipping_profile.name',
+						'collection.id',
+						'collection.title',
+						'variants.*',
+						'variants.thumbnail',
+						'variants.prices.*',
+						'variants.images.id',
+						'variants.images.url',
+						'options.id',
+						'options.title',
+						'options.values',
+					].join(',');
+
+					const res = await fetch(
+						`/admin/products/${productId}?fields=${fields}`,
+						{
+							credentials: 'include',
+						},
+					);
+					if (res.ok) {
+						const data = await res.json();
+						setEditingProduct(data.product);
+						setShowProductEditor(true);
+					} else {
+						// Product not found, clear URL param
+						updateUrlParams({ product: null, tab: null });
+					}
+				} catch (error) {
+					console.error('Error loading product from URL:', error);
+					updateUrlParams({ product: null, tab: null });
+				}
+			};
+			loadProduct();
+		}
+	}, []); // Only run on mount
 
 	// Fetch category tree
 	const { data: categoryTreeData } = useQuery({
@@ -1175,6 +1331,12 @@ export default function ProductsByCategoryPage() {
 											const data = await res.json();
 											setEditingProduct(data.product);
 											setShowProductEditor(true);
+											setActiveModalTab('details');
+											// Update URL with product ID and tab
+											updateUrlParams({
+												product: product.id,
+												tab: 'details',
+											});
 										} else {
 											toast.error('Fehler beim Laden der Produktdetails');
 										}
@@ -1265,10 +1427,20 @@ export default function ProductsByCategoryPage() {
 					setShowProductEditor(open);
 					if (!open) {
 						setEditingProduct(null);
+						// Clear product and tab from URL when modal closes
+						updateUrlParams({ product: null, tab: null });
 					}
 				}}
 				product={editingProduct}
 				onSave={handleProductSave}
+				initialTab={activeModalTab}
+				onTabChange={tab => {
+					setActiveModalTab(tab);
+					// Update URL with new tab
+					if (editingProduct?.id) {
+						updateUrlParams({ tab });
+					}
+				}}
 			/>
 
 			{/* Sales Channel Prompt */}

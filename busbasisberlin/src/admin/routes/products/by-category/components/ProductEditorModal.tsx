@@ -1,9 +1,7 @@
 // busbasisberlin/src/admin/routes/products/by-category/components/ProductEditorModal.tsx
 // Product editor modal with Details/Organisieren/Varianten tabs
 
-import { Button, FocusModal, Heading, Text } from '@medusajs/ui';
-import * as Dialog from '@radix-ui/react-dialog';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { Button, FocusModal, Text } from '@medusajs/ui';
 import { ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ProductDetailsTab from './ProductDetailsTab';
@@ -17,7 +15,7 @@ export type ProductOption = {
 
 export type Variant = {
 	id?: string;
-	title: string;
+	title?: string;
 	sku?: string;
 	manage_inventory?: boolean;
 	allow_backorder?: boolean;
@@ -48,6 +46,11 @@ type Product = {
 	options?: ProductOption[];
 	images?: Array<{ id?: string; url: string }>;
 	thumbnail?: string;
+	// Expanded properties from API response
+	categories?: Array<{ id: string; name: string }>;
+	sales_channels?: Array<{ id: string; name: string }>;
+	type?: { id: string; value: string };
+	shipping_profile?: { id: string; name: string };
 };
 
 interface ProductEditorModalProps {
@@ -55,6 +58,8 @@ interface ProductEditorModalProps {
 	onOpenChange: (open: boolean) => void;
 	product?: Product | null;
 	onSave: (product: Product) => Promise<void>;
+	initialTab?: 'details' | 'organize' | 'variants';
+	onTabChange?: (tab: 'details' | 'organize' | 'variants') => void;
 }
 
 const ProductEditorModal = ({
@@ -62,10 +67,12 @@ const ProductEditorModal = ({
 	onOpenChange,
 	product,
 	onSave,
+	initialTab = 'details',
+	onTabChange,
 }: ProductEditorModalProps) => {
 	const [activeTab, setActiveTab] = useState<
 		'details' | 'organize' | 'variants'
-	>('details');
+	>(initialTab);
 	const [isSaving, setIsSaving] = useState(false);
 	const [formData, setFormData] = useState<Partial<Product>>({
 		title: '',
@@ -87,13 +94,6 @@ const ProductEditorModal = ({
 			// Transform variant prices from Medusa format (prices array) to form format (flat fields)
 			const transformedVariants =
 				product.variants?.map((variant: any) => {
-					// Find EUR price from the prices array
-					const eurPrice = variant.prices?.find(
-						(p: any) => p?.currency_code?.toLowerCase() === 'eur',
-					);
-
-					// Smart price conversion: if amount is >= 100, it's likely in cents (Medusa standard)
-					// If amount is < 100, it might already be in euros (incorrectly stored)
 					// The backend GET endpoint already converts prices from cents to euros
 					// via price_<currency> fields (see line 157-158 of [id]/route.ts)
 					// So we use variant.price_eur which is already in euros from the backend
@@ -127,7 +127,8 @@ const ProductEditorModal = ({
 				// Preserve thumbnail from product
 				thumbnail: product.thumbnail,
 			});
-			setActiveTab('details'); // Reset to details tab when product changes
+			// Use initialTab from URL if provided, otherwise default to 'details'
+			setActiveTab(initialTab);
 		} else {
 			// Reset to defaults for new product
 			setFormData({
@@ -162,35 +163,31 @@ const ProductEditorModal = ({
 		}
 	};
 
+	// Handle tab change with callback
+	const handleTabChange = (tab: 'details' | 'organize' | 'variants') => {
+		setActiveTab(tab);
+		onTabChange?.(tab);
+	};
+
 	const handleNext = () => {
 		if (activeTab === 'details') {
-			setActiveTab('organize');
+			handleTabChange('organize');
 		} else if (activeTab === 'organize') {
-			setActiveTab('variants');
+			handleTabChange('variants');
 		}
 	};
 
 	return (
 		<FocusModal open={open} onOpenChange={onOpenChange}>
-			<FocusModal.Content className="max-w-[95vw] w-full max-h-[95vh] h-full m-auto">
-				{/* Accessible title and description for screen readers (hidden visually) */}
-				<VisuallyHidden.Root asChild>
-					<Dialog.Title>
-						{product ? 'Produkt bearbeiten' : 'Neues Produkt'}
-					</Dialog.Title>
-				</VisuallyHidden.Root>
-				<VisuallyHidden.Root asChild>
-					<Dialog.Description>
-						{product
-							? `Bearbeiten Sie das Produkt "${product.title}"`
-							: 'Erstellen Sie ein neues Produkt mit Details, Kategorien und Varianten'}
-					</Dialog.Description>
-				</VisuallyHidden.Root>
+			<FocusModal.Content
+				className="max-w-[95vw] w-full max-h-[95vh] h-full m-auto"
+				aria-describedby={undefined}
+			>
 				<FocusModal.Header>
 					<div className="flex items-center justify-between w-full">
-						<Heading level="h1" className="text-2xl font-bold">
+						<FocusModal.Title className="text-2xl font-bold">
 							{product ? 'Produkt bearbeiten' : 'Neues Produkt'}
-						</Heading>
+						</FocusModal.Title>
 						{product?.id && (
 							<Button
 								variant="transparent"
@@ -210,7 +207,7 @@ const ProductEditorModal = ({
 				{/* Tabs Navigation */}
 				<div className="flex border-b border-ui-border-base px-6 flex-shrink-0">
 					<button
-						onClick={() => setActiveTab('details')}
+						onClick={() => handleTabChange('details')}
 						className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
 							activeTab === 'details'
 								? 'border-ui-fg-base text-ui-fg-base'
@@ -220,7 +217,7 @@ const ProductEditorModal = ({
 						Details
 					</button>
 					<button
-						onClick={() => setActiveTab('organize')}
+						onClick={() => handleTabChange('organize')}
 						className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
 							activeTab === 'organize'
 								? 'border-ui-fg-base text-ui-fg-base'
@@ -230,7 +227,7 @@ const ProductEditorModal = ({
 						Organisieren
 					</button>
 					<button
-						onClick={() => setActiveTab('variants')}
+						onClick={() => handleTabChange('variants')}
 						className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
 							activeTab === 'variants'
 								? 'border-ui-fg-base text-ui-fg-base'
