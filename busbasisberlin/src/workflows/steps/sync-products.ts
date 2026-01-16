@@ -482,7 +482,12 @@ export const syncProductsStep = createStep(
 				collection_id: product.collection?.id,
 				collection_title: product.collection?.title,
 				collection_handle: product.collection?.handle,
-				is_favoriten: product.collection?.handle === 'favoriten', // Flag for featured products
+				// Favorite status: check metadata first, fallback to collection
+				is_favoriten:
+					(product as any).metadata?.is_favorite === true ||
+					product.collection?.handle === 'favoriten',
+				// Favorite rank for ordering favorites (lower = higher priority)
+				favorite_rank: (product as any).metadata?.favorite_rank ?? 999,
 
 				// Sales channel information - consolidated as JSON
 					sales_channels: salesChannelsJSON,

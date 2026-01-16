@@ -11,7 +11,7 @@ import {
 	Text,
 	toast,
 } from '@medusajs/ui';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Star, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { MobileDataCard } from '../../../../components/MobileDataCard';
 import { useIsMobile } from '../../../../utils/use-mobile';
@@ -31,6 +31,11 @@ type Product = {
 	variants?: Array<{ id: string; sku?: string; title?: string }>;
 	shipping_profile?: { id: string; name: string; type: string };
 	tags?: Array<{ id: string; value: string }>;
+	metadata?: {
+		is_favorite?: boolean;
+		favorite_rank?: number;
+		[key: string]: unknown;
+	};
 };
 
 interface ProductTableProps {
@@ -55,6 +60,11 @@ const columns = [
 		key: 'select',
 		label: '',
 		width: 50,
+	},
+	{
+		key: 'favorite',
+		label: '',
+		width: 45,
 	},
 	{
 		key: 'thumbnail',
@@ -620,6 +630,43 @@ const ProductTable = ({
 							}
 							onClick={e => e.stopPropagation()}
 						/>
+					</div>
+				);
+			case 'favorite':
+				const isFavorite = product.metadata?.is_favorite === true;
+				return (
+					<div className="flex items-center justify-center">
+						<button
+							onClick={async e => {
+								e.stopPropagation();
+								if (!onUpdate) return;
+								try {
+									await onUpdate(product.id, {
+										metadata: {
+											...product.metadata,
+											is_favorite: !isFavorite,
+										},
+									} as Partial<Product>);
+									toast.success(
+										isFavorite
+											? 'Favorit entfernt'
+											: 'Als Favorit markiert',
+									);
+								} catch (error) {
+									toast.error('Fehler beim Aktualisieren');
+								}
+							}}
+							className="p-1 rounded hover:bg-ui-bg-subtle-hover transition-colors"
+							title={isFavorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
+						>
+							<Star
+								className={`w-4 h-4 ${
+									isFavorite
+										? 'text-yellow-500 fill-yellow-500'
+										: 'text-ui-fg-subtle hover:text-yellow-400'
+								}`}
+							/>
+						</button>
 					</div>
 				);
 			case 'thumbnail':

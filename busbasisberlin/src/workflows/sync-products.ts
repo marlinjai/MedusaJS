@@ -26,6 +26,7 @@ export const syncProductsWorkflow = createWorkflow(
 				'status',
 				'created_at',
 				'updated_at',
+				'metadata',
 				'categories.id',
 				'categories.name',
 				'categories.handle',

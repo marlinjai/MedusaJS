@@ -119,6 +119,7 @@ export default class MeilisearchModuleService {
 				'collection_handle',
 				'collection_title',
 				'is_favoriten',
+				'favorite_rank',
 				'variant_count',
 				'sales_channels.id',
 				'sales_channels.name',
@@ -155,6 +156,7 @@ export default class MeilisearchModuleService {
 				'min_price',
 				'max_price',
 				'variant_count',
+				'favorite_rank',
 			]);
 
 			// Configure faceting settings for real-time category facets
@@ -171,13 +173,15 @@ export default class MeilisearchModuleService {
 			});
 
 			// Configure ranking rules for better search relevance
+			// User's sort takes priority; favorites only when no explicit sort is applied
 			await index.updateRankingRules([
-				'is_favoriten:desc', // Prioritize Favoriten products first
 				'words',
 				'typo',
 				'proximity',
 				'attribute',
-				'sort',
+				'sort', // User's explicit sort takes priority
+				'is_favoriten:desc', // Favorites as tiebreaker when no sort
+				'favorite_rank:asc', // Lower rank = higher priority within favorites
 				'exactness',
 				'min_price:asc', // Prefer lower prices
 			]);
@@ -201,6 +205,7 @@ export default class MeilisearchModuleService {
 				'tags',
 				'collection_title',
 				'is_favoriten',
+				'favorite_rank',
 				'skus',
 				'variant_count',
 				'sales_channels',

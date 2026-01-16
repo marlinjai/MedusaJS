@@ -3,7 +3,7 @@
 
 import { Button, Checkbox, Input, Label, Select, Text } from '@medusajs/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, X } from 'lucide-react';
+import { Plus, Star, X } from 'lucide-react';
 import { useState } from 'react';
 import CategoryTree, { type CategoryNode } from './CategoryTree';
 
@@ -27,6 +27,11 @@ type ProductFormData = {
 	shipping_profile_id?: string;
 	sales_channel_ids?: string[];
 	variants?: Variant[];
+	metadata?: {
+		is_favorite?: boolean;
+		favorite_rank?: number;
+		[key: string]: unknown;
+	};
 };
 
 interface ProductOrganizeTabProps {
@@ -494,6 +499,75 @@ const ProductOrganizeTab = ({
 						Wenn diese Option deaktiviert ist, werden auf dieses Produkt keine
 						Rabatte gewährt
 					</Text>
+				</div>
+			</div>
+
+			{/* Favorite Section */}
+			<div className="border border-ui-border-base rounded-lg p-4 bg-ui-bg-subtle">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-3">
+						<button
+							type="button"
+							onClick={() =>
+								onChange({
+									...formData,
+									metadata: {
+										...formData.metadata,
+										is_favorite: !formData.metadata?.is_favorite,
+									},
+								})
+							}
+							className="p-1.5 rounded-md hover:bg-ui-bg-base-hover transition-colors"
+							title={
+								formData.metadata?.is_favorite
+									? 'Als Favorit entfernen'
+									: 'Als Favorit markieren'
+							}
+						>
+							<Star
+								className={`w-5 h-5 ${
+									formData.metadata?.is_favorite
+										? 'text-yellow-500 fill-yellow-500'
+										: 'text-ui-fg-subtle'
+								}`}
+							/>
+						</button>
+						<div>
+							<Label>Favorit</Label>
+							<Text size="small" className="text-ui-fg-subtle block mt-0.5">
+								Favoriten werden im Shop bevorzugt angezeigt
+							</Text>
+						</div>
+					</div>
+					{formData.metadata?.is_favorite && (
+						<div className="flex items-center gap-2">
+							<Label htmlFor="favorite_rank" className="whitespace-nowrap">
+								Rang:
+							</Label>
+							<Input
+								id="favorite_rank"
+								type="number"
+								min={1}
+								max={999}
+								value={formData.metadata?.favorite_rank ?? ''}
+								onChange={e => {
+									const value = e.target.value;
+									onChange({
+										...formData,
+										metadata: {
+											...formData.metadata,
+											favorite_rank: value ? parseInt(value, 10) : undefined,
+										},
+									});
+								}}
+								placeholder="1"
+								className="w-20"
+							/>
+							<Text size="xsmall" className="text-ui-fg-subtle whitespace-nowrap">
+								(1 = höchste Priorität)
+							</Text>
+						</div>
+					)}
 				</div>
 			</div>
 

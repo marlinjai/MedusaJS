@@ -31,6 +31,11 @@ type ProductUpdateBody = {
 	options?: Array<{ title: string; values: string[] }>;
 	images?: Array<{ url: string }>;
 	thumbnail?: string;
+	// Favorite fields (stored in metadata)
+	is_favorite?: boolean;
+	favorite_rank?: number;
+	// Full metadata object (if provided directly)
+	metadata?: Record<string, unknown>;
 };
 
 // GET handler to fetch a single product by ID
@@ -259,6 +264,9 @@ export const PUT = async (
 			options,
 			images,
 			thumbnail,
+			is_favorite,
+			favorite_rank,
+			metadata: incomingMetadata,
 		} = req.body;
 
 		// Fetch store-supported currency codes using shared service
@@ -425,6 +433,40 @@ export const PUT = async (
 			updateData.thumbnail = thumbnail || null;
 			logger.info(
 				`[PRODUCT-UPDATE] Thumbnail added to updateData: ${thumbnail || 'null'}`,
+			);
+		}
+
+		// Handle favorite fields and metadata
+		// is_favorite and favorite_rank are stored in product metadata
+		if (
+			is_favorite !== undefined ||
+			favorite_rank !== undefined ||
+			incomingMetadata !== undefined
+		) {
+			// Fetch current product metadata to merge with
+			const currentProductResult = await query.graph({
+				entity: 'product',
+				fields: ['id', 'metadata'],
+				filters: { id },
+			});
+			const currentProduct = Array.isArray(currentProductResult?.data)
+				? currentProductResult.data[0]
+				: null;
+			const existingMetadata =
+				(currentProduct as any)?.metadata || {};
+
+			// Merge metadata: existing -> incoming -> favorite fields
+			updateData.metadata = {
+				...existingMetadata,
+				...(incomingMetadata || {}),
+				...(is_favorite !== undefined && { is_favorite }),
+				...(favorite_rank !== undefined && {
+					favorite_rank: Math.max(1, favorite_rank || 999),
+				}),
+			};
+
+			logger.info(
+				`[PRODUCT-UPDATE] Metadata updated: is_favorite=${updateData.metadata.is_favorite}, favorite_rank=${updateData.metadata.favorite_rank}`,
 			);
 		}
 

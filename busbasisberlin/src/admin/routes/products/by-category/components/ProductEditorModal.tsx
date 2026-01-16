@@ -51,6 +51,12 @@ type Product = {
 	sales_channels?: Array<{ id: string; name: string }>;
 	type?: { id: string; value: string };
 	shipping_profile?: { id: string; name: string };
+	// Metadata for favorite status and ranking
+	metadata?: {
+		is_favorite?: boolean;
+		favorite_rank?: number;
+		[key: string]: unknown;
+	};
 };
 
 interface ProductEditorModalProps {
@@ -86,6 +92,7 @@ const ProductEditorModal = ({
 		options: [],
 		images: [],
 		thumbnail: undefined,
+		metadata: {},
 	});
 
 	// Update formData when product prop changes
@@ -143,6 +150,7 @@ const ProductEditorModal = ({
 				options: [],
 				images: [],
 				thumbnail: undefined,
+				metadata: {},
 			});
 		}
 	}, [product]);

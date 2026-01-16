@@ -48,6 +48,11 @@ type ProductListItem = {
 	collection?: { id: string; title: string };
 	variants?: Array<{ id: string; sku?: string; title?: string }>;
 	shipping_profile?: { id: string; name: string; type: string };
+	metadata?: {
+		is_favorite?: boolean;
+		favorite_rank?: number;
+		[key: string]: unknown;
+	};
 };
 
 type CategoryNode = {
@@ -145,6 +150,7 @@ function CategoryTree({
 // Define available table columns for visibility control
 const tableColumns = [
 	{ key: 'select', label: '', width: 50 },
+	{ key: 'favorite', label: '', width: 45 },
 	{ key: 'thumbnail', label: 'Bild', width: 70 },
 	{ key: 'title', label: 'Titel', width: 300 },
 	{ key: 'status', label: 'Status', width: 120 },
