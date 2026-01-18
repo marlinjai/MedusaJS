@@ -136,6 +136,18 @@ function SortableRow({
 		!COMMON_UNITS.includes(item.unit),
 	);
 
+	// Handle Enter key in input fields - prevents dnd-kit from capturing the event
+	const handleKeyDown = (
+		e: React.KeyboardEvent<HTMLInputElement>,
+		field: keyof typeof editValues,
+	) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			e.stopPropagation();
+			handleFieldBlur(field);
+		}
+	};
+
 	const handleFieldBlur = (field: keyof typeof editValues) => {
 		setEditingField(null);
 		const value = editValues[field];
@@ -206,6 +218,7 @@ function SortableRow({
 								setEditValues(prev => ({ ...prev, title: e.target.value }))
 							}
 							onBlur={() => handleFieldBlur('title')}
+							onKeyDown={e => handleKeyDown(e, 'title')}
 							autoFocus
 							placeholder="Artikelbezeichnung..."
 							className="w-full"
@@ -241,6 +254,7 @@ function SortableRow({
 								setEditValues(prev => ({ ...prev, quantity: e.target.value }))
 							}
 							onBlur={() => handleFieldBlur('quantity')}
+							onKeyDown={e => handleKeyDown(e, 'quantity')}
 							autoFocus
 							min="1"
 							className="w-full"
@@ -266,6 +280,7 @@ function SortableRow({
 									setEditValues(prev => ({ ...prev, unit: e.target.value }))
 								}
 								onBlur={() => handleFieldBlur('unit')}
+								onKeyDown={e => handleKeyDown(e, 'unit')}
 								autoFocus
 								placeholder="Einheit..."
 								className="w-full"
@@ -319,6 +334,7 @@ function SortableRow({
 								setEditValues(prev => ({ ...prev, unit_price: e.target.value }))
 							}
 							onBlur={() => handleFieldBlur('unit_price')}
+							onKeyDown={e => handleKeyDown(e, 'unit_price')}
 							autoFocus
 							step="0.01"
 							className="w-full"
@@ -347,6 +363,7 @@ function SortableRow({
 								}))
 							}
 							onBlur={() => handleFieldBlur('discount_percentage')}
+							onKeyDown={e => handleKeyDown(e, 'discount_percentage')}
 							autoFocus
 							min="0"
 							max="100"
