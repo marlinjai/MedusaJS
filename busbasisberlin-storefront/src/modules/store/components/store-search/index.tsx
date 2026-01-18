@@ -306,9 +306,6 @@ function Toolbar() {
 									select:
 										'bg-stone-800 border border-stone-700 rounded-lg px-2 sm:px-4 py-2 sm:py-2.5 pr-8 sm:pr-10 text-xs sm:text-sm font-medium text-white hover:bg-stone-700 hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-all appearance-none',
 								}}
-								translations={{
-									selectLabel: () => 'Produkte pro Seite',
-								}}
 							/>
 							<div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
 								<svg
